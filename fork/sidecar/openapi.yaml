@@ -1,0 +1,247 @@
+openapi: 3.1.0
+info:
+  title: Handbook render sidecar (K3)
+  version: 1.0.0
+  description: >
+    Playwright + Chromium + axe-core + Lighthouse CLI, bound to 127.0.0.1
+    (ADR-004, ADR-009). Mirrors src/server/features/handbook/contracts/sidecar.ts.
+    Every request needs `Authorization: Bearer $HANDBOOK_SIDECAR_TOKEN`. The
+    sidecar refuses non-http(s) URLs and hosts that resolve to private,
+    loopback or link-local addresses (422).
+servers:
+  - url: http://127.0.0.1:4777
+security:
+  - bearer: []
+paths:
+  /health:
+    get:
+      security: []
+      responses:
+        "200":
+          description: Ready
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, version, chromium, contractsVersion]
+                properties:
+                  ok: { const: true }
+                  version: { type: string }
+                  chromium: { type: string }
+                  contractsVersion: { type: string }
+  /render:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, javascript, viewport, screenshot, scrollToEnd]
+              properties:
+                url: { type: string, format: uri }
+                javascript: { type: boolean }
+                viewport: { enum: [mobile, desktop] }
+                screenshot: { enum: [none, firstScreen, fullPage] }
+                scrollToEnd: { type: boolean }
+                timeoutMs:
+                  {
+                    type: integer,
+                    minimum: 1000,
+                    maximum: 60000,
+                    default: 30000,
+                  }
+      responses:
+        "200":
+          description: Rendered page
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    finalUrl,
+                    status,
+                    html,
+                    screenshotPng,
+                    consoleErrors,
+                    timingMs,
+                  ]
+                properties:
+                  finalUrl: { type: string, format: uri }
+                  status: { type: [integer, "null"] }
+                  html: { type: string }
+                  screenshotPng:
+                    { type: [string, "null"], description: base64 PNG }
+                  consoleErrors: { type: array, items: { type: string } }
+                  timingMs: { type: number }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Refused" }
+        "504": { $ref: "#/components/responses/Timeout" }
+  /axe:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri }
+                viewport: { enum: [mobile, desktop], default: mobile }
+                scrollToEnd: { const: true, default: true }
+      responses:
+        "200":
+          description: axe-core results after full scroll
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, axeVersion, violations]
+                properties:
+                  url: { type: string, format: uri }
+                  axeVersion: { type: string }
+                  violations:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, impact, help, helpUrl, nodes]
+                      properties:
+                        id: { type: string }
+                        impact:
+                          { enum: [minor, moderate, serious, critical, null] }
+                        help: { type: string }
+                        helpUrl: { type: string }
+                        nodes:
+                          type: array
+                          items:
+                            type: object
+                            required: [target, html]
+                            properties:
+                              target: { type: array, items: { type: string } }
+                              html: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Refused" }
+        "504": { $ref: "#/components/responses/Timeout" }
+  /lighthouse:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, formFactor]
+              properties:
+                url: { type: string, format: uri }
+                formFactor: { enum: [mobile, desktop] }
+      responses:
+        "200":
+          description: Lighthouse lab run
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [
+                    url,
+                    lighthouseVersion,
+                    environment,
+                    categories,
+                    metrics,
+                    lcpElement,
+                    report,
+                  ]
+                properties:
+                  url: { type: string, format: uri }
+                  lighthouseVersion: { type: string }
+                  environment:
+                    {
+                      type: string,
+                      description: "host/CPU note; lab TBT is host dependent",
+                    }
+                  categories:
+                    type: object
+                    required: [performance, accessibility, bestPractices, seo]
+                    properties:
+                      performance:
+                        { type: [number, "null"], minimum: 0, maximum: 1 }
+                      accessibility:
+                        { type: [number, "null"], minimum: 0, maximum: 1 }
+                      bestPractices:
+                        { type: [number, "null"], minimum: 0, maximum: 1 }
+                      seo: { type: [number, "null"], minimum: 0, maximum: 1 }
+                  metrics:
+                    type: object
+                    required: [lcpMs, cls, tbtMs, fcpMs]
+                    properties:
+                      lcpMs: { type: [number, "null"] }
+                      cls: { type: [number, "null"] }
+                      tbtMs: { type: [number, "null"] }
+                      fcpMs: { type: [number, "null"] }
+                  lcpElement: { type: [string, "null"] }
+                  report: { type: object, description: full Lighthouse JSON }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Refused" }
+        "504": { $ref: "#/components/responses/Timeout" }
+  /v1/web/scrape/html:
+    get:
+      summary: Context.dev-compatible scrape (upstream rendered-page.ts shape)
+      description: >
+        Lets upstream rendering point at the sidecar instead of api.context.dev.
+        Accepts and ignores Context-specific options it does not implement.
+      parameters:
+        - {
+            name: url,
+            in: query,
+            required: true,
+            schema: { type: string, format: uri },
+          }
+        - { name: waitForMs, in: query, schema: { type: integer } }
+        - {
+            name: "timeoutOpts[milliseconds]",
+            in: query,
+            schema: { type: integer },
+          }
+      responses:
+        "200":
+          description: Rendered HTML
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, type, html, metadata, finalDOMState]
+                properties:
+                  success: { const: true }
+                  type: { const: html }
+                  html: { type: string }
+                  metadata:
+                    type: object
+                    required: [finalUrl]
+                    properties:
+                      finalUrl: { type: string, format: uri }
+                  finalDOMState: { const: loaded }
+                  key_metadata:
+                    type: object
+                    properties:
+                      credits_consumed: { const: 0 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Refused" }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer }
+  responses:
+    Unauthorized:
+      description: Missing or wrong bearer token
+    Refused:
+      description: URL refused (scheme or private address)
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+    Timeout:
+      description: Page did not finish within timeoutMs
