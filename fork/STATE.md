@@ -8,7 +8,7 @@ current_batch: B1
 batch_file: fork/batches/B1-heavy-foundation.md
 required_model: Opus 5.5 (SINGLE) · SPLIT: per batch table below
 current_run: 1
-next_action: B1 R1 — fork wiring, app running, test baseline, headless upstream audit, upstream-gap
+next_action: B1 R2 — registry (129 §41 items) + handbook-sync + coverage + golden expected YAML. Carry-over from R1: in-app UI smoke + create the 2 projects (BLOCKED-KEN: Playwright system libs, see fork/reports/B1.md)
 contracts_version: none (frozen at end of B1)
 extra_site: (Ken: optional third site URL for regression runs; blank = skip)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -29,7 +29,7 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
 | Batch | File                                    | Model (SPLIT) | Status      |
 | ----- | --------------------------------------- | ------------- | ----------- |
-| B1    | fork/batches/B1-heavy-foundation.md     | HEAVY         | not-started |
+| B1    | fork/batches/B1-heavy-foundation.md     | HEAVY         | in-progress |
 | B2    | fork/batches/B2-light-deterministic.md  | LIGHT         | —           |
 | B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | —           |
 | B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | —           |
@@ -39,10 +39,12 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
 ## Run log
 
-| Run | Date | Model | Done | Next |
-| --- | ---- | ----- | ---- | ---- |
+| Run | Date       | Model    | Done                                                                                                                     | Next  |
+| --- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------ | ----- |
+| 1   | 2026-11-14 | Opus 5.5 | B1 R1: fork wiring, Supabase migrate + harden, app on Postgres, baseline green, upstream headless audit ×2, upstream-gap | B1 R2 |
 
 ## Batch history
 
-| Batch | Model | Started | Finished | Report |
-| ----- | ----- | ------- | -------- | ------ |
+| Batch | Model    | Started    | Finished | Report             |
+| ----- | -------- | ---------- | -------- | ------------------ |
+| B1    | Opus 5.5 | 2026-11-14 | —        | fork/reports/B1.md |
