@@ -1,0 +1,360 @@
+# Golden expectations derived from fork/fixtures/audits/whyracingevents-2026-11-13.md (read-only source).
+# urls: paths relative to origin; `*` = any segment. items: registry ids (src/server/features/handbook/registry.ts).
+# detectableBy: deterministic (raw fetch/headers/robots/JSON-LD) | render (sidecar: JS on/off, screenshot, Lighthouse, axe) | llm | data (third-party account data) | owner.
+# class: registry class of the primary item. severity: the golden audit's severity. note: scorer hints (site-changed, scope).
+site: whyracingevents.com
+origin: https://whyracingevents.com
+audit: fork/fixtures/audits/whyracingevents-2026-11-13.md
+auditHandbookVersion: "4.2"
+registryHandbookVersion: "4.6"
+mode: REVIEW
+tier: T3
+grade: { final: 39, uncapped: 54 }
+
+findings:
+  - id: F01
+    title: "Core content JS-only (About team grid, home race calendar)"
+    items: [P2-01, P2-09, P5-17]
+    urls: [/, /pages/about.html]
+    class: RENDER
+    detectableBy: render
+    severity: S1
+  - id: F02
+    title: "Fallback / loading / error strings in raw HTML"
+    items: [P2-04, P2-03]
+    urls: [/, /pages/about.html]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+  - id: F03
+    title: "robots.txt named groups carry only Allow; miss the * Disallows and &sort/&filter shapes"
+    items: [P3-15, P9-05]
+    urls: [/robots.txt]
+    class: ROBOTS
+    detectableBy: deterministic
+    severity: S2
+  - id: F04
+    title: "Retired events 302 to the homepage; still linked from Locations"
+    items: [P3-05, P3-07, P3-08]
+    urls:
+      - /events/pacific-coast-running-festival
+      - /events/reflection-run
+      - /events/scary-run
+      - /pages/locations.html
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "site-changed on 2026-11-14 (the 3 URLs return 200)"
+  - id: F05
+    title: "Public admin page; noindex + Disallow conflict; Staff Portal footer link"
+    items: [P3-16, P3-13]
+    urls: [/pages/admin/races.html]
+    class: HEADERS
+    detectableBy: deterministic
+    severity: S2
+  - id: F06
+    title: "Event JSON-LD thin (city-only place, date-only startDate, no price, filler performer)"
+    items: [P2-06, P6-05, P6-15]
+    urls: [/events/*]
+    class: SCHEMA
+    detectableBy: deterministic
+    severity: S2
+    note: "filler performer needs llm; the rest is deterministic"
+  - id: F07
+    title: "Duplicate Organization nodes without @id; WebSite without @id / alternateName / publisher"
+    items: [P6-03, P6-01]
+    urls:
+      - /
+      - /pages/partners.html
+      - /pages/locations.html
+      - /pages/about.html
+      - /pages/beneficiary.html
+    class: SCHEMA
+    detectableBy: deterministic
+    severity: S2
+  - id: F08
+    title: 'Placeholder venue "Address - Main Event Site" on event pages and .md mirrors'
+    items: [P5-04, P6-15, P9-03]
+    urls: [/events/*]
+    class: LLM
+    detectableBy: llm
+    severity: S2
+    note: "not a §24 sentinel string; needs placeholder-copy judgment"
+  - id: F09
+    title: "Same 5-question FAQ + FAQPage on 11 event pages"
+    items: [P5-05, P6-07]
+    urls: [/events/*]
+    class: LLM
+    detectableBy: deterministic
+    severity: S2
+    note: "question-set hash across pages is deterministic"
+  - id: F10
+    title: "Conflicting, unsourced stats (event count, $ raised, athletes)"
+    items: [P5-02]
+    urls:
+      [
+        /,
+        /pages/about.html,
+        /pages/community.html,
+        /pages/beneficiary.html,
+        /pages/partners.html,
+        /llms.txt,
+      ]
+    class: LLM
+    detectableBy: llm
+    severity: S2
+  - id: F11
+    title: "Mobile LCP 4.9–23.9 s; About / Locations 47–53 MB"
+    items: [P7-09, P2-05, P7-03, P7-01]
+    urls: [/, /pages/about.html, /pages/locations.html]
+    class: PERF
+    detectableBy: render
+    severity: S2
+  - id: F12
+    title: "Logo as og:image; no og:image dimensions; no max-image-preview:large"
+    items: [P4-09, P4-11]
+    urls: [/, /pages/*.html, /events/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+  - id: F13
+    title: ".reveal elements stay at opacity 0 without JS"
+    items: [P2-07]
+    urls: [/pages/about.html, /pages/locations.html]
+    class: RENDER
+    detectableBy: render
+    severity: S3
+  - id: F14
+    title: "Slogan H1s instead of page topic"
+    items: [P4-02]
+    urls:
+      [
+        /,
+        /pages/about.html,
+        /pages/partners.html,
+        /pages/community.html,
+        /pages/first-5k.html,
+      ]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+  - id: F15
+    title: "Unsupported superlatives; acronym PNW not spelled out"
+    items: [P5-04, P5-03]
+    urls:
+      [
+        /,
+        /pages/about.html,
+        /pages/volunteers.html,
+        /pages/partners.html,
+        /pages/training.html,
+      ]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+  - id: F16
+    title: "Thin event and Training pages (138–236 words)"
+    items: [P5-15]
+    urls:
+      - /events/ho-ho-5k
+      - /events/silver-falls-trail-challenge
+      - /events/white-river-snow-shoe
+      - /events/crown-stub-100
+      - /pages/training.html
+    class: LLM
+    detectableBy: deterministic
+    severity: S3
+  - id: F17
+    title: "/pages/first-5k.html orphan; event pages get 1–2 server-HTML inlinks"
+    items: [P3-12, P2-10]
+    urls: [/pages/first-5k.html, /events/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "orphan likely site-changed (2026-11-14 upstream crawl did not flag it)"
+  - id: F18
+    title: "Brand and event names spelled several ways; generic-word brand without alternateName"
+    items: [P5-07, P6-09]
+    urls: [/, /events/appletree-marathon]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+  - id: F19
+    title: "llms.txt numbers contradict themselves (21 vs 18 events)"
+    items: [P9-02, P5-02]
+    urls: [/llms.txt]
+    class: CRAWL
+    detectableBy: llm
+    severity: S3
+  - id: F20
+    title: "About has no first-screen primary action and no Person schema"
+    items: [P5-14, P5-17]
+    urls: [/pages/about.html]
+    class: RENDER
+    detectableBy: render
+    severity: S3
+  - id: F21
+    title: "http://www → https://www → apex takes 2 hops"
+    items: [P3-01]
+    urls: [http://www.whyracingevents.com/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+  - id: F22
+    title: "/index.html 200; trailing-slash split; 404 template canonical → home"
+    items: [P3-03, P3-02, P3-11]
+    urls: [/index.html, /pages/about.html/, /events/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+  - id: F23
+    title: "6 event titles lack brand suffix; 2 meta descriptions over 170 chars"
+    items: [P4-01]
+    urls: [/events/*, /pages/corporate-wellness.html, /pages/partners.html]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+  - id: F24
+    title: "299 <img> without width/height; distorted sponsor logos"
+    items: [P7-02]
+    urls: [/, /pages/*.html, /events/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "distorted logos need Lighthouse (render)"
+  - id: F25
+    title: "GA4 + Meta Pixel load from defer, not after load/interaction; CSP console errors"
+    items: [P7-04]
+    urls: [/, /events/*]
+    class: PERF
+    detectableBy: render
+    severity: S4
+  - id: F26
+    title: "Render-blocking Google Fonts / Font Awesome; assets not hashed + immutable"
+    items: [P7-05, P7-07]
+    urls: [/]
+    class: PERF
+    detectableBy: render
+    severity: S4
+    note: "cache policy part is deterministic (headers)"
+  - id: F27
+    title: "Contrast failures (footer Staff Portal link, breadcrumb links)"
+    items: [P8-02]
+    urls: [/, /events, /events/*]
+    class: A11Y
+    detectableBy: render
+    severity: S4
+  - id: F28
+    title: "HSTS includeSubDomains + preload without preload-list entry or owner decision"
+    items: [P8-01, P8-05]
+    urls: [/]
+    class: HEADERS
+    detectableBy: deterministic
+    severity: S4
+  - id: F29
+    title: "Outbound links point to redirecting URLs"
+    items: [P5-13]
+    urls: [/, /pages/beneficiary.html, /pages/partners.html, /events/*]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S4
+  - id: F30
+    title: "Mixed URL styles (/pages/*.html vs extensionless); slug artifacts women-s, santa-s"
+    items: [P2-12]
+    urls:
+      [
+        /pages/*.html,
+        /events/girlfriends-all-women-s-triathlon-fitness-festival,
+        /events/santa-s-holiday-hustle-5k-dirty-santa-trail-run-10k,
+      ]
+    class: CRAWL
+    detectableBy: llm
+    severity: S4
+
+passes:
+  - id: PASS-01
+    title: "One H1 per page; one <main>; no skipped heading levels; unique titles + meta descriptions"
+    items: [P4-08, P4-01, P4-03]
+    urls: [/*]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-02
+    title: "Event titles state topic + place; event opening sentence is answer-first"
+    items: [P4-02, P5-01]
+    urls: [/events/*]
+    class: LLM
+    detectableBy: llm
+  - id: PASS-03
+    title: "Self-canonicals; ?utm_source= canonicalizes; sitemap host = canonical host = robots Sitemap host"
+    items: [P3-04, P3-19]
+    urls: [/*, /sitemap.xml, /robots.txt]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-04
+    title: "Sitemap lastmod per URL matches visible updated dates; not a build date"
+    items: [P3-17]
+    urls: [/sitemap.xml]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-05
+    title: "Unknown URLs → real 404 with own noindex template; unknown event slugs → event 404"
+    items: [P3-10, P3-11]
+    urls: [/this-page-does-not-exist, /events/this-event-does-not-exist]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-06
+    title: "WordPress-era event slugs 301 to current events"
+    items: [P3-05]
+    urls:
+      [/appletree-marathon/, /girlfriends-run/, /events/appletree-marathon-2026]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-07
+    title: "/events server-renders all events + ItemList; BreadcrumbList on event pages; organizer attributed"
+    items: [P6-06, P2-10]
+    urls: [/events, /events/*]
+    class: SCHEMA
+    detectableBy: deterministic
+  - id: PASS-08
+    title: "Bot-UA parity — 6 bots get 200 + identical HTML"
+    items: [P9-01]
+    urls: [/]
+    class: BOTFETCH
+    detectableBy: deterministic
+  - id: PASS-09
+    title: "Security headers complete by value; HTML max-age=0, must-revalidate"
+    items: [P8-01, P8-05, P7-07]
+    urls: [/]
+    class: HEADERS
+    detectableBy: deterministic
+  - id: PASS-10
+    title: "Skip link, labelled form, tap targets, named social icons, hero video pause + reduced motion"
+    items: [P8-04, P8-06, P7-01]
+    urls: [/]
+    class: A11Y
+    detectableBy: render
+  - id: PASS-11
+    title: "Event .md mirrors — text/markdown, Link rel=canonical header, rel=alternate on HTML"
+    items: [P9-03]
+    urls: [/events/*]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-12
+    title: "No broken outbound links; registration links 200 for browsers and bots"
+    items: [P5-13]
+    urls: [/events/*]
+    class: BOTFETCH
+    detectableBy: deterministic
+  - id: PASS-13
+    title: "CLS 0–0.014 on every template; TTFB fine"
+    items: [P7-08]
+    urls:
+      [
+        /,
+        /events,
+        /events/appletree-marathon,
+        /pages/about.html,
+        /pages/locations.html,
+      ]
+    class: PERF
+    detectableBy: render
