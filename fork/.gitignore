@@ -1,0 +1,4 @@
+# local audit outputs
+runs/
+# scratch scripts
+scripts/.*

@@ -19,3 +19,7 @@ src/worker-configuration.d.ts
 web/
 # rewritten by `stripe apps upload` in its own format
 deploy/stripe-app/stripe-app.json
+
+# fork: verbatim sources
+fork/handbook/
+fork/fixtures/audits/
