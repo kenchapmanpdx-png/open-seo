@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { gunzipSync, gzipSync } from "node:zlib";
 import {
   mkdirSync,
   readFileSync,
@@ -9,13 +10,13 @@ import {
 import { dirname, join } from "node:path";
 import type { EvidenceStore } from "@/server/features/handbook/contracts/evidence-store";
 
-/** K4 filesystem store for CLI runs (ADR-003 fallback): `<root>/<key>`. */
+/** K4 filesystem store for CLI runs (ADR-003 fallback): gzip at `<root>/<key>.gz`. */
 export function createFsEvidenceStore(root: string): EvidenceStore {
   return {
     async put(key, bytes) {
-      const path = join(root, key);
+      const path = join(root, `${key}.gz`);
       mkdirSync(dirname(path), { recursive: true });
-      writeFileSync(path, bytes);
+      writeFileSync(path, gzipSync(bytes));
       return {
         key,
         sha256: createHash("sha256").update(bytes).digest("hex"),
@@ -23,8 +24,10 @@ export function createFsEvidenceStore(root: string): EvidenceStore {
       };
     },
     async get(key) {
-      const path = join(root, key);
-      return existsSync(path) ? new Uint8Array(readFileSync(path)) : null;
+      const path = join(root, `${key}.gz`);
+      return existsSync(path)
+        ? new Uint8Array(gunzipSync(readFileSync(path)))
+        : null;
     },
     async deleteRun(projectId, runId) {
       rmSync(join(root, projectId, runId), { recursive: true, force: true });

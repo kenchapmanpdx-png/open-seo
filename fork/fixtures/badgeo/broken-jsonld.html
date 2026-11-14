@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="badgeo-expect" content="P6-08" />
+    <title>Broken JSON-LD · BadGEO</title>
+    <meta
+      name="description"
+      content="Broken JSON-LD — BadGEO rule fixture page."
+    />
+    <link rel="canonical" href="/broken-jsonld.html" />
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "WebPage", "name": "Broken" }
+    </script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a> <a href="/about/">About</a>
+        <a href="/events/">Events</a> <a href="/broken-jsonld.html">Broken</a>
+        <a href="/placeholder.html">Placeholder</a>
+        <a href="/no-headers.html">Headers</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Broken JSON-LD</h1>
+      <p>The JSON-LD block below has a trailing comma and does not parse.</p>
+    </main>
+    <footer><p>BadGEO fixture site.</p></footer>
+  </body>
+</html>

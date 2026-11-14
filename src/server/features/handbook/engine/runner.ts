@@ -70,9 +70,16 @@ export type ItemStatusRow = {
   checkIds: string[];
 };
 
+export type PendingResult = {
+  checkId: string;
+  checkClass: HandbookCheck["class"];
+  result: CheckResult;
+};
+
 export type FindingRow = Omit<FindingDraft, "evidenceRefs"> & {
   code: string;
   checkId: string;
+  class: HandbookCheck["class"];
   phase: string;
   sectionRef: string;
 };
@@ -103,7 +110,7 @@ export async function runHandbook(
     string,
     { status: ItemStatus; note: string | null; checkId: string }[]
   >();
-  const pending: { checkId: string; result: CheckResult }[] = [];
+  const pending: PendingResult[] = [];
   const checkerErrors: string[] = [];
   const addVerdict = (
     itemId: string,
@@ -181,6 +188,7 @@ export async function runHandbook(
     // Findings on an item the site does not need (NA at intake) are dropped.
     pending.push({
       checkId: check.id,
+      checkClass: check.class,
       result: {
         ...result,
         findings: result.findings.filter((f) =>

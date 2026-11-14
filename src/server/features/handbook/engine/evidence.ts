@@ -1,15 +1,13 @@
 import { sha256Hex } from "@/server/lib/audit/ids";
 import { truncateToBytes } from "@/server/lib/audit/html-response";
-import type {
-  CheckResult,
-  EvidenceDraft,
-} from "@/server/features/handbook/contracts/check";
+import type { EvidenceDraft } from "@/server/features/handbook/contracts/check";
 import { EVIDENCE_EXCERPT_MAX_BYTES } from "@/server/features/handbook/contracts/evidence-store";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type {
   EvidenceRow,
   FindingRow,
   HandbookRuntime,
+  PendingResult,
   RunInput,
 } from "./runner";
 
@@ -23,11 +21,16 @@ const SEVERITY_ORDER = ["S1", "S2", "S3", "S4"];
 export async function materialize(
   input: RunInput,
   runtime: HandbookRuntime,
-  pending: { checkId: string; result: CheckResult }[],
+  pending: PendingResult[],
   registry: ReadonlyMap<string, RegistryEntry>,
 ) {
-  const drafts = pending.flatMap(({ checkId, result }) =>
-    result.findings.map((finding) => ({ checkId, finding, result })),
+  const drafts = pending.flatMap(({ checkId, checkClass, result }) =>
+    result.findings.map((finding) => ({
+      checkId,
+      checkClass,
+      finding,
+      result,
+    })),
   );
   drafts.sort(
     (a, b) =>
@@ -41,7 +44,10 @@ export async function materialize(
   );
   const findings: FindingRow[] = [];
   const evidence: EvidenceRow[] = [];
-  for (const [index, { checkId, finding, result }] of drafts.entries()) {
+  for (const [
+    index,
+    { checkId, checkClass, finding, result },
+  ] of drafts.entries()) {
     const code = `F${String(index + 1).padStart(2, "0")}`;
     const primary = registry.get(finding.itemIds[0] ?? "");
     const { evidenceRefs, ...rest } = finding;
@@ -49,6 +55,7 @@ export async function materialize(
       ...rest,
       code,
       checkId,
+      class: checkClass,
       phase: primary?.phase ?? "P1",
       sectionRef: primary ? primary.refs.map((r) => `§${r}`).join(", ") : "",
     });

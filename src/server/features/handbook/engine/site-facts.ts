@@ -225,7 +225,7 @@ export const INFER: Record<
   SP12: (f) => {
     const get = (name: string) =>
       f.headers.filter(([k]) => k === name).map(([, v]) => v);
-    const server = get("server").join(" ");
+    const server = [...new Set(get("server"))].join(" ");
     if (/cloudflare/i.test(server) || get("cf-ray").length)
       return yes(`server: ${server || "cf-ray present"}`, "high");
     if (get("x-vercel-id").length)
