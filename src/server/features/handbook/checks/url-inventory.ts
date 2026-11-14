@@ -1,0 +1,212 @@
+import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
+import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import { createResult, normalizeUrl } from "./support";
+
+/**
+ * CRAWL exemplar (handbook §17): URL inventory reconciled — every sitemap
+ * `<loc>` is a 200, indexable, self-canonical, internally linked page that is
+ * not a test/draft copy, and every indexable crawled page is in the sitemap
+ * (P3-12). Cross-consistency: `<loc>` host = canonical host, robots.txt
+ * `Sitemap:` lines resolve (P3-19). Thin/duplicate judgment stays with LLM.
+ */
+const ITEMS = ["P3-12", "P3-19"];
+
+const TEST_PATH = /(^|[-_/])(test|draft|staging|tmp|copy|old)([-_/.]|$)/i;
+
+const noindex = (s: PageSnapshot) =>
+  /noindex/i.test(`${s.head.robotsMeta ?? ""} ${s.xRobotsTag ?? ""}`);
+
+type Issue = { kind: string; url: string; why: string };
+
+const KINDS: Record<string, { title: string; fix: string }> = {
+  status: {
+    title: "Sitemap lists URLs that redirect or do not return 200",
+    fix: "List only final 200 URLs; update or drop redirected and broken <loc> entries.",
+  },
+  noindex: {
+    title: "Sitemap lists noindex URLs",
+    fix: "Drop noindex pages from the sitemap (or make them indexable if they should rank).",
+  },
+  canonical: {
+    title: "Sitemap <loc> canonicalises to another URL",
+    fix: "List the canonical URL in the sitemap, or make the page self-canonical if it is the intended URL.",
+  },
+  orphan: {
+    title: "Sitemap URLs without an internal link (orphans)",
+    fix: "Link each page from a relevant crawlable page, or retire it (404/410 or redirect) and drop it from the sitemap.",
+  },
+  test: {
+    title: "Test / draft URLs published in the sitemap",
+    fix: "Unpublish test and draft pages (404/410 or noindex) and drop them from the sitemap.",
+  },
+  unlisted: {
+    title: "Indexable pages missing from the sitemap",
+    fix: "Add every indexable, self-canonical page to the sitemap (or noindex/retire it).",
+  },
+};
+
+function inventoryIssues(
+  locs: readonly string[],
+  snapshots: readonly PageSnapshot[],
+): Issue[] {
+  const byUrl = new Map(snapshots.map((s) => [normalizeUrl(s.url), s]));
+  const inlinks = new Map<string, number>();
+  for (const s of snapshots) {
+    const self = normalizeUrl(s.finalUrl);
+    for (const target of new Set(s.links.map((l) => normalizeUrl(l.href)))) {
+      if (target !== self) inlinks.set(target, (inlinks.get(target) ?? 0) + 1);
+    }
+  }
+  const issues: Issue[] = [];
+  const locSet = new Set(locs.map(normalizeUrl));
+  for (const loc of locSet) {
+    const snap = byUrl.get(loc);
+    if (!snap) continue; // not crawled within the page budget
+    if (TEST_PATH.test(new URL(loc).pathname))
+      issues.push({ kind: "test", url: loc, why: "test/draft path" });
+    if (snap.status !== 200 || normalizeUrl(snap.finalUrl) !== loc) {
+      issues.push({
+        kind: "status",
+        url: loc,
+        why: `HTTP ${snap.status} → ${snap.finalUrl}`,
+      });
+      continue;
+    }
+    if (noindex(snap)) {
+      issues.push({ kind: "noindex", url: loc, why: "noindex" });
+      continue;
+    }
+    if (snap.head.canonical && normalizeUrl(snap.head.canonical) !== loc) {
+      issues.push({
+        kind: "canonical",
+        url: loc,
+        why: `canonical → ${snap.head.canonical}`,
+      });
+      continue;
+    }
+    if (!inlinks.get(loc) && new URL(loc).pathname !== "/") {
+      issues.push({ kind: "orphan", url: loc, why: "0 internal inlinks" });
+    }
+  }
+  for (const s of snapshots) {
+    const url = normalizeUrl(s.url);
+    const selfCanonical =
+      !s.head.canonical || normalizeUrl(s.head.canonical) === url;
+    if (
+      s.status === 200 &&
+      normalizeUrl(s.finalUrl) === url &&
+      !noindex(s) &&
+      selfCanonical &&
+      !locSet.has(url) &&
+      /html/i.test(s.contentType ?? "html")
+    ) {
+      issues.push({ kind: "unlisted", url, why: "indexable, not in sitemap" });
+    }
+  }
+  return issues;
+}
+
+export const urlInventoryCheck: HandbookCheck = {
+  id: "crawl.url-inventory",
+  itemIds: ITEMS,
+  class: "CRAWL",
+  requires: ["sitemap", "pages"],
+  run(ctx) {
+    const out = createResult(ITEMS);
+    const { sitemap, pages, robots } = ctx.collected;
+    if (sitemap.status !== "ok" || pages.status !== "ok") return out.build();
+    const source = sitemap.sources.find((s) => s.kind === "urlset");
+    if (sitemap.urls.length === 0 || !source) {
+      for (const id of ITEMS) out.na(id, "no sitemap <loc> URLs found");
+      return out.build();
+    }
+    const listing = (urls: readonly string[]) =>
+      out.evidence("sitemap", source.url, urls.join("\n"), source.storageKey);
+
+    const issues = inventoryIssues(
+      sitemap.urls.map((u) => u.loc),
+      pages.snapshots,
+    );
+    for (const [kind, meta] of Object.entries(KINDS)) {
+      const hits = issues.filter((i) => i.kind === kind);
+      if (hits.length === 0) continue;
+      out.finding({
+        itemIds: ["P3-12"],
+        severity: "S3",
+        title: meta.title,
+        detail: hits.map((h) => `${h.url} — ${h.why}`).join("\n"),
+        fix: meta.fix,
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: hits.map((h) => h.url),
+        evidenceRefs: [listing(hits.map((h) => `${h.url} — ${h.why}`))],
+      });
+    }
+
+    // P3-19 — host consistency + robots Sitemap: lines.
+    const home = pages.snapshots.find(
+      (s) => new URL(s.url).pathname === "/" && s.status === 200,
+    );
+    const canonicalHost = new URL(home?.head.canonical ?? ctx.origin).host;
+    const offHost = sitemap.urls.filter(
+      (u) => new URL(u.loc, ctx.origin).host !== canonicalHost,
+    );
+    if (offHost.length > 0) {
+      out.finding({
+        itemIds: ["P3-19"],
+        severity: "S3",
+        title: "Sitemap <loc> host differs from the canonical host",
+        detail: `canonical host ${canonicalHost}; ${offHost.length} <loc> on another host, e.g. ${offHost[0]?.loc}`,
+        fix: "Emit every <loc> on the canonical host.",
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: [source.url],
+        evidenceRefs: [listing(offHost.slice(0, 50).map((u) => u.loc))],
+      });
+    }
+    if (robots.status === "ok") {
+      const declared = robots.hosts.flatMap((h) => h.sitemaps);
+      const robotsUrl = new URL("/robots.txt", ctx.origin).href;
+      const broken = declared.filter(
+        (url) => sitemap.sources.find((s) => s.url === url)?.status !== 200,
+      );
+      if (declared.length === 0 || broken.length > 0) {
+        const host = robots.hosts.find((h) => h.status === 200);
+        const ref = out.evidence(
+          "robotsTxt",
+          robotsUrl,
+          declared.length === 0
+            ? "no Sitemap: line"
+            : `Sitemap: lines not returning 200:\n${broken.join("\n")}`,
+          host?.storageKey,
+        );
+        out.finding({
+          itemIds: ["P3-19"],
+          severity: "S3",
+          title:
+            declared.length === 0
+              ? "robots.txt has no Sitemap: line"
+              : "robots.txt Sitemap: line does not resolve",
+          detail:
+            declared.length === 0
+              ? "robots.txt declares no sitemap"
+              : broken.join("\n"),
+          fix: "Point a `Sitemap:` line in robots.txt at the live sitemap (index) URL.",
+          fixability: "FIXABLE",
+          effort: "S",
+          urls: [robotsUrl],
+          evidenceRefs: [ref],
+        });
+      }
+    }
+
+    const ref = listing(sitemap.urls.slice(0, 50).map((u) => u.loc));
+    out.pass(
+      "P3-12",
+      `${sitemap.urls.length} <loc> reconciled with ${pages.snapshots.length} crawled pages (thin/duplicate judgment manual)`,
+      [ref],
+    );
+    out.pass("P3-19", `<loc> host = canonical host ${canonicalHost}`, [ref]);
+    return out.build();
+  },
+};
