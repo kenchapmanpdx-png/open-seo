@@ -1,0 +1,255 @@
+/**
+ * Golden scorer (B1 R4): compare a handbook run (report.json, K7) with a
+ * golden expectation file (fork/fixtures/expected/*.expected.yaml).
+ *
+ * Expected finding → caught (a report finding shares ≥1 item id AND ≥1 URL
+ * path, `*` = one segment wildcard) · partial (shares an item but no URL, or
+ * an item is OPEN/PARTIAL without a finding) · missed. A missed finding is
+ * `site-changed` when its `note` says so, or when a direct re-fetch of one of
+ * its concrete URLs returns a status different from the run's crawl
+ * (collected.json next to report.json). Expected passes → caught when every
+ * listed item is PASS, partial when some are.
+ *
+ *   pnpm exec tsx fork/scripts/golden-score.ts <report.json> <expected.yaml>
+ */
+import { writeFormatted } from "./lib/write-formatted";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { parse } from "yaml";
+import { z } from "zod";
+import {
+  reportJsonSchema,
+  type ReportJson,
+} from "@/server/features/handbook/contracts/exports";
+
+const entrySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  items: z.array(z.string()),
+  urls: z.array(z.string()).default([]),
+  detectableBy: z.string().optional(),
+  severity: z.string().nullish(),
+  note: z.string().optional(),
+});
+const expectedSchema = z.object({
+  site: z.string(),
+  origin: z.string().url(),
+  findings: z.array(entrySchema),
+  passes: z.array(entrySchema).default([]),
+});
+type Entry = z.infer<typeof entrySchema>;
+
+const collectedSchema = z.object({
+  pages: z
+    .array(z.object({ url: z.string(), status: z.number() }))
+    .nullable()
+    .optional()
+    .catch(null),
+});
+
+type Verdict = "caught" | "partial" | "missed" | "site-changed";
+type Scored = { entry: Entry; verdict: Verdict; why: string };
+
+const trimSlash = (path: string) =>
+  path.length > 1 ? path.replace(/\/+$/, "") : path;
+
+/** Expected path pattern (`*` = one segment, `/*` alone = any page). */
+export function pathMatches(pattern: string, path: string): boolean {
+  if (pattern === "/*") return true;
+  const escaped = trimSlash(pattern)
+    .split("*")
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join("[^/]+");
+  return new RegExp(`^${escaped}$`).test(trimSlash(path));
+}
+
+function reportPaths(report: ReportJson, urls: readonly string[]) {
+  return urls.map((u) => new URL(u, report.site.origin).pathname);
+}
+
+function scoreFinding(report: ReportJson, entry: Entry): Scored {
+  const sharing = report.findings.filter((f) =>
+    f.itemIds.some((id) => entry.items.includes(id)),
+  );
+  const urlHit = sharing.find((f) =>
+    reportPaths(report, f.urls).some((path) =>
+      entry.urls.some((p) => pathMatches(p, path)),
+    ),
+  );
+  if (urlHit)
+    return {
+      entry,
+      verdict: "caught",
+      why: `${urlHit.code} (${urlHit.itemIds.join(", ")})`,
+    };
+  if (sharing.length > 0) {
+    return {
+      entry,
+      verdict: "partial",
+      why: `${sharing.map((f) => f.code).join(", ")} share items, no URL match`,
+    };
+  }
+  const open = report.items.filter(
+    (i) =>
+      entry.items.includes(i.itemId) &&
+      (i.status === "OPEN" || i.status === "PARTIAL"),
+  );
+  if (open.length > 0) {
+    return {
+      entry,
+      verdict: "partial",
+      why: `${open.map((i) => `${i.itemId} ${i.status}`).join(", ")}, no finding`,
+    };
+  }
+  const statuses = report.items
+    .filter((i) => entry.items.includes(i.itemId))
+    .map((i) => `${i.itemId} ${i.status}`);
+  return {
+    entry,
+    verdict: "missed",
+    why: statuses.join(", ") || "items not in report",
+  };
+}
+
+function scorePass(report: ReportJson, entry: Entry): Scored {
+  const items = report.items.filter((i) => entry.items.includes(i.itemId));
+  const passed = items.filter((i) => i.status === "PASS");
+  const why = items.map((i) => `${i.itemId} ${i.status}`).join(", ");
+  if (items.length > 0 && passed.length === entry.items.length)
+    return { entry, verdict: "caught", why };
+  if (passed.length > 0) return { entry, verdict: "partial", why };
+  return { entry, verdict: "missed", why };
+}
+
+async function directStatus(url: string): Promise<number | null> {
+  try {
+    const res = await fetch(url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(10_000),
+    });
+    await res.body?.cancel();
+    return res.status;
+  } catch {
+    return null;
+  }
+}
+
+/** Missed → site-changed per note or a status drift on re-fetch (same origin only). */
+async function markSiteChanged(
+  scored: Scored,
+  origin: string,
+  crawled: Map<string, number>,
+) {
+  if (scored.verdict !== "missed") return scored;
+  if (scored.entry.note?.includes("site-changed")) {
+    return {
+      ...scored,
+      verdict: "site-changed" as const,
+      why: `${scored.why}; note: ${scored.entry.note}`,
+    };
+  }
+  for (const path of scored.entry.urls.filter(
+    (u) => u.startsWith("/") && !u.includes("*"),
+  )) {
+    const url = new URL(path, origin);
+    if (url.origin !== new URL(origin).origin) continue;
+    // Exact path: `/x/` and `/x` are different URLs here (trailing-slash findings).
+    const before = crawled.get(url.pathname);
+    if (before === undefined) continue;
+    const now = await directStatus(url.href);
+    if (now !== null && now !== before) {
+      return {
+        ...scored,
+        verdict: "site-changed" as const,
+        why: `${scored.why}; ${path} crawl ${before} → now ${now}`,
+      };
+    }
+  }
+  return scored;
+}
+
+function loadCrawled(reportPath: string): Map<string, number> {
+  const path = join(dirname(reportPath), "collected.json");
+  const out = new Map<string, number>();
+  if (!existsSync(path)) return out;
+  const parsed = collectedSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+  for (const page of parsed.pages ?? [])
+    out.set(new URL(page.url).pathname, page.status);
+  return out;
+}
+
+function table(title: string, rows: Scored[]) {
+  const count = (v: Verdict) => rows.filter((r) => r.verdict === v).length;
+  return [
+    `## ${title}`,
+    "",
+    `caught ${count("caught")} · partial ${count("partial")} · missed ${count("missed")} · site-changed ${count("site-changed")} · total ${rows.length}`,
+    "",
+    "| id | verdict | detectableBy | items | title | why |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...rows.map(
+      (r) =>
+        `| ${r.entry.id} | ${r.verdict} | ${r.entry.detectableBy ?? ""} | ${r.entry.items.join(", ")} | ${r.entry.title.replace(/\|/g, "\\|")} | ${r.why.replace(/\|/g, "\\|")} |`,
+    ),
+    "",
+  ];
+}
+
+export async function scoreGolden(reportPath: string, expectedPath: string) {
+  const report = reportJsonSchema.parse(
+    JSON.parse(readFileSync(reportPath, "utf8")),
+  );
+  const expected = expectedSchema.parse(
+    parse(readFileSync(expectedPath, "utf8")),
+  );
+  const crawled = loadCrawled(reportPath);
+  const findings: Scored[] = [];
+  for (const entry of expected.findings) {
+    findings.push(
+      await markSiteChanged(
+        scoreFinding(report, entry),
+        expected.origin,
+        crawled,
+      ),
+    );
+  }
+  const passes = expected.passes.map((entry) => scorePass(report, entry));
+  const md = [
+    `# Golden score — ${expected.site}`,
+    "",
+    `Report: ${reportPath} (run ${report.run.id}, ${report.generatedAt}) · Expected: ${expectedPath}`,
+    "",
+    ...table("Findings", findings),
+    ...table("Passes", passes),
+  ].join("\n");
+  const out = join(dirname(reportPath), "golden-score.md");
+  await writeFormatted(out, md);
+  return { findings, passes, out };
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const [reportPath, expectedPath] = process.argv.slice(2);
+  if (!reportPath || !expectedPath) {
+    console.error("usage: golden-score.ts <report.json> <expected.yaml>");
+    process.exit(2);
+  }
+  scoreGolden(reportPath, expectedPath)
+    .then(({ findings, passes, out }) => {
+      for (const [name, rows] of [
+        ["findings", findings],
+        ["passes", passes],
+      ] as const) {
+        const counts = new Map<string, number>();
+        for (const r of rows)
+          counts.set(r.verdict, (counts.get(r.verdict) ?? 0) + 1);
+        console.log(
+          `${name}: ${[...counts].map(([v, n]) => `${v} ${n}`).join(" · ")} (of ${rows.length})`,
+        );
+      }
+      console.log(`→ ${out}`);
+    })
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}

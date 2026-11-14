@@ -103,6 +103,9 @@ export async function runAuditPhases(
     startUrl,
     config,
   });
+  await (
+    await import("@/server/features/handbook/workflow/hook")
+  ).runHandbookPhase(step, { auditId, projectId, startUrl }); // fork: handbook phase (ADR-001)
   await finalizeAudit({
     step,
     auditId,
