@@ -7,4 +7,8 @@
   <url><loc>{{ORIGIN}}/broken-jsonld.html</loc></url>
   <url><loc>{{ORIGIN}}/placeholder.html</loc></url>
   <url><loc>{{ORIGIN}}/no-headers.html</loc></url>
+  <url><loc>{{ORIGIN}}/duplicate-org.html</loc></url>
+  <url><loc>{{ORIGIN}}/orphan.html</loc></url>
+  <url><loc>{{ORIGIN}}/canonicalised.html</loc></url>
+  <url><loc>{{ORIGIN}}/partners/acme.html</loc></url>
 </urlset>
