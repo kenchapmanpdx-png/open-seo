@@ -67,13 +67,12 @@
   // Postgres scale path — same rules as wrangler.jsonc: only local Postgres
   // dev reads this block. Uncomment together with the block in wrangler.jsonc
   // per docs/LOCAL_POSTGRES.md.
-  // "hyperdrive": [
-  //   {
-  //     "binding": "HYPERDRIVE",
-  //     "id": "9d64ccfb559f44449ce52a143912f898",
-  //     "localConnectionString": "postgres://openseo:openseo@localhost:5433/openseo",
-  //   },
-  // ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "9d64ccfb559f44449ce52a143912f898",
+    },
+  ],
   "r2_buckets": [
     {
       "bucket_name": "open-seo",
