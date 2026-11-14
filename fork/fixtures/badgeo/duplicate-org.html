@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="badgeo-expect" content="P6-03" />
+    <title>Duplicate organization · BadGEO</title>
+    <meta
+      name="description"
+      content="Duplicate organization — BadGEO rule fixture page."
+    />
+    <link rel="canonical" href="/duplicate-org.html" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          { "@type": "Organization", "name": "BadGEO Fixtures", "url": "/" },
+          {
+            "@type": "Organization",
+            "@id": "https://badgeo.test/#organization",
+            "name": "BadGEO Fixtures"
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a> <a href="/about/">About</a>
+        <a href="/events/">Events</a> <a href="/broken-jsonld.html">Broken</a>
+        <a href="/placeholder.html">Placeholder</a>
+        <a href="/no-headers.html">Headers</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Duplicate organization</h1>
+      <p>
+        The same organization twice: once without @id, once under a second @id.
+      </p>
+    </main>
+    <footer><p>BadGEO fixture site.</p></footer>
+  </body>
+</html>
