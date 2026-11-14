@@ -53,7 +53,10 @@ export function siblingHosts(host: string): string[] {
 }
 
 export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
-  const allowed = new Set(options.allowedHosts.map((h) => h.toLowerCase()));
+  // Compared against URL.hostname, so a `host:port` entry drops its port.
+  const allowed = new Set(
+    options.allowedHosts.map((h) => h.toLowerCase().replace(/:\d+$/, "")),
+  );
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const minInterval = options.minIntervalMs ?? DEFAULT_MIN_INTERVAL_MS;

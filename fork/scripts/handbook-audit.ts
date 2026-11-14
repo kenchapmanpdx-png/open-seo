@@ -8,7 +8,7 @@
  *
  *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--max-pages 60] [--out dir]
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import {
@@ -35,6 +35,7 @@ import {
   siteTierSchema,
 } from "@/server/features/handbook/contracts/status";
 import { createFsEvidenceStore } from "./lib/fs-evidence-store";
+import { writeFormatted } from "./lib/write-formatted";
 import { summarizeCollected } from "./lib/summarize-collected";
 
 export async function runCliAudit(argv: string[]) {
@@ -115,12 +116,15 @@ export async function runCliAudit(argv: string[]) {
     startedAt,
     finishedAt: new Date().toISOString(),
   });
-  writeFileSync(join(outDir, "report.json"), JSON.stringify(report, null, 2));
-  writeFileSync(
+  await writeFormatted(
+    join(outDir, "report.json"),
+    JSON.stringify(report, null, 2),
+  );
+  await writeFormatted(
     join(outDir, "seo-geo-status.md"),
     renderStatusMd(report, REGISTRY),
   );
-  writeFileSync(
+  await writeFormatted(
     join(outDir, "collected.json"),
     JSON.stringify(summarizeCollected(result.collected), null, 2),
   );
