@@ -249,28 +249,40 @@ export const llmsCollector: Collector<"llms"> = {
   },
 };
 
-/** Home + up to 5 template sample URLs. */
+/**
+ * Home, then the first sample of every template, then (with `allPages`) the
+ * other samples and every crawled 200 page — capped at `max`.
+ */
 function probeUrls(
   ctx: CollectorContext,
   collected: Partial<CollectedData>,
-  max = 6,
+  max: number,
+  allPages = false,
 ) {
-  const urls = [new URL("/", ctx.origin).href];
-  if (collected.templates?.status === "ok") {
-    for (const t of collected.templates.templates) {
-      const first = t.samples[0]?.url;
-      if (first && !urls.includes(first)) urls.push(first);
+  const urls = new Set([new URL("/", ctx.origin).href]);
+  const templates =
+    collected.templates?.status === "ok" ? collected.templates.templates : [];
+  for (const t of templates) {
+    const first = t.samples[0]?.url;
+    if (first) urls.add(first);
+  }
+  if (allPages) {
+    for (const t of templates) for (const s of t.samples) urls.add(s.url);
+    if (collected.pages?.status === "ok") {
+      for (const s of collected.pages.snapshots)
+        if (s.status === 200) urls.add(s.finalUrl);
     }
   }
-  return urls.slice(0, max);
+  return [...urls].slice(0, max);
 }
 
 export const headersCollector: Collector<"headers"> = {
   key: "headers",
-  dependsOn: ["templates"],
+  dependsOn: ["templates", "pages"],
   async collect(ctx, collected) {
     const responses = [];
-    for (const url of probeUrls(ctx, collected)) {
+    // Headers can differ per path (edge rules), so probe beyond samples.
+    for (const url of probeUrls(ctx, collected, 20, true)) {
       const res = await tryFetch(ctx, url);
       if (res)
         responses.push({
@@ -347,7 +359,8 @@ const CHALLENGE_MARKERS = [
   /<title>\s*Just a moment/i,
   /cf-chl-|challenge-platform/i,
   /Attention Required! \| Cloudflare/i,
-  /captcha/i,
+  // Title only: a reCAPTCHA-protected form on a normal page is not a challenge.
+  /<title>[^<]*(captcha|access denied|are you a robot)/i,
 ];
 
 export const botFetchCollector: Collector<"botFetch"> = {
@@ -364,7 +377,7 @@ export const botFetchCollector: Collector<"botFetch"> = {
         .filter(isBotName)
         .map((bot) => ({ bot, userAgent: BOT_USER_AGENTS[bot] })),
     ];
-    for (const url of probeUrls(ctx, collected, 3)) {
+    for (const url of probeUrls(ctx, collected, 8)) {
       for (const { bot, userAgent } of agents) {
         const res = await tryFetch(ctx, url, { userAgent });
         if (!res) continue;

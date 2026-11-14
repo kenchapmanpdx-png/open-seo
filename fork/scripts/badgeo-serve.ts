@@ -1,7 +1,8 @@
 /**
  * BadGEO static server (B1 R4): serves fork/fixtures/badgeo on 127.0.0.1,
- * applies per-path headers from `_headers.json`, substitutes `{{ORIGIN}}` in
- * text files, 404 for anything missing.
+ * applies per-path headers from `_headers.json`, answers 403 to the user-agent
+ * tokens `_bots.json` lists for a path (bot-parity fixtures), substitutes
+ * `{{ORIGIN}}` in text files, 404 for anything missing.
  *
  *   pnpm exec tsx fork/scripts/badgeo-serve.ts [--port 4455]
  */
@@ -15,6 +16,7 @@ import { z } from "zod";
 export const BADGEO_ROOT = resolve("fork/fixtures/badgeo");
 
 const headersSchema = z.record(z.string(), z.record(z.string(), z.string()));
+const botsSchema = z.record(z.string(), z.array(z.string()));
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -52,9 +54,18 @@ export async function startBadgeo(
   const headerMap = headersSchema.parse(
     JSON.parse(readFileSync(join(BADGEO_ROOT, "_headers.json"), "utf8")),
   );
+  const botMap = botsSchema.parse(
+    JSON.parse(readFileSync(join(BADGEO_ROOT, "_bots.json"), "utf8")),
+  );
   let origin = "";
   const server = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", origin).pathname;
+    const ua = req.headers["user-agent"] ?? "";
+    if ((botMap[pathname] ?? []).some((token) => ua.includes(token))) {
+      res.writeHead(403, { "content-type": "text/html; charset=utf-8" });
+      res.end("<!doctype html><title>Forbidden</title><h1>Forbidden</h1>");
+      return;
+    }
     const file = resolveFile(pathname);
     if (!file) {
       res.writeHead(404, { "content-type": "text/html; charset=utf-8" });
