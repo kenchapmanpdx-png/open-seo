@@ -72,3 +72,4 @@ K10 in `src/server/features/bing/contracts.ts`: `bingSiteBindingSchema`, `bingAi
 
 - `bing_credential` (`organization_id` PK, `encrypted_api_key`) holds the per-organization key.
 - `bing_ai_import` columns: `site_id`, `imported_by`, `file_hash` (unique per site: re-importing the same file is a no-op), `evidence_path`, `rows_read`, `rows_upserted`, `imported_at`. `bing_ai_grounding_query` PK is named `bing_ai_grounding_query_pk` (the generated name exceeds Postgres' 63-byte limit).
+- Key encryption (B5 R4b): upstream `tokenCrypto()` is not exported and skips encryption when `encryptOAuthTokens` is off. The fork uses its own helper (`handbook/secrets/keyCrypto.ts`, WO-B6-001) with the same `better-auth/crypto` primitives and the Better Auth secret, always encrypting. No upstream edit.
