@@ -175,17 +175,25 @@ export const thirdPartyCheck: HandbookCheck = {
           ),
       });
 
-    if (syncTags.length === 0 && !preConsentFlagged && earlyPages.length === 0)
+    // Without render evidence pre-consent and load-order requests are
+    // unverified (K3 collectors: unavailable → BLOCKED/LIMITED, never PASS).
+    if (syncTags.length === 0 && !renderOk)
+      out.blocked(
+        "P7-04",
+        `render unavailable: pre-consent and load-order requests not verified (${pagesLive.length} pages: no blocking tag scripts in <head>)`,
+      );
+    else if (
+      syncTags.length === 0 &&
+      !preConsentFlagged &&
+      earlyPages.length === 0
+    )
       out.pass(
         "P7-04",
         [
           `${pagesLive.length} pages: no blocking tag scripts in <head>`,
-          renderOk
-            ? pixelPages.length === 0
-              ? `${render.pages.length} rendered samples: no pixel request at load`
-              : `pixel requests at load not flagged (SP6 = N, no EU signal)`
-            : "pre-consent requests not verified (no render)",
-          "third-party weight audit pending (B3)",
+          pixelPages.length === 0
+            ? `${render.status === "ok" ? render.pages.length : 0} rendered samples: no pixel request at load`
+            : `pixel requests at load not flagged (SP6 = N, no EU signal)`,
         ].join("; "),
         [ref(pagesLive[0], `${pagesLive[0].markup.scripts.length} scripts`)],
       );
