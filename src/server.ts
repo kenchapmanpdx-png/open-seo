@@ -299,6 +299,11 @@ export default {
         await import("@/server/features/every-app-transfer/EveryAppTransferReceiver");
       if (await EveryAppTransferReceiver.isTransferRunning()) return;
     }
+    await withPgClient(async () =>
+      (
+        await import("@/server/features/handbook/scheduled/forkScheduledJobs")
+      ).runForkScheduledJobs(controller.cron),
+    );
     if (controller.cron === MCP_OAUTH_PURGE_CRON) {
       const authMode = getAuthMode(env.AUTH_MODE);
       // Only the modes with their own accounts run the OAuth provider (and
