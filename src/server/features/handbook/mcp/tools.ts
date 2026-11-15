@@ -59,7 +59,7 @@ const auditRunTool = {
     description:
       "Start a handbook SEO/GEO audit of the project's website: a site audit crawl followed by the handbook checks. Needs the handbook enabled in the project's settings; the mode comes from those settings. Runs in the background: poll handbook_findings_get with the returned runId until it stops reporting not found.",
     inputSchema: handbookAuditRunInput,
-    outputSchema: handbookAuditRunOutput.partial().passthrough(),
+    outputSchema: handbookAuditRunOutput.partial(),
     annotations: {
       readOnlyHint: false,
       openWorldHint: true,
@@ -135,7 +135,7 @@ export const findingsGetTool = {
       status: z.string(),
       capReason: z.string().nullable(),
       phases: z.array(
-        z.object({ phase: z.string(), score: z.number().nullable() }),
+        z.looseObject({ phase: z.string(), score: z.number().nullable() }),
       ),
     }),
     annotations: { readOnlyHint: true, openWorldHint: false },
@@ -281,9 +281,7 @@ const reportPublishTool = {
     description:
       "Save a completed handbook run's client report into the project's Reports (private; re-publishing the same run replaces it). Uses no credits.",
     inputSchema: publishInput,
-    outputSchema: z
-      .object({ reportId: z.string(), url: z.string() })
-      .passthrough(),
+    outputSchema: z.looseObject({ reportId: z.string(), url: z.string() }),
     annotations: {
       readOnlyHint: false,
       openWorldHint: false,
