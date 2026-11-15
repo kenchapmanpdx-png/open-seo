@@ -44,6 +44,7 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/contact.html`                            | Clean control: mailto channel in server HTML (P5-16 PASS)                                 | —              |
 | `/lazy-hero.html`                          | Hero `<img>`: data: URI src + `data-src`, `loading=lazy`, no width/height or srcset       | P7-02, P7-03   |
 | `/assets/app.3f9a1c.js` (`_expect.json`)   | Hashed script loaded by `/`, served `cache-control: max-age=60` (HTML gets `no-cache`)    | P7-07          |
+| `/relative-urls.html`                      | JSON-LD WebPage with `"url": "/relative-urls.html"` and `"description": ""`               | P6-02          |
 | `/old-event.html` (`_redirects.json`)      | 301 → `/`, still linked from `/events/` (moved URL sent to the homepage)                  | P3-08, P3-05   |
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                            | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                      | P3-02          |
