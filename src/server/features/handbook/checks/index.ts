@@ -10,6 +10,7 @@ import { notFoundCheck } from "./not-found";
 import { redirectedLinksCheck } from "./redirected-links";
 import { robotsGroupsCheck } from "./robots-groups";
 import { securityHeadersCheck } from "./security-headers";
+import { sitemapLastmodCheck } from "./sitemap-lastmod";
 import { urlInventoryCheck } from "./url-inventory";
 import { urlVariantsCheck } from "./url-variants";
 
@@ -32,4 +33,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   hiddenPagesCheck,
   listNavigationCheck,
   hreflangCheck,
+  sitemapLastmodCheck,
 ];
