@@ -99,6 +99,22 @@ export async function render(
       waitUntil: "load",
       timeout: req.timeoutMs,
     });
+    // Resource Timing, read right after load: what started before the load
+    // event (P7-04 wants tags scheduled after load/interaction). Entries still
+    // in flight are absent, so they count as not-before-load (no false OPEN).
+    const beforeLoad = new Set(
+      await page.evaluate(() => {
+        const nav = performance.getEntriesByType("navigation")[0];
+        const cut =
+          nav instanceof PerformanceNavigationTiming && nav.loadEventStart > 0
+            ? nav.loadEventStart
+            : Number.POSITIVE_INFINITY;
+        return performance
+          .getEntriesByType("resource")
+          .filter((e) => e.startTime < cut)
+          .map((e) => e.name);
+      }),
+    );
     const inspected = await page.evaluate(inspectPage);
     if (req.scrollToEnd) await scrollToEnd(page);
     const screenshot =
@@ -118,6 +134,7 @@ export async function render(
         url: r.url(),
         resourceType: r.resourceType(),
         status: statusOf.get(r) ?? null,
+        beforeLoad: beforeLoad.has(r.url()),
       })),
       ...inspected,
       timingMs: Date.now() - started,

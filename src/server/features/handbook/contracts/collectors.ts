@@ -337,6 +337,8 @@ export type RenderData = {
         url: string;
         resourceType: string;
         status: number | null;
+        /** Started before the load event (Resource Timing); absent from older sidecars. 1.1.0 */
+        beforeLoad?: boolean;
       }>;
       opacityZeroWords: number;
       firstScreenActions: ReadonlyArray<{
