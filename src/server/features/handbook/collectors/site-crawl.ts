@@ -118,7 +118,13 @@ async function crawl(
     const page = await fetchPage(ctx, url);
     if (!page) continue;
     const finalNorm = normalize(page.snapshot.finalUrl);
-    if (finalNorm && finalNorm !== url && seen.has(finalNorm)) continue;
+    if (finalNorm && finalNorm !== url && seen.has(finalNorm)) {
+      // Redirect to a page already crawled: keep a body-less stub so link
+      // checks see `url → finalUrl` (P3-08). No rawKey/links/extras, so
+      // templates and JSON-LD skip it; page-fact checks filter finalUrl = url.
+      snapshots.push({ ...page.snapshot, rawKey: null, links: [], images: [] });
+      continue;
+    }
     if (finalNorm) seen.add(finalNorm);
     snapshots.push(page.snapshot);
     extras.set(url, page.extra);
