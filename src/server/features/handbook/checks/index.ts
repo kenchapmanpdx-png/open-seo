@@ -19,7 +19,9 @@ import {
   resourceHintsCheck,
 } from "./lab-performance";
 import { listNavigationCheck } from "./list-navigation";
+import { LLM_CONTENT_CHECKS } from "./llm-content";
 import { LLM_CHECKS } from "./llm-copy";
+import { LLM_TEMPLATE_CHECKS } from "./llm-templates";
 import { llmsMirrorsCheck } from "./llms-mirrors";
 import { notFoundCheck } from "./not-found";
 import { outboundLinksCheck } from "./outbound-links";
@@ -90,4 +92,6 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   platformCheck,
   // LLM class last: they run only with a judge and stop at the budget cap.
   ...LLM_CHECKS,
+  ...LLM_CONTENT_CHECKS,
+  ...LLM_TEMPLATE_CHECKS,
 ];
