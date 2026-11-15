@@ -1,0 +1,16 @@
+# Handbook render sidecar (ADR-004, ADR-009). Host port bound to 127.0.0.1 only.
+#   HANDBOOK_SIDECAR_TOKEN=… docker compose -f fork/sidecar/compose.yaml up -d --build
+services:
+  sidecar:
+    build:
+      context: ../..
+      dockerfile: fork/sidecar/Dockerfile
+    image: handbook-sidecar:1.0.0
+    ports:
+      - "127.0.0.1:4777:4777"
+    environment:
+      HANDBOOK_SIDECAR_TOKEN: ${HANDBOOK_SIDECAR_TOKEN:?set HANDBOOK_SIDECAR_TOKEN}
+      HANDBOOK_SIDECAR_ALLOW_PRIVATE: ${HANDBOOK_SIDECAR_ALLOW_PRIVATE:-0}
+    ipc: host
+    init: true
+    restart: unless-stopped
