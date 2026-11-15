@@ -24,7 +24,7 @@ export function createResult(itemIds: readonly string[]) {
   const findings: FindingDraft[] = [];
   const notes = new Map<
     string,
-    { status: "PASS" | "NA"; note: string; refs: string[] }
+    { status: "PASS" | "NA" | "BLOCKED"; note: string; refs: string[] }
   >();
 
   return {
@@ -52,6 +52,10 @@ export function createResult(itemIds: readonly string[]) {
     },
     na(itemId: string, note: string) {
       notes.set(itemId, { status: "NA", note, refs: [] });
+    },
+    /** An optional collector this item needs is missing: never PASS. */
+    blocked(itemId: string, note: string) {
+      notes.set(itemId, { status: "BLOCKED", note, refs: [] });
     },
     build(): CheckResult {
       const statuses = itemIds.flatMap((itemId): ItemVerdict[] => {
