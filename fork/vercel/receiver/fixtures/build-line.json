@@ -1,0 +1,10 @@
+[
+  {
+    "id": "log_4",
+    "timestamp": 1763164800000,
+    "projectId": "prj_site",
+    "source": "build",
+    "message": "Build completed",
+    "level": "info"
+  }
+]
