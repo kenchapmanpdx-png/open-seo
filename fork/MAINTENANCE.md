@@ -65,7 +65,7 @@ Ken adds a manual audit to `fork/fixtures/audits/` (verbatim).
 ## Drill results (B7 R2, 2026-11-14)
 
 - **M1 rebase**: `git fetch upstream` → 0 new commits; `git merge-tree --write-tree --name-only upstream/main HEAD` → clean; `git rebase upstream/main` → "Current branch ken/main is up to date". Steps 3–4 verified as commands; no conflict to resolve this week.
-- **M2 handbook sync**: v4.6 → `129 items · registry 129 · 0 diffs`. A copy with one changed §41 line (written to `fork/runs/drill/`, gitignored) → `1 diffs · text changed P2-01` with old and new text. Detection works; procedure above.
+- **M2 handbook sync**: v4.6 → `129 items · registry 129 · 0 diffs`. A copy with one changed §41 line (written to `fork/runs/drill/`, gitignored; delete it afterwards: `pnpm format:check` scans `fork/runs/` and fails on the unformatted copy) → `1 diffs · text changed P2-01` with old and new text. Detection works; procedure above.
 - **Route tree**: regenerated with `@tanstack/router-generator` 1.167.40 for the B7 overview route; Register block kept.
 
 ## Loop log
