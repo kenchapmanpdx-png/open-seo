@@ -114,10 +114,10 @@ const list: Rubric[] = [
   },
   {
     id: "local-pages",
-    version: 1,
+    version: 2,
     instructions: [
       "Handbook §9, §24: one page per real service and per real location, each with distinct content. Pages that differ only by the swapped place or service name (doorway pages) are a defect, and so is one page listing all services with no page per real service.",
-      "The pages given are candidates: either pages whose titles differ only by one or two words, with sharedSentenceRatio (share of their sentences found on another candidate), or a single services/locations page with its section headings and a note that no page exists below it.",
+      "The pages given are candidates: either pages whose titles differ only by one or two words, with sharedSentenceRatio (share of their sentences found on another candidate), or a services/locations page with its text and a note that no page exists below it.",
       "fail when location/service pages differ only by the swapped name, or all services sit on one page with no page per real service; quote the repeated sentence or the title/heading lines that show it.",
       "pass when the candidates have distinct, specific content (similar titles alone are fine), or the single page covers one real service only.",
     ].join("\n"),

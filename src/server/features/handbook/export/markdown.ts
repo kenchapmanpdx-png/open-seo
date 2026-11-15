@@ -130,6 +130,79 @@ export function renderAuditBaselineMd(report: ReportJson): string {
   ].join("\n");
 }
 
+const orNone = (xs: string[]) => (xs.length > 0 ? xs : ["- none needed"]);
+
+/** BLOCKED notes that need the owner (accounts, access, consoles, decisions). */
+const OWNER_NOTE =
+  /owner|access|credential|login|account|search console|\bgsc\b|analytics|dns|registrar|decision/i;
+
+/**
+ * `seo-owner-todo.md` (EP-5, P0-02): owner questions batched in one file.
+ * Every section prints "none needed" when empty.
+ */
+export function renderOwnerTodoMd(
+  report: ReportJson,
+  registry: readonly Pick<RegistryEntry, "id" | "text" | "class">[],
+): string {
+  const entry = new Map(registry.map((e) => [e.id, e]));
+  const facts = report.siteProfile
+    .filter((sp) => sp.value === "?" || sp.confidence === "low")
+    .map(
+      (sp) =>
+        `- ${sp.code} (now ${sp.value}, ${sp.confidence} confidence): ${cell(sp.evidence)}`,
+    );
+  const confirm = [
+    ...report.findings
+      .filter((f) => f.fixability === "LIMITED")
+      .map(
+        (f) =>
+          `- ${f.code} ${cell(f.title)} — ${cell(f.limitedReason ?? "platform limit")}`,
+      ),
+    ...report.items
+      .filter(
+        (i) =>
+          entry.get(i.itemId)?.class === "OWNER" &&
+          i.status !== "NA" &&
+          i.status !== "PASS",
+      )
+      .map(
+        (i) =>
+          `- ${i.itemId} ${cell(entry.get(i.itemId)?.text ?? "")} (${i.status})`,
+      ),
+  ];
+  const sp12 = report.siteProfile.find((sp) => sp.code === "SP12");
+  const policy = [
+    "- Training bots (GPTBot, ClaudeBot, Google-Extended…): allow or block?",
+    "- Google Search Console generative AI features: opt in or out?",
+    "- Trailing slash: with or without (one form, the other redirects)?",
+    "- Consent: which tags wait for consent, and which banner?",
+    ...(sp12?.value === "Y" ? [] : ["- CDN: which one, and who manages it?"]),
+  ];
+  const todo = report.items
+    .filter((i) => i.status === "BLOCKED" && OWNER_NOTE.test(i.note ?? ""))
+    .map(
+      (i) =>
+        `- TODO(owner) ${i.itemId} ${cell(entry.get(i.itemId)?.text ?? "")} — ${cell(i.note)}`,
+    );
+  return [
+    "# SEO/GEO owner to-do",
+    `site: ${report.site.origin} | handbook: ${report.handbookVersion} | run: ${report.run.id} | date: ${day(report.generatedAt)}`,
+    "",
+    "## Business facts needed",
+    ...orNone(facts),
+    "",
+    "## Confirm before acting",
+    ...orNone(confirm),
+    "",
+    "## Policy decisions",
+    ...policy,
+    "",
+    "## TODO(owner)",
+    ...orNone(todo),
+    "",
+  ].join("\n");
+}
+
 const EFFORT_RANK = { S: 0, M: 1, L: 2 } as const;
 
 /** EP-7 REVIEW report: one document, sections in REVIEW_REPORT_SECTIONS order. */

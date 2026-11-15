@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
-import { renderReviewMd, renderStatusMd } from "./markdown";
+import { renderOwnerTodoMd, renderReviewMd, renderStatusMd } from "./markdown";
 
 const report = (over: Partial<ReportJson> = {}): ReportJson => ({
   reportVersion: "1",
@@ -104,5 +104,35 @@ describe("renderReviewMd", () => {
       registry,
     );
     expect(md).toContain("- Grade provisional: render evidence missing");
+  });
+});
+
+describe("renderOwnerTodoMd", () => {
+  it("asks for unknown Site Profile facts and owner-blocked items", () => {
+    const md = renderOwnerTodoMd(
+      report({
+        siteProfile: [
+          {
+            code: "SP7",
+            value: "?",
+            evidence: "no address found",
+            confidence: "low",
+          },
+        ],
+        items: [
+          {
+            itemId: "P11-01",
+            phase: "P11",
+            status: "BLOCKED",
+            note: "needs Search Console access",
+            findingCodes: [],
+          },
+        ],
+      }),
+      [{ id: "P11-01", text: "GSC verified", class: "OWNER" }],
+    );
+    const section = (h: string) => md.split(`## ${h}`)[1].split("## ")[0];
+    expect(section("Business facts needed")).toContain("SP7 (now ?");
+    expect(section("TODO(owner)")).toContain("P11-01 GSC verified");
   });
 });
