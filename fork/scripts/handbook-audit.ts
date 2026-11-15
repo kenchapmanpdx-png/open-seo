@@ -3,7 +3,8 @@
  *
  * Runs intake + collectors + checks against a public origin with the same
  * engine the workflow hook uses, and writes to fork/runs/<domain>/<date>/:
- * report.json (K7), seo-geo-status.md (EP-5 draft), collected.json (collector
+ * report.json (K7), review-report.md (REVIEW, EP-7) or seo-geo-status.md +
+ * seo-audit-baseline.md (other modes, EP-5), collected.json (collector
  * summary) and evidence/ (stored bodies). No DB writes.
  *
  *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--max-pages 60] [--out dir] [--llm]
@@ -32,10 +33,12 @@ import {
   createSafeFetch,
   siblingHosts,
 } from "@/server/features/handbook/engine/safe-fetch";
+import { buildReportJson } from "@/server/features/handbook/engine/report";
 import {
-  buildReportJson,
+  renderAuditBaselineMd,
+  renderReviewMd,
   renderStatusMd,
-} from "@/server/features/handbook/engine/report";
+} from "@/server/features/handbook/export/markdown";
 import {
   handbookModeSchema,
   siteTierSchema,
@@ -192,10 +195,22 @@ export async function runCliAudit(argv: string[]) {
     join(outDir, "report.json"),
     JSON.stringify(report, null, 2),
   );
-  await writeFormatted(
-    join(outDir, "seo-geo-status.md"),
-    renderStatusMd(report, REGISTRY),
-  );
+  // EP-7: REVIEW writes one report and no status files.
+  if (mode === "REVIEW") {
+    await writeFormatted(
+      join(outDir, "review-report.md"),
+      renderReviewMd(report, REGISTRY),
+    );
+  } else {
+    await writeFormatted(
+      join(outDir, "seo-geo-status.md"),
+      renderStatusMd(report, REGISTRY),
+    );
+    await writeFormatted(
+      join(outDir, "seo-audit-baseline.md"),
+      renderAuditBaselineMd(report),
+    );
+  }
   await writeFormatted(
     join(outDir, "collected.json"),
     JSON.stringify(

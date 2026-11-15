@@ -7,16 +7,15 @@ import { createResult } from "./support";
  * (Googlebot's group) on a script, stylesheet, XHR/fetch, image or font the
  * rendered page requests from a host whose robots.txt was fetched. Off-site
  * hosts are ignored (their robots.txt is not fetched).
+ *
+ * S1 when a blocked request is a script, stylesheet, image or font (render
+ * input by type). XHR/fetch only → S2: the run cannot tell content data from
+ * telemetry (e.g. Squarespace `/api/census/*` beacons under its fixed
+ * `Disallow: /api/`), so it does not cap the grade on that alone.
  */
 const ITEMS = ["P3-20"];
-const RENDER_TYPES = new Set([
-  "script",
-  "stylesheet",
-  "xhr",
-  "fetch",
-  "image",
-  "font",
-]);
+const STATIC_TYPES = new Set(["script", "stylesheet", "image", "font"]);
+const RENDER_TYPES = new Set([...STATIC_TYPES, "xhr", "fetch"]);
 
 export const renderResourcesCheck: HandbookCheck = {
   id: "robots.render-resources",
@@ -83,13 +82,21 @@ export const renderResourcesCheck: HandbookCheck = {
 
     if (blocked.length > 0) {
       const pages = [...new Set(blocked.map((b) => b.page))];
+      const staticBlocked = blocked.some((b) => STATIC_TYPES.has(b.type));
       out.finding({
         itemIds: ["P3-20"],
-        severity: "S1",
+        severity: staticBlocked ? "S1" : "S2",
         title: "robots.txt blocks resources needed to render the page",
         detail: blocked
           .slice(0, 20)
           .map((b) => `${b.page} loads ${b.type} ${b.url} — ${b.rule}`)
+          .concat(
+            staticBlocked
+              ? []
+              : [
+                  "Only XHR/fetch calls are blocked: confirm whether their responses feed visible content (GSC URL Inspection → page resources).",
+                ],
+          )
           .join("\n"),
         fix: "Remove the Disallow rules that match scripts, styles, images, fonts or API calls used while rendering (or add a longer Allow rule for them).",
         fixability: "FIXABLE",
