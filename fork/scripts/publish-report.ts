@@ -154,10 +154,7 @@ async function deploy(): Promise<string> {
     url: z.string(),
   });
   for (let i = 0; i < 60; i++) {
-    const d = await vercel(
-      `/v13/deployments/${created.id}${team}`,
-      deployment,
-    );
+    const d = await vercel(`/v13/deployments/${created.id}${team}`, deployment);
     if (d.readyState === "ERROR" || d.readyState === "CANCELED")
       throw new Error(`deployment ${created.id} ${d.readyState}`);
     if (d.readyState === "READY" && d.alias?.length) {
@@ -179,7 +176,11 @@ async function verify(base: string, path: string) {
   const root = await fetch(`${base}/`, { method: "HEAD" });
   console.log(`page ${page.status} · x-robots-tag: ${robots ?? "(none)"}`);
   console.log(`root ${root.status}`);
-  if (page.status !== 200 || !robots?.includes("noindex") || root.status !== 404)
+  if (
+    page.status !== 200 ||
+    !robots?.includes("noindex") ||
+    root.status !== 404
+  )
     throw new Error("live check failed");
 }
 
@@ -224,8 +225,6 @@ const [arg, value] = process.argv.slice(2);
 if (arg === "--unpublish" && value) await unpublish(value);
 else if (arg && !arg.startsWith("--")) await publish(arg);
 else {
-  console.error(
-    "usage: publish-report.ts <report.json> | --unpublish <slug>",
-  );
+  console.error("usage: publish-report.ts <report.json> | --unpublish <slug>");
   process.exit(2);
 }
