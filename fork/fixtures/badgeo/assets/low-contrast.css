@@ -1,0 +1,7 @@
+/* WO-B2-032 fixture: #999 on #fff body text (2.8:1, below 4.5:1). */
+body {
+  background: #fff;
+}
+.faint {
+  color: #999;
+}

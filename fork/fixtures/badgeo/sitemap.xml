@@ -27,4 +27,5 @@
   <url><loc>{{ORIGIN}}/js-only.html</loc></url>
   <url><loc>{{ORIGIN}}/fade-in.html</loc></url>
   <url><loc>{{ORIGIN}}/needs-blocked-js.html</loc></url>
+  <url><loc>{{ORIGIN}}/low-contrast.html</loc></url>
 </urlset>
