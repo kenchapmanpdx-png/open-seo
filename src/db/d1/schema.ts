@@ -18,3 +18,4 @@ export * from "../stripe-projects.schema";
 export * from "../embeds.schema";
 export * from "../every-app-transfer.schema";
 export * from "../handbook.schema";
+export * from "../integrations.schema";

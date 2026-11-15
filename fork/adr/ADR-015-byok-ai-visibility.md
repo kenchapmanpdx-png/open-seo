@@ -102,3 +102,8 @@ K11 in `src/server/features/ai-visibility/providers/byok/contracts.ts`: `BYOK_PR
 - Provider parsers tested on recorded fixtures (one per provider; synthetic until keys exist).
 - Fan-out normalization + `is_fanout` tests; category assignment tests (brand/competitor/list/other).
 - Live: BLOCKED-KEN until at least one BYOK key exists; P4 exit = one prompt set compared across DataForSEO + one BYOK provider.
+
+## Amendments (B5 R4a, schema)
+
+- Added `byok_ai_credential` (`organization_id`, `provider` PK; encrypted key), `byok_ai_tracker_provider` (`tracker_id`, `provider` PK; `model`) and `byok_ai_schedule` (`tracker_id` PK, `interval_days`, `next_run_at`) for keys, per-tracker provider/model choice and the optional schedule.
+- `byok_ai_answer` gains `input_tokens`, `output_tokens`, `search_calls`, `cost_usd_micros`; `byok_ai_source` and `ai_source_category` carry `categories_version`. `ai_web_query` is unique on (`answer_id`, `position`).
