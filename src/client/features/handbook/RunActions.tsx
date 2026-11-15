@@ -2,6 +2,10 @@ import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/client/components/ui/button";
 import {
+  getOutcomeFollowupsMd,
+  recordOutcomeFixBatch,
+} from "@/server/features/agency/functions";
+import {
   getHandbookRunExports,
   publishHandbookReport,
 } from "@/server/features/handbook/functions";
@@ -34,6 +38,20 @@ export function RunActions({
           : download("report.json", x.reportJson, "application/json"),
       ),
   });
+  // Outcome record (ADR-017 §3): all findings of this run marked fixed now;
+  // checks run at +4 and +12 weeks. The server rejects REVIEW runs.
+  const fixBatch = useMutation({
+    mutationFn: () =>
+      recordOutcomeFixBatch({ data: { projectId, runId, findingCodes: [] } }),
+  });
+  const followups = useMutation({
+    mutationFn: () =>
+      getOutcomeFollowupsMd({ data: { projectId } }).then((md) =>
+        download("seo-followups.md", md, "text/markdown"),
+      ),
+  });
+  const error =
+    publish.error ?? exports.error ?? fixBatch.error ?? followups.error;
   return (
     <div className="flex flex-wrap items-center gap-2">
       {publish.data ? (
@@ -67,10 +85,23 @@ export function RunActions({
       >
         Download report.json
       </Button>
-      {publish.error || exports.error ? (
-        <span className="text-sm text-destructive">
-          {(publish.error ?? exports.error)?.message}
-        </span>
+      <Button
+        variant="outline"
+        onClick={() => fixBatch.mutate()}
+        disabled={fixBatch.isPending || fixBatch.isSuccess}
+        title="Mark this run's findings fixed; re-check them at +4 and +12 weeks"
+      >
+        {fixBatch.isSuccess ? "Fix batch recorded" : "Record fix batch"}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => followups.mutate()}
+        disabled={followups.isPending}
+      >
+        Download seo-followups.md
+      </Button>
+      {error ? (
+        <span className="text-sm text-destructive">{error.message}</span>
       ) : null}
     </div>
   );
