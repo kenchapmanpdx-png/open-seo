@@ -4,11 +4,11 @@ autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken 
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
 needs_ken: (empty unless status = needs-ken: one line per item Ken must do)
-current_batch: B2
-batch_file: fork/batches/B2-light-deterministic.md
+current_batch: B3
+batch_file: fork/batches/B3-heavy-judgment.md
 required_model: Opus 5.5 (SINGLE) · SPLIT: per batch table below
-current_run: 8
-next_action: B2 run 4 — finish WO-B2-037 (status `doing`: EvidenceViewer + `getHandbookEvidence` server fn, tenant-scoped through handbook_run.project_id, signed URL via evidence store, HandbookService.test tenant test; item phase/status filters), then WO-B2-038 (B2 harness runs → B2 exit gate: badgeo 100% with `--sidecar`, golden-score both sites → fork/reports/B2-golden.md, fork/reports/B2.md). Done: WO-001…036 (037 partial). Sidecar for BadGEO: `export HANDBOOK_SIDECAR_TOKEN=$(openssl rand -hex 24)` then `docker compose -f fork/sidecar/compose.yaml -f fork/sidecar/compose.badgeo.yaml up -d` (add `--build` after sidecar code changes) and `pnpm exec tsx fork/scripts/badgeo-run.ts --sidecar http://127.0.0.1:4777` in the same shell call. Escalations for B3: P1-04 needs upstream checker issues in CollectedData (contract minor); sidebar nav entry "Handbook" (HEAVY registration hook, ADR-010). Route tree: new routes need `src/routeTree.gen.ts` regenerated (run `pnpm exec vite dev` ~45 s; it writes the tree before failing on the missing local hyperdrive string). Carry-over BLOCKED-KEN: in-app UI smoke (Playwright system libs on host).
+current_run: 9
+next_action: B3 R1 — `git fetch upstream` (rebase if new commits; rerun baseline), review B2 commits with fork/templates/REVIEW-CHECKLIST.md, close escalations (P1-04 needs upstream checker issues in CollectedData → contract minor bump; sidebar nav "Handbook" registration hook, ADR-010), golden triage of every missed/partial in fork/reports/B2-golden.md (notes in fork/reports/B2.md: whyracingevents F03/F12 covered by BadGEO but missed on the live site — check drift vs URL matching). Sidecar: `export HANDBOOK_SIDECAR_TOKEN=$(openssl rand -hex 24)` then `docker compose -f fork/sidecar/compose.yaml -f fork/sidecar/compose.badgeo.yaml up -d` and the CLI with `--sidecar http://127.0.0.1:4777` in the same shell call. Route tree: new routes need `src/routeTree.gen.ts` regenerated (`pnpm exec vite dev` ~45 s). Carry-over BLOCKED-KEN: in-app UI smoke (Playwright system libs on host).
 contracts_version: 1.0.0 (frozen at end of B1, 2026-11-14; R5 added pre-freeze K2/K3 fields)
 extra_site: (Ken: optional third site URL for regression runs; blank = skip)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -30,8 +30,8 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | Batch | File                                    | Model (SPLIT) | Status      |
 | ----- | --------------------------------------- | ------------- | ----------- |
 | B1    | fork/batches/B1-heavy-foundation.md     | HEAVY         | done        |
-| B2    | fork/batches/B2-light-deterministic.md  | LIGHT         | in-progress |
-| B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | —           |
+| B2    | fork/batches/B2-light-deterministic.md  | LIGHT         | done        |
+| B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | in-progress |
 | B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | —           |
 | B5    | fork/batches/B5-heavy-v1-signoff.md     | HEAVY (Opus)  | —           |
 | B6    | fork/batches/B6-light-integrations.md   | LIGHT         | —           |
@@ -49,10 +49,12 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | 6   | 2026-11-14 | Opus 5.5 | B2 r1: WO-B2-001…015 + 017…020 done (harness --only/golden md/timing; 19 checks CRAWL/ROBOTS/HEADERS/SCHEMA/PERF; outbound collector via fetchOffsite; crawler redirect stubs; home asset probes); BadGEO 31 pages exit 0; tests 2126 pass                                                                                                                | B2 r2 |
 | 7   | 2026-11-14 | Opus 5.5 | B2 r2: WO-B2-016, 021…026, 033 done (About people/editorial, Event, LocalBusiness, ItemList/Breadcrumb/Article, FAQ/Review/Product/brand visibility, raw-HTML a11y; K3 sidecar in Docker + render/axe/lighthouse collectors + CLI --sidecar); BadGEO 34 pages exit 0; tests 2146 pass                                                                     | B2 r3 |
 | 8   | 2026-11-14 | Opus 5.5 | B2 r3: WO-B2-027…036 done, 037 partial (RENDER parity, first screen + consent LCP, render-resource guard, Lighthouse lab/weight/hints, third-party + hero video, axe rules, AUDIT Mode 1/2, intake tier/SP3/SP7/SP9 + platform; handbook tab + run page); sidecar LCP fix; BadGEO 38 pages exit 0 with sidecar; golden tiers T2/T3 match; tests 2164 pass | B2 r4 |
+| 9   | 2026-11-14 | Opus 5.5 | B2 r4: WO-B2-037 done (evidence tab + tenant-scoped `getHandbookEvidence` with signed URL, checklist filters, tenant test), WO-B2-038 done (BadGEO 38 pages 0 missing with sidecar; golden caught whyracing 2→14/30, ryanmscottsdale 6→20/36); B2 exit gate met, fork/reports/B2.md; tests 2165 pass                                                      | B3 R1 |
 
 ## Batch history
 
 | Batch | Model    | Started    | Finished   | Report             |
 | ----- | -------- | ---------- | ---------- | ------------------ |
 | B1    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B1.md |
-| B2    | Opus 5.5 | 2026-11-14 | —          | fork/reports/B2.md |
+| B2    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B2.md |
+| B3    | Opus 5.5 | 2026-11-14 | —          | fork/reports/B3.md |
