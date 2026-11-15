@@ -23,6 +23,24 @@ export const renderResponseSchema = z.object({
   /** Base64 PNG; present when a screenshot was requested. */
   screenshotPng: z.string().nullable(),
   consoleErrors: z.array(z.string()),
+  /** Every network request the page made (P3-20 guard, P7-04 pre-consent). */
+  requests: z.array(
+    z.object({
+      url: z.string(),
+      resourceType: z.string(),
+      status: z.number().int().nullable(),
+    }),
+  ),
+  /** Visible-text words inside opacity:0 elements after load, before scroll (P2-07). */
+  opacityZeroWords: z.number().int().nonnegative(),
+  /** Buttons/links intersecting the first viewport (P5-14). */
+  firstScreenActions: z.array(
+    z.object({
+      tag: z.string(),
+      text: z.string(),
+      href: z.string().nullable(),
+    }),
+  ),
   timingMs: z.number().nonnegative(),
 });
 export type RenderResponse = z.infer<typeof renderResponseSchema>;

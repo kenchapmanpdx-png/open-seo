@@ -117,6 +117,10 @@ async function executeRun(input: {
         fetch: createSafeFetch({
           allowedHosts: siblingHosts(new URL(input.origin).host),
         }),
+        fetchOffsite: createSafeFetch({
+          allowedHosts: "any",
+          maxBytes: 256 * 1024,
+        }),
         store: await evidenceStore(),
         log: (event, fields) => console.log(event, fields),
       },
