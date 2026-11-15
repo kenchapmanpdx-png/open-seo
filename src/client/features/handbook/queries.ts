@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import {
   getHandbookRun,
   getHandbookSettings,
+  listHandbookEvidence,
   listHandbookRuns,
 } from "@/server/features/handbook/functions";
 
@@ -24,4 +25,10 @@ export const handbookRunQuery = (projectId: string, runId: string) =>
   queryOptions({
     queryKey: ["handbook", projectId, "runs", runId],
     queryFn: () => getHandbookRun({ data: { projectId, runId } }),
+  });
+
+export const handbookEvidenceQuery = (projectId: string, runId: string) =>
+  queryOptions({
+    queryKey: ["handbook", projectId, "runs", runId, "evidence"],
+    queryFn: () => listHandbookEvidence({ data: { projectId, runId } }),
   });
