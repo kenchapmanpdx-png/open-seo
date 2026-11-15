@@ -1,6 +1,7 @@
 # BadGEO: named AI groups carry only Allow and miss the * Disallow set (P3-15, P9-05).
 User-agent: *
 Disallow: /private/
+Disallow: /admin/
 Disallow: /*?sort=
 
 User-agent: GPTBot
