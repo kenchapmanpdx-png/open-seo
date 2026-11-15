@@ -75,3 +75,7 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 ## What is public
 
 Only the Vercel snapshots under `/r/<32-char slug>/` (noindex, no listing, root 404). The app binds 127.0.0.1 with no tunnel or port forward; the sidecar binds 127.0.0.1:4777; Supabase app tables are closed to the Data API (`supabase-harden.sql`).
+
+## Removing the handbook tables
+
+`fork/scripts/handbook-down.sql` drops the 13 handbook tables (children first; SQLite and Postgres). Upstream tables are untouched. It does not remove the drizzle journal row, so re-apply by running `drizzle/pg/0050_handbook_engine.sql` (or the SQLite `0072_…`) directly. Take a backup first (`fork/scripts/backup.sh`).
