@@ -3,14 +3,19 @@
 // upstream jobs. Every job is isolated: a failure is logged and never
 // reaches the upstream scheduled handler. B6 work orders add jobs here.
 
+import {
+  aiTrafficDailyJob,
+  aiTrafficTickJob,
+} from "@/server/features/ai-traffic/aiTrafficJobs";
+
 const EVERY_FIVE_MINUTES = "*/5 * * * *";
 const DAILY = "17 3 * * *";
 
 type ForkJob = { name: string; run: () => Promise<unknown> };
 
 const FORK_SCHEDULED_JOBS: Record<string, ForkJob[]> = {
-  [EVERY_FIVE_MINUTES]: [],
-  [DAILY]: [],
+  [EVERY_FIVE_MINUTES]: [aiTrafficTickJob],
+  [DAILY]: [aiTrafficDailyJob],
 };
 
 export async function runForkScheduledJobs(
