@@ -56,4 +56,20 @@ describe("safeFetch", () => {
       expect.anything(),
     );
   });
+
+  it("off-site mode fetches any public host but still refuses private targets", async () => {
+    const fetchImpl = vi.fn(async () => new Response("ok", { status: 200 }));
+    const offsite = createSafeFetch({
+      allowedHosts: "any",
+      fetchImpl,
+      checkHost: async () => {},
+      minIntervalMs: 0,
+    });
+    await expect(
+      offsite("https://partner.example.org/"),
+    ).resolves.toMatchObject({ status: 200 });
+    await expect(offsite("http://10.0.0.1/")).rejects.toBeInstanceOf(
+      SafeFetchBlockedError,
+    );
+  });
 });
