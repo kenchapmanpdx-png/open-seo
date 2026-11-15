@@ -65,6 +65,9 @@ paths:
                     html,
                     screenshotPng,
                     consoleErrors,
+                    requests,
+                    opacityZeroWords,
+                    firstScreenActions,
                     timingMs,
                   ]
                 properties:
@@ -74,6 +77,29 @@ paths:
                   screenshotPng:
                     { type: [string, "null"], description: base64 PNG }
                   consoleErrors: { type: array, items: { type: string } }
+                  requests:
+                    type: array
+                    description: every network request the page made (render-resource guard, pre-consent requests)
+                    items:
+                      type: object
+                      required: [url, resourceType, status]
+                      properties:
+                        url: { type: string }
+                        resourceType: { type: string }
+                        status: { type: [integer, "null"] }
+                  opacityZeroWords:
+                    type: integer
+                    description: visible-text words inside elements with computed opacity 0 after load, before any scroll
+                  firstScreenActions:
+                    type: array
+                    description: buttons and links whose box intersects the first viewport
+                    items:
+                      type: object
+                      required: [tag, text, href]
+                      properties:
+                        tag: { type: string }
+                        text: { type: string }
+                        href: { type: [string, "null"] }
                   timingMs: { type: number }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422": { $ref: "#/components/responses/Refused" }

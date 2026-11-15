@@ -40,6 +40,8 @@ export type CollectorContext = {
   origin: string;
   /** SSRF-safe fetch (ADR-009): validated targets, manual redirects. */
   fetch: SafeFetch;
+  /** Same SSRF policy without the site-host scope, for outbound link checks (P5-13). */
+  fetchOffsite: SafeFetch;
   /** Persist a large body; returns its storage key (K4). */
   storeBody: (
     kind: string,
@@ -314,6 +316,17 @@ export type RenderData = {
       status: number | null;
       renderedKey: string;
       words: number;
+      requests: ReadonlyArray<{
+        url: string;
+        resourceType: string;
+        status: number | null;
+      }>;
+      opacityZeroWords: number;
+      firstScreenActions: ReadonlyArray<{
+        tag: string;
+        text: string;
+        href: string | null;
+      }>;
     };
     noJs: { status: number | null; nojsKey: string; words: number };
     firstScreenKey: string | null;

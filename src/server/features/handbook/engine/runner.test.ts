@@ -45,6 +45,9 @@ async function run(checks: HandbookCheck[]) {
       fetch: async () => {
         throw new Error("no network in tests");
       },
+      fetchOffsite: async () => {
+        throw new Error("no network in tests");
+      },
       store: createMemoryEvidenceStore(),
       log: () => {},
     },

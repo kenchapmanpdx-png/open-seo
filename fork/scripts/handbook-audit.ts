@@ -88,6 +88,10 @@ export async function runCliAudit(argv: string[]) {
       : {}),
     minIntervalMs: values["allow-private"] ? 0 : 300,
   });
+  const fetchOffsite = createSafeFetch({
+    allowedHosts: "any",
+    maxBytes: 256 * 1024,
+  });
   const result = await runHandbook(
     {
       runId,
@@ -102,6 +106,7 @@ export async function runCliAudit(argv: string[]) {
     {
       projectId: "cli",
       fetch,
+      fetchOffsite,
       store: createFsEvidenceStore(join(outDir, "evidence")),
       log: (event, fields) => console.error(event, JSON.stringify(fields)),
     },
