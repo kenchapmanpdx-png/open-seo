@@ -121,12 +121,14 @@ export const listNavigationCheck: HandbookCheck = {
           ];
         return [];
       });
+      const state = (u: string) => {
+        const snap = byUrl.get(u);
+        if (!snap) return "not crawled";
+        return robotsMeta(snap).trim() || "indexable";
+      };
       const excerpt = facets
         .slice(0, 30)
-        .map(
-          (u) =>
-            `${u} — ${disallowRule(u) ?? (byUrl.get(u) ? robotsMeta(byUrl.get(u) as PageSnapshot).trim() || "indexable" : "not crawled")}`,
-        )
+        .map((u) => `${u} — ${disallowRule(u) ?? state(u)}`)
         .join("\n");
       const ref = out.evidence("robotsTxt", robotsUrl, excerpt);
       if (issues.length > 0) {
