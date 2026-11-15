@@ -23,6 +23,7 @@ const live = (s: PageSnapshot) =>
   normalizeUrl(s.finalUrl) === normalizeUrl(s.url) &&
   /html/i.test(s.contentType ?? "html");
 
+const norm = (t: string) => t.toLowerCase().replace(/\s+/g, " ");
 const digits = (tel: string) => tel.replace(/^tel:/i, "").replace(/\D/g, "");
 
 function addressOf(nodes: readonly JsonLdNode[]): string | null {
@@ -105,10 +106,10 @@ export const rawCopyCheck: HandbookCheck = {
     const p508: { s: PageSnapshot; why: string }[] = [];
     for (const [num, shown] of formats) {
       if (shown.size > 1) {
-        const first = tels.find((t) => digits(t.href) === num);
-        if (first)
+        const sample = tels.find((t) => digits(t.href) === num);
+        if (sample)
           p508.push({
-            s: first.s,
+            s: sample.s,
             why: `${num} shown as ${[...shown].map((x) => `"${x}"`).join(", ")}`,
           });
       }
@@ -126,17 +127,16 @@ export const rawCopyCheck: HandbookCheck = {
       .flatMap((p) => p.nodes);
     const street = addressOf(allNodes);
     if (street && factPages.length > 0) {
-      const norm = (t: string) => t.toLowerCase().replace(/\s+/g, " ");
       if (!factPages.some((s) => norm(s.markup.text).includes(norm(street))))
         p508.push({
-          s: factPages[0] as PageSnapshot,
+          s: factPages[0],
           why: `JSON-LD streetAddress "${street}" not in home/contact server text`,
         });
     }
     if (hasHours(allNodes) && factPages.length > 0) {
       if (!factPages.some((s) => WEEKDAY.test(s.markup.text)))
         p508.push({
-          s: factPages[0] as PageSnapshot,
+          s: factPages[0],
           why: "JSON-LD opening hours but no weekday in home/contact server text",
         });
     }
