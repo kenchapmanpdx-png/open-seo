@@ -35,6 +35,17 @@ const summary = (p: Page) =>
         .map((v) => `${v.id} (${v.impact ?? "?"}, ${v.nodes} nodes)`)
         .join("\n");
 
+/**
+ * P8-02 "Contrast 4.5:1 / 3:1 large; brand accents on small text checked
+ * (§14)": evidence names the node text next to its selector when the sidecar
+ * sends `sampleTexts` (1.3.0); older sidecars → selectors only.
+ */
+const samples = (v: Page["violations"][number]) =>
+  v.sampleTargets.map((target, i) => {
+    const text = v.sampleTexts?.[i]?.trim();
+    return text ? `${target} — "${text}"` : target;
+  });
+
 export const axeRulesCheck: HandbookCheck = {
   id: "a11y.axe-rules",
   itemIds: ITEMS,
@@ -104,7 +115,7 @@ export const axeRulesCheck: HandbookCheck = {
         evidenceRefs: hits
           .slice(0, 5)
           .map(({ page, v }) =>
-            ref(page, `${v.id}: ${v.help}\n${v.sampleTargets.join("\n")}`),
+            ref(page, `${v.id}: ${v.help}\n${samples(v).join("\n")}`),
           ),
       });
     }
