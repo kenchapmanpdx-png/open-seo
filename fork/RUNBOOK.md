@@ -39,6 +39,14 @@ Saving into the app's own Reports (private) is the run page's "Save client repor
 - Refresh the bundled crawler IP lists (weekly is plenty): `pnpm exec tsx fork/scripts/refresh-ip-ranges.ts`, then commit `src/server/features/ai-traffic/ip-ranges/`.
 - Discards with an empty `site_id` mean the drain sends a project that has no `ai_traffic_site` row.
 
+## Common Crawl backlink baseline (ADR-016)
+
+- Monthly on the 5th at 04:00 (`openseo-commoncrawl.timer`, catches up after downtime). Manual: `pnpm exec tsx fork/scripts/commoncrawl-backlinks.ts [--release cc-main-YYYY-mon-mon-mon] [--target example.com] [--force]`.
+- Downloads the newest domain graph (~9 GB gz per release) to `~/.cache/openseo/commoncrawl/<release>/` (`CC_CACHE_DIR` overrides); keeps the latest two releases. A complete file is reused; an interrupted one restarts.
+- Targets: a project's own domain is enrolled disabled; turn it on in the handbook tab (Backlinks, Common Crawl) or run once with `--target <domain>`. Enabled projects' competitors (`project_competitors`) are imported too, for the competitor gap.
+- Without `--target`, an already imported release is skipped (`--force` re-imports). Domain rows are kept for the last 4 releases per target; summaries forever.
+- `cc_release.status = failed`: rerun the command; downloads already on disk are reused.
+
 ## Upgrade (ADR-011)
 
 1. `systemctl --user stop openseo-app.service`
