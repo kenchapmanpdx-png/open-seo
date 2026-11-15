@@ -49,7 +49,7 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                            | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                      | P3-02          |
 
-Unit tests only (no BadGEO page): hreflang P3-24 / variant URLs P3-25 (single-language site); loading copy P2-04 (gate "API/backend-driven pages" stays `?` → BLOCKED on BadGEO, so no `/loading-copy.html`); llms.txt P9-02 / .md mirrors P9-03 (intake sets gate §20 = N, handbook §0).
+Unit tests only (no BadGEO page): hreflang P3-24 / variant URLs P3-25 (single-language site); loading copy P2-04 (gate "API/backend-driven pages" stays `?` → BLOCKED on BadGEO, so no `/loading-copy.html`); llms.txt P9-02 / .md mirrors P9-03 (intake sets gate §20 = N, handbook §0). About people P5-17 / editorial standards P5-10 (no BadGEO page: needs multi-person fixture; `/about/` carries one Person control so P5-17 stays clean).
 
 Status: B1 R5 exemplars pass. `pnpm exec tsx fork/scripts/badgeo-run.ts` exits 0
 (every expectation fires on its page, nothing else fires).
