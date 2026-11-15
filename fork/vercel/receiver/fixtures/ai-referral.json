@@ -1,0 +1,22 @@
+[
+  {
+    "projectId": "prj_site",
+    "source": "lambda",
+    "host": "example.com",
+    "id": "req_2",
+    "timestamp": 1763164800000,
+    "proxy": {
+      "timestamp": 1763164800000,
+      "method": "GET",
+      "host": "example.com",
+      "path": "/blog/post?utm_source=chatgpt.com",
+      "userAgent": [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36"
+      ],
+      "statusCode": 200,
+      "clientIp": "132.196.86.5",
+      "region": "iad1",
+      "referer": "https://chatgpt.com/"
+    }
+  }
+]

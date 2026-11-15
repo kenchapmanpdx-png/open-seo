@@ -1,0 +1,21 @@
+[
+  {
+    "projectId": "prj_site",
+    "source": "lambda",
+    "host": "example.com",
+    "id": "req_1",
+    "timestamp": 1763164800000,
+    "proxy": {
+      "timestamp": 1763164800000,
+      "method": "GET",
+      "host": "example.com",
+      "path": "/pricing",
+      "userAgent": [
+        "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot"
+      ],
+      "statusCode": 200,
+      "clientIp": "132.196.86.5",
+      "region": "iad1"
+    }
+  }
+]

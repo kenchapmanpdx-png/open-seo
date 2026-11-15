@@ -1,0 +1,6 @@
+{
+  "name": "openseo-ai-traffic-receiver",
+  "private": true,
+  "type": "module",
+  "description": "Vercel log-drain receiver (ADR-013). fork/scripts/build-receiver.ts bundles src/ into api/drain.js (all dependencies inlined); deploy this folder."
+}
