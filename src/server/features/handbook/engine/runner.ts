@@ -33,6 +33,7 @@ import { evidenceKey, materialize } from "./evidence";
 export type HandbookRuntime = {
   projectId: string;
   fetch: SafeFetch;
+  fetchOffsite: SafeFetch;
   store: EvidenceStore;
   log: CollectorContext["log"];
 };
@@ -217,6 +218,7 @@ async function runCollectors(
     runId: input.runId,
     origin: input.origin,
     fetch: runtime.fetch,
+    fetchOffsite: runtime.fetchOffsite,
     log: runtime.log,
     storeBody: async (kind, url, bytes, contentType) => {
       const key = await evidenceKey({

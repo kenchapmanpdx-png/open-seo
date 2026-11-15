@@ -20,7 +20,8 @@ import type {
  * - Requests are paced per host and bodies are capped.
  */
 export type SafeFetchOptions = {
-  allowedHosts: readonly string[];
+  /** `"any"` = off-site fetches (outbound link checks); policy + DNS checks still apply. */
+  allowedHosts: readonly string[] | "any";
   maxBytes?: number;
   timeoutMs?: number;
   /** Minimum gap between two requests to the same host. */
@@ -54,8 +55,12 @@ export function siblingHosts(host: string): string[] {
 
 export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
   // Compared against URL.hostname, so a `host:port` entry drops its port.
+  const hosts = options.allowedHosts;
+  const anyHost = hosts === "any";
   const allowed = new Set(
-    options.allowedHosts.map((h) => h.toLowerCase().replace(/:\d+$/, "")),
+    hosts === "any"
+      ? []
+      : hosts.map((h) => h.toLowerCase().replace(/:\d+$/, "")),
   );
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -74,7 +79,8 @@ export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
   const validate = async (url: string) => {
     if (!isCrawlableUrl(url)) throw new SafeFetchBlockedError(url, "policy");
     const host = new URL(url).hostname.toLowerCase();
-    if (!allowed.has(host)) throw new SafeFetchBlockedError(url, "scope");
+    if (!anyHost && !allowed.has(host))
+      throw new SafeFetchBlockedError(url, "scope");
     let check = hostChecks.get(host);
     if (!check) {
       check = checkHost(host);
