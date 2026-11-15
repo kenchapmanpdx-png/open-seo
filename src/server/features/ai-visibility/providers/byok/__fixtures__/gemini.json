@@ -1,0 +1,28 @@
+{
+  "_note": "synthetic (no GEMINI_API_KEY): generateContent shape, google_search grounding",
+  "modelVersion": "gemini-2.5-flash",
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [{ "text": "Acme Running is a top choice in Phoenix." }]
+      },
+      "groundingMetadata": {
+        "webSearchQueries": ["best trail running shoes phoenix", " "],
+        "groundingChunks": [
+          {
+            "web": {
+              "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AAA",
+              "title": "acme.com"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 100,
+    "candidatesTokenCount": 50,
+    "thoughtsTokenCount": 25
+  }
+}
