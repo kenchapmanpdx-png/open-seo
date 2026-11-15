@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { executeInBatches } from "@/db/runBatch";
 import { auditPages } from "@/db/schema";
@@ -112,7 +112,13 @@ async function finishRun(input: {
 
 async function listRuns(projectId: string, limit = 20) {
   return db
-    .select()
+    .select({
+      ...getTableColumns(handbookRuns),
+      findingsCount:
+        sql<number>`(select count(*) from ${handbookFindings} where ${handbookFindings.runId} = ${handbookRuns.id})`.mapWith(
+          Number,
+        ),
+    })
     .from(handbookRuns)
     .where(eq(handbookRuns.projectId, projectId))
     .orderBy(desc(handbookRuns.startedAt))
