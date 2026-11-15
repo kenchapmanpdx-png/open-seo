@@ -61,3 +61,8 @@ K13 in `src/server/features/agency/contracts.ts`: `agencyBrandSchema`, `agencyCl
 ## Amendments (B5 R4a, schema)
 
 - `outcome_metric` gains `item_id` (K13 `outcomeMetricSchema` has it) and stores `before_value` / `after_value` as text (NULL = BLOCKED source); unique on (`check_id`, `item_id`, `url`, `metric`). `offset_weeks` is an integer validated against `OUTCOME_OFFSETS_WEEKS` in the service. `outcome_check.result_run_id` → `handbook_run` (set null).
+
+## Amendments (B7 R1)
+
+- `ai_answer_mentions` = completed AI answers (upstream AI visibility observations + BYOK answers) whose cited sources include the URL (host without `www`, path without trailing slash, query ignored), counted once per answer, 28 days before `fixed_at` vs 28 days before the check. Topic matching against prompts was dropped: a per-URL citation count is evidence-backed; "prompts mentioning the URL's topic" needs a judgment call. No AI visibility or BYOK run for the project → BLOCKED.
+- The client report shows "Results since last report": the 3 newest `done` checks completed on or before the report date, per metric summed over the batch URLs (each URL once), handbook status as "n of m now passing". Not connected → "not connected", never estimated.

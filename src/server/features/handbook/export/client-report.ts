@@ -1,4 +1,6 @@
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
+import { renderResultsSection } from "./client-report-results";
+import type { FollowupBatch } from "./followups";
 import type { AgencyBrand } from "@/server/features/agency/contracts";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 
@@ -15,6 +17,8 @@ export type ClientReportBrand = AgencyBrand & { logoDataUri: string | null };
 type Options = {
   screenshots?: ReadonlyMap<string, string>;
   brand?: ClientReportBrand;
+  /** Outcome record batches; feeds "Results since last report". */
+  outcomes?: readonly FollowupBatch[];
 };
 
 const MAX_BYTES = 500_000;
@@ -61,6 +65,7 @@ h1{font-size:1.6rem;margin-bottom:.25rem}h2{margin-top:2rem;border-bottom:1px so
 .S1{color:#a40000}.S2{color:#b34700}.S3{color:#7a5c00}.S4{color:#335}
 .ai{font-size:.75rem;color:#4b3c8f;border:1px solid #4b3c8f;border-radius:4px;padding:0 .3rem;margin-left:.3rem}
 pre{white-space:pre-wrap;word-break:break-word;background:#f6f6f6;padding:.5rem;border-radius:4px;font-size:.8rem}
+table{border-collapse:collapse;margin:.5rem 0}td,th{border:1px solid #ddd;padding:.25rem .6rem;text-align:left}
 img{max-width:100%;border:1px solid #ddd}article{margin:1rem 0 1.5rem}ul{padding-left:1.2rem}
 @media print{body{margin:0;max-width:none}h2{break-after:avoid}article,.card{break-inside:avoid}a{color:inherit}}
 `;
@@ -101,6 +106,7 @@ type Budget = {
   evidence: boolean;
   maxFindings: number;
   brand?: ClientReportBrand;
+  outcomes?: readonly FollowupBatch[];
 };
 
 function render(
@@ -169,6 +175,7 @@ function render(
   parts.push(
     "<h2>What we checked</h2>",
     `<p>${report.items.length} handbook checks on ${esc(host)}: ${passes.length} passed, ${report.findings.length} problems found on ${pages} page(s), ${blocked.length} need your access. Evidence collected: ${esc(kinds.join(", ") || "none")}.</p>`,
+    renderResultsSection(budget.outcomes ?? [], report.generatedAt, esc),
     "<h2>Top fixes</h2>",
   );
   const fixes = topFixes(report);
@@ -272,12 +279,13 @@ export function renderClientReportHtml(
   );
   const top = new Map([...all].filter(([url]) => topUrls.has(url)));
   const none = new Map<string, string>();
-  const brand = options.brand;
+  const { brand, outcomes } = options;
   const full = {
     excerptChars: 1_800,
     evidence: true,
     maxFindings: 500,
     brand,
+    outcomes,
   };
   const steps: Budget[] = [
     { ...full, screenshots: all },
@@ -299,6 +307,7 @@ export function renderClientReportHtml(
       evidence: false,
       maxFindings,
       brand,
+      outcomes,
     });
     if (bytes(html) <= MAX_BYTES || maxFindings === 0) return html;
   }

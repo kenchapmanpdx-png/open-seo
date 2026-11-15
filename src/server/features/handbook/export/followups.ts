@@ -15,7 +15,7 @@ type FollowupMetric = {
   source: string;
 };
 
-type FollowupBatch = {
+export type FollowupBatch = {
   batchId: string;
   baselineRunId: string;
   fixedAt: string;
