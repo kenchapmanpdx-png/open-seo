@@ -79,12 +79,26 @@ export async function runLighthouse(
         tbtMs: metric("total-blocking-time"),
         fcpMs: metric("first-contentful-paint"),
       },
-      lcpElement:
-        lhr.audits["largest-contentful-paint-element"]?.details?.items?.[0]
-          ?.node?.snippet ?? null,
+      lcpElement: lcpElement(lhr.audits["largest-contentful-paint-element"]),
       report: lhr,
     };
   } finally {
     await browser.close();
   }
+}
+
+/**
+ * Lighthouse ≥10 nests the LCP node in the first table of a list:
+ * details.items[0].items[0].node. Returns "selector · node label".
+ */
+function lcpElement(audit: { details?: unknown } | undefined): string | null {
+  const details = audit?.details as
+    | { items?: Array<{ items?: Array<{ node?: Record<string, unknown> }> }> }
+    | undefined;
+  const node = details?.items?.[0]?.items?.[0]?.node;
+  if (!node) return null;
+  const parts = [node.selector, node.nodeLabel ?? node.snippet].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  return parts.length > 0 ? parts.join(" · ").slice(0, 300) : null;
 }

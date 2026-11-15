@@ -6,6 +6,7 @@ import { cachePolicyCheck } from "./cache-policy";
 import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
 import { headTagsCheck } from "./head-tags";
+import { consentLcpCheck, firstScreenActionCheck } from "./first-screen";
 import { hiddenPagesCheck } from "./hidden-pages";
 import { imageMarkupCheck } from "./image-markup";
 import { hreflangCheck } from "./hreflang";
@@ -66,4 +67,6 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   schemaVisibilityCheck,
   a11yMarkupCheck,
   renderParityCheck,
+  firstScreenActionCheck,
+  consentLcpCheck,
 ];
