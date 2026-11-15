@@ -1,0 +1,8 @@
+[Unit]
+Description=OpenSEO cron tick (fires Worker scheduled handlers)
+After=openseo-app.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO@
+ExecStart=/usr/bin/env bash fork/scripts/cron-tick.sh

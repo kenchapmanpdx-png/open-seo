@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenSEO local production app (vite preview on 127.0.0.1:3001)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO@
+ExecStart=/usr/bin/env bash fork/scripts/run-local.sh prod
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
