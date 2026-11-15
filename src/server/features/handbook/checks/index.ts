@@ -4,6 +4,7 @@ import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { robotsGroupsCheck } from "./robots-groups";
 import { securityHeadersCheck } from "./security-headers";
 import { urlInventoryCheck } from "./url-inventory";
+import { urlVariantsCheck } from "./url-variants";
 
 /**
  * Every K1 check the runner executes. B1 R5 exemplars (one per class); the
@@ -16,4 +17,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   securityHeadersCheck,
   jsonLdIntegrityCheck,
   botParityCheck,
+  urlVariantsCheck,
 ];
