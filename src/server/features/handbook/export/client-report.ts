@@ -1,4 +1,5 @@
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
+import type { AgencyBrand } from "@/server/features/agency/contracts";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 
 /**
@@ -9,7 +10,12 @@ import type { RegistryEntry } from "@/server/features/handbook/contracts/registr
  */
 
 type Finding = ReportJson["findings"][number];
-type Options = { screenshots?: ReadonlyMap<string, string> };
+/** White-label brand (ADR-017 §2); absent → neutral look. */
+export type ClientReportBrand = AgencyBrand & { logoDataUri: string | null };
+type Options = {
+  screenshots?: ReadonlyMap<string, string>;
+  brand?: ClientReportBrand;
+};
 
 const MAX_BYTES = 500_000;
 const TARGET_BYTES = 480_000;
@@ -94,6 +100,7 @@ type Budget = {
   excerptChars: number;
   evidence: boolean;
   maxFindings: number;
+  brand?: ClientReportBrand;
 };
 
 function render(
@@ -146,7 +153,8 @@ function render(
   );
 
   const parts: string[] = [
-    `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>SEO &amp; AI search review — ${esc(host)}</title><style>${CSS}</style></head><body>`,
+    `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>SEO &amp; AI search review — ${esc(host)}</title><style>${CSS}${brandCss(budget.brand)}</style></head><body>`,
+    ...brandHeader(budget.brand),
     `<h1>SEO &amp; AI search review — ${esc(host)}</h1>`,
     `<p class="muted">${esc(date)} · handbook v${esc(report.handbookVersion)} · ${esc(report.run.mode)} · tier ${esc(report.run.tier)}${report.site.platform ? ` · platform ${esc(report.site.platform)}` : ""}</p>`,
   ];
@@ -210,9 +218,41 @@ function render(
             .join("")}</ul>`
     }`,
     `<h2>How this review works</h2><p>Every check follows the SEO/GEO handbook v${esc(report.handbookVersion)} and is backed by evidence fetched from your site on ${esc(date)}. No ranking, traffic or backlink data is used. Items marked <span class="ai">AI-reviewed</span> were judged by a language model against a fixed rule and quoted text from your pages; they never block a release or cap the grade.</p>`,
+    ...brandFooter(budget.brand),
     "</body></html>",
   );
   return parts.join("\n");
+}
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const LOGO_URI = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+
+function brandCss(brand: ClientReportBrand | undefined): string {
+  if (!brand || !HEX.test(brand.accentColor)) return "";
+  const c = brand.accentColor;
+  return `h1,h2{color:${c}}h2{border-bottom-color:${c}}.card{border-color:${c}}.grade{color:${c}}.brand{display:flex;gap:.75rem;align-items:center;margin-bottom:1rem;font-weight:600}.brand img{max-height:48px;border:0}`;
+}
+
+function brandHeader(brand: ClientReportBrand | undefined): string[] {
+  if (!brand) return [];
+  const logo =
+    brand.logoDataUri && LOGO_URI.test(brand.logoDataUri)
+      ? `<img src="${brand.logoDataUri}" alt="${escapeHtml(brand.agencyName)}">`
+      : "";
+  return [
+    `<div class="brand">${logo}<span>${escapeHtml(brand.agencyName)}</span></div>`,
+  ];
+}
+
+function brandFooter(brand: ClientReportBrand | undefined): string[] {
+  if (!brand) return [];
+  const lines = [
+    `<strong>${escapeHtml(brand.agencyName)}</strong>`,
+    brand.contactLine ? escapeHtml(brand.contactLine) : "",
+    brand.footerText ? escapeHtml(brand.footerText) : "",
+    brand.hideOpenseoCredit ? "" : "Prepared with OpenSEO.",
+  ].filter(Boolean);
+  return [`<footer class="muted"><hr>${lines.join("<br>")}</footer>`];
 }
 
 const bytes = (html: string) => new TextEncoder().encode(html).length;
@@ -232,7 +272,13 @@ export function renderClientReportHtml(
   );
   const top = new Map([...all].filter(([url]) => topUrls.has(url)));
   const none = new Map<string, string>();
-  const full = { excerptChars: 1_800, evidence: true, maxFindings: 500 };
+  const brand = options.brand;
+  const full = {
+    excerptChars: 1_800,
+    evidence: true,
+    maxFindings: 500,
+    brand,
+  };
   const steps: Budget[] = [
     { ...full, screenshots: all },
     { ...full, screenshots: top },
@@ -252,6 +298,7 @@ export function renderClientReportHtml(
       excerptChars: 0,
       evidence: false,
       maxFindings,
+      brand,
     });
     if (bytes(html) <= MAX_BYTES || maxFindings === 0) return html;
   }
