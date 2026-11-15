@@ -92,6 +92,8 @@ export type PageSnapshot = {
     viewport: string | null;
     og: Record<string, string>;
     twitter: Record<string, string>;
+    /** Every other named `<meta>` (generator, article:*, theme-color…), lower-case keys. */
+    meta: Record<string, string>;
     hreflang: ReadonlyArray<{ lang: string; href: string }>;
   };
   h1: readonly string[];
@@ -142,6 +144,13 @@ export type PageMarkup = {
     type: string | null;
   }>;
   buttons: ReadonlyArray<{ text: string; ariaLabel: string | null }>;
+  videos: ReadonlyArray<{
+    src: string | null;
+    poster: string | null;
+    autoplay: boolean;
+    muted: boolean;
+    controls: boolean;
+  }>;
   counts: {
     tables: number;
     lists: number;
@@ -202,7 +211,12 @@ export type LlmsData = {
     storageKey: string | null;
     links: readonly string[];
   }>;
-  mdMirrors: ReadonlyArray<{ pageUrl: string; mdUrl: string; status: number }>;
+  mdMirrors: ReadonlyArray<{
+    pageUrl: string;
+    mdUrl: string;
+    status: number;
+    headers: ReadonlyArray<readonly [string, string]>;
+  }>;
 };
 
 export type HeadersData = {
@@ -233,6 +247,9 @@ export type VariantsData = {
     finalUrl: string;
     status: number;
     redirectChain: ReadonlyArray<{ url: string; status: number }>;
+    /** Body facts, so a 404 body can be compared with live templates (P3-11). */
+    title: string | null;
+    words: number;
   }>;
 };
 

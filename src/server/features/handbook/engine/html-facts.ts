@@ -56,6 +56,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     viewport: null,
     og: {},
     twitter: {},
+    meta: {},
     hreflang: [],
   };
   const h1: string[] = [];
@@ -65,6 +66,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   const scripts: PageMarkup["scripts"][number][] = [];
   const headLinks: PageMarkup["headLinks"][number][] = [];
   const buttons: PageMarkup["buttons"][number][] = [];
+  const videos: PageMarkup["videos"][number][] = [];
   const counts = { tables: 0, lists: 0, forms: 0, iframes: 0, videos: 0 };
   let mainCount = 0;
   let textLength = 0;
@@ -138,7 +140,16 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     if (name === "ul" || name === "ol" || name === "dl") counts.lists += 1;
     if (name === "form") counts.forms += 1;
     if (name === "iframe") counts.iframes += 1;
-    if (name === "video") counts.videos += 1;
+    if (name === "video") {
+      counts.videos += 1;
+      videos.push({
+        src: attrs.src ? resolve(attrs.src) : null,
+        poster: attrs.poster ? resolve(attrs.poster) : null,
+        autoplay: "autoplay" in attrs,
+        muted: "muted" in attrs,
+        controls: "controls" in attrs,
+      });
+    }
   }
 
   function readMarkupClose(name: string) {
@@ -266,6 +277,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
       scripts,
       headLinks,
       buttons,
+      videos,
       counts,
       text: collapse(textParts.join(" ")).slice(0, MAX_TEXT),
     },
@@ -284,6 +296,7 @@ function readMeta(head: HtmlFacts["head"], attrs: Record<string, string>) {
   else if (key === "viewport") head.viewport = content;
   else if (key.startsWith("og:")) head.og[key.slice(3)] = content;
   else if (key.startsWith("twitter:")) head.twitter[key.slice(8)] = content;
+  else if (key) head.meta[key] = content;
 }
 
 function readLink(

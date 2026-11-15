@@ -210,6 +210,7 @@ function emptyMarkup(): PageSnapshot["markup"] {
     scripts: [],
     headLinks: [],
     buttons: [],
+    videos: [],
     counts: { tables: 0, lists: 0, forms: 0, iframes: 0, videos: 0 },
     text: "",
   };
@@ -225,6 +226,7 @@ function emptyHead(): PageSnapshot["head"] {
     viewport: null,
     og: {},
     twitter: {},
+    meta: {},
     hreflang: [],
   };
 }
