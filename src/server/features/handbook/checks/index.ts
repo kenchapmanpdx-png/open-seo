@@ -19,6 +19,7 @@ import { redirectedLinksCheck } from "./redirected-links";
 import { robotsGroupsCheck } from "./robots-groups";
 import { schemaBasicsCheck } from "./schema-basics";
 import { schemaEventCheck } from "./schema-event";
+import { schemaListsArticlesCheck } from "./schema-lists-articles";
 import { schemaLocalBusinessCheck } from "./schema-localbusiness";
 import { securityHeadersCheck } from "./security-headers";
 import { sitemapLastmodCheck } from "./sitemap-lastmod";
@@ -58,4 +59,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   aboutPeopleCheck,
   schemaEventCheck,
   schemaLocalBusinessCheck,
+  schemaListsArticlesCheck,
 ];
