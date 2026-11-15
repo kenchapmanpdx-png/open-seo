@@ -38,6 +38,7 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/sitemap-build.xml` (`_expect.json`)      | Second sitemap (robots `Sitemap:`), 6 `<loc>` all lastmod 2026-11-01 (build date)        | P3-17          |
 | `/dup-title-a.html`, `/dup-title-b.html`   | Same title + meta description (distinct H1s)                                             | P4-01          |
 | `/no-og.html`                              | No OG / Twitter tags, no `max-image-preview:large` (all other indexable pages have them) | P4-09, P4-11   |
+| `/bad-structure.html`                      | Two `<main>`, `<h2>` in the footer, h1 → h3 skip, prices as paragraphs                   | P4-08, P5-12   |
 | `/old-event.html` (`_redirects.json`)      | 301 → `/`, still linked from `/events/` (moved URL sent to the homepage)                 | P3-08, P3-05   |
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                           | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                     | P3-02          |
