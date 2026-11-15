@@ -1,4 +1,5 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
+import { aboutPeopleCheck } from "./about-people";
 import { botParityCheck } from "./bot-parity";
 import { cachePolicyCheck } from "./cache-policy";
 import { canonicalFormCheck } from "./canonical-form";
@@ -52,4 +53,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   cachePolicyCheck,
   llmsMirrorsCheck,
   schemaBasicsCheck,
+  aboutPeopleCheck,
 ];
