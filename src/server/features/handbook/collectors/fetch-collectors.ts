@@ -3,6 +3,7 @@ import { sha256Hex } from "@/server/lib/audit/ids";
 import { decide, parseRobots } from "@/server/features/handbook/engine/robots";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
+import { assetUrls } from "./asset-urls";
 import {
   BOT_USER_AGENTS,
   type BotFetchData,
@@ -288,6 +289,16 @@ export const headersCollector: Collector<"headers"> = {
     const responses = [];
     // Headers can differ per path (edge rules), so probe beyond samples.
     for (const url of probeUrls(ctx, collected, 20, true)) {
+      const res = await tryFetch(ctx, url);
+      if (res)
+        responses.push({
+          url: res.finalUrl,
+          status: res.status,
+          headers: res.headers,
+        });
+    }
+    // Up to 4 same-host assets from the home page for cache policy (P7-07).
+    for (const url of assetUrls(collected)) {
       const res = await tryFetch(ctx, url);
       if (res)
         responses.push({
