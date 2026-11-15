@@ -343,6 +343,8 @@ export type RenderData = {
         beforeLoad?: boolean;
       }>;
       opacityZeroWords: number;
+      /** `<form>` count in the rendered DOM (P2-08 JS-only forms). 1.3.0 */
+      forms?: number;
       firstScreenActions: ReadonlyArray<{
         tag: string;
         text: string;
@@ -364,6 +366,8 @@ export type AxeData = {
       help: string;
       nodes: number;
       sampleTargets: readonly string[];
+      /** Visible text of the sample nodes, ≤120 chars each, same order (P8-02). 1.3.0 */
+      sampleTexts?: readonly string[];
     }>;
   }>;
 };
@@ -379,6 +383,8 @@ export type LighthouseData = {
     tbtMs: number | null;
     lcpElement: string | null;
     storageKey: string | null;
+    /** Lighthouse `render-blocking-resources` items (P7-05). 1.3.0 */
+    renderBlocking?: ReadonlyArray<{ url: string; wastedMs: number }>;
   }>;
 };
 

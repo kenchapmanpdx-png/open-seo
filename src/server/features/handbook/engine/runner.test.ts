@@ -104,6 +104,23 @@ describe("runHandbook invariants", () => {
     expect(status?.note).toContain("without evidence");
   });
 
+  it("caps the off-site fetches one check can make", async () => {
+    const errors: string[] = [];
+    await run([
+      {
+        ...check({ statuses: [], findings: [], evidence: [] }),
+        run: async (ctx) => {
+          for (let i = 0; i < 11; i++)
+            await ctx
+              .fetchOffsite?.("https://source.test/")
+              .catch((e: unknown) => errors.push(String(e)));
+          return { statuses: [], findings: [], evidence: [] };
+        },
+      },
+    ]);
+    expect(errors.filter((e) => e.includes("limit (10)"))).toHaveLength(1);
+  });
+
   it("keeps an evidenced OPEN verdict and blocks when a required collector is unavailable", async () => {
     const evidence = [
       {

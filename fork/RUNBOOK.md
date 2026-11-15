@@ -27,7 +27,7 @@ Local production per ADR-011: the app runs on this computer (`vite preview`, 127
 
 1. `pnpm exec tsx fork/scripts/publish-report.ts fork/runs/<site>/<run>/report.json` — prints the public URL (`REPORTS_DOMAIN` when set, else the `openseo-reports` project alias) and checks `x-robots-tag: noindex` + root 404.
 2. `pnpm exec tsx fork/scripts/publish-report.ts --unpublish <slug>` — removes the snapshot and redeploys. Slugs are never reused.
-3. `fork/vercel/reports/published.json` records slug → run id, origin, dates. Snapshots (`fork/vercel/reports/r/`) are not committed: publish from this machine only, or the next deploy drops them.
+3. `fork/vercel/reports/published.json` records slug → run id, origin, dates. Neither it nor the snapshots (`fork/vercel/reports/r/`) are committed (the repo is public; the slug is the only access control): publish from this machine only, or the next deploy drops them. Each deploy deletes the project's older deployments, so an unpublished snapshot is gone from every URL, not only the alias.
 
 Saving into the app's own Reports (private) is the run page's "Save client report" button, or `handbook_report_publish`.
 

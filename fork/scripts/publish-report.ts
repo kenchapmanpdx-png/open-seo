@@ -46,8 +46,12 @@ const publishedSchema = z.record(
   }),
 );
 const publishedPath = join(ROOT, "published.json");
+// Not committed (gitignored): the repo is public and slugs are the only
+// access control on a published report.
 const readPublished = () =>
-  publishedSchema.parse(JSON.parse(readFileSync(publishedPath, "utf8")));
+  existsSync(publishedPath)
+    ? publishedSchema.parse(JSON.parse(readFileSync(publishedPath, "utf8")))
+    : {};
 const writePublished = (data: z.infer<typeof publishedSchema>) =>
   writeFileSync(publishedPath, `${JSON.stringify(data, null, 2)}\n`);
 
@@ -158,6 +162,7 @@ async function deploy(): Promise<string> {
     if (d.readyState === "ERROR" || d.readyState === "CANCELED")
       throw new Error(`deployment ${created.id} ${d.readyState}`);
     if (d.readyState === "READY" && d.alias?.length) {
+      await deleteOlderDeployments(created.id, team);
       if (process.env.REPORTS_DOMAIN)
         return `https://${process.env.REPORTS_DOMAIN}`;
       // The project alias (shortest) is public; deployment URLs may sit
@@ -168,6 +173,24 @@ async function deploy(): Promise<string> {
     await new Promise((r) => setTimeout(r, 3_000));
   }
   throw new Error(`deployment ${created.id} not ready after 3 min`);
+}
+
+/**
+ * Deployments are immutable: an older one still serves every snapshot it
+ * contained at its own URL. Keep only the current one so unpublish is real.
+ */
+async function deleteOlderDeployments(currentId: string, team: string) {
+  const sep = team ? "&" : "?";
+  const { deployments } = await vercel(
+    `/v6/deployments${team}${sep}projectId=${PROJECT}&limit=100`,
+    z.object({ deployments: z.array(z.object({ uid: z.string() })) }),
+  );
+  for (const { uid } of deployments) {
+    if (uid === currentId) continue;
+    await vercel(`/v13/deployments/${uid}${team}`, z.unknown(), {
+      method: "DELETE",
+    });
+  }
 }
 
 async function verify(base: string, path: string) {

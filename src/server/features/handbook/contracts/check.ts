@@ -4,7 +4,7 @@ import type {
   RegistryEntry,
   Severity,
 } from "./registry-types";
-import type { CollectorKey, CollectedData } from "./collectors";
+import type { CollectedData, CollectorKey, SafeFetch } from "./collectors";
 import type {
   Effort,
   Fixability,
@@ -53,6 +53,12 @@ export type CheckContext = {
    * LLM check without one: its items are BLOCKED `no llm key` instead.
    */
   judge?: Judge;
+  /**
+   * SSRF-safe off-site fetch (same policy as the collectors' `fetchOffsite`)
+   * for checks that must read a cited source (P5-03). Contracts 1.3.0;
+   * optional so fixtures and older runners omit it. Capped by the runner.
+   */
+  fetchOffsite?: SafeFetch;
 };
 
 /** Local reference from a finding/verdict to an evidence draft in the same result. */
