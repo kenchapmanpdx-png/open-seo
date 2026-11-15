@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="max-image-preview:large" />
+    <meta property="og:title" content="Lazy hero · BadGEO" />
+    <meta
+      property="og:description"
+      content="Lazy hero — BadGEO rule fixture page."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{ORIGIN}}/lazy-hero.html" />
+    <meta
+      property="og:image"
+      content="{{ORIGIN}}/img/lazy-hero-html-share.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="badgeo-expect" content="P7-02, P7-03" />
+    <title>Lazy hero · BadGEO</title>
+    <meta name="description" content="Lazy hero — BadGEO rule fixture page." />
+    <link rel="canonical" href="/lazy-hero.html" />
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/">Home</a> <a href="/about/">About</a>
+        <a href="/events/">Events</a> <a href="/broken-jsonld.html">Broken</a>
+        <a href="/placeholder.html">Placeholder</a>
+        <a href="/no-headers.html">Headers</a>
+      </nav>
+    </header>
+    <main>
+      <img
+        src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+        data-src="/img/hero.jpg"
+        loading="lazy"
+        alt="Runners at the start line"
+      />
+      <h1>Lazy hero</h1>
+      <p>The hero image only loads once a script swaps data-src in.</p>
+    </main>
+    <footer><p>BadGEO fixture site.</p></footer>
+  </body>
+</html>

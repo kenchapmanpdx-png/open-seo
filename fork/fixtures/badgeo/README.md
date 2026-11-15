@@ -41,6 +41,7 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/bad-structure.html`                      | Two `<main>`, `<h2>` in the footer, h1 → h3 skip, prices as paragraphs                    | P4-08, P5-12   |
 | `/blank-target.html`                       | `target="_blank"` link to https://example.org/ without rel (outbound fetch needs network) | P4-12          |
 | `/contact.html`                            | Clean control: mailto channel in server HTML (P5-16 PASS)                                 | —              |
+| `/lazy-hero.html`                          | Hero `<img>`: data: URI src + `data-src`, `loading=lazy`, no width/height or srcset       | P7-02, P7-03   |
 | `/old-event.html` (`_redirects.json`)      | 301 → `/`, still linked from `/events/` (moved URL sent to the homepage)                  | P3-08, P3-05   |
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                            | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                      | P3-02          |
