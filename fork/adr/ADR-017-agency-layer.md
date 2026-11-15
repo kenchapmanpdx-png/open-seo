@@ -57,3 +57,7 @@ K13 in `src/server/features/agency/contracts.ts`: `agencyBrandSchema`, `agencyCl
 - Scheduler test: due-selection (+4/+12 created once; idempotent re-tick; REVIEW mode excluded).
 - `seo-followups.md` renderer test on a fixture batch with one BLOCKED source.
 - P5 exit: one client report with brand + one outcome check (synthetic `fixed_at` 4 weeks back on a fixture project) delivered to a published URL; live publish BLOCKED-KEN while the Vercel publish permission is open (B4).
+
+## Amendments (B5 R4a, schema)
+
+- `outcome_metric` gains `item_id` (K13 `outcomeMetricSchema` has it) and stores `before_value` / `after_value` as text (NULL = BLOCKED source); unique on (`check_id`, `item_id`, `url`, `metric`). `offset_weeks` is an integer validated against `OUTCOME_OFFSETS_WEEKS` in the service. `outcome_check.result_run_id` → `handbook_run` (set null).
