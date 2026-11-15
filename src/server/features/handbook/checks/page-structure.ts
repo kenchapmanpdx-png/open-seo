@@ -48,6 +48,14 @@ function structureProblems(s: PageSnapshot): string[] {
   return why;
 }
 
+const outline = (s: PageSnapshot) =>
+  [
+    `<main> × ${s.markup.mainCount}`,
+    ...s.markup.headings.map(
+      (h) => `${h.landmark ? `[${h.landmark}] ` : ""}<h${h.level}>${h.text}`,
+    ),
+  ].join("\n");
+
 export const pageStructureCheck: HandbookCheck = {
   id: "crawl.page-structure",
   itemIds: ITEMS,
@@ -62,14 +70,6 @@ export const pageStructureCheck: HandbookCheck = {
       for (const id of ITEMS) out.na(id, "no 200 HTML page crawled");
       return out.build();
     }
-    const outline = (s: PageSnapshot) =>
-      [
-        `<main> × ${s.markup.mainCount}`,
-        ...s.markup.headings.map(
-          (h) =>
-            `${h.landmark ? `[${h.landmark}] ` : ""}<h${h.level}>${h.text}`,
-        ),
-      ].join("\n");
 
     const structure = pagesLive.flatMap((s) => {
       const why = structureProblems(s);
