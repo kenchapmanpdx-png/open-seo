@@ -172,6 +172,22 @@ function evaluateGate(gate: string, f: Facts, profile: Profile): Answer {
         ? yes(`admin links: ${sample(admin)}`)
         : no("no admin/staff links found");
     }
+    case "API/backend-driven pages":
+      if (f.apiRequests === null)
+        return {
+          value: "?",
+          evidence: "no render: API calls not observed",
+          confidence: "low",
+        };
+      return f.apiRequests.length
+        ? yes(`rendered pages call ${sample(f.apiRequests)}`, "high")
+        : no("rendered samples make no same-site fetch/XHR", "medium");
+    case "§15 hero video": {
+      const videos = f.pages.filter((p) => p.markup.videos.length > 0);
+      return videos.length
+        ? yes(`<video> on ${sample(videos.map((p) => p.url))}`, "high")
+        : no("no <video> on crawled pages", "medium");
+    }
     case "§20":
     case "§20–22":
       return no(

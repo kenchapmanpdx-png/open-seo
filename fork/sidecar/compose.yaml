@@ -5,7 +5,7 @@ services:
     build:
       context: ../..
       dockerfile: fork/sidecar/Dockerfile
-    image: handbook-sidecar:1.0.0
+    image: handbook-sidecar:1.1.0
     ports:
       - "127.0.0.1:4777:4777"
     environment:

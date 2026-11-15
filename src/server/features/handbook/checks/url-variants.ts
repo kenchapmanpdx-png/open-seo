@@ -33,9 +33,9 @@ const describe = (p: Probe) =>
 function hopProblem(p: Probe, target: (url: string) => boolean) {
   const temporary = p.redirectChain.find((h) => !PERMANENT.has(h.status));
   if (temporary) return `${temporary.status} (temporary) hop`;
+  if (!target(p.finalUrl)) return `ends at ${p.finalUrl}`;
   if (p.redirectChain.length > 1)
     return `${p.redirectChain.length} hops (want 1)`;
-  if (!target(p.finalUrl)) return `ends at ${p.finalUrl}`;
   return null;
 }
 
@@ -78,10 +78,23 @@ export const urlVariantsCheck: HandbookCheck = {
       return why ? [{ p, why }] : [];
     });
     if (hostIssues.length > 0) {
+      // Permanent chains that still land on the canonical origin only waste a
+      // hop; duplicates, temporary or wrong-target redirects stay S1.
+      const chainsOnly = hostIssues.every(({ why }) =>
+        why.endsWith(" hops (want 1)"),
+      );
       out.finding({
         itemIds: ["P3-01"],
-        severity: "S1",
-        title: "Host/protocol variants do not 301/308 to the canonical origin",
+        ...(chainsOnly
+          ? {
+              severity: "S4" as const,
+              severityReason:
+                "permanent chain reaches the canonical origin; extra hop only",
+            }
+          : { severity: "S1" as const }),
+        title: chainsOnly
+          ? "Host/protocol variants reach the canonical origin in more than one hop"
+          : "Host/protocol variants do not 301/308 to the canonical origin",
         detail: hostIssues.map(({ p, why }) => `${p.url} — ${why}`).join("\n"),
         fix: `Redirect every http:// and apex/www variant to ${canonicalOrigin}/ in one 301 or 308 hop (no 302/307, no chains).`,
         fixability: "FIXABLE",

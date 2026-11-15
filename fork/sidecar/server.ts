@@ -25,7 +25,7 @@ import { CONTRACTS_VERSION } from "../../src/server/features/handbook/contracts/
  * so the HTTP layer is testable without a browser; `main()` wires the real
  * ones. Requests and responses are validated with the K3 Zod schemas.
  */
-export const SIDECAR_VERSION = "1.0.0";
+export const SIDECAR_VERSION = "1.1.0";
 const MAX_BODY = 64 * 1024;
 const MAX_RENDERS = 2;
 
