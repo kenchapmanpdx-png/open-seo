@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { runForkScheduledJobs } from "./forkScheduledJobs";
 
+// The registered jobs import the database modules.
+vi.mock("cloudflare:workers", () => ({ env: {} }));
+
 describe("runForkScheduledJobs", () => {
   it("runs the jobs for the cron and isolates a failing job", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
