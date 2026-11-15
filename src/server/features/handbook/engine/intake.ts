@@ -69,13 +69,16 @@ function inferTier(
         : `user areas: ${sample(login)}`,
     };
   }
+  // EP-3: T3 = one collection template with ≥10 URLs or ≥3 with ≥3 URLs.
+  // Templates key on pattern + skeleton, so distinct /pages/* siblings stay apart.
   const collections =
     collected.templates?.status === "ok"
       ? collected.templates.templates.filter(
           (t) => t.urlPattern.includes("*") && t.urls.length >= 3,
         )
       : [];
-  if (collections.length) {
+  const large = collections.filter((t) => t.urls.length >= 10);
+  if (large.length || collections.length >= 3) {
     return {
       tier: "T3" as const,
       evidence: `collection templates: ${collections.map((t) => `${t.urlPattern} (${t.urls.length})`).join(", ")}`,
@@ -88,7 +91,7 @@ function inferTier(
   return content.length > 1
     ? {
         tier: "T2" as const,
-        evidence: `${content.length} non-legal pages, no collection template`,
+        evidence: `${content.length} non-legal pages${collections.length ? `; templates below T3 size: ${collections.map((t) => `${t.urlPattern} (${t.urls.length})`).join(", ")}` : ", no collection template"}`,
       }
     : { tier: "T1" as const, evidence: "single content page" };
 }
