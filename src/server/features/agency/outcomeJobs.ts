@@ -16,7 +16,9 @@ import { GscNotConnectedError } from "@/server/lib/gscErrors";
 import { evidenceStore } from "./agencyService";
 import {
   countAiTrafficByPath,
+  hasAiAnswerRuns,
   hasAiTrafficSite,
+  listAiAnswerCitations,
   hasBingSite,
   sumBingPageClicks,
 } from "./OutcomeRepository";
@@ -285,11 +287,68 @@ const aiTraffic: OutcomeSource = {
   },
 };
 
-// ai_answer_mentions has no source yet: its rows are written BLOCKED.
+/** Host-insensitive URL key: no www, query, hash or trailing slash. */
+function citationKey(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/+$/, "") || "/";
+    return `${u.hostname.replace(/^www\./, "").toLowerCase()}${path}`;
+  } catch {
+    return null;
+  }
+}
+
+const aiAnswers: OutcomeSource = {
+  metrics: ["ai_answer_mentions"],
+  async collect(ctx) {
+    if (!(await hasAiAnswerRuns(ctx.projectId, ctx.organizationId)))
+      return null;
+    const domains = [
+      ...new Set(
+        ctx.urls.flatMap((url) => {
+          const bare = new URL(url).hostname.replace(/^www\./, "");
+          return [bare, `www.${bare}`];
+        }),
+      ),
+    ];
+    const count = async (w: { from: Date; to: Date }) => {
+      const rows = await listAiAnswerCitations(
+        ctx.projectId,
+        ctx.organizationId,
+        domains,
+        w.from.toISOString(),
+        w.to.toISOString(),
+      );
+      const answers = new Map<string, Set<string>>();
+      for (const row of rows) {
+        const key = citationKey(row.url);
+        if (!key) continue;
+        answers.set(key, (answers.get(key) ?? new Set()).add(row.answerId));
+      }
+      const byUrl = new Map(
+        ctx.urls.map((url) => [
+          url,
+          answers.get(citationKey(url) ?? "")?.size ?? 0,
+        ]),
+      );
+      return { rows, byUrl };
+    };
+    const before = await count(windowBefore(ctx.fixedAt));
+    const after = await count(windowBefore(ctx.checkAt));
+    return {
+      source: "AI answers citing the URL, 28 days (AI visibility + BYOK runs)",
+      payload: { before: before.rows, after: after.rows },
+      values: {
+        ai_answer_mentions: pairs(ctx.urls, before.byUrl, after.byUrl),
+      },
+    };
+  },
+};
+
 async function productionDeps(): Promise<OutcomeDeps> {
   return {
     rerun,
-    sources: [gscPerformance, gscIndexState, bingClicks, aiTraffic],
+    sources: [gscPerformance, gscIndexState, bingClicks, aiTraffic, aiAnswers],
     store: await evidenceStore(),
   };
 }
