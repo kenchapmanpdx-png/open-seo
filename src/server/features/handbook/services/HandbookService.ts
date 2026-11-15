@@ -43,6 +43,7 @@ import { scoreReport } from "@/server/features/handbook/engine/report";
 import { renderClientReportHtml } from "@/server/features/handbook/export/client-report";
 import { ReportRepository } from "@/server/features/reports/repositories/ReportRepository";
 import { AgencyService } from "@/server/features/agency/agencyService";
+import { OutcomeService } from "@/server/features/agency/outcomeService";
 import { ReportService } from "@/server/features/reports/services/ReportService";
 import { AppError } from "@/server/lib/errors";
 
@@ -220,6 +221,7 @@ async function publishToReports(input: {
     summary: `${report.score?.grade ?? "?"} · ${report.findings.length} findings`,
     html: renderClientReportHtml(report, REGISTRY, {
       brand: await AgencyService.getBrandForRender(input.organizationId),
+      outcomes: await OutcomeService.getOutcomeRecord(input),
     }),
     skill: "handbook-audit",
     createdBy: "handbook",

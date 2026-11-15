@@ -12,6 +12,9 @@ import {
   aiTrafficEvents,
   aiTrafficSites,
   bingPageWeeks,
+  byokAiAnswers,
+  byokAiRuns,
+  byokAiSources,
   bingSites,
   outcomeBatchClasses,
   outcomeBatches,
@@ -19,6 +22,7 @@ import {
   outcomeMetrics,
 } from "@/db/integrations-tables";
 import { runBatch } from "@/db/runBatch";
+import { aiObservations, aiRuns, aiSources, projects } from "@/db/schema";
 import type { OUTCOME_CHECK_STATUSES } from "./contracts";
 
 // Outcome record (ADR-017 §3): fix batches, +4/+12-week checks, per-metric
@@ -335,4 +339,80 @@ export async function countAiTrafficByPath(
       aiTrafficClasses.kind,
       aiTrafficClasses.verification,
     );
+}
+
+/**
+ * Cited source URLs on the given domains from completed AI answers collected
+ * in [from, to): upstream AI visibility observations and BYOK answers.
+ * `answerId` lets the caller count each answer once per URL.
+ */
+export async function listAiAnswerCitations(
+  projectId: string,
+  organizationId: string,
+  domains: string[],
+  fromIso: string,
+  toIso: string,
+) {
+  const upstream = await db
+    .select({ answerId: aiObservations.id, url: aiSources.url })
+    .from(aiSources)
+    .innerJoin(aiObservations, eq(aiObservations.id, aiSources.observationId))
+    .innerJoin(aiRuns, eq(aiRuns.id, aiObservations.runId))
+    .innerJoin(projects, eq(projects.id, aiRuns.projectId))
+    .where(
+      and(
+        eq(aiRuns.projectId, projectId),
+        eq(projects.organizationId, organizationId),
+        eq(aiObservations.status, "completed"),
+        inArray(aiSources.domain, domains),
+        gte(aiObservations.collectedAt, fromIso),
+        lt(aiObservations.collectedAt, toIso),
+      ),
+    );
+  const byok = await db
+    .select({ answerId: byokAiAnswers.id, url: byokAiSources.url })
+    .from(byokAiSources)
+    .innerJoin(byokAiAnswers, eq(byokAiAnswers.id, byokAiSources.answerId))
+    .innerJoin(byokAiRuns, eq(byokAiRuns.id, byokAiAnswers.runId))
+    .where(
+      and(
+        eq(byokAiRuns.projectId, projectId),
+        eq(byokAiRuns.organizationId, organizationId),
+        eq(byokAiAnswers.status, "completed"),
+        inArray(byokAiSources.domain, domains),
+        gte(byokAiAnswers.collectedAt, fromIso),
+        lt(byokAiAnswers.collectedAt, toIso),
+      ),
+    );
+  return [...upstream, ...byok];
+}
+
+/** Whether the project has any AI visibility or BYOK run to compare. */
+export async function hasAiAnswerRuns(
+  projectId: string,
+  organizationId: string,
+) {
+  const [upstream] = await db
+    .select({ id: aiRuns.id })
+    .from(aiRuns)
+    .innerJoin(projects, eq(projects.id, aiRuns.projectId))
+    .where(
+      and(
+        eq(aiRuns.projectId, projectId),
+        eq(projects.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  if (upstream) return true;
+  const [byok] = await db
+    .select({ id: byokAiRuns.id })
+    .from(byokAiRuns)
+    .where(
+      and(
+        eq(byokAiRuns.projectId, projectId),
+        eq(byokAiRuns.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  return byok !== undefined;
 }

@@ -112,4 +112,57 @@ describe("renderClientReportHtml", () => {
     expect(html).not.toContain("Prepared with OpenSEO");
     expect(new TextEncoder().encode(html).length).toBeLessThanOrEqual(500_000);
   });
+  it("shows completed outcome checks up to the report date, never estimates", () => {
+    const metric = (
+      over: Partial<{ itemId: string; url: string; metric: string }> & {
+        before: string | null;
+        after: string | null;
+      },
+    ) => ({
+      itemId: "P3-01",
+      url: "https://example.com/a",
+      metric: "handbook_status",
+      source: "test",
+      beforeValue: over.before,
+      afterValue: over.after,
+      ...over,
+    });
+    const check = (completedAt: string, offsetWeeks: number) => ({
+      offsetWeeks,
+      dueAt: completedAt,
+      status: "done",
+      completedAt,
+      metrics: [
+        metric({ before: "OPEN", after: "PASS" }),
+        // Two finding classes on one URL: clicks count once.
+        metric({ metric: "gsc_clicks_28d", before: "10", after: "25" }),
+        metric({
+          itemId: "P3-02",
+          metric: "gsc_clicks_28d",
+          before: "10",
+          after: "25",
+        }),
+        metric({ metric: "bing_clicks_28d", before: null, after: null }),
+      ],
+    });
+    const html = renderClientReportHtml(report(), [], {
+      outcomes: [
+        {
+          batchId: "b1",
+          baselineRunId: "r0",
+          fixedAt: "2026-09-01T00:00:00.000Z",
+          checks: [
+            check("2026-10-01T00:00:00.000Z", 4),
+            check("2026-12-01T00:00:00.000Z", 12),
+          ],
+        },
+      ],
+    });
+    expect(html).toContain("Results since last report");
+    expect(html).toContain("checked 4 weeks later");
+    expect(html).not.toContain("checked 12 weeks later");
+    expect(html).toContain("<td>0 of 1</td><td>1 of 1</td>");
+    expect(html).toContain("<td>10</td><td>25</td>");
+    expect(html).toContain("<td>not connected</td><td>not connected</td>");
+  });
 });
