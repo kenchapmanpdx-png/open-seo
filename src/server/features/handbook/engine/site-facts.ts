@@ -97,6 +97,10 @@ export const no = (
 export const sample = (items: string[]) =>
   [...new Set(items)].slice(0, 3).join(", ");
 
+const MAPS_LINK = /google\.[a-z.]+\/maps|maps\.app\.goo\.gl|maps\.apple\.com/i;
+const STREET_ADDRESS =
+  /\b\d{1,6}\s+(?:[NSEW]\.?\s+)?[A-Z0-9][\w.'-]*(?:\s+[A-Z0-9][\w.'-]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Way|Ct|Court|Pl|Place|Pkwy|Parkway|Hwy|Highway)\b|\b[A-Z]{2}\s+\d{5}(?:-\d{4})?\b/;
+
 export const INFER: Record<
   SpCode,
   (f: Facts, sp: Partial<Record<SpCode, Answer>>) => Answer
@@ -123,13 +127,22 @@ export const INFER: Record<
     return no("no Product/Offer JSON-LD, no cart/checkout links", "medium");
   },
   SP3: (f) => {
-    const facets = internalMatches(
-      f,
-      /[?&](color|size|sort|filter|price|brand|orderby)=/i,
+    // Y only with ≥5 distinct internal URLs carrying facet parameters.
+    const facets = [
+      ...new Set(
+        internalMatches(
+          f,
+          /[?&](color|size|sort|filter|price|brand|orderby)=/i,
+        ),
+      ),
+    ];
+    if (facets.length >= 5)
+      return yes(`${facets.length} facet URLs: ${sample(facets)}`);
+    return no(
+      facets.length
+        ? `${facets.length} facet-parameter links (< 5): ${sample(facets)}`
+        : "no facet-parameter links",
     );
-    return facets.length
-      ? yes(`facet links: ${sample(facets)}`)
-      : no("no facet-parameter links");
   },
   SP4: (f) => {
     const videos = hasType(f, /^VideoObject$/);
@@ -162,24 +175,39 @@ export const INFER: Record<
       : no("no YMYL terms in page titles");
   },
   SP7: (f) => {
+    // Y only with ≥2 signals; one signal (e.g. a bare Maps link) = "?".
+    const live = f.pages.filter((p) => p.status === 200);
     const local = hasType(
       f,
       /LocalBusiness|Store|Restaurant|Dentist|Physician|AutoRepair|HomeAndConstructionBusiness|ProfessionalService/,
     );
-    const addresses = f.nodes.filter(
-      (n) => "address" in n.properties || "geo" in n.properties,
+    const tel = f.hrefs.filter((h) => /^tel:/i.test(h));
+    const withAddress = live.filter((p) => STREET_ADDRESS.test(p.markup.text));
+    const mapsEmbed = live.filter(
+      (p) =>
+        p.markup.counts.iframes > 0 &&
+        p.links.some((l) => MAPS_LINK.test(l.href)),
     );
-    const maps = hrefMatches(
-      f,
-      /google\.[a-z.]+\/maps|maps\.app\.goo\.gl|maps\.apple\.com/i,
-    );
-    if (local.length) return yes(`JSON-LD ${sample(local)}`, "high");
-    if (addresses.length || maps.length) {
-      return yes(
-        `${addresses.length} nodes with address/geo, ${maps.length} map links`,
-      );
-    }
-    return no("no LocalBusiness, address or map links");
+    const mapsLinks = hrefMatches(f, MAPS_LINK);
+    const signals = [
+      local.length ? `JSON-LD ${sample(local)}` : null,
+      tel.length ? `tel: link ${sample(tel)}` : null,
+      // NAP in a footer = street address on most pages, not one venue page.
+      live.length && withAddress.length * 2 >= live.length
+        ? `street address on ${withAddress.length}/${live.length} pages`
+        : null,
+      mapsEmbed.length
+        ? `Maps embed on ${sample(mapsEmbed.map((p) => p.url))}`
+        : null,
+    ].filter((x): x is string => x !== null);
+    if (signals.length >= 2) return yes(signals.join("; "), "high");
+    if (signals.length === 1 || mapsLinks.length)
+      return {
+        value: "?",
+        evidence: `one local signal: ${signals[0] ?? `${mapsLinks.length} Maps links`}`,
+        confidence: "low",
+      };
+    return no("no LocalBusiness, tel:, street address or Maps embed");
   },
   SP8: (f) => {
     if (f.sitemapCount > 500)
@@ -197,15 +225,25 @@ export const INFER: Record<
     );
   },
   SP9: (f) => {
-    const search = hasType(f, /^SearchAction$/);
-    const action = f.nodes.filter(
-      (n) => "potentialAction" in n.properties && n.types.includes("WebSite"),
+    // Y only when a search results URL is linked (form input names are not
+    // in the page facts); SearchAction markup alone = "?".
+    const links = internalMatches(
+      f,
+      /\/search(\/|\?|$)|[?&](s|q|query|search)=/i,
     );
-    const links = internalMatches(f, /\/search(\/|\?|$)|[?&](s|q|query)=/i);
-    if (search.length || action.length)
-      return yes("WebSite SearchAction in JSON-LD", "high");
-    if (links.length) return yes(`search links: ${sample(links)}`, "low");
-    return no("no SearchAction, no search links");
+    if (links.length) return yes(`search links: ${sample(links)}`);
+    const action = f.nodes.filter(
+      (n) =>
+        n.types.includes("SearchAction") ||
+        ("potentialAction" in n.properties && n.types.includes("WebSite")),
+    );
+    if (action.length)
+      return {
+        value: "?",
+        evidence: "WebSite SearchAction in JSON-LD, no search URL linked",
+        confidence: "low",
+      };
+    return no("no search results URL linked");
   },
   SP10: (_f, sp) =>
     sp.SP2?.value === "N"

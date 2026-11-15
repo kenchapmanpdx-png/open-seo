@@ -23,6 +23,7 @@ import { llmsMirrorsCheck } from "./llms-mirrors";
 import { notFoundCheck } from "./not-found";
 import { outboundLinksCheck } from "./outbound-links";
 import { pageStructureCheck } from "./page-structure";
+import { platformCheck } from "./platform";
 import { rawCopyCheck } from "./raw-copy";
 import { redirectedLinksCheck } from "./redirected-links";
 import { renderParityCheck } from "./render-parity";
@@ -85,4 +86,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   thirdPartyCheck,
   axeRulesCheck,
   auditProcessCheck,
+  platformCheck,
 ];
