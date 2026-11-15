@@ -28,7 +28,13 @@
         "@type": "Organization",
         "@id": "https://badgeo.test/#org",
         "name": "BadGEO Fixtures",
-        "url": "{{ORIGIN}}/"
+        "url": "{{ORIGIN}}/",
+        "employee": {
+          "@type": "Person",
+          "@id": "{{ORIGIN}}/about/#jane-runner",
+          "name": "Jane Runner",
+          "jobTitle": "Race Director"
+        }
       }
     </script>
   </head>
@@ -44,6 +50,7 @@
     <main>
       <h1>About BadGEO</h1>
       <p>Second clean control page with a valid organization reference.</p>
+      <p>Jane Runner, Race Director, runs the fixture events.</p>
       <ul>
         <li><a href="/duplicate-org.html">Duplicate organization</a></li>
         <li><a href="/canonicalised.html">Canonicalised</a></li>
