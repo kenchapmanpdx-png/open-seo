@@ -15,6 +15,7 @@ import { HandbookRepository } from "@/server/features/handbook/repositories/Hand
 import { HandbookService } from "@/server/features/handbook/services/HandbookService";
 import { aiTrafficSummarySchema } from "@/server/features/ai-traffic/contracts";
 import { AiTrafficService } from "@/server/features/ai-traffic/aiTrafficService";
+import { bingSummaryTool } from "@/server/features/bing/bingMcpTool";
 import { AppError } from "@/server/lib/errors";
 import { buildProjectMeta } from "@/server/mcp/context";
 import { mcpResponse, truncatePreview } from "@/server/mcp/formatters";
@@ -378,4 +379,5 @@ export function registerHandbookTools(
   register(statusExportTool);
   register(reportPublishTool);
   register(aiTrafficSummaryTool);
+  register(bingSummaryTool);
 }
