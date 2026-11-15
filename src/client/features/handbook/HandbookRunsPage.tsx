@@ -42,6 +42,19 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
                 nativeButton={false}
                 render={
                   <Link
+                    to="/p/$projectId/handbook/overview"
+                    params={{ projectId }}
+                  />
+                }
+              >
+                Overview
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
                     to="/p/$projectId/handbook/ai-traffic"
                     params={{ projectId }}
                   />
