@@ -73,6 +73,7 @@ import { Route as AppPProjectIdAiVisibilityResearchRouteImport } from './routes/
 import { Route as AppPProjectIdAuditIndexRouteImport } from './routes/_app/p/$projectId/audit/index'
 import { Route as AppPProjectIdHandbookIndexRouteImport } from './routes/_app/p/$projectId/handbook/index'
 import { Route as AppPProjectIdHandbookRunIdRouteImport } from './routes/_app/p/$projectId/handbook/$runId'
+import { Route as AppPProjectIdHandbookAgencyRouteImport } from './routes/_app/p/$projectId/handbook/agency'
 import { Route as AppPProjectIdHandbookAiTrafficRouteImport } from './routes/_app/p/$projectId/handbook/ai-traffic'
 import { Route as AppPProjectIdHandbookAiVisibilityByokRouteImport } from './routes/_app/p/$projectId/handbook/ai-visibility-byok'
 import { Route as AppPProjectIdHandbookBacklinksCcRouteImport } from './routes/_app/p/$projectId/handbook/backlinks-cc'
@@ -422,6 +423,12 @@ const AppPProjectIdHandbookRunIdRoute =
     path: '/handbook/$runId',
     getParentRoute: () => AppPProjectIdRouteRoute,
   } as any)
+const AppPProjectIdHandbookAgencyRoute =
+  AppPProjectIdHandbookAgencyRouteImport.update({
+    id: '/handbook/agency',
+    path: '/handbook/agency',
+    getParentRoute: () => AppPProjectIdRouteRoute,
+  } as any)
 const AppPProjectIdHandbookAiTrafficRoute =
   AppPProjectIdHandbookAiTrafficRouteImport.update({
     id: '/handbook/ai-traffic',
@@ -589,6 +596,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/': typeof AppPProjectIdIndexRoute
   '/p/$projectId/ai-visibility/research': typeof AppPProjectIdAiVisibilityResearchRoute
   '/p/$projectId/handbook/$runId': typeof AppPProjectIdHandbookRunIdRoute
+  '/p/$projectId/handbook/agency': typeof AppPProjectIdHandbookAgencyRoute
   '/p/$projectId/handbook/ai-traffic': typeof AppPProjectIdHandbookAiTrafficRoute
   '/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
@@ -664,6 +672,7 @@ export interface FileRoutesByTo {
   '/p/$projectId': typeof AppPProjectIdIndexRoute
   '/p/$projectId/ai-visibility/research': typeof AppPProjectIdAiVisibilityResearchRoute
   '/p/$projectId/handbook/$runId': typeof AppPProjectIdHandbookRunIdRoute
+  '/p/$projectId/handbook/agency': typeof AppPProjectIdHandbookAgencyRoute
   '/p/$projectId/handbook/ai-traffic': typeof AppPProjectIdHandbookAiTrafficRoute
   '/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
@@ -749,6 +758,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/': typeof AppPProjectIdIndexRoute
   '/_app/p/$projectId/ai-visibility/research': typeof AppPProjectIdAiVisibilityResearchRoute
   '/_app/p/$projectId/handbook/$runId': typeof AppPProjectIdHandbookRunIdRoute
+  '/_app/p/$projectId/handbook/agency': typeof AppPProjectIdHandbookAgencyRoute
   '/_app/p/$projectId/handbook/ai-traffic': typeof AppPProjectIdHandbookAiTrafficRoute
   '/_app/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/_app/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
@@ -832,6 +842,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/'
     | '/p/$projectId/ai-visibility/research'
     | '/p/$projectId/handbook/$runId'
+    | '/p/$projectId/handbook/agency'
     | '/p/$projectId/handbook/ai-traffic'
     | '/p/$projectId/handbook/ai-visibility-byok'
     | '/p/$projectId/handbook/backlinks-cc'
@@ -907,6 +918,7 @@ export interface FileRouteTypes {
     | '/p/$projectId'
     | '/p/$projectId/ai-visibility/research'
     | '/p/$projectId/handbook/$runId'
+    | '/p/$projectId/handbook/agency'
     | '/p/$projectId/handbook/ai-traffic'
     | '/p/$projectId/handbook/ai-visibility-byok'
     | '/p/$projectId/handbook/backlinks-cc'
@@ -991,6 +1003,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/'
     | '/_app/p/$projectId/ai-visibility/research'
     | '/_app/p/$projectId/handbook/$runId'
+    | '/_app/p/$projectId/handbook/agency'
     | '/_app/p/$projectId/handbook/ai-traffic'
     | '/_app/p/$projectId/handbook/ai-visibility-byok'
     | '/_app/p/$projectId/handbook/backlinks-cc'
@@ -1497,6 +1510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdHandbookRunIdRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/handbook/agency': {
+      id: '/_app/p/$projectId/handbook/agency'
+      path: '/handbook/agency'
+      fullPath: '/p/$projectId/handbook/agency'
+      preLoaderRoute: typeof AppPProjectIdHandbookAgencyRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/handbook/ai-traffic': {
       id: '/_app/p/$projectId/handbook/ai-traffic'
       path: '/handbook/ai-traffic'
@@ -1726,6 +1746,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdSettingsRoute: typeof AppPProjectIdSettingsRouteWithChildren
   AppPProjectIdIndexRoute: typeof AppPProjectIdIndexRoute
   AppPProjectIdHandbookRunIdRoute: typeof AppPProjectIdHandbookRunIdRoute
+  AppPProjectIdHandbookAgencyRoute: typeof AppPProjectIdHandbookAgencyRoute
   AppPProjectIdHandbookAiTrafficRoute: typeof AppPProjectIdHandbookAiTrafficRoute
   AppPProjectIdHandbookAiVisibilityByokRoute: typeof AppPProjectIdHandbookAiVisibilityByokRoute
   AppPProjectIdHandbookBacklinksCcRoute: typeof AppPProjectIdHandbookBacklinksCcRoute
@@ -1754,6 +1775,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
   AppPProjectIdSettingsRoute: AppPProjectIdSettingsRouteWithChildren,
   AppPProjectIdIndexRoute: AppPProjectIdIndexRoute,
   AppPProjectIdHandbookRunIdRoute: AppPProjectIdHandbookRunIdRoute,
+  AppPProjectIdHandbookAgencyRoute: AppPProjectIdHandbookAgencyRoute,
   AppPProjectIdHandbookAiTrafficRoute: AppPProjectIdHandbookAiTrafficRoute,
   AppPProjectIdHandbookAiVisibilityByokRoute:
     AppPProjectIdHandbookAiVisibilityByokRoute,

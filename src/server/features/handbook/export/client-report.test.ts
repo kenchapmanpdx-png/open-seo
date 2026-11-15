@@ -89,4 +89,27 @@ describe("renderClientReportHtml", () => {
     expect(new TextEncoder().encode(html).length).toBeLessThanOrEqual(500_000);
     expect(html.trimEnd().endsWith("</html>")).toBe(true);
   });
+
+  it("applies the agency brand within the cap, a 50 KB logo included", () => {
+    const findings = Array.from({ length: 600 }, (_, i) => ({
+      ...finding("x".repeat(1_800)),
+      code: `F${i}`,
+    }));
+    const logo = `data:image/png;base64,${Buffer.alloc(50_000).toString("base64")}`;
+    const html = renderClientReportHtml(report({ findings }), [], {
+      brand: {
+        agencyName: "Acme <SEO>",
+        accentColor: "#0a7f5a",
+        contactLine: "hello@acme.test",
+        footerText: null,
+        hideOpenseoCredit: true,
+        logoDataUri: logo,
+      },
+    });
+    expect(html).toContain("Acme &lt;SEO&gt;");
+    expect(html).toContain("h1,h2{color:#0a7f5a}");
+    expect(html).toContain(`<img src="${logo}"`);
+    expect(html).not.toContain("Prepared with OpenSEO");
+    expect(new TextEncoder().encode(html).length).toBeLessThanOrEqual(500_000);
+  });
 });
