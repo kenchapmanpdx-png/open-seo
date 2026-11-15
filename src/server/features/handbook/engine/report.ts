@@ -6,10 +6,11 @@ import { CONTRACTS_VERSION } from "@/server/features/handbook/contracts/version"
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { HandbookMode } from "@/server/features/handbook/contracts/status";
 import type { RunResult } from "./runner";
+import { scoreItems } from "./scoring";
 
 /**
- * RunResult → K7 ReportJson, and the EP-5 `seo-geo-status.md` draft.
- * Scoring (EP-7) lands in B3; until then `score` is null.
+ * RunResult → K7 ReportJson with the EP-7 score (K6). Markdown exports
+ * render from the ReportJson (`../export/`).
  */
 export function buildReportJson(input: {
   result: RunResult;
@@ -29,7 +30,7 @@ export function buildReportJson(input: {
       codesByItem.set(id, [...(codesByItem.get(id) ?? []), f.code]);
   }
   const s1Open = result.findings.filter((f) => f.severity === "S1");
-  return {
+  const report: ReportJson = {
     reportVersion: REPORT_JSON_VERSION,
     contractsVersion: CONTRACTS_VERSION,
     handbookVersion: input.handbookVersion,
@@ -82,110 +83,63 @@ export function buildReportJson(input: {
     checkerErrors: result.checkerErrors,
     outsideScope: [],
   };
+  return { ...report, score: scoreReport(report) };
 }
 
-const cell = (text: string | null | undefined) =>
-  (text ?? "").replace(/\|/g, "\\|").replace(/\s+/g, " ").trim();
-
-/** EP-5 `seo-geo-status.md` (section order: STATUS_MD_SECTIONS). */
-export function renderStatusMd(
+/**
+ * EP-7 score of a report (K6). Works on a saved report.json too, so earlier
+ * runs can be re-scored. LLM findings never cap the grade (ADR-007: never
+ * release-blocking).
+ */
+export function scoreReport(
   report: ReportJson,
-  registry: readonly RegistryEntry[],
-): string {
-  const textOf = new Map(registry.map((e) => [e.id, e.text]));
-  const lines: string[] = [
-    `# seo-geo-status — ${report.site.origin}`,
-    "",
-    `Mode: ${report.run.mode} · Tier: ${report.run.tier} (${report.run.tierEvidence}) · Handbook v${report.handbookVersion} · Run ${report.run.id} · ${report.generatedAt}`,
-    "",
-    "## Site Profile",
-    "",
-    "| SP | Answer | Evidence | Confidence |",
-    "| --- | --- | --- | --- |",
-    ...report.siteProfile.map(
-      (sp) =>
-        `| ${sp.code} | ${sp.value} | ${cell(sp.evidence)} | ${sp.confidence} |`,
-    ),
-    "",
-    "## Decisions",
-    "",
-    "- (owner decisions are recorded here; none captured by the automated run)",
-    "",
-    "## Phase gates",
-    "",
-    "| Phase | PASS | PARTIAL | OPEN | LIMITED | BLOCKED | DEFERRED | NA |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- |",
-  ];
-  const phases = [...new Set(report.items.map((i) => i.phase))];
-  for (const phase of phases) {
-    const items = report.items.filter((i) => i.phase === phase);
-    const count = (s: string) => items.filter((i) => i.status === s).length;
-    lines.push(
-      `| ${phase} | ${["PASS", "PARTIAL", "OPEN", "LIMITED", "BLOCKED", "DEFERRED", "NA"].map(count).join(" | ")} |`,
-    );
-  }
-  lines.push(
-    "",
-    "## Release",
-    "",
-    `${report.release.status}${report.release.blockingItemIds.length ? ` (${report.release.blockingItemIds.join(", ")})` : ""}`,
-    "",
-    "## Checklist (§41 copy)",
-    "",
-    "| Item | Status | Findings | Note | Text |",
-    "| --- | --- | --- | --- | --- |",
-    ...report.items.map((i) => {
-      // Handbook vocabulary: PASS is written DONE outside REVIEW (ADR-005).
-      const status =
-        i.status === "PASS" && report.run.mode !== "REVIEW" ? "DONE" : i.status;
-      return `| ${i.itemId} | ${status} | ${i.findingCodes.join(", ")} | ${cell(i.note)} | ${cell(textOf.get(i.itemId))} |`;
+): NonNullable<ReportJson["score"]> {
+  const findingByCode = new Map(report.findings.map((f) => [f.code, f]));
+  const score = scoreItems({
+    handbookVersion: report.handbookVersion,
+    mode: report.run.mode,
+    items: report.items.map((item) => {
+      const linked = item.findingCodes.flatMap((code) => {
+        const f = findingByCode.get(code);
+        return f && f.source !== "llm" ? [f] : [];
+      });
+      return {
+        itemId: item.itemId,
+        phase: item.phase,
+        status: item.status,
+        openSeverities: linked.map((f) => f.severity),
+        openFindingCodes: linked.map((f) => f.code),
+      };
     }),
-    "",
-    "## Blocked / owner needed",
-    "",
-    ...listItems(report, "BLOCKED"),
-    "",
-    "## Deferred (trigger)",
-    "",
-    ...listItems(report, "DEFERRED"),
-    "",
-  );
-  if (report.findings.length) {
-    lines.push("## Findings", "");
-    for (const f of report.findings) {
-      lines.push(
-        `### ${f.code} · ${f.severity} · ${f.title}`,
-        "",
-        `Items: ${f.itemIds.join(", ")} · ${f.sectionRef} · ${f.fixability} · effort ${f.effort}`,
-        "",
-        f.detail,
-        "",
-        `Fix: ${f.fix}`,
-        "",
-        ...f.urls.slice(0, 10).map((u) => `- ${u}`),
-        ...f.evidence
-          .slice(0, 3)
-          .map(
-            (e) =>
-              `- evidence (${e.kind}) ${e.url}: \`${cell(e.excerpt).slice(0, 300)}\``,
-          ),
-        "",
-      );
-    }
-  }
-  if (report.checkerErrors.length) {
-    lines.push(
-      "## Checker errors",
-      "",
-      ...report.checkerErrors.map((e) => `- ${e}`),
-      "",
-    );
-  }
-  return lines.join("\n");
+  });
+  return {
+    final: score.final,
+    uncapped: score.uncapped,
+    grade: score.grade,
+    capReason: score.capReason,
+    phases: score.phases.map((p) => ({
+      phase: p.phase,
+      weight: p.weight,
+      score: p.score,
+      driver: phaseDriver(report, p.phase),
+    })),
+  };
 }
 
-function listItems(report: ReportJson, status: string) {
-  const items = report.items.filter((i) => i.status === status);
-  if (items.length === 0) return ["- none"];
-  return items.map((i) => `- ${i.itemId}: ${cell(i.note)}`);
+/** The two most severe findings behind the phase's OPEN/PARTIAL items. */
+function phaseDriver(report: ReportJson, phase: string): string | null {
+  const codes = new Set(
+    report.items
+      .filter(
+        (i) =>
+          i.phase === phase && (i.status === "OPEN" || i.status === "PARTIAL"),
+      )
+      .flatMap((i) => i.findingCodes),
+  );
+  const drivers = report.findings
+    .filter((f) => codes.has(f.code))
+    .sort((a, b) => a.severity.localeCompare(b.severity))
+    .slice(0, 2)
+    .map((f) => `${f.code} ${f.title}`);
+  return drivers.length ? drivers.join("; ") : null;
 }

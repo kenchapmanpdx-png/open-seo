@@ -26,6 +26,7 @@ import {
   reportJsonSchema,
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
+import { scoreReport } from "@/server/features/handbook/engine/report";
 
 const entrySchema = z.object({
   id: z.string(),
@@ -39,6 +40,7 @@ const entrySchema = z.object({
 const expectedSchema = z.object({
   site: z.string(),
   origin: z.string().url(),
+  grade: z.object({ final: z.number(), uncapped: z.number() }).optional(),
   findings: z.array(entrySchema),
   passes: z.array(entrySchema).default([]),
 });
@@ -219,18 +221,34 @@ export async function scoreGolden(reportPath: string, expectedPath: string) {
     );
   }
   const passes = expected.passes.map((entry) => scorePass(report, entry));
+  // Re-scored from the saved items, so runs from before K6 get a grade too.
+  const score = scoreReport(report);
+  const gradeLine = expected.grade
+    ? `Grade: run ${score.final} ${score.grade} (uncapped ${score.uncapped}) · golden ${expected.grade.final} (uncapped ${expected.grade.uncapped}) · delta ${round1(score.final - expected.grade.final)} (uncapped ${round1(score.uncapped - expected.grade.uncapped)}) · tolerance ±10`
+    : `Grade: run ${score.final} ${score.grade} (uncapped ${score.uncapped})`;
   const md = [
     `# Golden score — ${expected.site}`,
     "",
     `Report: ${reportPath} (run ${report.run.id}, ${report.generatedAt}) · Expected: ${expectedPath}`,
+    "",
+    gradeLine,
+    "",
+    "| phase | weight | score | driver |",
+    "| --- | --- | --- | --- |",
+    ...score.phases.map(
+      (p) =>
+        `| ${p.phase} | ${p.weight} | ${p.score ?? "—"} | ${(p.driver ?? "").replace(/\|/g, "\\|")} |`,
+    ),
     "",
     ...table("Findings", findings),
     ...table("Passes", passes),
   ].join("\n");
   const out = join(dirname(reportPath), "golden-score.md");
   await writeFormatted(out, md);
-  return { site: expected.site, report, findings, passes, out };
+  return { site: expected.site, report, findings, passes, out, gradeLine };
 }
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
 
 const DEFAULT_MD = "fork/reports/B2-golden.md";
 const SECTION = (site: string) => `<!-- golden:${site} -->`;
@@ -251,6 +269,8 @@ async function appendSiteSection(
     `## ${site}`,
     "",
     `Run date ${report.generatedAt.slice(0, 10)} · report ${reportPath}`,
+    "",
+    scored.gradeLine,
     "",
     `Findings: ${headline(findings)}`,
     "",
