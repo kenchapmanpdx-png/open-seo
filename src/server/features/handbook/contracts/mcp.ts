@@ -4,7 +4,8 @@ import { handbookModeSchema, itemStatusSchema } from "./status";
 
 /**
  * K8 — MCP tool schemas. Registered beside upstream tools in B4; handlers
- * authorize with `withMcpProjectAuth` (tenant scoping invariant).
+ * authorize with `withMcpProjectAuth` (tenant scoping invariant). Outputs are
+ * loose objects (1.3.0): published MCP outputs must accept added fields.
  */
 
 export const HANDBOOK_MCP_TOOL_NAMES = [
@@ -27,7 +28,7 @@ export const handbookAuditRunInput = {
   maxPages: z.number().int().min(1).max(500).optional(),
 };
 
-export const handbookAuditRunOutput = z.object({
+export const handbookAuditRunOutput = z.looseObject({
   runId: z.string(),
   status: z.enum(["queued", "running", "completed", "failed"]),
   dashboardUrl: z.string(),
@@ -41,13 +42,13 @@ export const handbookFindingsGetInput = {
   limit: z.number().int().min(1).max(200).default(50),
 };
 
-export const handbookFindingsGetOutput = z.object({
+export const handbookFindingsGetOutput = z.looseObject({
   runId: z.string(),
   handbookVersion: z.string(),
   grade: z.string().nullable(),
   score: z.number().nullable(),
   findings: z.array(
-    z.object({
+    z.looseObject({
       code: z.string(),
       severity: severitySchema,
       title: z.string(),
@@ -66,7 +67,7 @@ export const handbookStatusExportInput = {
   format: z.enum(["status-md", "report-json"]).default("status-md"),
 };
 
-export const handbookStatusExportOutput = z.object({
+export const handbookStatusExportOutput = z.looseObject({
   runId: z.string(),
   format: z.enum(["status-md", "report-json"]),
   content: z.string(),
