@@ -136,10 +136,8 @@ function phaseDriver(report: ReportJson, phase: string): string | null {
       )
       .flatMap((i) => i.findingCodes),
   );
-  const drivers = report.findings
-    .filter((f) => codes.has(f.code))
-    .sort((a, b) => a.severity.localeCompare(b.severity))
-    .slice(0, 2)
-    .map((f) => `${f.code} ${f.title}`);
+  const open = report.findings.filter((f) => codes.has(f.code));
+  open.sort((a, b) => a.severity.localeCompare(b.severity));
+  const drivers = open.slice(0, 2).map((f) => `${f.code} ${f.title}`);
   return drivers.length ? drivers.join("; ") : null;
 }
