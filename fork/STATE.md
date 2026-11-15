@@ -4,11 +4,11 @@ autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken 
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
 needs_ken: (empty unless status = needs-ken: one line per item Ken must do)
-current_batch: B6
-batch_file: fork/batches/B6-light-integrations.md
+current_batch: B7
+batch_file: fork/batches/B7-heavy-v2.md
 required_model: Opus 5.5 (SINGLE) · SPLIT: per batch table below
-current_run: 21
-next_action: B6 — executor protocol (`fork/batches/B2-light-deterministic.md` §Executor protocol): first `todo` WO in `fork/queue.md` = WO-B6-051 (outcome record, size L), then 061, 090. BYOK live runs BLOCKED-KEN (OPENAI/ANTHROPIC/GEMINI/PERPLEXITY keys missing; fixtures synthetic). Bing live sync BLOCKED-KEN (BING_WEBMASTER_API_KEY; real AI Performance CSV export to pin headers). WO-B6-012 BLOCKED-KEN (live receiver deploy + drain: Ken runs `fork/scripts/deploy-receiver.ts`). Carry-over BLOCKED-KEN: OpenRouter credits (LLM eval, `--llm`, cost per audit); in-app UI smoke (Playwright host libs); Vercel live publish (Ken runs `publish-report.ts`); units not installed (`install-units.sh`, now incl. `openseo-commoncrawl.timer`); live MCP run (OAuth client). Supabase has no projects yet: Common Crawl targets enroll when Ken creates one (turn on in handbook → Backlinks (Common Crawl)).
+current_run: 22
+next_action: B7 HEAVY — start at R1 in `fork/batches/B7-heavy-v2.md` (rebase first: FORK.md upstream sync). Carry-over from B6 (fork/reports/B6.md §For B7): client-report "Results since last report" section + `ai_answer_mentions` outcome source; P7-04 PASS without render evidence. BLOCKED-KEN: sidecar regression runs (export HANDBOOK_SIDECAR_TOKEN; rerun BadGEO + golden with `--sidecar http://127.0.0.1:4777`); WO-B6-012 receiver deploy + drain; BING_WEBMASTER_API_KEY live sync + real AI Performance CSV; BYOK provider keys; OpenRouter credits (LLM eval, `--llm`); in-app UI smoke (Playwright host libs); Vercel live publish; units not installed (`install-units.sh`); live MCP run (OAuth client). Supabase has no projects yet.
 contracts_version: 1.4.0 (B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: (Ken: optional third site URL for regression runs; blank = skip)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -27,15 +27,15 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
 ## Batch sequence
 
-| Batch | File                                    | Model (SPLIT) | Status      |
-| ----- | --------------------------------------- | ------------- | ----------- |
-| B1    | fork/batches/B1-heavy-foundation.md     | HEAVY         | done        |
-| B2    | fork/batches/B2-light-deterministic.md  | LIGHT         | done        |
-| B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | done        |
-| B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | done        |
-| B5    | fork/batches/B5-heavy-v1-signoff.md     | HEAVY (Opus)  | done        |
-| B6    | fork/batches/B6-light-integrations.md   | LIGHT         | in-progress |
-| B7    | fork/batches/B7-heavy-v2.md             | HEAVY         | —           |
+| Batch | File                                    | Model (SPLIT) | Status |
+| ----- | --------------------------------------- | ------------- | ------ |
+| B1    | fork/batches/B1-heavy-foundation.md     | HEAVY         | done   |
+| B2    | fork/batches/B2-light-deterministic.md  | LIGHT         | done   |
+| B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | done   |
+| B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | done   |
+| B5    | fork/batches/B5-heavy-v1-signoff.md     | HEAVY (Opus)  | done   |
+| B6    | fork/batches/B6-light-integrations.md   | LIGHT         | done   |
+| B7    | fork/batches/B7-heavy-v2.md             | HEAVY         | next   |
 
 ## Run log
 
@@ -62,6 +62,7 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | 19  | 2026-11-14 | Opus 5.5 | B6 r2: WO-B6-020 Bing client port (10 reads, retry + key-digest throttle cooldown, Zod, Workers-safe); 021 site binding + daily sync job (upserts, first_seen kept); 022 AI Performance CSV import (header-alias parser, evidence store, sha-256 dedupe, CLI `bing-ai-import.ts`, smoke vs Supabase ok); 023 Bing page + server fns + MCP `bing_summary` (catalog 90); 030 Elmo citation categories port + 5-min categorize job; tests 2287 pass                                                                                                         | B6 WO-B6-031 |
 | 20  | 2026-11-14 | Opus 5.5 | B6 r3: WO-B6-031 BYOK providers OpenAI/Anthropic/Gemini/Perplexity via plain fetch (pnpm add blocked by permission classifier → WO fallback; Anthropic `web_search_20260209`), price table, synthetic fixtures; 032 run service (budget guard incl. in-flight, evidence-store raw output, upstream matcher + categories, fan-out rows, conditional schedule claim, 5-min job); 033 BYOK page + server fns + comparison (closest upstream run) + fan-out views + MCP `byok_ai_comparison` (catalog 91); tests 2297 pass                                   | B6 WO-B6-040 |
 | 21  | 2026-11-14 | Opus 5.5 | B6 r4: WO-B6-040 Common Crawl libs (`@duckdb/node-api` devDependency allowed this run); 041 CLI + monthly timer, live import 19m24s (whyracingevents.com 91 referring domains via temporary smoke project, removed); 042 Common Crawl page + MCP `cc_backlinks_get` (catalog 92); 050 agency brand/client/white-label report + seeded report template; 060 C13 fields derived in collectors (no K3 change); tests 2301 pass                                                                                                                              | B6 WO-B6-051 |
+| 22  | 2026-11-14 | Opus 5.5 | B6 r5: WO-B6-051 outcome record (fix/flip batches → +4/+12 checks, 5-min due job with lease claim, URL-limited deterministic rerun, GSC/Bing/AI-traffic sources, BLOCKED rows, `seo-followups.md`, run-page buttons); 061 C13 consumers (P2-08 JS-only form S4, P7-05 Lighthouse render-blocking, P8-02 sampleTexts, P5-03 ≤10 cited pages fetched); 090 regression (BadGEO no-sidecar 38/0/0; golden no-sidecar; sidecar runs BLOCKED-KEN: token) + B6 report; B6 exit; tests 2309 pass                                                                 | B7 R1        |
 
 ## Batch history
 
@@ -72,4 +73,5 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | B3    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B3.md |
 | B4    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B4.md |
 | B5    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B5.md |
-| B6    | Opus 5.5 | 2026-11-14 | —          | fork/reports/B6.md |
+| B6    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B6.md |
+| B7    | Opus 5.5 | —          | —          | fork/reports/B7.md |
