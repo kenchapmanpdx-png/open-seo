@@ -21,6 +21,8 @@ const CLS = 0.1;
 const HTML_BYTES = 500_000;
 const BLOCKING_SCRIPTS = 5;
 const MAX_PRELOADS = 3;
+/** Lighthouse render-blocking savings worth naming in P7-05. */
+const LH_BLOCKING_MS = 500;
 const ANIMATION_LIB = /gsap|lottie|\baos\b|framer-motion|anime(\.min)?\.js/i;
 /** Third-party font / icon services, named in the P7-05 finding (why F26, ryan A08). */
 const FONT_SERVICES: ReadonlyArray<[RegExp, string]> = [
@@ -198,7 +200,19 @@ export const pageWeightCheck: HandbookCheck = {
       );
     }
 
-    // P7-05 — render-blocking scripts and animation libraries in <head>.
+    // P7-05 — "Bundle code-split; animation libraries lazy-loaded;
+    // render-blocking fonts preloaded (§14)": blocking head scripts, animation
+    // libraries, third-party font CSS, and (sidecar ≥ 1.3.0) Lighthouse
+    // render-blocking resources that cost ≥ 500 ms.
+    const lhOf = new Map(
+      ctx.collected.lighthouse.status === "ok"
+        ? ctx.collected.lighthouse.pages.map((p) => [normalizeUrl(p.url), p])
+        : [],
+    );
+    const lhBlocking = (s: PageSnapshot) =>
+      (lhOf.get(normalizeUrl(s.url))?.renderBlocking ?? []).filter(
+        (r) => r.wastedMs >= LH_BLOCKING_MS,
+      );
     const problems = pagesLive.flatMap((s) => {
       const list = blocking(s);
       const why: string[] = [];
@@ -208,6 +222,11 @@ export const pageWeightCheck: HandbookCheck = {
         if (x.src && ANIMATION_LIB.test(x.src))
           why.push(`animation library blocks rendering: ${x.src}`);
       why.push(...fontBlockers(s));
+      for (const r of lhBlocking(s))
+        if (!why.some((w) => w.includes(r.url)))
+          why.push(
+            `Lighthouse render-blocking (${Math.round(r.wastedMs)} ms): ${r.url}`,
+          );
       return why.length > 0 ? [{ s, why }] : [];
     });
     if (problems.length > 0)
@@ -222,9 +241,10 @@ export const pageWeightCheck: HandbookCheck = {
         fixability: "FIXABLE",
         effort: "M",
         urls: problems.map(({ s }) => s.url),
-        evidenceRefs: problems
-          .slice(0, 5)
-          .map(({ s, why }) =>
+        evidenceRefs: problems.slice(0, 5).flatMap(({ s, why }) => {
+          const lh = lhOf.get(normalizeUrl(s.url));
+          const lhRows = lhBlocking(s);
+          return [
             ref(
               s,
               [
@@ -232,7 +252,22 @@ export const pageWeightCheck: HandbookCheck = {
                 ...blocking(s).map((x) => `<script src="${x.src}"> in head`),
               ].join("\n"),
             ),
-          ),
+            ...(lh && lhRows.length > 0
+              ? [
+                  out.evidence(
+                    "lighthouse",
+                    s.url,
+                    lhRows
+                      .map(
+                        (r) => `${r.url} — wastedMs ${Math.round(r.wastedMs)}`,
+                      )
+                      .join("\n"),
+                    lh.storageKey,
+                  ),
+                ]
+              : []),
+          ];
+        }),
       });
     else
       out.pass(

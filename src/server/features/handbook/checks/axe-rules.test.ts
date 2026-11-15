@@ -12,6 +12,9 @@ const run = (violations: AxeData["pages"][number]["violations"]) =>
     }),
   );
 
+const contrastExcerpt = (result: Awaited<ReturnType<typeof run>>) =>
+  result.evidence.find((e) => e.excerpt.startsWith("color-contrast:"))?.excerpt;
+
 describe("axeRulesCheck", () => {
   it("flags color-contrast violations", async () => {
     const result = await run([
@@ -24,6 +27,24 @@ describe("axeRulesCheck", () => {
       },
     ]);
     expect(statusOf(result, "P8-02")).toBe("OPEN");
+    // No sampleTexts (sidecar < 1.3.0): selectors only.
+    expect(contrastExcerpt(result)).toMatch(/\nmain > p$/);
+  });
+
+  it("quotes the node text of each contrast sample when the sidecar sends it", async () => {
+    const result = await run([
+      {
+        id: "color-contrast",
+        impact: "serious",
+        help: "Elements must meet minimum color contrast ratio thresholds",
+        nodes: 2,
+        sampleTargets: ["main > p", ".badge"],
+        sampleTexts: ["Book your table", ""],
+      },
+    ]);
+    expect(contrastExcerpt(result)).toContain(
+      'main > p — "Book your table"\n.badge',
+    );
   });
 
   it("labels each contrast hit with the template its URL samples", async () => {
