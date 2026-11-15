@@ -15,4 +15,5 @@
   <url><loc>{{ORIGIN}}/Bad_Slug.html</loc></url>
   <url><loc>{{ORIGIN}}/dup-title-a.html</loc></url>
   <url><loc>{{ORIGIN}}/dup-title-b.html</loc></url>
+  <url><loc>{{ORIGIN}}/no-og.html</loc></url>
 </urlset>
