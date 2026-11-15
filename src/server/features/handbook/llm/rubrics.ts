@@ -68,6 +68,69 @@ const list: Rubric[] = [
       "pass when no quantity conflicts.",
     ].join("\n"),
   },
+  {
+    id: "page-type-matrix",
+    version: 1,
+    instructions: [
+      "Handbook §7 page-type matrix: home, service, product, location and contact pages carry no article furniture: author byline, 'key takeaways' box, citation or references list, visible 'last updated' / 'published on' stamp. Articles, guides and blog posts may carry them.",
+      "Each page's text is its title, meta description and H1, then the opening of its visible main content. Decide each page's type from its URL, title and content; the pages given are expected to be non-article pages, but a page that is clearly an article or guide is exempt.",
+      "Customer reviews with a reviewer name and date are not a byline. A copyright year in the footer is not a 'last updated' stamp.",
+      "fail when a non-article page carries article furniture; quote it.",
+      "pass otherwise.",
+    ].join("\n"),
+  },
+  {
+    id: "awards-as-text",
+    version: 1,
+    instructions: [
+      "Handbook §6: every award, press mention and certification is stated as HTML text naming the awarding body (or publication), the year, and a link to the source. A badge image may decorate it but must not be the only statement.",
+      "Each page's text lists the award-like images (alt and src), award-like sentences and award-like links found on that page.",
+      "An award-like image counts as stated in text only when an award-like sentence on the same page names the same award with its body and year.",
+      "fail when an award, press mention or certification is shown only as an image, or as text missing the awarding body, the year, or a source link; quote the text or the image line (alt/src) exactly as given.",
+      "pass when every one is complete text, or when nothing listed is actually an award, press mention or certification (e.g. 'press' as a verb, a 'featured events' heading).",
+    ].join("\n"),
+  },
+  {
+    id: "detail-key-facts",
+    version: 1,
+    instructions: [
+      "Handbook §6, §7: each detail page (one event, product, listing, case study) has a key-facts block (a list or table of the item's own facts: date, place, price, distance, specs, duration) and facts unique to that item, not template copy with the name swapped.",
+      "Each page's text is its title, meta description and H1, then the opening of its main content. facts.detailPages gives per page: template, word count, number of tables and lists, and sharedSentenceRatio (share of its sentences that also appear on another sampled page of the same template).",
+      "A sharedSentenceRatio above 0.5 with few words means the body is mostly boilerplate. A page with no tables or lists may still have a key-facts block as labelled lines ('Date: …', 'Location: …').",
+      "fail when a page lacks a key-facts block or its body is mostly shared boilerplate; quote the boilerplate sentence or the page's H1 line.",
+      "pass otherwise.",
+    ].join("\n"),
+  },
+  {
+    id: "hub-titles",
+    version: 1,
+    instructions: [
+      "Handbook §2: a hub or category page title names the collection and a specific promise (what, where, for whom, or when) plus the brand.",
+      "Each page's text is the title, meta description and H1 of one hub page (a page that lists a collection of detail pages).",
+      "fail when a hub title is a bare label ('Events | Brand', 'Blog', 'Our Services - Brand', 'Shop'); quote the title line exactly as given.",
+      "pass when every hub title names the collection with a specific promise.",
+    ].join("\n"),
+  },
+  {
+    id: "local-pages",
+    version: 1,
+    instructions: [
+      "Handbook §9, §24: one page per real service and per real location, each with distinct content. Pages that differ only by the swapped place or service name (doorway pages) are a defect, and so is one page listing all services with no page per real service.",
+      "The pages given are candidates: either pages whose titles differ only by one or two words, with sharedSentenceRatio (share of their sentences found on another candidate), or a single services/locations page with its section headings and a note that no page exists below it.",
+      "fail when location/service pages differ only by the swapped name, or all services sit on one page with no page per real service; quote the repeated sentence or the title/heading lines that show it.",
+      "pass when the candidates have distinct, specific content (similar titles alone are fine), or the single page covers one real service only.",
+    ].join("\n"),
+  },
+  {
+    id: "fallback-freshness",
+    version: 1,
+    instructions: [
+      "Handbook §14: the server HTML of an API-driven page (shown before or without JavaScript data) must be either a dated snapshot ('as of <date>', 'updated <date>') or neutral copy.",
+      "Each page's text is the visible text of the server HTML of a page whose browser version loads data from the site's own API.",
+      "fail when that HTML presents prices, availability, dates, counts or an empty state ('No events found', '0 results', 'Sold out') as current without a timestamp; quote it.",
+      "Loading spinners and 'Loading…' strings are handled by another check: ignore them. pass otherwise.",
+    ].join("\n"),
+  },
 ];
 
 export const RUBRICS: ReadonlyMap<string, Rubric> = new Map(

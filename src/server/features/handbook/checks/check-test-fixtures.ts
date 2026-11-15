@@ -6,6 +6,12 @@ import type {
   CollectedData,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
+import type {
+  Judge,
+  JudgeInput,
+  JudgeResult,
+} from "@/server/features/handbook/contracts/llm";
+import { REGISTRY } from "@/server/features/handbook/registry";
 
 export const ORIGIN = "https://example.com";
 
@@ -97,3 +103,55 @@ export function snapshot(
 
 export const statusOf = (result: CheckResult, itemId: string) =>
   result.statuses.find((s) => s.itemId === itemId)?.status;
+
+/** A judge stub returning `verdict` (default: confident pass, no quotes). */
+export function stubJudge(
+  verdict: Partial<JudgeResult> = {},
+  seen: JudgeInput[] = [],
+): Judge {
+  return async (input) => {
+    seen.push(input);
+    return {
+      verdict: "pass",
+      quotes: [],
+      confidence: 0.9,
+      rationale: "stub",
+      quotesVerified: true,
+      call: {
+        model: "m",
+        tokensIn: 1,
+        tokensOut: 1,
+        costUsd: 0,
+        promptSha256: "x",
+      },
+      ...verdict,
+    };
+  };
+}
+
+/** Context with every registry item applicable and a stub judge. */
+export function llmContext(
+  collected: Partial<CollectedData>,
+  judge: Judge = stubJudge(),
+): CheckContext {
+  return {
+    ...context(collected),
+    applicableItems: new Map(REGISTRY.map((e) => [e.id, e])),
+    judge,
+  };
+}
+
+/** Snapshot with visible text (and optional title / H1). */
+export function textPage(
+  path: string,
+  text: string,
+  head: { title?: string; h1?: string } = {},
+): PageSnapshot {
+  const s = snapshot(path);
+  return {
+    ...s,
+    head: { ...s.head, title: head.title ?? null },
+    h1: head.h1 ? [head.h1] : [],
+    markup: { ...s.markup, text: head.h1 ? `${head.h1} ${text}` : text },
+  };
+}

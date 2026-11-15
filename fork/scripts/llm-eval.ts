@@ -106,6 +106,61 @@ const SPECS: CaseSpec[] = [
     itemId: "P5-07",
     expected: "fail",
   },
+  // B4 (WO-B4-001/002): content and template rubrics.
+  {
+    id: "why-F16",
+    site: "why",
+    golden: "F16",
+    itemId: "P5-15",
+    expected: "fail",
+    path: /^\/events\/(?:ho-ho-5k|silver-falls-trail-challenge|white-river-snow-shoe|crown-stub-100)$/,
+  },
+  {
+    id: "why-PASS-KF",
+    site: "why",
+    golden: "events/appletree-marathon key facts",
+    itemId: "P5-15",
+    expected: "pass",
+    path: /^\/events\/appletree-marathon$/,
+  },
+  {
+    id: "why-PASS-MATRIX",
+    site: "why",
+    golden: "home without article furniture",
+    itemId: "P5-06",
+    expected: "pass",
+    path: /^\/$/,
+  },
+  {
+    id: "why-F02",
+    site: "why",
+    golden: "F02 (P2-03 part)",
+    itemId: "P2-03",
+    expected: "fail",
+    path: /^\/$/,
+  },
+  {
+    id: "why-HUB",
+    site: "why",
+    golden: "§2 hub title (/events)",
+    itemId: "P4-07",
+    expected: "fail",
+  },
+  {
+    id: "ryan-F12",
+    site: "ryan",
+    golden: "F12",
+    itemId: "P5-11",
+    expected: "fail",
+    path: /^\/$/,
+  },
+  {
+    id: "ryan-F14",
+    site: "ryan",
+    golden: "F14",
+    itemId: "P5-09",
+    expected: "fail",
+  },
 ];
 
 type EvalCase = Omit<CaseSpec, "path"> & { input: JudgeInput };
@@ -117,11 +172,17 @@ function build(site: string, runDir: string) {
   mkdirSync(join(EVALS, "cases"), { recursive: true });
   for (const spec of SPECS.filter((s) => s.site === site)) {
     const input = inputs.find((i) => i.itemId === spec.itemId);
-    if (!input) throw new Error(`${spec.id}: no ${spec.itemId} input in run`);
+    if (!input) {
+      console.warn(`${spec.id}: no ${spec.itemId} input in run (item NA?)`);
+      continue;
+    }
     const pages = input.pages.filter(
       (p) => !spec.path || spec.path.test(new URL(p.url).pathname),
     );
-    if (pages.length === 0) throw new Error(`${spec.id}: no pages match`);
+    if (pages.length === 0) {
+      console.warn(`${spec.id}: no pages match`);
+      continue;
+    }
     const { path: _path, ...rest } = spec;
     const evalCase: EvalCase = { ...rest, input: { ...input, pages } };
     writeFileSync(
