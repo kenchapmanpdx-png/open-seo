@@ -49,11 +49,12 @@ const list: Rubric[] = [
   },
   {
     id: "entity-test",
-    version: 1,
+    version: 2,
     instructions: [
       "Handbook §25 entity test: the home page's title, meta description and first H1 alone must reveal what kind of business this is and, when facts.local is true, where it operates. A person-named or place-named brand must state its business category beside the name.",
-      "Also: the brand name and key-person names are spelled one way across all pages given (case, spacing, punctuation, abbreviations).",
-      "fail when the home page's title + description + H1 do not reveal the business type (or place when local), or a brand or person name is spelled two ways. Quote the lines that show it.",
+      "Also: the brand name and key-person and event names are spelled one way across all pages given (case, spacing, punctuation, abbreviations, '&' vs 'and').",
+      "'Name mentions:' blocks list body-text sentences that contain a spelling of the brand or of a schema event/person name, one per page per spelling. Use them to judge spelling consistency: different case alone (WHY vs Why) counts when the brand writes itself one way in its logo/title. A plain English word that happens to match (\"why we race\") is not a mention.",
+      "fail when the home page's title + description + H1 do not reveal the business type (or place when local), or a brand, person or event name is spelled two ways. Quote the lines that show it (both spellings).",
       "pass when both parts hold.",
     ].join("\n"),
   },
@@ -129,6 +130,16 @@ const list: Rubric[] = [
       "Each page's text is the visible text of the server HTML of a page whose browser version loads data from the site's own API.",
       "fail when that HTML presents prices, availability, dates, counts or an empty state ('No events found', '0 results', 'Sold out') as current without a timestamp; quote it.",
       "Loading spinners and 'Loading…' strings are handled by another check: ignore them. pass otherwise.",
+    ].join("\n"),
+  },
+  {
+    id: "source-check",
+    version: 1,
+    instructions: [
+      "Handbook §0 EP-1, §6: every citation, study, survey, quotation, testimonial attributed to a third party, award and external statistic is backed by a working link to the page that states it. First-party facts about the business itself (its own prices, event counts, years in business, services) do not need an outside source.",
+      "Each page's text lists claim sentences from that page; under each, 'source:' gives the off-site link cited in the sentence and its HTTP status, or 'none cited'. The cited pages were not fetched: do not guess what they say.",
+      "fail when a claim that needs an outside source has 'none cited', or its link status is an error (4xx, 5xx, unreachable); quote the claim sentence exactly as given (without the '- ' prefix).",
+      "pass when every claim that needs an outside source has a working link, or no claim needs one.",
     ].join("\n"),
   },
 ];
