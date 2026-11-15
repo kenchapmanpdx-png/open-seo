@@ -7,9 +7,9 @@ needs_ken: (empty unless status = needs-ken: one line per item Ken must do)
 current_batch: B5
 batch_file: fork/batches/B5-heavy-v1-signoff.md
 required_model: Opus 5.5 (SINGLE) · SPLIT: per batch table below
-current_run: 14
-next_action: B5 R1 — `git fetch upstream` (rebase if new commits), review B4 with REVIEW-CHECKLIST.md, security pass, then step 6: the MCP registration hook (`registerHandbookTools(register);` in `registerOpenSeoTools`, log in UPSTREAM-EDITS) and WO-B5-C13 (contracts 1.3.0). Also in B5 R1: local prod smoke (`run-local.sh prod`, one cron tick on `/cdn-cgi/local/scheduled`), Supabase advisors. Carry-over BLOCKED-KEN: OpenRouter credits (LLM eval, `--llm`, cost per audit); in-app UI smoke (Playwright host libs); Vercel live publish (agent permission refused — Ken runs `publish-report.ts`); units not installed (`install-units.sh`). Sidecar token: rotate in ONE shell before CLI runs (see RUNBOOK).
-contracts_version: 1.2.0 (B3 R2: additive `CheckContext.judge`, llms `text`; 1.1.0 B3 R1 `requests[].beforeLoad`; 1.0.0 frozen at end of B1)
+current_run: 15
+next_action: B5 R1 finish — spec-fidelity sample (≥20% of B4 WOs vs handbook rules), evidence-per-finding SQL check on stored runs (Supabase), migration up/down on both dialects, LLM injection guard review; fix S1/S2; then R2 tag `v1.0.0` + release notes in `fork/reports/B5.md`, then R3 ADR-012…016 (note: ADR-012 number already used by exports — number the new ones from 013), R4 B6 queue (include C13 producers/consumers: sidecar forms/axe sampleTexts/Lighthouse renderBlocking; P5-03/P2-08/P7-05/P8-02). Carry-over BLOCKED-KEN: OpenRouter credits (LLM eval, `--llm`, cost per audit); in-app UI smoke (Playwright host libs); Vercel live publish (Ken runs `publish-report.ts`); units not installed (`install-units.sh`); MCP live run (OAuth client).
+contracts_version: 1.3.0 (B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: (Ken: optional third site URL for regression runs; blank = skip)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
@@ -55,6 +55,7 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | 12  | 2026-11-14 | Opus 5.5 | B3 R3: EP-7 scorer (K6) in report.json + `scoreReport` re-scoring; golden grades why 39 (Δ0) / ryan 47.8 (Δ−0.2) on sidecar runs; P3-20 XHR-only → S2 (Squarespace telemetry false S1 cap); K7 markdown exports (EP-5 status file, audit baseline, EP-7 review report); ADR-011 runtime, ADR-012 exports                                                                                                                                                                                               | B3 R4 |
 | 13  | 2026-11-14 | Opus 5.5 | B4 r1: WO-B4-001…009 — LLM checks P5-06/P5-11/P5-15, P4-07/P5-09/P2-03, P5-03 (no source fetch: ESCALATE → WO-B5-C13), entity test v2 name mentions; golden leftovers P7-05 fonts, P8-02 template labels, P3-11 canonical twin; runner process verdicts P1-03/RV-01 + export-confirmed P0-01/P0-02/RV-02, platform, provisional line; seo-owner-todo.md; client report HTML (≤ 500 KB); publish to upstream Reports + run page actions; 21 eval cases (eval run BLOCKED-KEN: credits); tests 2205 pass | B4 r2 |
 | 14  | 2026-11-14 | Opus 5.5 | B4 r2: WO-B4-010 run page grade card/phases/findings by severity (getRunDetail → scored report); 011 MCP tools (K8 names + publish) + fork skill, hook → B5; 012 Vercel publisher (live publish BLOCKED-KEN: permission); 013 systemd units, cron tick, backup; 014 RUNBOOK; 015 regression BadGEO 38/0/0, why 39 Δ0 18/30, ryan 47.8 Δ−0.2 21/36; B4 report; tests 2207 pass                                                                                                                          | B5 R1 |
+| 15  | 2026-11-14 | Opus 5.5 | B5 R1 (part): no upstream commits; MCP hook registered (contract test → loose K8 outputs; Every App catalog 84→88); contracts 1.3.0 (WO-B5-C13 types + runner fetchOffsite cap 10/check); security pass: 2 S2 fixed in publisher (published.json untracked in public repo; older Vercel deployments deleted), Supabase advisors 0 / RLS 70/70 / 0 anon grants, tenant scoping OK, sidecar 127.0.0.1; local prod smoke + cron tick 200; tests 2208 pass                                                 | B5 R1 |
 
 ## Batch history
 
@@ -64,4 +65,4 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | B2    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B2.md |
 | B3    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B3.md |
 | B4    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B4.md |
-| B5    | Opus 5.5 | —          | —          | fork/reports/B5.md |
+| B5    | Opus 5.5 | 2026-11-14 | —          | fork/reports/B5.md |
