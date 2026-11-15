@@ -1,7 +1,10 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { chunk } from "remeda";
 import { db } from "@/db";
 import {
+  bingAiCitationDays,
+  bingAiGroundingQueries,
+  bingAiImports,
   bingCrawlIssues,
   bingDailyTraffic,
   bingPageWeeks,
@@ -204,4 +207,180 @@ export async function upsertCrawlIssues(
         },
       }),
   );
+}
+
+// ---------------------------------------------------------------- reads (page, MCP)
+// Callers resolve the site through `listProjectSites` (project + organization
+// scoped) and pass its id to the per-site reads below.
+
+export async function listProjectSites(
+  projectId: string,
+  organizationId: string,
+) {
+  return db
+    .select({
+      id: bingSites.id,
+      siteUrl: bingSites.siteUrl,
+      verified: bingSites.verified,
+      lastSuccessAt: bingSyncState.lastSuccessAt,
+      lastError: bingSyncState.lastError,
+    })
+    .from(bingSites)
+    .leftJoin(bingSyncState, eq(bingSyncState.siteId, bingSites.id))
+    .where(
+      and(
+        eq(bingSites.projectId, projectId),
+        eq(bingSites.organizationId, organizationId),
+      ),
+    )
+    .orderBy(bingSites.createdAt, bingSites.id);
+}
+
+export async function deleteSite(
+  siteId: string,
+  projectId: string,
+  organizationId: string,
+) {
+  await db
+    .delete(bingSites)
+    .where(
+      and(
+        eq(bingSites.id, siteId),
+        eq(bingSites.projectId, projectId),
+        eq(bingSites.organizationId, organizationId),
+      ),
+    );
+}
+
+export async function listDailyTraffic(siteId: string, fromDay: string) {
+  return db
+    .select({
+      day: bingDailyTraffic.day,
+      clicks: bingDailyTraffic.clicks,
+      impressions: bingDailyTraffic.impressions,
+    })
+    .from(bingDailyTraffic)
+    .where(
+      and(
+        eq(bingDailyTraffic.siteId, siteId),
+        gte(bingDailyTraffic.day, fromDay),
+      ),
+    )
+    .orderBy(bingDailyTraffic.day);
+}
+
+export async function latestWeekStart(siteId: string) {
+  const [row] = await db
+    .select({ weekStart: sql<string | null>`max(${bingQueryWeeks.weekStart})` })
+    .from(bingQueryWeeks)
+    .where(eq(bingQueryWeeks.siteId, siteId));
+  return row?.weekStart ?? null;
+}
+
+export async function topQueries(
+  siteId: string,
+  fromWeek: string,
+  limit: number,
+) {
+  const clicks = sql<number>`cast(sum(${bingQueryWeeks.clicks}) as integer)`;
+  return db
+    .select({
+      label: bingQueryWeeks.query,
+      clicks,
+      impressions: sql<number>`cast(sum(${bingQueryWeeks.impressions}) as integer)`,
+    })
+    .from(bingQueryWeeks)
+    .where(
+      and(
+        eq(bingQueryWeeks.siteId, siteId),
+        gte(bingQueryWeeks.weekStart, fromWeek),
+      ),
+    )
+    .groupBy(bingQueryWeeks.query)
+    .orderBy(desc(clicks), bingQueryWeeks.query)
+    .limit(limit);
+}
+
+export async function topPages(
+  siteId: string,
+  fromWeek: string,
+  limit: number,
+) {
+  const clicks = sql<number>`cast(sum(${bingPageWeeks.clicks}) as integer)`;
+  return db
+    .select({
+      label: bingPageWeeks.page,
+      clicks,
+      impressions: sql<number>`cast(sum(${bingPageWeeks.impressions}) as integer)`,
+    })
+    .from(bingPageWeeks)
+    .where(
+      and(
+        eq(bingPageWeeks.siteId, siteId),
+        gte(bingPageWeeks.weekStart, fromWeek),
+      ),
+    )
+    .groupBy(bingPageWeeks.page)
+    .orderBy(desc(clicks), bingPageWeeks.page)
+    .limit(limit);
+}
+
+export async function listCrawlIssues(siteId: string, limit: number) {
+  return db
+    .select({
+      url: bingCrawlIssues.url,
+      issueType: bingCrawlIssues.issueType,
+      httpCode: bingCrawlIssues.httpCode,
+      firstSeen: bingCrawlIssues.firstSeen,
+      lastSeen: bingCrawlIssues.lastSeen,
+    })
+    .from(bingCrawlIssues)
+    .where(eq(bingCrawlIssues.siteId, siteId))
+    .orderBy(desc(bingCrawlIssues.lastSeen), bingCrawlIssues.url)
+    .limit(limit);
+}
+
+export async function listAiCitationDays(siteId: string, fromDay: string) {
+  return db
+    .select({
+      day: bingAiCitationDays.day,
+      citations: bingAiCitationDays.citations,
+      citedPages: bingAiCitationDays.citedPages,
+    })
+    .from(bingAiCitationDays)
+    .where(
+      and(
+        eq(bingAiCitationDays.siteId, siteId),
+        gte(bingAiCitationDays.day, fromDay),
+      ),
+    )
+    .orderBy(bingAiCitationDays.day);
+}
+
+export async function topGroundingQueries(
+  siteId: string,
+  fromDay: string,
+  limit: number,
+) {
+  const citations = sql<number>`cast(sum(${bingAiGroundingQueries.citations}) as integer)`;
+  return db
+    .select({ query: bingAiGroundingQueries.query, citations })
+    .from(bingAiGroundingQueries)
+    .where(
+      and(
+        eq(bingAiGroundingQueries.siteId, siteId),
+        gte(bingAiGroundingQueries.periodEnd, fromDay),
+      ),
+    )
+    .groupBy(bingAiGroundingQueries.query)
+    .orderBy(desc(citations), bingAiGroundingQueries.query)
+    .limit(limit);
+}
+
+export async function lastAiImportAt(siteId: string) {
+  const [row] = await db
+    .select({ at: sql<string | null>`max(${bingAiImports.importedAt})` })
+    .from(bingAiImports)
+    .where(eq(bingAiImports.siteId, siteId));
+  return row?.at ?? null;
 }

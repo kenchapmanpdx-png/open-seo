@@ -74,6 +74,7 @@ import { Route as AppPProjectIdAuditIndexRouteImport } from './routes/_app/p/$pr
 import { Route as AppPProjectIdHandbookIndexRouteImport } from './routes/_app/p/$projectId/handbook/index'
 import { Route as AppPProjectIdHandbookRunIdRouteImport } from './routes/_app/p/$projectId/handbook/$runId'
 import { Route as AppPProjectIdHandbookAiTrafficRouteImport } from './routes/_app/p/$projectId/handbook/ai-traffic'
+import { Route as AppPProjectIdHandbookBingRouteImport } from './routes/_app/p/$projectId/handbook/bing'
 import { Route as AppPProjectIdLocalSeoIndexRouteImport } from './routes/_app/p/$projectId/local-seo/index'
 import { Route as AppPProjectIdLocalSeoTrackerIdRouteImport } from './routes/_app/p/$projectId/local-seo/$trackerId'
 import { Route as AppPProjectIdRankTrackingIndexRouteImport } from './routes/_app/p/$projectId/rank-tracking/index'
@@ -425,6 +426,12 @@ const AppPProjectIdHandbookAiTrafficRoute =
     path: '/handbook/ai-traffic',
     getParentRoute: () => AppPProjectIdRouteRoute,
   } as any)
+const AppPProjectIdHandbookBingRoute =
+  AppPProjectIdHandbookBingRouteImport.update({
+    id: '/handbook/bing',
+    path: '/handbook/bing',
+    getParentRoute: () => AppPProjectIdRouteRoute,
+  } as any)
 const AppPProjectIdLocalSeoIndexRoute =
   AppPProjectIdLocalSeoIndexRouteImport.update({
     id: '/',
@@ -569,6 +576,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/ai-visibility/research': typeof AppPProjectIdAiVisibilityResearchRoute
   '/p/$projectId/handbook/$runId': typeof AppPProjectIdHandbookRunIdRoute
   '/p/$projectId/handbook/ai-traffic': typeof AppPProjectIdHandbookAiTrafficRoute
+  '/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
   '/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
   '/p/$projectId/reports/$reportId': typeof AppPProjectIdReportsReportIdRoute
@@ -641,6 +649,7 @@ export interface FileRoutesByTo {
   '/p/$projectId/ai-visibility/research': typeof AppPProjectIdAiVisibilityResearchRoute
   '/p/$projectId/handbook/$runId': typeof AppPProjectIdHandbookRunIdRoute
   '/p/$projectId/handbook/ai-traffic': typeof AppPProjectIdHandbookAiTrafficRoute
+  '/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
   '/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
   '/p/$projectId/reports/$reportId': typeof AppPProjectIdReportsReportIdRoute
@@ -723,6 +732,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/ai-visibility/research': typeof AppPProjectIdAiVisibilityResearchRoute
   '/_app/p/$projectId/handbook/$runId': typeof AppPProjectIdHandbookRunIdRoute
   '/_app/p/$projectId/handbook/ai-traffic': typeof AppPProjectIdHandbookAiTrafficRoute
+  '/_app/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
   '/_app/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/_app/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
   '/_app/p/$projectId/reports/$reportId': typeof AppPProjectIdReportsReportIdRoute
@@ -803,6 +813,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/ai-visibility/research'
     | '/p/$projectId/handbook/$runId'
     | '/p/$projectId/handbook/ai-traffic'
+    | '/p/$projectId/handbook/bing'
     | '/p/$projectId/local-seo/$trackerId'
     | '/p/$projectId/rank-tracking/$configId'
     | '/p/$projectId/reports/$reportId'
@@ -875,6 +886,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/ai-visibility/research'
     | '/p/$projectId/handbook/$runId'
     | '/p/$projectId/handbook/ai-traffic'
+    | '/p/$projectId/handbook/bing'
     | '/p/$projectId/local-seo/$trackerId'
     | '/p/$projectId/rank-tracking/$configId'
     | '/p/$projectId/reports/$reportId'
@@ -956,6 +968,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/ai-visibility/research'
     | '/_app/p/$projectId/handbook/$runId'
     | '/_app/p/$projectId/handbook/ai-traffic'
+    | '/_app/p/$projectId/handbook/bing'
     | '/_app/p/$projectId/local-seo/$trackerId'
     | '/_app/p/$projectId/rank-tracking/$configId'
     | '/_app/p/$projectId/reports/$reportId'
@@ -1465,6 +1478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdHandbookAiTrafficRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/handbook/bing': {
+      id: '/_app/p/$projectId/handbook/bing'
+      path: '/handbook/bing'
+      fullPath: '/p/$projectId/handbook/bing'
+      preLoaderRoute: typeof AppPProjectIdHandbookBingRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/local-seo/': {
       id: '/_app/p/$projectId/local-seo/'
       path: '/'
@@ -1667,6 +1687,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdIndexRoute: typeof AppPProjectIdIndexRoute
   AppPProjectIdHandbookRunIdRoute: typeof AppPProjectIdHandbookRunIdRoute
   AppPProjectIdHandbookAiTrafficRoute: typeof AppPProjectIdHandbookAiTrafficRoute
+  AppPProjectIdHandbookBingRoute: typeof AppPProjectIdHandbookBingRoute
   AppPProjectIdReportsReportIdRoute: typeof AppPProjectIdReportsReportIdRoute
   AppPProjectIdReportsTemplatesRoute: typeof AppPProjectIdReportsTemplatesRoute
   AppPProjectIdAuditIndexRoute: typeof AppPProjectIdAuditIndexRoute
@@ -1692,6 +1713,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
   AppPProjectIdIndexRoute: AppPProjectIdIndexRoute,
   AppPProjectIdHandbookRunIdRoute: AppPProjectIdHandbookRunIdRoute,
   AppPProjectIdHandbookAiTrafficRoute: AppPProjectIdHandbookAiTrafficRoute,
+  AppPProjectIdHandbookBingRoute: AppPProjectIdHandbookBingRoute,
   AppPProjectIdReportsReportIdRoute: AppPProjectIdReportsReportIdRoute,
   AppPProjectIdReportsTemplatesRoute: AppPProjectIdReportsTemplatesRoute,
   AppPProjectIdAuditIndexRoute: AppPProjectIdAuditIndexRoute,
