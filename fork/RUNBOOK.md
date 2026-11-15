@@ -31,6 +31,14 @@ Local production per ADR-011: the app runs on this computer (`vite preview`, 127
 
 Saving into the app's own Reports (private) is the run page's "Save client report" button, or `handbook_report_publish`.
 
+## AI traffic (Vercel drain receiver, ADR-013)
+
+- Add a site: insert one `ai_traffic_site` row (`id`, `project_id`, `organization_id`, `vercel_project_id` from the client's Vercel project settings); optional `ai_traffic_site_host` rows limit it to listed hosts (none = every host). Then re-run the deploy below so the drain covers the new project.
+- Deploy / re-create the drain / rotate secrets (one command, idempotent; rotates `DRAIN_SECRET` and the `traffic_ingest` password every run): `pnpm exec tsx fork/scripts/deploy-receiver.ts`. Expected tail: `drain openseo-ai-traffic: N project(s)` and `unsigned POST → 403`.
+- Vercel log drains need a Pro team and are billed per GB; the receiver keeps only AI bot / AI referral requests and counts the rest per hour (`ai_traffic_discard`).
+- Refresh the bundled crawler IP lists (weekly is plenty): `pnpm exec tsx fork/scripts/refresh-ip-ranges.ts`, then commit `src/server/features/ai-traffic/ip-ranges/`.
+- Discards with an empty `site_id` mean the drain sends a project that has no `ai_traffic_site` row.
+
 ## Upgrade (ADR-011)
 
 1. `systemctl --user stop openseo-app.service`
