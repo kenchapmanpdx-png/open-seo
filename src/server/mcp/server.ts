@@ -129,6 +129,7 @@ import { explorePromptTool } from "@/server/mcp/tools/explore-prompt";
 import { registerWidgetResource } from "@/server/mcp/widget-resource";
 import { rememberWidgetResult } from "@/server/mcp/widget-results";
 import { MCP_WIDGET_TOOLS } from "@/shared/mcp-contracts";
+import { registerHandbookTools } from "@/server/features/handbook/mcp/tools";
 import {
   showSearchConsolePerformanceTool,
   showSerpResultsTool,
@@ -344,6 +345,7 @@ export function registerOpenSeoTools(
   register(listReportTemplatesTool);
   register(saveReportTemplateTool);
   register(deleteReportTemplateTool);
+  registerHandbookTools(register);
 }
 
 export function createOpenSeoMcpServer(

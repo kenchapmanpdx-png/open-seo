@@ -165,6 +165,7 @@ export async function runHandbook(
       applicableItems: intake.applicable,
       collected,
       ...(check.class === "LLM" && input.judge ? { judge: input.judge } : {}),
+      fetchOffsite: cappedFetch(runtime.fetchOffsite, CHECK_OFFSITE_FETCHES),
     };
     if (check.appliesTo && !check.appliesTo(ctx)) {
       for (const id of items)
@@ -239,6 +240,19 @@ export async function runHandbook(
     registryById,
   );
   return { intake, collected, statuses, findings, evidence, checkerErrors };
+}
+
+/** Off-site fetches one check may make (P5-03 reads a few cited sources). */
+const CHECK_OFFSITE_FETCHES = 10;
+
+/** A SafeFetch that throws after `limit` calls (contracts 1.3.0). */
+function cappedFetch(fetch: SafeFetch, limit: number): SafeFetch {
+  let used = 0;
+  return async (...args) => {
+    if (++used > limit)
+      throw new Error(`off-site fetch limit (${limit}) reached for this check`);
+    return fetch(...args);
+  };
 }
 
 async function runCollectors(
