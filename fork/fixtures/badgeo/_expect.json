@@ -1,5 +1,6 @@
 {
   "/robots.txt": ["P3-15", "P9-05"],
   "/index.html": ["P3-03"],
-  "/about": ["P3-02"]
+  "/about": ["P3-02"],
+  "/old-event.html": ["P3-08", "P3-05"]
 }
