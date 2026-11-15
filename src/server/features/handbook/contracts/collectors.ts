@@ -13,6 +13,7 @@ export const COLLECTOR_KEYS = [
   "headers",
   "variants",
   "botFetch",
+  "outbound",
   "jsonld",
   "templates",
   "render",
@@ -77,6 +78,8 @@ export type PageSnapshot = {
   contentType: string | null;
   rawKey: string | null;
   wordsRaw: number;
+  /** Raw HTML size in bytes (decoded text, before the byte cap). */
+  bytesRaw: number;
   /** Parsed facts every raw-HTML check reads, so bodies stay out of memory. */
   head: {
     title: string | null;
@@ -90,9 +93,17 @@ export type PageSnapshot = {
     hreflang: ReadonlyArray<{ lang: string; href: string }>;
   };
   h1: readonly string[];
-  links: ReadonlyArray<{ href: string; text: string; rel: string | null }>;
+  links: ReadonlyArray<{
+    href: string;
+    text: string;
+    rel: string | null;
+    target: string | null;
+    ariaLabel: string | null;
+  }>;
   images: ReadonlyArray<{
     src: string;
+    dataSrc: string | null;
+    srcset: string | null;
     alt: string | null;
     width: string | null;
     height: string | null;
@@ -100,6 +111,44 @@ export type PageSnapshot = {
     fetchpriority: string | null;
   }>;
   xRobotsTag: string | null;
+  markup: PageMarkup;
+};
+
+/** Raw-HTML structure facts for CRAWL / PERF / A11Y checks (one parse pass). */
+export type PageMarkup = {
+  headings: ReadonlyArray<{
+    level: number;
+    text: string;
+    /** Nearest enclosing landmark element, if any. */
+    landmark: "header" | "nav" | "footer" | "aside" | null;
+  }>;
+  mainCount: number;
+  /** aria-label / aria-labelledby id of each `<nav>` (null = unlabelled). */
+  navLabels: ReadonlyArray<string | null>;
+  scripts: ReadonlyArray<{
+    src: string | null;
+    type: string | null;
+    async: boolean;
+    defer: boolean;
+    inHead: boolean;
+  }>;
+  /** `<link>` tags other than canonical / hreflang (preload, preconnect, alternate, stylesheet…). */
+  headLinks: ReadonlyArray<{
+    rel: string;
+    href: string;
+    as: string | null;
+    type: string | null;
+  }>;
+  buttons: ReadonlyArray<{ text: string; ariaLabel: string | null }>;
+  counts: {
+    tables: number;
+    lists: number;
+    forms: number;
+    iframes: number;
+    videos: number;
+  };
+  /** Visible text (scripts/styles/templates skipped), collapsed, ≤20,000 chars. */
+  text: string;
 };
 
 export type RobotsGroup = {
@@ -214,6 +263,16 @@ export type BotFetchData = {
   }>;
 };
 
+/** Outbound (off-site) links found on crawled pages, fetched as browser and as one bot (P5-13). */
+export type OutboundData = {
+  links: ReadonlyArray<{
+    url: string;
+    sourceUrls: readonly string[];
+    browser: { status: number; finalUrl: string } | null;
+    bot: { name: BotName; status: number; finalUrl: string } | null;
+  }>;
+};
+
 export type JsonLdNode = {
   id: string | null;
   types: readonly string[];
@@ -297,6 +356,7 @@ export type CollectedData = {
   headers: Collected<HeadersData>;
   variants: Collected<VariantsData>;
   botFetch: Collected<BotFetchData>;
+  outbound: Collected<OutboundData>;
   jsonld: Collected<JsonLdData>;
   templates: Collected<TemplatesData>;
   render: Collected<RenderData>;

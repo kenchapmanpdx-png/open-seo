@@ -259,6 +259,7 @@ async function runCollectors(
     headers: collected.headers ?? off,
     variants: collected.variants ?? off,
     botFetch: collected.botFetch ?? off,
+    outbound: collected.outbound ?? off,
     jsonld: collected.jsonld ?? off,
     templates: collected.templates ?? off,
     render: collected.render ?? off,

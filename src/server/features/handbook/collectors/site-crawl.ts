@@ -168,11 +168,13 @@ async function fetchPage(
       contentType,
       rawKey,
       wordsRaw: facts?.words ?? 0,
+      bytesRaw: bytes.byteLength,
       head: facts?.head ?? emptyHead(),
       h1: facts?.h1 ?? [],
       links: facts?.links ?? [],
       images: facts?.images ?? [],
       xRobotsTag: header("x-robots-tag"),
+      markup: facts?.markup ?? emptyMarkup(),
     },
     extra: {
       jsonLdBlocks: facts?.jsonLdBlocks ?? [],
@@ -198,6 +200,19 @@ function normalize(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+function emptyMarkup(): PageSnapshot["markup"] {
+  return {
+    headings: [],
+    mainCount: 0,
+    navLabels: [],
+    scripts: [],
+    headLinks: [],
+    buttons: [],
+    counts: { tables: 0, lists: 0, forms: 0, iframes: 0, videos: 0 },
+    text: "",
+  };
 }
 
 function emptyHead(): PageSnapshot["head"] {
