@@ -41,10 +41,9 @@ export const sitemapLastmodCheck: HandbookCheck = {
         const day = (u.lastmod ?? "").slice(0, 10);
         byDay.set(day, (byDay.get(day) ?? 0) + 1);
       }
-      const [topDay, topCount] = [...byDay].sort((a, b) => b[1] - a[1])[0] ?? [
-        "",
-        0,
-      ];
+      let [topDay, topCount] = ["", 0];
+      for (const [day, n] of byDay)
+        if (n > topCount) [topDay, topCount] = [day, n];
       if (urls.length >= 5 && topCount >= urls.length * 0.8)
         why.push(
           `${topCount}/${urls.length} <lastmod> = ${topDay} (build/deploy date)`,
