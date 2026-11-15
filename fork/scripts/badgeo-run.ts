@@ -5,10 +5,15 @@
  * page, and nothing else may. "Fired" = a finding citing the item whose urls
  * include the page. Exit 1 on any missing/unexpected unless --report-only.
  *
+ * Expected ids whose item is BLOCKED in the report (e.g. RENDER items when
+ * no sidecar ran) are listed as `blocked`, not `missing`, and do not fail.
+ * `--sidecar http://127.0.0.1:4777` (token from HANDBOOK_SIDECAR_TOKEN) binds
+ * the server on 0.0.0.0 so the sidecar container can render it.
+ *
  * `--only P3-01,P3-02` keeps rows whose expected ∪ fired ids intersect the
  * filter and ignores ids outside it (exit code counts filtered rows only).
  *
- *   pnpm exec tsx fork/scripts/badgeo-run.ts [--report-only] [--only <ids>]
+ *   pnpm exec tsx fork/scripts/badgeo-run.ts [--report-only] [--only <ids>] [--sidecar <url>]
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -24,6 +29,7 @@ type Row = {
   expected: string[];
   fired: string[];
   missing: string[];
+  blocked: string[];
   unexpected: string[];
 };
 
@@ -76,6 +82,9 @@ export function compare(
   expectations: Map<string, string[]>,
 ): Row[] {
   const fired = firedByPage(report);
+  const blockedItems = new Set(
+    report.items.filter((i) => i.status === "BLOCKED").map((i) => i.itemId),
+  );
   const pages = sort(
     [...new Set([...expectations.keys(), ...fired.keys()])],
     (a, b) => a.localeCompare(b),
@@ -83,11 +92,13 @@ export function compare(
   return pages.map((page) => {
     const expected = expectations.get(page) ?? [];
     const got = [...(fired.get(page) ?? [])];
+    const notFired = expected.filter((id) => !got.includes(id));
     return {
       page,
       expected,
       fired: got,
-      missing: expected.filter((id) => !got.includes(id)),
+      missing: notFired.filter((id) => !blockedItems.has(id)),
+      blocked: notFired.filter((id) => blockedItems.has(id)),
       unexpected: got.filter((id) => !expected.includes(id)),
     };
   });
@@ -103,6 +114,7 @@ function onlyIds(rows: Row[], ids: readonly string[]): Row[] {
       expected: keep(r.expected),
       fired: keep(r.fired),
       missing: keep(r.missing),
+      blocked: keep(r.blocked),
       unexpected: keep(r.unexpected),
     }));
 }
@@ -112,13 +124,14 @@ async function main() {
     options: {
       "report-only": { type: "boolean", default: false },
       only: { type: "string" },
+      sidecar: { type: "string" },
     },
   });
   const only = values.only
     ?.split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const server = await startBadgeo();
+  const server = await startBadgeo(values.sidecar ? { host: "0.0.0.0" } : {});
   try {
     const date = new Date().toISOString().slice(0, 10);
     const { report, timing } = await runCliAudit([
@@ -130,21 +143,23 @@ async function main() {
       "50",
       "--out",
       join("fork/runs/badgeo", date),
+      ...(values.sidecar ? ["--sidecar", values.sidecar] : []),
     ]);
     const all = compare(report, loadExpectations());
     const rows = only ? onlyIds(all, only) : all;
     const list = (ids: string[]) => ids.join(", ") || "—";
-    console.log("| page | expected | fired | missing | unexpected |");
-    console.log("| --- | --- | --- | --- | --- |");
+    console.log("| page | expected | fired | missing | blocked | unexpected |");
+    console.log("| --- | --- | --- | --- | --- | --- |");
     for (const r of rows) {
       console.log(
-        `| ${r.page} | ${list(r.expected)} | ${list(r.fired)} | ${list(r.missing)} | ${list(r.unexpected)} |`,
+        `| ${r.page} | ${list(r.expected)} | ${list(r.fired)} | ${list(r.missing)} | ${list(r.blocked)} | ${list(r.unexpected)} |`,
       );
     }
     const missing = rows.reduce((n, r) => n + r.missing.length, 0);
     const unexpected = rows.reduce((n, r) => n + r.unexpected.length, 0);
+    const blocked = rows.reduce((n, r) => n + r.blocked.length, 0);
     console.log(
-      `\npages ${rows.length} · missing ${missing} · unexpected ${unexpected} · findings ${report.findings.length} · ${timing.totalMs}ms`,
+      `\npages ${rows.length} · missing ${missing} · blocked ${blocked} · unexpected ${unexpected} · findings ${report.findings.length} · ${timing.totalMs}ms`,
     );
     if ((missing > 0 || unexpected > 0) && !values["report-only"])
       process.exitCode = 1;
