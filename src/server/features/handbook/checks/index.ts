@@ -3,6 +3,7 @@ import { botParityCheck } from "./bot-parity";
 import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
 import { hiddenPagesCheck } from "./hidden-pages";
+import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { listNavigationCheck } from "./list-navigation";
 import { notFoundCheck } from "./not-found";
@@ -30,4 +31,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   crawlCoverageCheck,
   hiddenPagesCheck,
   listNavigationCheck,
+  hreflangCheck,
 ];
