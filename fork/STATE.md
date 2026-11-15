@@ -4,11 +4,11 @@ autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken 
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
 needs_ken: (empty unless status = needs-ken: one line per item Ken must do)
-current_batch: B3
-batch_file: fork/batches/B3-heavy-judgment.md
+current_batch: B4
+batch_file: fork/batches/B4-light-product-deploy.md
 required_model: Opus 5.5 (SINGLE) · SPLIT: per batch table below
 current_run: 12
-next_action: B3 R4 — write the B4 queue (WP26): remaining LLM checks (one WO per 3–5 items with prompt + rubric + eval cases), client report HTML + saveReport + Vercel publisher, report/run UI (grade card, provisional-grade banner when render missing, platform in report.site), MCP tools + skill, deploy files (ADR-011: systemd units, cron-tick, backup), runbook, full regression. Then B3 exit gate (eval BLOCKED-KEN carries over). R3 done in run 12 (scorer, exports, ADR-011/012). BLOCKED-KEN: OpenRouter credits (WO-B3-EVAL); in-app UI smoke (Playwright host libs). Route tree: new routes need `src/routeTree.gen.ts` regenerated (`pnpm exec vite dev` ~45 s).
+next_action: B4 — work the queue in order (fork/queue.md WO-B4-001…015; executor protocol in fork/batches/B2-light-deterministic.md). LLM WOs: build code + unit tests + eval cases; eval runs BLOCKED-KEN until OpenRouter credits are topped up (WO-B3-EVAL). Sidecar token: the running sidecar's token is unknown to a new run — in ONE shell: `export HANDBOOK_SIDECAR_TOKEN=$(openssl rand -hex 24); docker compose -f fork/sidecar/compose.yaml up -d --force-recreate`, wait for /health, then run the CLI with `--sidecar http://127.0.0.1:4777`. Route tree: new routes need `src/routeTree.gen.ts` regenerated (`pnpm exec vite dev` ~45 s). Carry-over BLOCKED-KEN: OpenRouter credits; in-app UI smoke (Playwright host libs).
 contracts_version: 1.2.0 (B3 R2: additive `CheckContext.judge`, llms `text`; 1.1.0 B3 R1 `requests[].beforeLoad`; 1.0.0 frozen at end of B1)
 extra_site: (Ken: optional third site URL for regression runs; blank = skip)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -31,8 +31,8 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | ----- | --------------------------------------- | ------------- | ----------- |
 | B1    | fork/batches/B1-heavy-foundation.md     | HEAVY         | done        |
 | B2    | fork/batches/B2-light-deterministic.md  | LIGHT         | done        |
-| B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | in-progress |
-| B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | —           |
+| B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | done        |
+| B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | in-progress |
 | B5    | fork/batches/B5-heavy-v1-signoff.md     | HEAVY (Opus)  | —           |
 | B6    | fork/batches/B6-light-integrations.md   | LIGHT         | —           |
 | B7    | fork/batches/B7-heavy-v2.md             | HEAVY         | —           |
@@ -60,4 +60,5 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | ----- | -------- | ---------- | ---------- | ------------------ |
 | B1    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B1.md |
 | B2    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B2.md |
-| B3    | Opus 5.5 | 2026-11-14 | —          | fork/reports/B3.md |
+| B3    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B3.md |
+| B4    | Opus 5.5 | 2026-11-14 | —          | fork/reports/B4.md |
