@@ -5,6 +5,7 @@ import { EmptyState } from "@/client/components/EmptyState";
 import { PageHeader } from "@/client/components/PageHeader";
 import { QueryState } from "@/client/components/QueryState";
 import { Badge } from "@/client/components/ui/badge";
+import { Button } from "@/client/components/ui/button";
 import {
   Table,
   TableBody,
@@ -33,6 +34,21 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
         <PageHeader
           title="Handbook"
           description="SEO/GEO handbook checks with evidence for every finding."
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link
+                  to="/p/$projectId/handbook/ai-traffic"
+                  params={{ projectId }}
+                />
+              }
+            >
+              AI traffic
+            </Button>
+          }
         />
         <QueryState
           query={settingsQuery}
