@@ -7,8 +7,8 @@ needs_ken: (empty unless status = needs-ken: one line per item Ken must do)
 current_batch: B2
 batch_file: fork/batches/B2-light-deterministic.md
 required_model: Opus 5.5 (SINGLE) · SPLIT: per batch table below
-current_run: 5
-next_action: B2 run 1 — executor protocol (B2 file): take the first `todo` WO in `fork/queue.md` whose Depends are `done` (start WO-B2-001 harness, then CRAWL WOs 002–013). SINGLE mode: resolve ESCALATE inline. Carry-over BLOCKED-KEN: in-app UI smoke (Playwright system libs); WO-B2-025 sidecar may need Docker access.
+current_run: 6
+next_action: B2 run 2 — executor protocol (B2 file): next `todo` WO in `fork/queue.md` with Depends done = WO-B2-016 (About people + Person schema), then SCHEMA WO-021…024, sidecar WO-025 (may need Docker → BLOCKED-KEN), 026…038. Done so far: WO-001…015, 017…020. Conventions: checks over page facts filter `finalUrl = url` (crawler now keeps body-less redirect stubs); commit via prettier → types → lint gate (one shell call; shell vars do not persist between calls). Carry-over BLOCKED-KEN: in-app UI smoke (Playwright system libs); WO-B2-025 sidecar may need Docker access.
 contracts_version: 1.0.0 (frozen at end of B1, 2026-11-14; R5 added pre-freeze K2/K3 fields)
 extra_site: (Ken: optional third site URL for regression runs; blank = skip)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -39,13 +39,14 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
 ## Run log
 
-| Run | Date       | Model    | Done                                                                                                                                                                                 | Next  |
-| --- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
-| 1   | 2026-11-14 | Opus 5.5 | B1 R1: fork wiring, Supabase migrate + harden, app on Postgres, baseline green, upstream headless audit ×2, upstream-gap                                                             | B1 R2 |
-| 2   | 2026-11-14 | Opus 5.5 | B1 R2: registry 129 (JSON + Zod), handbook-sync 0 diffs, registry test, coverage.md, golden expected YAML ×2                                                                         | B1 R3 |
-| 3   | 2026-11-14 | Opus 5.5 | B1 R3: ADR-001…010, contracts K1–K8 (`contracts/*.ts`, `fork/sidecar/openapi.yaml`), CONTRACTS_VERSION 1.0.0                                                                         | B1 R4 |
-| 4   | 2026-11-14 | Opus 5.5 | B1 R4: handbook schema both dialects + migrations, engine (safeFetch, collectors K2, intake, runner), repo/service/fns, workflow hook, CLI, BadGEO skeleton + harness, golden scorer | B1 R5 |
-| 5   | 2026-11-14 | Opus 5.5 | B1 R5: 5 exemplar checks + BadGEO (exit 0), pre-freeze K2/K3 additions + fetchOffsite, 38 WO-B2 + queue, B1 exit gate met, B1 report                                                 | B2 r1 |
+| Run | Date       | Model    | Done                                                                                                                                                                                                                                       | Next  |
+| --- | ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| 1   | 2026-11-14 | Opus 5.5 | B1 R1: fork wiring, Supabase migrate + harden, app on Postgres, baseline green, upstream headless audit ×2, upstream-gap                                                                                                                   | B1 R2 |
+| 2   | 2026-11-14 | Opus 5.5 | B1 R2: registry 129 (JSON + Zod), handbook-sync 0 diffs, registry test, coverage.md, golden expected YAML ×2                                                                                                                               | B1 R3 |
+| 3   | 2026-11-14 | Opus 5.5 | B1 R3: ADR-001…010, contracts K1–K8 (`contracts/*.ts`, `fork/sidecar/openapi.yaml`), CONTRACTS_VERSION 1.0.0                                                                                                                               | B1 R4 |
+| 4   | 2026-11-14 | Opus 5.5 | B1 R4: handbook schema both dialects + migrations, engine (safeFetch, collectors K2, intake, runner), repo/service/fns, workflow hook, CLI, BadGEO skeleton + harness, golden scorer                                                       | B1 R5 |
+| 5   | 2026-11-14 | Opus 5.5 | B1 R5: 5 exemplar checks + BadGEO (exit 0), pre-freeze K2/K3 additions + fetchOffsite, 38 WO-B2 + queue, B1 exit gate met, B1 report                                                                                                       | B2 r1 |
+| 6   | 2026-11-14 | Opus 5.5 | B2 r1: WO-B2-001…015 + 017…020 done (harness --only/golden md/timing; 19 checks CRAWL/ROBOTS/HEADERS/SCHEMA/PERF; outbound collector via fetchOffsite; crawler redirect stubs; home asset probes); BadGEO 31 pages exit 0; tests 2126 pass | B2 r2 |
 
 ## Batch history
 
