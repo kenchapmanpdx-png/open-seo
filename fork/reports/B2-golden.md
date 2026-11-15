@@ -4,17 +4,19 @@
 
 ## whyracingevents.com
 
-Run date 2026-11-15 · report fork/runs/whyracingevents.com/2026-11-15/report.json
+Run date 2026-11-15 · report fork/runs/whyracingevents.com/r12/report.json
 
-Findings: caught 14 · partial 3 · missed 12 · site-changed 1 · total 30
+Grade: run 39 F (uncapped 55.7) · golden 39 (uncapped 54) · delta 0 (uncapped 1.7) · tolerance ±10
+
+Findings: caught 17 · partial 3 · missed 7 · site-changed 3 · total 30
 
 Passes: caught 3 · partial 4 · missed 6 · site-changed 0 · total 13
 
 | finding | items                      | verdict      |
 | ------- | -------------------------- | ------------ |
 | F01     | P2-01, P2-09, P5-17        | caught       |
-| F02     | P2-04, P2-03               | missed       |
-| F03     | P3-15, P9-05               | missed       |
+| F02     | P2-04, P2-03               | caught       |
+| F03     | P3-15, P9-05               | site-changed |
 | F04     | P3-05, P3-07, P3-08        | site-changed |
 | F05     | P3-16, P3-13               | caught       |
 | F06     | P2-06, P6-05, P6-15        | caught       |
@@ -23,7 +25,7 @@ Passes: caught 3 · partial 4 · missed 6 · site-changed 0 · total 13
 | F09     | P5-05, P6-07               | caught       |
 | F10     | P5-02                      | missed       |
 | F11     | P7-09, P2-05, P7-03, P7-01 | caught       |
-| F12     | P4-09, P4-11               | missed       |
+| F12     | P4-09, P4-11               | site-changed |
 | F13     | P2-07                      | caught       |
 | F14     | P4-02                      | missed       |
 | F15     | P5-04, P5-03               | missed       |
@@ -34,9 +36,9 @@ Passes: caught 3 · partial 4 · missed 6 · site-changed 0 · total 13
 | F20     | P5-14, P5-17               | caught       |
 | F21     | P3-01                      | partial      |
 | F22     | P3-03, P3-02, P3-11        | caught       |
-| F23     | P4-01                      | missed       |
+| F23     | P4-01                      | caught       |
 | F24     | P7-02                      | caught       |
-| F25     | P7-04                      | missed       |
+| F25     | P7-04                      | caught       |
 | F26     | P7-05, P7-07               | partial      |
 | F27     | P8-02                      | partial      |
 | F28     | P8-01, P8-05               | caught       |
@@ -49,9 +51,11 @@ Passes: caught 3 · partial 4 · missed 6 · site-changed 0 · total 13
 
 ## ryanmscottsdale.com
 
-Run date 2026-11-15 · report fork/runs/ryanmscottsdale.com/2026-11-15/report.json
+Run date 2026-11-15 · report fork/runs/ryanmscottsdale.com/r12/report.json
 
-Findings: caught 20 · partial 2 · missed 14 · site-changed 0 · total 36
+Grade: run 47.8 D (uncapped 47.8) · golden 48 (uncapped 48) · delta -0.2 (uncapped -0.2) · tolerance ±10
+
+Findings: caught 21 · partial 2 · missed 13 · site-changed 0 · total 36
 
 Passes: caught 9 · partial 0 · missed 1 · site-changed 0 · total 10
 
@@ -75,7 +79,7 @@ Passes: caught 9 · partial 0 · missed 1 · site-changed 0 · total 10
 | F16     | P3-11                             | partial |
 | F17     |                                   | missed  |
 | F18     | P8-05, P8-01                      | caught  |
-| F19     | P10-03, P7-04                     | missed  |
+| F19     | P10-03, P7-04                     | caught  |
 | F20     | P9-04, P9-05                      | missed  |
 | F21     | P2-08, P2-01                      | missed  |
 | F22     | P4-12                             | caught  |

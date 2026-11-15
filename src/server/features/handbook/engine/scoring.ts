@@ -18,26 +18,35 @@ import {
  * S1 caps the total at 39. Totals keep one decimal; the grade reads `final`.
  */
 export function scoreItems(input: ScoreInput): ScoreOutput {
-  const phases = (Object.keys(SCORED_PHASE_WEIGHTS) as ScoredPhase[]).map(
-    (phase) => {
-      let applicable = 0;
-      let points = 0;
-      for (const item of input.items) {
-        if (item.phase !== phase) continue;
-        const value = ITEM_SCORE[item.status];
-        if (value === null) continue;
-        applicable += 1;
-        points += value;
-      }
-      return {
-        phase,
-        weight: SCORED_PHASE_WEIGHTS[phase],
-        applicable,
-        points,
-        score: applicable ? (points / applicable) * 100 : null,
-      };
-    },
-  );
+  const scored: ScoredPhase[] = [
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+    "P8",
+    "P9",
+  ];
+  const phases = scored.map((phase) => {
+    const weight = SCORED_PHASE_WEIGHTS[phase];
+    let applicable = 0;
+    let points = 0;
+    for (const item of input.items) {
+      if (item.phase !== phase) continue;
+      const value = ITEM_SCORE[item.status];
+      if (value === null) continue;
+      applicable += 1;
+      points += value;
+    }
+    return {
+      phase,
+      weight,
+      applicable,
+      points,
+      score: applicable ? (points / applicable) * 100 : null,
+    };
+  });
   const scoredWeight = phases.reduce(
     (sum, p) => sum + (p.score === null ? 0 : p.weight),
     0,
@@ -65,7 +74,8 @@ export function scoreItems(input: ScoreInput): ScoreOutput {
           : [],
       ),
     ),
-  ].sort();
+  ];
+  s1Codes.sort();
   const final = s1Codes.length ? Math.min(uncapped, S1_CAP) : uncapped;
   return {
     handbookVersion: input.handbookVersion,
