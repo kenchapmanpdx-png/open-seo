@@ -22,6 +22,7 @@
 | ------------------------ | -------------------------------------------- | ----------------------------------------- |
 | BUILD / AUDIT / MAINTAIN | `seo-geo-status.md`, `seo-audit-baseline.md` | `renderStatusMd`, `renderAuditBaselineMd` |
 | REVIEW                   | `review-report.md`                           | `renderReviewMd`                          |
+| AUDIT / MAINTAIN (P11)   | `seo-followups.md` (outcome record, ADR-017) | `renderFollowupsMd`                       |
 
 - `seo-geo-status.md` follows the EP-5 template line for line: `# SEO/GEO Status`, the `handbook: | mode: | tier: | updated:` line, Site Profile, Decisions (run fills canonical host and CDN; the rest are owner decisions, left blank), Phase gates `| Phase | OPEN/PASS/FAIL/BLOCKED/N/A | date | evidence |`, Release, Checklist `- [STATUS] [tag] item (§) — note`, Blocked / owner needed, Deferred (trigger).
 - Status words in the status file use handbook vocabulary: PASS → `DONE`, NA → `N/A`, PARTIAL → `OPEN` with note `partial` (the handbook has no PARTIAL item status; EP-7 scoring keeps it). Phase gate: any OPEN/PARTIAL → FAIL; else any BLOCKED → BLOCKED; else any PASS/LIMITED → PASS; else N/A.

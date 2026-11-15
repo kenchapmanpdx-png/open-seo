@@ -40,7 +40,7 @@ const TEMPLATE = {
   ].join("\n"),
 };
 
-async function evidenceStore(): Promise<EvidenceStore> {
+export async function evidenceStore(): Promise<EvidenceStore> {
   const url = await getOptionalEnvValue("SUPABASE_URL");
   const serviceRoleKey = await getOptionalEnvValue("SUPABASE_SERVICE_ROLE_KEY");
   if (url && serviceRoleKey)
