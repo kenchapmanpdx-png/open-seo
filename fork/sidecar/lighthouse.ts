@@ -1,5 +1,6 @@
 import { cpus } from "node:os";
 import { chromium } from "@playwright/test";
+import { z } from "zod";
 import type {
   LighthouseRequest,
   LighthouseResponse,
@@ -91,14 +92,34 @@ export async function runLighthouse(
  * Lighthouse ≥10 nests the LCP node in the first table of a list:
  * details.items[0].items[0].node. Returns "selector · node label".
  */
+const lcpDetailsSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        items: z
+          .array(
+            z.object({
+              node: z
+                .object({
+                  selector: z.string().optional(),
+                  nodeLabel: z.string().optional(),
+                  snippet: z.string().optional(),
+                })
+                .optional(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
+});
+
 function lcpElement(audit: { details?: unknown } | undefined): string | null {
-  const details = audit?.details as
-    | { items?: Array<{ items?: Array<{ node?: Record<string, unknown> }> }> }
-    | undefined;
-  const node = details?.items?.[0]?.items?.[0]?.node;
+  const parsed = lcpDetailsSchema.safeParse(audit?.details);
+  const node = parsed.success ? parsed.data.items?.[0]?.items?.[0]?.node : null;
   if (!node) return null;
   const parts = [node.selector, node.nodeLabel ?? node.snippet].filter(
-    (v): v is string => typeof v === "string" && v.length > 0,
+    (v): v is string => !!v,
   );
   return parts.length > 0 ? parts.join(" · ").slice(0, 300) : null;
 }
