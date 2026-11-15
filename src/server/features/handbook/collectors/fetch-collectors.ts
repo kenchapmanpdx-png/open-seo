@@ -288,7 +288,7 @@ export const headersCollector: Collector<"headers"> = {
   async collect(ctx, collected) {
     const responses = [];
     // Headers can differ per path (edge rules), so probe beyond samples.
-    for (const url of probeUrls(ctx, collected, 20, true)) {
+    for (const url of probeUrls(ctx, collected, 40, true)) {
       const res = await tryFetch(ctx, url);
       if (res)
         responses.push({

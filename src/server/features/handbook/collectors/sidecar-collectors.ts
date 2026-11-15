@@ -19,7 +19,7 @@ import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 
 /**
  * K3 client collectors (ADR-004): `render`, `axe` and `lighthouse` call the
- * local render sidecar for one sample URL per template (rank 1, max 8;
+ * local render sidecar for one sample URL per template (rank 1, max 16;
  * Lighthouse: home + first 2 samples, mobile). The sidecar is operator
  * config (never a site URL), so it is called with plain fetch, not the
  * site-scoped SSRF fetch. Per-URL failures are logged and skipped; when
@@ -27,7 +27,7 @@ import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
  */
 export type SidecarConfig = { url: string; token: string };
 
-const MAX_SAMPLES = 8;
+const MAX_SAMPLES = 16;
 const RENDER_TIMEOUT_MS = 90_000;
 const LIGHTHOUSE_TIMEOUT_MS = 180_000;
 
