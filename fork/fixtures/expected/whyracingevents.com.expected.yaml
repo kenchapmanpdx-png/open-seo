@@ -33,6 +33,7 @@ findings:
     class: ROBOTS
     detectableBy: deterministic
     severity: S2
+    note: "site-changed on 2026-11-15 (robots.txt now one combined group; * Disallow shared)"
   - id: F04
     title: "Retired events 302 to the homepage; still linked from Locations"
     items: [P3-05, P3-07, P3-08]
@@ -117,6 +118,7 @@ findings:
     class: CRAWL
     detectableBy: deterministic
     severity: S2
+    note: "site-changed on 2026-11-15 (per-page og:image 1200x630 with dimensions; max-image-preview:large present)"
   - id: F13
     title: ".reveal elements stay at opacity 0 without JS"
     items: [P2-07]

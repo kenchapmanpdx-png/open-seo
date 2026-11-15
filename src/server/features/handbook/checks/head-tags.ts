@@ -16,6 +16,8 @@ const ITEMS = ["P4-01", "P4-03", "P4-04", "P4-06"];
 
 const SUFFIX = /\s[|·•–—-]\s([^|·•–—-]+)$/;
 const YEAR = /\b20\d{2}\b/;
+/** Handbook §2: 150–160 [HEURISTIC]; flag only clear overshoots. */
+const DESCRIPTION_MAX = 170;
 
 const indexable = (s: PageSnapshot) =>
   s.status === 200 &&
@@ -123,17 +125,37 @@ export const headTagsCheck: HandbookCheck = {
       (best, cur) => (cur[1] > best[1] ? cur : best),
       ["", 0],
     );
-    if (brand && brandCount >= live.length * 0.6) {
+    // A simple majority sets the brand; a title that names the brand elsewhere
+    // (the home page's "Brand | tagline") is consistent enough.
+    if (brand && brandCount >= 3 && brandCount > live.length / 2) {
       report(
         "P4-01",
         `Titles missing the brand suffix "${brand}"`,
         `End every title with the same brand suffix ("… · ${brand}").`,
         live
-          .filter((s) => SUFFIX.exec(s.head.title ?? "")?.[1]?.trim() !== brand)
+          .filter(
+            (s) =>
+              !(s.head.title ?? "").toLowerCase().includes(brand.toLowerCase()),
+          )
           .map((page) => ({ page, why: `title "${page.head.title ?? ""}"` })),
         { severity: "S3", severityReason: "brand-suffix consistency only" },
       );
     }
+    report(
+      "P4-01",
+      `Meta descriptions over ${DESCRIPTION_MAX} characters`,
+      "Trim each meta description to about 150–160 characters so it is not cut off in results.",
+      live.flatMap((page) => {
+        const length = page.head.metaDescription?.trim().length ?? 0;
+        return length > DESCRIPTION_MAX
+          ? [{ page, why: `description is ${length} characters` }]
+          : [];
+      }),
+      {
+        severity: "S4",
+        severityReason: "handbook length range is [HEURISTIC]",
+      },
+    );
 
     // P4-03 — description present.
     report(

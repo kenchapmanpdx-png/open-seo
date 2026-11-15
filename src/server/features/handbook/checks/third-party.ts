@@ -8,6 +8,8 @@ import { createResult, normalizeUrl } from "./support";
  * not requested during the initial render (no interaction) when SP6 is Y/?
  * (handbook: "SP6 pixel review → apply as if Y") or the site shows EU
  * signals. Whether consent is legally required stays with the owner (§30).
+ * Either way tags load after load/interaction (§14): a tag or pixel request
+ * the sidecar saw start before the load event is a scheduling finding.
  * P7-01 (gate hero video): the first <video> has a poster; autoplay needs
  * muted and a pause control. Reduced-motion and per-device encodes → note.
  */
@@ -131,7 +133,49 @@ export const thirdPartyCheck: HandbookCheck = {
           ),
       });
 
-    if (syncTags.length === 0 && !(preConsentApplies && pixelPages.length > 0))
+    // P7-04 — tags scheduled before the load event (consent aside).
+    const preConsentFlagged = preConsentApplies && pixelPages.length > 0;
+    const earlyPages = renderOk
+      ? render.pages.flatMap((p) => {
+          const hits = p.js.requests.filter(
+            (q) =>
+              q.beforeLoad === true &&
+              (TAG_HOST.test(hostOf(q.url)) || PIXEL_HOST.test(hostOf(q.url))),
+          );
+          return hits.length > 0 ? [{ p, hits }] : [];
+        })
+      : [];
+    if (!preConsentFlagged && earlyPages.length > 0)
+      out.finding({
+        itemIds: ["P7-04"],
+        severity: "S4",
+        severityReason: "scheduling only; tags are async",
+        title: "Analytics/pixels load before the page finishes loading",
+        detail: earlyPages
+          .map(
+            ({ p, hits }) =>
+              `${p.url} — ${[...new Set(hits.map((h) => hostOf(h.url)))].join(", ")}`,
+          )
+          .join("\n"),
+        fix: "Inject analytics and pixels after the load event or the first interaction, not from a deferred script during page load.",
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: earlyPages.map(({ p }) => p.url),
+        evidenceRefs: earlyPages
+          .slice(0, 5)
+          .map(({ p, hits }) =>
+            out.evidence(
+              "renderedDom",
+              p.url,
+              hits
+                .map((h) => `${h.resourceType} ${h.url} (before load)`)
+                .join("\n"),
+              p.js.renderedKey,
+            ),
+          ),
+      });
+
+    if (syncTags.length === 0 && !preConsentFlagged && earlyPages.length === 0)
       out.pass(
         "P7-04",
         [

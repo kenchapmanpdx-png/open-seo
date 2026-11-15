@@ -32,21 +32,19 @@ const run = (probes: Probe[], links: string[] = []) =>
   );
 
 describe("crawl.url-variants", () => {
-  it("opens P3-01 on a 302 hop", async () => {
-    const result = await run([
-      probe("http-apex", "http://example.com/", [["http://example.com/", 302]]),
-    ]);
-    expect(statusOf(result, "P3-01")).toBe("OPEN");
-  });
-
-  it("opens P3-01 on two hops", async () => {
-    const result = await run([
+  it("opens P3-01 at S4 on a permanent two-hop chain, S1 on a 302", async () => {
+    const chain = await run([
       probe("http-apex", "http://example.com/", [
         ["http://example.com/", 301],
         ["https://www.example.com/", 301],
       ]),
     ]);
-    expect(statusOf(result, "P3-01")).toBe("OPEN");
+    expect(statusOf(chain, "P3-01")).toBe("OPEN");
+    expect(chain.findings[0]?.severity).toBe("S4");
+    const temporary = await run([
+      probe("http-apex", "http://example.com/", [["http://example.com/", 302]]),
+    ]);
+    expect(temporary.findings[0]?.severity).toBe("S1");
   });
 
   it("passes P3-01 on one 301 hop to the canonical origin", async () => {

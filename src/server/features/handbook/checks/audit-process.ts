@@ -6,8 +6,8 @@ import { createResult, normalizeUrl } from "./support";
  * is recorded as Mode 1 (content in server HTML) or Mode 2 (JavaScript adds
  * > 20% words). Baseline date and S1–S4 severity tags come from the run
  * record and the runner. P1-03 (evidence reconciliation) is computed by the
- * runner in B3; P1-04 (checker re-fetch) needs upstream issue data that
- * CollectedData does not carry (escalated to B3) — neither gets a verdict here.
+ * runner in B3; P1-04 (checker re-fetch) is a runner verdict
+ * (`checkerReproduction` in engine/runner.ts) — neither gets a verdict here.
  */
 const MODE2_RATIO = 1.2;
 

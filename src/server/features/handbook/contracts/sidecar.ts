@@ -29,6 +29,8 @@ export const renderResponseSchema = z.object({
       url: z.string(),
       resourceType: z.string(),
       status: z.number().int().nullable(),
+      /** Request started before the load event (Resource Timing). Added in 1.1.0. */
+      beforeLoad: z.boolean().optional(),
     }),
   ),
   /** Visible-text words inside opacity:0 elements after load, before scroll (P2-07). */

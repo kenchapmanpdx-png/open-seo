@@ -22,6 +22,8 @@ export type Facts = {
   hrefs: string[];
   /** Same-site links only; path heuristics must not match third-party URLs. */
   internal: string[];
+  /** Same-site fetch/XHR URLs seen while rendering; null without a render. */
+  apiRequests: string[] | null;
 };
 
 export function facts(
@@ -48,6 +50,18 @@ export function facts(
     internal: pages.flatMap((p) =>
       p.links.map((l) => l.href).filter((h) => sameSite(h, p.finalUrl)),
     ),
+    apiRequests:
+      collected.render?.status === "ok"
+        ? collected.render.pages.flatMap((p) =>
+            p.js.requests
+              .filter(
+                (q) =>
+                  /^(fetch|xhr)$/.test(q.resourceType) &&
+                  sameSite(q.url, p.url),
+              )
+              .map((q) => q.url),
+          )
+        : null,
   };
 }
 

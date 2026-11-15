@@ -29,7 +29,7 @@ function check(
   };
 }
 
-async function run(checks: HandbookCheck[]) {
+async function run(checks: HandbookCheck[], itemId = item!.id) {
   const result = await runHandbook(
     {
       runId: "r1",
@@ -52,7 +52,7 @@ async function run(checks: HandbookCheck[]) {
       log: () => {},
     },
   );
-  return result.statuses.find((s) => s.itemId === item!.id);
+  return result.statuses.find((s) => s.itemId === itemId);
 }
 
 const finding = {
@@ -106,5 +106,22 @@ describe("runHandbook invariants", () => {
     ]);
     expect(blocked?.status).toBe("BLOCKED");
     expect(blocked?.note).toContain("render unavailable");
+  });
+
+  it("opens P1-04 when a checker-only finding cites a URL never fetched directly", async () => {
+    const status = await run(
+      [
+        check({
+          statuses: [],
+          findings: [{ ...finding, evidenceRefs: ["a1"] }],
+          evidence: [
+            { ref: "a1", kind: "axe", url: finding.urls[0], excerpt: "x" },
+          ],
+        }),
+      ],
+      "P1-04",
+    );
+    expect(status?.status).toBe("OPEN");
+    expect(status?.note).toContain(finding.urls[0]);
   });
 });
