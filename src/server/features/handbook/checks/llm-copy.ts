@@ -6,6 +6,7 @@ import type {
 } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import type { Effort } from "@/server/features/handbook/contracts/status";
+import { nameMentions } from "./name-mentions";
 import { clip, normalizeUrl } from "./support";
 
 /**
@@ -282,12 +283,25 @@ const entityTestCheck = llmCheck(
     fix: "State the business category (+ place for local businesses) in the home title, meta description and H1; spell the brand and people's names one way everywhere (§25).",
     effort: "S",
   },
-  (ctx) =>
-    samplePages(ctx, 12).map((s, i) => ({
+  (ctx) => {
+    const mentions = nameMentions(ctx, htmlPages(ctx));
+    const block = (url: string) => {
+      const lines = mentions.get(url);
+      return lines ? `\n\nName mentions:\n${lines.join("\n")}` : "";
+    };
+    const views = samplePages(ctx, 12).map((s, i) => ({
       url: s.url,
       // Home (first) carries its opening text for the name-spelling part.
-      text: i === 0 ? `${headLines(s)}\n\n${mainText(s, 2_000)}` : headLines(s),
-    })),
+      text:
+        (i === 0 ? `${headLines(s)}\n\n${mainText(s, 2_000)}` : headLines(s)) +
+        block(s.url),
+    }));
+    const sampled = new Set(views.map((v) => normalizeUrl(v.url)));
+    for (const [url, lines] of mentions)
+      if (!sampled.has(normalizeUrl(url)))
+        views.push({ url, text: `Name mentions:\n${lines.join("\n")}` });
+    return views;
+  },
 );
 
 /** A number worth comparing: 2+ digits, or with $ / % / + / k. */
