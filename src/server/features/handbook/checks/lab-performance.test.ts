@@ -102,4 +102,22 @@ describe("pageWeightCheck", () => {
     );
     expect(statusOf(result, "P7-05")).toBe("OPEN");
   });
+
+  it("names third-party font CSS in the P7-05 finding", async () => {
+    const headLinks = [
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter",
+        as: null,
+        type: null,
+      },
+    ];
+    const result = await pageWeightCheck.run(
+      context({
+        pages: { status: "ok", snapshots: [withMarkup({ headLinks })] },
+      }),
+    );
+    expect(statusOf(result, "P7-05")).toBe("OPEN");
+    expect(result.findings[0].detail).toContain("Google Fonts");
+  });
 });

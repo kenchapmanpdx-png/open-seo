@@ -11,6 +11,13 @@ const ITEMS = ["P3-10", "P3-11"];
 
 type Probe = VariantsData["probes"][number];
 
+type LiveHit = {
+  p: Probe;
+  why: string;
+  /** Live page (canonical) the 404 body duplicates, when known. */
+  twin: string | null;
+};
+
 const describe = (p: Probe) =>
   [
     ...p.redirectChain.map((hop) => `${hop.status} ${hop.url}`),
@@ -68,14 +75,25 @@ export const notFoundCheck: HandbookCheck = {
     const home = pages.snapshots.find(
       (s) => new URL(s.url).pathname === "/" && s.status === 200,
     );
-    const liveTitles = new Set(
+    const liveByTitle = new Map(
       pages.snapshots
         .filter((s) => s.status === 200 && s.head.title)
-        .map((s) => s.head.title?.trim()),
+        .map((s) => [s.head.title?.trim(), s]),
     );
-    const livePage = real.flatMap((p) => {
-      if (p.title && liveTitles.has(p.title.trim()))
-        return [{ p, why: `title "${p.title}" matches a live page` }];
+    const livePage = real.flatMap((p): LiveHit[] => {
+      // The probe has no canonical field (contracts 1.2.0): cite the live
+      // page with the same title and its canonical instead (ryan F16).
+      const twin = p.title ? liveByTitle.get(p.title.trim()) : undefined;
+      if (twin) {
+        const canonical = twin.head.canonical ?? twin.url;
+        return [
+          {
+            p,
+            why: `title "${p.title}" matches the live page ${twin.url} (canonical ${canonical})`,
+            twin: canonical,
+          },
+        ];
+      }
       if (
         home &&
         home.wordsRaw > 0 &&
@@ -85,6 +103,7 @@ export const notFoundCheck: HandbookCheck = {
           {
             p,
             why: `${p.words} words vs home ${home.wordsRaw} (±10%: live page body)`,
+            twin: null,
           },
         ];
       return [];
@@ -98,7 +117,11 @@ export const notFoundCheck: HandbookCheck = {
         fix: "Serve a dedicated 404 template (own title, short body with links to key hubs) with the 404 status.",
         fixability: "FIXABLE",
         effort: "S",
-        urls: livePage.map(({ p }) => p.url),
+        urls: [
+          ...new Set(
+            livePage.flatMap((x) => (x.twin ? [x.p.url, x.twin] : [x.p.url])),
+          ),
+        ],
         evidenceRefs: livePage.map(({ p }) => ref(p)),
       });
     } else {
