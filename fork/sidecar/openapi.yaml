@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Handbook render sidecar (K3)
-  version: 1.0.0
+  version: 1.1.0
   description: >
     Playwright + Chromium + axe-core + Lighthouse CLI, bound to 127.0.0.1
     (ADR-004, ADR-009). Mirrors src/server/features/handbook/contracts/sidecar.ts.
@@ -87,6 +87,11 @@ paths:
                         url: { type: string }
                         resourceType: { type: string }
                         status: { type: [integer, "null"] }
+                        beforeLoad:
+                          {
+                            type: boolean,
+                            description: "started before the load event (Resource Timing); since 1.1.0",
+                          }
                   opacityZeroWords:
                     type: integer
                     description: visible-text words inside elements with computed opacity 0 after load, before any scroll

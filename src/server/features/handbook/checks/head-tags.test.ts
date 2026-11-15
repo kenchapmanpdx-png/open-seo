@@ -38,6 +38,18 @@ describe("crawl.head-tags", () => {
     expect(dup?.urls).toHaveLength(2);
   });
 
+  it("flags titles without the majority brand suffix, not a brand prefix", async () => {
+    const result = await run([
+      page("/", { title: "Brand | Tagline" }),
+      page("/a"),
+      page("/b"),
+      page("/c"),
+      page("/d", { title: "Long event name in Town" }),
+    ]);
+    const suffix = result.findings.find((f) => f.title.includes("suffix"));
+    expect(suffix?.urls).toEqual([snapshot("/d").url]);
+  });
+
   it("opens P4-03 on a missing description", async () => {
     const result = await run([page("/a", { metaDescription: " " })]);
     expect(statusOf(result, "P4-03")).toBe("OPEN");
