@@ -12,6 +12,7 @@ import type {
   FindingDraft,
   HandbookCheck,
 } from "@/server/features/handbook/contracts/check";
+import type { Judge } from "@/server/features/handbook/contracts/llm";
 import type { EvidenceStore } from "@/server/features/handbook/contracts/evidence-store";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/server/features/handbook/contracts/status";
 import { ITEM_SCORE } from "@/server/features/handbook/contracts/scoring";
 import { normalizeUrl } from "../checks/support";
+import { LlmBudgetError } from "../llm/judge";
 import { runIntake, type Intake } from "./intake";
 import { evidenceKey, materialize } from "./evidence";
 
@@ -49,6 +51,8 @@ export type RunInput = {
   collectors: readonly Collector<CollectorKey>[];
   checks: readonly HandbookCheck[];
   maxPages: number;
+  /** K5 judge; absent (no OpenRouter access) → LLM items BLOCKED `no llm key`. */
+  judge?: Judge | null;
 };
 
 export type EvidenceRow = {
@@ -125,9 +129,14 @@ export async function runHandbook(
     verdicts.set(itemId, list);
   };
 
+  let llmBlocked: string | null = input.judge ? null : "no llm key";
   for (const check of input.checks) {
     const items = check.itemIds.filter((id) => intake.applicable.has(id));
     if (items.length === 0) continue;
+    if (check.class === "LLM" && llmBlocked) {
+      for (const id of items) addVerdict(id, "BLOCKED", llmBlocked, check.id);
+      continue;
+    }
     const missing = check.requires.find(
       (key) => collected[key]?.status !== "ok",
     );
@@ -154,6 +163,7 @@ export async function runHandbook(
       siteProfile: intake.siteProfile,
       applicableItems: intake.applicable,
       collected,
+      ...(check.class === "LLM" && input.judge ? { judge: input.judge } : {}),
     };
     if (check.appliesTo && !check.appliesTo(ctx)) {
       for (const id of items)
@@ -164,6 +174,12 @@ export async function runHandbook(
     try {
       result = await check.run(ctx);
     } catch (error) {
+      if (error instanceof LlmBudgetError) {
+        // ADR-007: stop LLM checks at the cap; the rest are BLOCKED too.
+        llmBlocked = "llm budget";
+        for (const id of items) addVerdict(id, "BLOCKED", llmBlocked, check.id);
+        continue;
+      }
       const code =
         error instanceof Error ? error.message.slice(0, 120) : "unknown";
       checkerErrors.push(`${check.id}: ${code}`);
