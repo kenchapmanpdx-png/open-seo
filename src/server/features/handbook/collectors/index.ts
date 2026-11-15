@@ -12,13 +12,19 @@ import {
   variantsCollector,
 } from "./fetch-collectors";
 import { outboundCollector } from "./outbound";
+import {
+  createSidecarCollectors,
+  type SidecarConfig,
+} from "./sidecar-collectors";
 
 /**
  * Raw-fetch collectors in dependency order. `render`, `axe` and `lighthouse`
- * need the sidecar (K3, B2) and stay "collector not configured" until then.
+ * are appended only when a render sidecar (K3) is configured; otherwise they
+ * stay "collector not configured".
  */
 export function createDefaultCollectors(
   crawl: CrawlOptions,
+  sidecar?: SidecarConfig | null,
 ): Collector<CollectorKey>[] {
   const { pages, jsonld, templates } = createCrawlCollectors(crawl);
   return [
@@ -32,5 +38,6 @@ export function createDefaultCollectors(
     variantsCollector,
     botFetchCollector,
     outboundCollector,
+    ...(sidecar ? createSidecarCollectors(sidecar) : []),
   ];
 }

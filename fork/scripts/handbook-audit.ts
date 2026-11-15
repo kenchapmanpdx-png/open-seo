@@ -20,6 +20,7 @@ import {
   REGISTRY,
 } from "@/server/features/handbook/registry";
 import { createDefaultCollectors } from "@/server/features/handbook/collectors";
+import { SIDECAR_TOKEN_ENV } from "@/server/features/handbook/contracts/sidecar";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import { runHandbook } from "@/server/features/handbook/engine/runner";
 import {
@@ -48,12 +49,13 @@ export async function runCliAudit(argv: string[]) {
       "max-pages": { type: "string", default: "60" },
       out: { type: "string" },
       "allow-private": { type: "boolean", default: false },
+      sidecar: { type: "string" },
     },
   });
   const input = positionals[0];
   if (!input) {
     throw new Error(
-      "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--max-pages 60] [--out dir]",
+      "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--max-pages 60] [--out dir] [--sidecar http://127.0.0.1:4777]",
     );
   }
   const mode = handbookModeSchema.parse(values.mode);
@@ -96,10 +98,21 @@ export async function runCliAudit(argv: string[]) {
   const timing: Record<string, number> = {};
   const log = (event: string, fields: Record<string, unknown>) =>
     console.error(event, JSON.stringify(fields));
-  const collectors = createDefaultCollectors({
-    followLinks: true,
-    maxPages,
-  }).map((collector) => ({
+  // --sidecar: K3 render sidecar URL; token from HANDBOOK_SIDECAR_TOKEN.
+  const sidecarToken = process.env[SIDECAR_TOKEN_ENV];
+  if (values.sidecar && !sidecarToken)
+    throw new Error(`--sidecar needs ${SIDECAR_TOKEN_ENV} in the environment`);
+  const sidecar =
+    values.sidecar && sidecarToken
+      ? { url: values.sidecar, token: sidecarToken }
+      : null;
+  const collectors = createDefaultCollectors(
+    {
+      followLinks: true,
+      maxPages,
+    },
+    sidecar,
+  ).map((collector) => ({
     ...collector,
     collect: async (...args: Parameters<typeof collector.collect>) => {
       const t0 = performance.now();
