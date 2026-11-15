@@ -1,3 +1,5 @@
 {
-  "/robots.txt": ["P3-15", "P9-05"]
+  "/robots.txt": ["P3-15", "P9-05"],
+  "/index.html": ["P3-03"],
+  "/about": ["P3-02"]
 }
