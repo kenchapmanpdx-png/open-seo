@@ -1,6 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import { a11yMarkupCheck } from "./a11y-markup";
 import { aboutPeopleCheck } from "./about-people";
+import { auditProcessCheck } from "./audit-process";
 import { axeRulesCheck } from "./axe-rules";
 import { botParityCheck } from "./bot-parity";
 import { cachePolicyCheck } from "./cache-policy";
@@ -83,4 +84,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   resourceHintsCheck,
   thirdPartyCheck,
   axeRulesCheck,
+  auditProcessCheck,
 ];
