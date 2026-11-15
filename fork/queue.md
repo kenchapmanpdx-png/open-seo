@@ -4,7 +4,7 @@ Status: `todo` · `doing` · `done` · `ESCALATE` · `BLOCKED-KEN`. HEAVY writes
 
 | WO        | Batch | Title                                                                                                 | Depends         | Status | Commit | Note                                     |
 | --------- | ----- | ----------------------------------------------------------------------------------------------------- | --------------- | ------ | ------ | ---------------------------------------- |
-| WO-B2-001 | B2    | Harness: badgeo-run `--only`, golden report writer, per-audit timing                                  |                 | todo   |        |                                          |
+| WO-B2-001 | B2    | Harness: badgeo-run `--only`, golden report writer, per-audit timing                                  |                 | done   |        |                                          |
 | WO-B2-002 | B2    | CRAWL: host/protocol/slash/index variants (one-hop permanent redirects)                               | WO-B2-001       | todo   |        | P3-01, P3-02, P3-03                      |
 | WO-B2-003 | B2    | CRAWL: canonical form (self-canonical, links = canonical = <loc> form, tracking params)               | WO-B2-001       | todo   |        | P3-04                                    |
 | WO-B2-004 | B2    | CRAWL: real 404s + 404 template                                                                       | WO-B2-001       | todo   |        | P3-10, P3-11                             |
