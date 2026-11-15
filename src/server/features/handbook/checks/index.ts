@@ -34,6 +34,7 @@ import { schemaVisibilityCheck } from "./schema-visibility";
 import { securityHeadersCheck } from "./security-headers";
 import { sitemapLastmodCheck } from "./sitemap-lastmod";
 import { socialMetaCheck } from "./social-meta";
+import { thirdPartyCheck } from "./third-party";
 import { urlInventoryCheck } from "./url-inventory";
 import { urlVariantsCheck } from "./url-variants";
 
@@ -79,4 +80,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   labMetricsCheck,
   pageWeightCheck,
   resourceHintsCheck,
+  thirdPartyCheck,
 ];
