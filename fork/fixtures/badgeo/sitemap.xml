@@ -18,4 +18,5 @@
   <url><loc>{{ORIGIN}}/no-og.html</loc></url>
   <url><loc>{{ORIGIN}}/bad-structure.html</loc></url>
   <url><loc>{{ORIGIN}}/blank-target.html</loc></url>
+  <url><loc>{{ORIGIN}}/contact.html</loc></url>
 </urlset>

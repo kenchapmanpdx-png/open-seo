@@ -10,6 +10,7 @@ import { listNavigationCheck } from "./list-navigation";
 import { notFoundCheck } from "./not-found";
 import { outboundLinksCheck } from "./outbound-links";
 import { pageStructureCheck } from "./page-structure";
+import { rawCopyCheck } from "./raw-copy";
 import { redirectedLinksCheck } from "./redirected-links";
 import { robotsGroupsCheck } from "./robots-groups";
 import { securityHeadersCheck } from "./security-headers";
@@ -42,4 +43,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   socialMetaCheck,
   pageStructureCheck,
   outboundLinksCheck,
+  rawCopyCheck,
 ];
