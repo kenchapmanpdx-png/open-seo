@@ -7,7 +7,11 @@ import { CONTRACTS_VERSION } from "@/server/features/handbook/contracts/version"
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { HandbookMode } from "@/server/features/handbook/contracts/status";
 import type { RunResult } from "./runner";
-import { renderReviewMd, renderStatusMd } from "../export/markdown";
+import {
+  renderOwnerTodoMd,
+  renderReviewMd,
+  renderStatusMd,
+} from "../export/markdown";
 import { scoreItems } from "./scoring";
 
 /**
@@ -112,6 +116,12 @@ const SECTION_HEADING: Record<(typeof REVIEW_REPORT_SECTIONS)[number], string> =
     "Residual weaknesses": "## Residual weaknesses",
   };
 const STATUS_HEADINGS = ["## Site Profile", "## Decisions", "## Checklist"];
+const OWNER_HEADINGS = [
+  "## Business facts needed",
+  "## Confirm before acting",
+  "## Policy decisions",
+  "## TODO(owner)",
+];
 
 const missingHeadings = (md: string, headings: readonly string[]) =>
   headings.filter((h) => !md.split("\n").some((l) => l.startsWith(h)));
@@ -125,7 +135,7 @@ const decide = (gaps: string[], what: string) => ({
 });
 
 /**
- * WO-B4-006: P0-01 (status file) and RV-02 (EP-7 report sections + score)
+ * WO-B4-006/007: P0-01 (status file), P0-02 (owner to-do) and RV-02 (EP-7 report sections + score)
  * are PASS once their export renders complete; they stay DEFERRED when the
  * runner left them so and are untouched when out of scope (NA at intake).
  */
@@ -142,6 +152,14 @@ function confirmExports(
       decide(
         missingHeadings(renderStatusMd(report, registry), STATUS_HEADINGS),
         "seo-geo-status.md",
+      ),
+    );
+  if (deferred("P0-02"))
+    verdicts.set(
+      "P0-02",
+      decide(
+        missingHeadings(renderOwnerTodoMd(report, registry), OWNER_HEADINGS),
+        "seo-owner-todo.md",
       ),
     );
   if (deferred("RV-02")) {
