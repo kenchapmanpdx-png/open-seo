@@ -36,6 +36,7 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/events/page/2.html`                      | Pagination page canonical → `/events/` (also not self-canonical, P3-04)                 | P3-21, P3-04   |
 | `/search.html?q=run`                       | Internal search `noindex, nofollow` (rule wants `noindex,follow` or Disallow)           | P3-23          |
 | `/sitemap-build.xml` (`_expect.json`)      | Second sitemap (robots `Sitemap:`), 6 `<loc>` all lastmod 2026-11-01 (build date)       | P3-17          |
+| `/dup-title-a.html`, `/dup-title-b.html`   | Same title + meta description (distinct H1s)                                            | P4-01          |
 | `/old-event.html` (`_redirects.json`)      | 301 → `/`, still linked from `/events/` (moved URL sent to the homepage)                | P3-08, P3-05   |
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                          | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                    | P3-02          |
