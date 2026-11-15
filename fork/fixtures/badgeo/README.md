@@ -40,11 +40,12 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/no-og.html`                              | No OG / Twitter tags, no `max-image-preview:large` (all other indexable pages have them)  | P4-09, P4-11   |
 | `/bad-structure.html`                      | Two `<main>`, `<h2>` in the footer, h1 → h3 skip, prices as paragraphs                    | P4-08, P5-12   |
 | `/blank-target.html`                       | `target="_blank"` link to https://example.org/ without rel (outbound fetch needs network) | P4-12          |
+| `/contact.html`                            | Clean control: mailto channel in server HTML (P5-16 PASS)                                 | —              |
 | `/old-event.html` (`_redirects.json`)      | 301 → `/`, still linked from `/events/` (moved URL sent to the homepage)                  | P3-08, P3-05   |
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                            | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                      | P3-02          |
 
-Unit tests only (no BadGEO page): hreflang P3-24 / variant URLs P3-25 (single-language site).
+Unit tests only (no BadGEO page): hreflang P3-24 / variant URLs P3-25 (single-language site); loading copy P2-04 (gate "API/backend-driven pages" stays `?` → BLOCKED on BadGEO, so no `/loading-copy.html`).
 
 Status: B1 R5 exemplars pass. `pnpm exec tsx fork/scripts/badgeo-run.ts` exits 0
 (every expectation fires on its page, nothing else fires).
