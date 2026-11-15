@@ -21,6 +21,7 @@ import { schemaBasicsCheck } from "./schema-basics";
 import { schemaEventCheck } from "./schema-event";
 import { schemaListsArticlesCheck } from "./schema-lists-articles";
 import { schemaLocalBusinessCheck } from "./schema-localbusiness";
+import { schemaVisibilityCheck } from "./schema-visibility";
 import { securityHeadersCheck } from "./security-headers";
 import { sitemapLastmodCheck } from "./sitemap-lastmod";
 import { socialMetaCheck } from "./social-meta";
@@ -60,4 +61,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   schemaEventCheck,
   schemaLocalBusinessCheck,
   schemaListsArticlesCheck,
+  schemaVisibilityCheck,
 ];
