@@ -1,0 +1,24 @@
+{
+  "id": "why-HUB",
+  "site": "why",
+  "golden": "§2 hub title (/events)",
+  "itemId": "P4-07",
+  "expected": "fail",
+  "input": {
+    "itemId": "P4-07",
+    "rubricId": "hub-titles",
+    "pages": [
+      {
+        "url": "https://whyracingevents.com/events",
+        "text": "Title: PNW Race Calendar: Running, Trail & Triathlon | WHY RACING EVENTS\nMeta description: Upcoming running, trail and triathlon races in Washington and Oregon: 5K, 10K, half marathon, marathon and ultra. Dates, locations and registration.\nH1: Upcoming Races"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/locations.html",
+        "text": "Title: PNW Race Travel Guide & Event Locations | WHY RACING EVENTS\nMeta description: Plan your PNW race weekend: top-rated hotels, dining and attractions near marathon and triathlon venues across Washington and Oregon.\nH1: PNW Travel Guide: Race, Stay, Explore."
+      }
+    ],
+    "facts": {
+      "local": false
+    }
+  }
+}

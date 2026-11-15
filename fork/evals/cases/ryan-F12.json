@@ -1,0 +1,20 @@
+{
+  "id": "ryan-F12",
+  "site": "ryan",
+  "golden": "F12",
+  "itemId": "P5-11",
+  "expected": "fail",
+  "input": {
+    "itemId": "P5-11",
+    "rubricId": "awards-as-text",
+    "pages": [
+      {
+        "url": "https://www.ryanmscottsdale.com/",
+        "text": "Award-like images:\n- image alt=\"Bestofourvalley_Winner_ryanm.png\" src=\"https://images.squarespace-cdn.com/content/v1/5b8757238ab7224cb63744cc/1698712517679-GLZG5NFEFRIIOKYLT0JS/Bestofourvalley_Winner_ryanm.png\"\n- image alt=\"Bestofourvalley_Winner_ryanm.png\" src=\"https://www.ryanmscottsdale.com/\"\n- image alt=\"\" src=\"https://images.squarespace-cdn.com/content/v1/5b8757238ab7224cb63744cc/f2d598c3-edd7-44f4-9cd2-5f8ec7db9a3b/ReadersChoice2025_awards.jpg\"\nAward-like text:\n(none)\nAward-like links:\n(none)"
+      }
+    ],
+    "facts": {
+      "local": true
+    }
+  }
+}

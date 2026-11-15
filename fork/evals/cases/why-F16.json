@@ -1,0 +1,70 @@
+{
+  "id": "why-F16",
+  "site": "why",
+  "golden": "F16",
+  "itemId": "P5-15",
+  "expected": "fail",
+  "input": {
+    "itemId": "P5-15",
+    "rubricId": "detail-key-facts",
+    "pages": [
+      {
+        "url": "https://whyracingevents.com/events/ho-ho-5k",
+        "text": "Title: Ho Ho 5K in Portland, OR | WHY RACING EVENTS\nMeta description: Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026. Registration, course details and race day info.\nH1: Ho Ho 5K\n\nHo Ho 5K in Portland, OR | WHY RACING EVENTS Skip to main content Races Training Volunteer Give Back Community Travel Sponsors About Corporate Wellness Find My Race Home Races Training Volunteer Give Back Community Travel Sponsors About Corporate Wellness Find My Race Home › Events › Ho Ho 5K Ho Ho 5K Ho Ho 5K is a 5k running event in Portland, OR on Sunday, December 6, 2026, hosted by X-Dog Adventures. Register Now About Ho Ho 5K The Ho Ho 5K is a holiday 5K run and walk hosted by X-Dog Adventures at Cook Park, 17005 SW 92nd Ave, Portland, OR. Holiday costumes are encouraged, and friendly dogs are welcome. Every finisher gets Hostess HoHos and Sno Balls, and there are free trees and, yes, the fruitcake. Bring warm clothes to change into for the post-race festivities. The race also collects canned food, jackets and blankets, and cat and dog food for the humane society, so bring a donation if you can. Late registration and bib pickup open at 8 AM on race morning. Race Day Details Date Sunday, December 6, 2026 Location Cook Park Distances 5k Race Type Running Registration Open More Races Santa ' s Holiday Hustle 5K & Dirty Santa Trail Run 10K Sat, Dec 19, 2026 · Camas, WA Resolution Run Sat, Jan 9, 2027 · La Center, WA White River Snow Shoe Sun, Jan 31, 2027 · Government Camp, OR Silver Falls Trail Challenge Sat, Mar 6, 2027 · Sublimity, OR Couve Clover Run Sun, Mar 21, 2027 · Vancouver, WA Crown Stub 100 Sat, Apr 24, 2027 · Buxton, OR See the full race calendar Last updated: 2026-11-11 WHY RACING EVENTS Fitness. Family. Fun. What's Your WHY? Races Training Volunteer Give Back Community Travel Sponsors About Corporate Wellness © 2026 WHY RACING EVENTS Inc. • La Center, WA • (360) 314-4682 Staff Portal"
+      }
+    ],
+    "facts": {
+      "local": false,
+      "detailPages": [
+        {
+          "url": "https://whyracingevents.com/events/bigfoot-5k-10k",
+          "template": "/events/*",
+          "words": 439,
+          "tables": 0,
+          "lists": 5,
+          "sharedSentenceRatio": 0.74
+        },
+        {
+          "url": "https://whyracingevents.com/events/pdx-triathlon-festival",
+          "template": "/events/*",
+          "words": 449,
+          "tables": 0,
+          "lists": 5,
+          "sharedSentenceRatio": 0.74
+        },
+        {
+          "url": "https://whyracingevents.com/events/columbia-river-triathlon-endurance-sports-festival",
+          "template": "/events/*",
+          "words": 463,
+          "tables": 0,
+          "lists": 5,
+          "sharedSentenceRatio": 0.74
+        },
+        {
+          "url": "https://whyracingevents.com/events/ho-ho-5k",
+          "template": "/events/*",
+          "words": 297,
+          "tables": 0,
+          "lists": 3,
+          "sharedSentenceRatio": 0.2
+        },
+        {
+          "url": "https://whyracingevents.com/events/battle-to-the-pacific",
+          "template": "/events/*",
+          "words": 414,
+          "tables": 0,
+          "lists": 3,
+          "sharedSentenceRatio": 0.15
+        },
+        {
+          "url": "https://whyracingevents.com/events/girlfriends-half-marathon-10k-6k",
+          "template": "/events/*",
+          "words": 546,
+          "tables": 0,
+          "lists": 4,
+          "sharedSentenceRatio": 0.07
+        }
+      ]
+    }
+  }
+}
