@@ -102,3 +102,36 @@ export function createSupabaseEvidenceStore(config: {
     },
   };
 }
+
+/**
+ * Short-lived signed GET URL for one private evidence object, so the browser
+ * downloads the body from storage instead of through the worker (ADR-003).
+ * Not part of K4: only the Supabase store can sign.
+ */
+export async function createSupabaseSignedUrl(
+  config: { url: string; serviceRoleKey: string },
+  key: string,
+  expiresInSeconds: number,
+): Promise<string | null> {
+  const base = `${config.url.replace(/\/$/, "")}/storage/v1`;
+  const res = await fetch(
+    `${base}/object/sign/${EVIDENCE_BUCKET}/${key.split("/").map(encodeURIComponent).join("/")}`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${config.serviceRoleKey}`,
+        apikey: config.serviceRoleKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn: expiresInSeconds }),
+    },
+  );
+  if (!res.ok) return null;
+  const body: unknown = await res.json();
+  return body &&
+    typeof body === "object" &&
+    "signedURL" in body &&
+    typeof body.signedURL === "string"
+    ? `${base}${body.signedURL}`
+    : null;
+}

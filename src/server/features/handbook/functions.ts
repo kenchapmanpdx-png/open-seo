@@ -52,3 +52,21 @@ export const getHandbookRun = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) =>
     HandbookService.getRunDetail(context.projectId, data.runId),
   );
+
+export const listHandbookEvidence = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(
+    z.object({ projectId: z.string().min(1), runId: z.string().min(1) }),
+  )
+  .handler(async ({ data, context }) =>
+    HandbookService.listEvidence(context.projectId, data.runId),
+  );
+
+export const getHandbookEvidence = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(
+    z.object({ projectId: z.string().min(1), evidenceId: z.string().min(1) }),
+  )
+  .handler(async ({ data, context }) =>
+    HandbookService.getEvidence(context.projectId, data.evidenceId),
+  );
