@@ -62,6 +62,19 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
               >
                 Bing
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    to="/p/$projectId/handbook/ai-visibility-byok"
+                    params={{ projectId }}
+                  />
+                }
+              >
+                AI visibility (own keys)
+              </Button>
             </>
           }
         />
