@@ -13,6 +13,8 @@ import { renderStatusMd } from "@/server/features/handbook/export/markdown";
 import { REGISTRY } from "@/server/features/handbook/registry";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import { HandbookService } from "@/server/features/handbook/services/HandbookService";
+import { aiTrafficSummarySchema } from "@/server/features/ai-traffic/contracts";
+import { AiTrafficService } from "@/server/features/ai-traffic/aiTrafficService";
 import { AppError } from "@/server/lib/errors";
 import { buildProjectMeta } from "@/server/mcp/context";
 import { mcpResponse, truncatePreview } from "@/server/mcp/formatters";
@@ -305,6 +307,63 @@ const reportPublishTool = {
   }),
 } satisfies OpenSeoToolDefinition<typeof publishInput>;
 
+// ------------------------------------------------------- ai_traffic_summary
+
+const aiTrafficInput = { projectId: projectIdSchema } as const;
+type AiTrafficArgs = z.infer<z.ZodObject<typeof aiTrafficInput>>;
+
+function countLine(
+  label: string,
+  rows: Array<{
+    product: string;
+    verification: string | null;
+    hits: number;
+  }>,
+) {
+  return `${label}: ${
+    rows
+      .map(
+        (row) =>
+          `${row.product}${row.verification ? ` (${row.verification})` : ""} ${row.hits}`,
+      )
+      .join(", ") || "none"
+  }`;
+}
+
+/** WO-B6-014 (ADR-013 §4): AI crawler / agent / referral hits, last 28 days. */
+const aiTrafficSummaryTool = {
+  name: "ai_traffic_summary",
+  config: {
+    title: "AI traffic summary",
+    description:
+      "AI crawler hits (by operator, purpose and IP verification), AI user fetches, AI referral visits and the most-hit paths for the last 28 days, from the project's Vercel log drain. Only 'verified' hits come from the operator's published IP ranges. Uses no credits.",
+    inputSchema: aiTrafficInput,
+    outputSchema: aiTrafficSummarySchema,
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  },
+  handler: withMcpProjectAuth(async (args: AiTrafficArgs, context) => {
+    const summary = await AiTrafficService.getSummary({
+      projectId: args.projectId,
+      organizationId: context.auth.organizationId,
+    });
+    return mcpResponse({
+      text: [
+        `AI traffic ${summary.from} → ${summary.to}`,
+        countLine("Crawlers", summary.crawlers),
+        countLine("User fetches", summary.userFetches),
+        countLine("Referrals", summary.referrals),
+        `Non-AI requests discarded at the edge: ${summary.discarded}`,
+      ].join("\n"),
+      meta: buildProjectMeta(
+        context,
+        args.projectId,
+        `/p/${args.projectId}/handbook/ai-traffic`,
+      ),
+      structuredContent: summary,
+    });
+  }),
+} satisfies OpenSeoToolDefinition<typeof aiTrafficInput>;
+
 /**
  * Registers the handbook tools with the caller's `register` (the same
  * callback `registerOpenSeoTools` receives). Hooked up in B5.
@@ -318,4 +377,5 @@ export function registerHandbookTools(
   register(findingsGetTool);
   register(statusExportTool);
   register(reportPublishTool);
+  register(aiTrafficSummaryTool);
 }
