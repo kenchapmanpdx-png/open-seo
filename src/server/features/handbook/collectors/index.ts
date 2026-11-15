@@ -11,6 +11,7 @@ import {
   sitemapCollector,
   variantsCollector,
 } from "./fetch-collectors";
+import { outboundCollector } from "./outbound";
 
 /**
  * Raw-fetch collectors in dependency order. `render`, `axe` and `lighthouse`
@@ -30,5 +31,6 @@ export function createDefaultCollectors(
     llmsCollector,
     variantsCollector,
     botFetchCollector,
+    outboundCollector,
   ];
 }
