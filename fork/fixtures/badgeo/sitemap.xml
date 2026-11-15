@@ -24,4 +24,6 @@
   <url><loc>{{ORIGIN}}/relative-urls.html</loc></url>
   <url><loc>{{ORIGIN}}/hidden-faq.html</loc></url>
   <url><loc>{{ORIGIN}}/a11y-bad.html</loc></url>
+  <url><loc>{{ORIGIN}}/js-only.html</loc></url>
+  <url><loc>{{ORIGIN}}/fade-in.html</loc></url>
 </urlset>
