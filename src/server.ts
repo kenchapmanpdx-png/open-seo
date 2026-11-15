@@ -284,6 +284,11 @@ export default {
   ) {
     // A legacy Docker import owns the database until it finishes.
     if (hasOperatorSecret() && (await isLegacyImportActive())) return;
+    await withPgClient(async () =>
+      (
+        await import("@/server/features/handbook/scheduled/forkScheduledJobs")
+      ).runForkScheduledJobs(controller.cron),
+    );
     if (controller.cron === MCP_OAUTH_PURGE_CRON) {
       const authMode = getAuthMode(env.AUTH_MODE);
       // Only the modes with their own accounts run the OAuth provider (and
