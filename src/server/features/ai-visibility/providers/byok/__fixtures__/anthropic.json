@@ -1,0 +1,54 @@
+{
+  "_note": "synthetic (no ANTHROPIC_API_KEY): Messages API shape, web_search_20260209",
+  "id": "msg_fixture",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-5-5",
+  "stop_reason": "end_turn",
+  "content": [
+    {
+      "type": "server_tool_use",
+      "id": "srvtoolu_1",
+      "name": "web_search",
+      "input": { "query": "best trail running shoes phoenix" }
+    },
+    {
+      "type": "web_search_tool_result",
+      "tool_use_id": "srvtoolu_1",
+      "content": [
+        {
+          "type": "web_search_result",
+          "url": "https://www.acme.com/shoes",
+          "title": "Acme Running shoes",
+          "encrypted_content": "SECRETBLOB",
+          "page_age": "2026-10-01"
+        },
+        {
+          "type": "web_search_result",
+          "url": "https://uncited.example/",
+          "title": "Uncited",
+          "encrypted_content": "SECRETBLOB"
+        }
+      ]
+    },
+    { "type": "text", "text": "Based on reviews, " },
+    {
+      "type": "text",
+      "text": "Acme Running is well regarded.",
+      "citations": [
+        {
+          "type": "web_search_result_location",
+          "url": "https://www.acme.com/shoes",
+          "title": "Acme Running shoes",
+          "cited_text": "Acme Running ...",
+          "encrypted_index": "x"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 2000,
+    "output_tokens": 150,
+    "server_tool_use": { "web_search_requests": 1 }
+  }
+}
