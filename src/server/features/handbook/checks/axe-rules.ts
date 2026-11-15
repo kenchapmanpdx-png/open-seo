@@ -76,6 +76,15 @@ export const axeRulesCheck: HandbookCheck = {
         list.push({ page, v });
         byRule.set(v.id, list);
       }
+    // Which template each scanned URL samples, so `/events/*` hits read as such.
+    const patternOf = new Map<string, string>();
+    if (templates.status === "ok")
+      for (const t of templates.templates)
+        for (const u of t.urls) patternOf.set(normalizeUrl(u), t.urlPattern);
+    const label = (url: string) => {
+      const pattern = patternOf.get(normalizeUrl(url));
+      return pattern ? `${url} [template ${pattern}]` : url;
+    };
     for (const [id, hits] of byRule) {
       const rule = RULES[id];
       out.finding({
@@ -85,7 +94,7 @@ export const axeRulesCheck: HandbookCheck = {
         detail: hits
           .map(
             ({ page, v }) =>
-              `${page.url} — ${v.nodes} nodes (${v.impact ?? "?"}): ${v.sampleTargets.join(", ")}`,
+              `${label(page.url)} — ${v.nodes} nodes (${v.impact ?? "?"}): ${v.sampleTargets.join(", ")}`,
           )
           .join("\n"),
         fix: FIX[rule.item],

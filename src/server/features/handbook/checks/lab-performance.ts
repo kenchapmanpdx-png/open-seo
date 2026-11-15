@@ -22,6 +22,13 @@ const HTML_BYTES = 500_000;
 const BLOCKING_SCRIPTS = 5;
 const MAX_PRELOADS = 3;
 const ANIMATION_LIB = /gsap|lottie|\baos\b|framer-motion|anime(\.min)?\.js/i;
+/** Third-party font / icon services, named in the P7-05 finding (why F26, ryan A08). */
+const FONT_SERVICES: ReadonlyArray<[RegExp, string]> = [
+  [/fonts\.googleapis\.com/i, "Google Fonts"],
+  [/use\.typekit\.net|p\.typekit\.net/i, "Adobe Fonts (Typekit)"],
+  [/font-?awesome/i, "Font Awesome"],
+  [/fonts\.bunny\.net/i, "Bunny Fonts"],
+];
 
 const live = (s: PageSnapshot) =>
   s.status === 200 &&
@@ -45,6 +52,18 @@ const blocking = (s: PageSnapshot) =>
       !x.defer &&
       x.type?.toLowerCase() !== "module",
   );
+
+/** Head stylesheets and blocking scripts served by a third-party font/icon service. */
+const fontBlockers = (s: PageSnapshot) =>
+  [
+    ...s.markup.headLinks
+      .filter((l) => /\bstylesheet\b/i.test(l.rel))
+      .map((l) => l.href),
+    ...blocking(s).map((x) => x.src ?? ""),
+  ].flatMap((url) => {
+    const hit = FONT_SERVICES.find(([re]) => re.test(url));
+    return hit ? [`${hit[1]} blocks rendering: ${url}`] : [];
+  });
 
 const host = (url: string) => {
   try {
@@ -188,17 +207,18 @@ export const pageWeightCheck: HandbookCheck = {
       for (const x of list)
         if (x.src && ANIMATION_LIB.test(x.src))
           why.push(`animation library blocks rendering: ${x.src}`);
+      why.push(...fontBlockers(s));
       return why.length > 0 ? [{ s, why }] : [];
     });
     if (problems.length > 0)
       out.finding({
         itemIds: ["P7-05"],
         severity: "S3",
-        title: "Render-blocking scripts in <head>",
+        title: "Render-blocking scripts or font CSS in <head>",
         detail: problems
           .map(({ s, why }) => `${s.url} — ${why.join("; ")}`)
           .join("\n"),
-        fix: "Add defer (or type=module) to head scripts, split bundles per route, and lazy-load animation libraries after first render.",
+        fix: "Add defer (or type=module) to head scripts, split bundles per route, lazy-load animation libraries after first render, and self-host fonts/icons (or load them with preload + font-display: swap) instead of third-party render-blocking CSS.",
         fixability: "FIXABLE",
         effort: "M",
         urls: problems.map(({ s }) => s.url),
