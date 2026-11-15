@@ -243,7 +243,12 @@ export const llmsCollector: Collector<"llms"> = {
         ? `${u.origin}${u.pathname}index.html.md`
         : `${u.origin}${u.pathname}.md`;
       const res = await tryFetch(ctx, mdUrl, { maxRedirects: 0 });
-      mdMirrors.push({ pageUrl: page.url, mdUrl, status: res?.status ?? 0 });
+      mdMirrors.push({
+        pageUrl: page.url,
+        mdUrl,
+        status: res?.status ?? 0,
+        headers: res?.headers ?? [],
+      });
     }
     return { status: "ok", files, mdMirrors };
   },
@@ -340,12 +345,15 @@ export const variantsCollector: Collector<"variants"> = {
     for (const [kind, url] of probes) {
       const res = await tryFetch(ctx, url);
       if (res) {
+        const facts = extractHtmlFacts(res.body, res.finalUrl);
         out.push({
           kind,
           url,
           finalUrl: res.finalUrl,
           status: res.status,
           redirectChain: res.redirectChain,
+          title: facts.head.title,
+          words: facts.words,
         });
       }
     }
