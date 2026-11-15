@@ -9,6 +9,7 @@ WPs 32–36.
 3. Security pass: SSRF (collectors, sidecar), published-report content (no secrets/evidence leakage, `noindex`, unguessable paths), Supabase (RLS/privileges via Supabase advisors, service-role key server-side only, private buckets), tenant scoping, secrets in logs, LLM injection guards, sidecar bound to 127.0.0.1, dependency audit.
 4. Data integrity: evidence present for every finding; reruns idempotent; migration up/down on both dialects.
 5. Fix all S1/S2 issues found.
+6. Registration hook (WO-B4-011): one line `registerHandbookTools(register);` at the end of `registerOpenSeoTools` in `src/server/mcp/server.ts` (import from `@/server/features/handbook/mcp/tools`); log in `fork/UPSTREAM-EDITS.md`; then the tools/list contract test must pass.
 
 ## R2 — Release (WP33)
 
