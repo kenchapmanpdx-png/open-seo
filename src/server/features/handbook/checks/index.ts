@@ -1,6 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import { botParityCheck } from "./bot-parity";
 import { canonicalFormCheck } from "./canonical-form";
+import { crawlCoverageCheck } from "./crawl-coverage";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { notFoundCheck } from "./not-found";
 import { redirectedLinksCheck } from "./redirected-links";
@@ -24,4 +25,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   canonicalFormCheck,
   notFoundCheck,
   redirectedLinksCheck,
+  crawlCoverageCheck,
 ];
