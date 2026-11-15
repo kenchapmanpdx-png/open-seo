@@ -1,5 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import { botParityCheck } from "./bot-parity";
+import { canonicalFormCheck } from "./canonical-form";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { robotsGroupsCheck } from "./robots-groups";
 import { securityHeadersCheck } from "./security-headers";
@@ -18,4 +19,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   jsonLdIntegrityCheck,
   botParityCheck,
   urlVariantsCheck,
+  canonicalFormCheck,
 ];
