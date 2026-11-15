@@ -27,13 +27,14 @@ import {
   TabsTrigger,
 } from "@/client/components/ui/tabs";
 import { ITEM_STATUSES } from "@/server/features/handbook/contracts/status";
-import type { getHandbookRun } from "@/server/features/handbook/functions";
+import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { FindingsTable } from "./FindingsTable";
 import { RunActions } from "./RunActions";
+import { ScoreCard } from "./ScoreCard";
 import { handbookRunQuery } from "./queries";
 
-/** One handbook run (ADR-010): findings and checklist item statuses. */
+/** One handbook run (ADR-010): grade, findings and checklist item statuses. */
 export function HandbookRunPage({
   projectId,
   runId,
@@ -58,21 +59,24 @@ export function HandbookRunPage({
                     ) : null
                   }
                 />
+                {detail.run.status === "completed" ? (
+                  <ScoreCard report={detail.report} />
+                ) : null}
                 <Tabs defaultValue="findings">
                   <TabsList>
                     <TabsTrigger value="findings">
-                      Findings ({detail.findings.length})
+                      Findings ({detail.report.findings.length})
                     </TabsTrigger>
                     <TabsTrigger value="items">
-                      Checklist ({detail.items.length})
+                      Checklist ({detail.report.items.length})
                     </TabsTrigger>
                     <TabsTrigger value="evidence">Evidence</TabsTrigger>
                   </TabsList>
                   <TabsContent value="findings">
-                    <FindingsTable findings={detail.findings} />
+                    <FindingsTable findings={detail.report.findings} />
                   </TabsContent>
                   <TabsContent value="items">
-                    <ItemsTable items={detail.items} />
+                    <ItemsTable items={detail.report.items} />
                   </TabsContent>
                   <TabsContent value="evidence">
                     <EvidenceViewer projectId={projectId} runId={runId} />
@@ -92,9 +96,7 @@ export function HandbookRunPage({
   );
 }
 
-type Item = NonNullable<
-  Awaited<ReturnType<typeof getHandbookRun>>
->["items"][number];
+type Item = ReportJson["items"][number];
 
 const ALL = "all";
 /** Registry ids are `<phase>-<nn>` (e.g. P1-04). */

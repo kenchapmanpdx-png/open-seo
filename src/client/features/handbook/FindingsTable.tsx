@@ -11,19 +11,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/client/components/ui/table";
-import type { getHandbookRun } from "@/server/features/handbook/functions";
+import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 
-type Detail = NonNullable<Awaited<ReturnType<typeof getHandbookRun>>>;
-type Finding = Detail["findings"][number];
+type Finding = ReportJson["findings"][number];
 
-const SEVERITY_RANK: Record<Finding["severity"], number> = {
-  S1: 1,
-  S2: 2,
-  S3: 3,
-  S4: 4,
-};
+const SEVERITIES = ["S1", "S2", "S3", "S4"] as const;
 
-/** Findings by severity (S1 first), then F-code. */
+/** Row anchor that the phase table's driver codes link to. */
+export const findingAnchor = (code: string) => `finding-${code}`;
+
+/** Findings grouped by severity (S1 first), each group by F-code. */
 export function FindingsTable({ findings }: { findings: Finding[] }) {
   if (findings.length === 0)
     return (
@@ -33,29 +30,48 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
         description="Every automated check passed or was not applicable."
       />
     );
-  const sorted = sort(
-    findings,
-    (a, b) =>
-      SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity] ||
-      a.code.localeCompare(b.code),
+  return (
+    <div className="space-y-4">
+      {SEVERITIES.map((severity) => {
+        const group = sort(
+          findings.filter((f) => f.severity === severity),
+          (a, b) => a.code.localeCompare(b.code),
+        );
+        if (group.length === 0) return null;
+        return (
+          <section key={severity} className="space-y-2">
+            <h3 className="text-sm font-semibold">
+              {severity} · {group.length}
+            </h3>
+            <FindingRows findings={group} />
+          </section>
+        );
+      })}
+    </div>
   );
+}
+
+function FindingRows({ findings }: { findings: Finding[] }) {
   return (
     <TableCard>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Code</TableHead>
-            <TableHead>Severity</TableHead>
             <TableHead>Finding</TableHead>
             <TableHead>Fix</TableHead>
             <TableHead>Effort</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sorted.map((f) => (
-            <TableRow key={f.id}>
-              <TableCell className="font-mono text-xs">{f.code}</TableCell>
-              <TableCell>
+          {findings.map((f) => (
+            <TableRow
+              key={f.code}
+              id={findingAnchor(f.code)}
+              className="scroll-mt-4 target:bg-muted"
+            >
+              <TableCell className="align-top">
+                <div className="font-mono text-xs">{f.code}</div>
                 <Badge
                   variant={f.severity === "S1" ? "destructive" : "outline"}
                 >
@@ -64,17 +80,29 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
               </TableCell>
               <TableCell className="max-w-[420px] align-top">
                 <div className="font-medium">{f.title}</div>
+                <div className="flex flex-wrap gap-1 py-1">
+                  {f.source === "llm" ? (
+                    <Badge variant="secondary">AI-reviewed</Badge>
+                  ) : null}
+                  {f.fixability === "LIMITED" ? (
+                    <Badge variant="outline" title={f.limitedReason ?? ""}>
+                      platform limit
+                    </Badge>
+                  ) : null}
+                </div>
                 <div className="whitespace-pre-line text-xs text-muted-foreground">
                   {f.detail}
                 </div>
               </TableCell>
               <TableCell className="max-w-[320px] align-top text-sm">
                 {f.fix}
-                <div className="text-xs text-muted-foreground">
-                  {f.fixability}
-                </div>
+                {f.limitedReason ? (
+                  <div className="text-xs text-muted-foreground">
+                    {f.limitedReason}
+                  </div>
+                ) : null}
               </TableCell>
-              <TableCell>{f.effort}</TableCell>
+              <TableCell className="align-top">{f.effort}</TableCell>
             </TableRow>
           ))}
         </TableBody>

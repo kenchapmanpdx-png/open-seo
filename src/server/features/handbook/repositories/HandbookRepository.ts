@@ -156,31 +156,6 @@ async function listItemStatuses(projectId: string, runId: string) {
     );
 }
 
-async function listFindings(projectId: string, runId: string) {
-  return db
-    .select({
-      id: handbookFindings.id,
-      code: handbookFindings.code,
-      severity: handbookFindings.severity,
-      class: handbookFindings.class,
-      phase: handbookFindings.phase,
-      title: handbookFindings.title,
-      detail: handbookFindings.detail,
-      fix: handbookFindings.fix,
-      fixability: handbookFindings.fixability,
-      effort: handbookFindings.effort,
-    })
-    .from(handbookFindings)
-    .innerJoin(handbookRuns, eq(handbookRuns.id, handbookFindings.runId))
-    .where(
-      and(
-        eq(handbookFindings.runId, runId),
-        eq(handbookRuns.projectId, projectId),
-      ),
-    )
-    .orderBy(handbookFindings.code);
-}
-
 const evidenceColumns = {
   id: handbookEvidence.id,
   findingId: handbookEvidence.findingId,
@@ -419,7 +394,6 @@ export const HandbookRepository = {
   listRuns,
   getRun,
   listItemStatuses,
-  listFindings,
   listEvidence,
   getEvidence,
   listCrawledUrls,
