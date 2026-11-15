@@ -30,6 +30,7 @@ import { ITEM_STATUSES } from "@/server/features/handbook/contracts/status";
 import type { getHandbookRun } from "@/server/features/handbook/functions";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { FindingsTable } from "./FindingsTable";
+import { RunActions } from "./RunActions";
 import { handbookRunQuery } from "./queries";
 
 /** One handbook run (ADR-010): findings and checklist item statuses. */
@@ -51,6 +52,11 @@ export function HandbookRunPage({
                 <PageHeader
                   title={`Handbook run · ${detail.run.origin}`}
                   description={`${detail.run.mode} · tier ${detail.run.tier ?? "?"} · ${detail.run.status}`}
+                  actions={
+                    detail.run.status === "completed" ? (
+                      <RunActions projectId={projectId} runId={runId} />
+                    ) : null
+                  }
                 />
                 <Tabs defaultValue="findings">
                   <TabsList>
