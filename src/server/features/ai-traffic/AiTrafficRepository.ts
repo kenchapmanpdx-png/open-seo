@@ -1,11 +1,15 @@
-import { and, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { chunk } from "remeda";
 import { db } from "@/db";
 import {
   aiTrafficClasses,
   aiTrafficDaily,
+  aiTrafficDiscards,
   aiTrafficEvents,
+  aiTrafficSiteHosts,
+  aiTrafficSites,
 } from "@/db/integrations-tables";
+import { projects } from "@/db/schema";
 import { runBatch } from "@/db/runBatch";
 import type { TrafficClass, TrafficEvent } from "./contracts";
 
@@ -128,4 +132,166 @@ export async function deleteStaleClasses(rulesVersion: string, limit: number) {
       .delete(aiTrafficClasses)
       .where(inArray(aiTrafficClasses.eventId, ids));
   return stale.length;
+}
+
+// ---------------------------------------------------------------- reads (UI, MCP)
+// Every read joins ai_traffic_site and filters by project + organization.
+
+const siteScope = (projectId: string, organizationId: string) =>
+  and(
+    eq(aiTrafficSites.projectId, projectId),
+    eq(aiTrafficSites.organizationId, organizationId),
+  );
+
+export async function projectExists(projectId: string, organizationId: string) {
+  const [row] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.id, projectId),
+        eq(projects.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+export async function listSites(projectId: string, organizationId: string) {
+  const sites = await db
+    .select({
+      id: aiTrafficSites.id,
+      vercelProjectId: aiTrafficSites.vercelProjectId,
+    })
+    .from(aiTrafficSites)
+    .where(siteScope(projectId, organizationId));
+  const hosts = sites.length
+    ? await db
+        .select({
+          siteId: aiTrafficSiteHosts.siteId,
+          host: aiTrafficSiteHosts.host,
+        })
+        .from(aiTrafficSiteHosts)
+        .where(
+          inArray(
+            aiTrafficSiteHosts.siteId,
+            sites.map((site) => site.id),
+          ),
+        )
+    : [];
+  return sites.map((site) => ({
+    ...site,
+    hosts: hosts.filter((row) => row.siteId === site.id).map((row) => row.host),
+  }));
+}
+
+export async function insertSite(input: {
+  projectId: string;
+  organizationId: string;
+  vercelProjectId: string;
+  hosts: string[];
+}) {
+  const id = crypto.randomUUID();
+  await runBatch((tx) => [
+    tx.insert(aiTrafficSites).values({
+      id,
+      projectId: input.projectId,
+      organizationId: input.organizationId,
+      vercelProjectId: input.vercelProjectId,
+    }),
+    ...(input.hosts.length
+      ? [
+          tx
+            .insert(aiTrafficSiteHosts)
+            .values(input.hosts.map((host) => ({ siteId: id, host }))),
+        ]
+      : []),
+  ]);
+  return id;
+}
+
+export async function deleteSite(
+  siteId: string,
+  projectId: string,
+  organizationId: string,
+) {
+  await db
+    .delete(aiTrafficSites)
+    .where(
+      and(eq(aiTrafficSites.id, siteId), siteScope(projectId, organizationId)),
+    );
+}
+
+export async function sumDaily(
+  projectId: string,
+  organizationId: string,
+  fromDay: string,
+) {
+  return db
+    .select({
+      kind: aiTrafficDaily.kind,
+      ruleId: aiTrafficDaily.ruleId,
+      verification: aiTrafficDaily.verification,
+      hits: sql<number>`cast(sum(${aiTrafficDaily.hits}) as integer)`,
+    })
+    .from(aiTrafficDaily)
+    .innerJoin(aiTrafficSites, eq(aiTrafficSites.id, aiTrafficDaily.siteId))
+    .where(
+      and(
+        siteScope(projectId, organizationId),
+        gte(aiTrafficDaily.day, fromDay),
+      ),
+    )
+    .groupBy(
+      aiTrafficDaily.kind,
+      aiTrafficDaily.ruleId,
+      aiTrafficDaily.verification,
+    );
+}
+
+export async function topAiPaths(
+  projectId: string,
+  organizationId: string,
+  fromIso: string,
+  limit: number,
+) {
+  const hits = sql<number>`cast(count(*) as integer)`;
+  return db
+    .select({ path: aiTrafficEvents.path, hits })
+    .from(aiTrafficEvents)
+    .innerJoin(
+      aiTrafficClasses,
+      eq(aiTrafficClasses.eventId, aiTrafficEvents.id),
+    )
+    .innerJoin(aiTrafficSites, eq(aiTrafficSites.id, aiTrafficEvents.siteId))
+    .where(
+      and(
+        siteScope(projectId, organizationId),
+        gte(aiTrafficEvents.observedAt, fromIso),
+        inArray(aiTrafficClasses.kind, ["crawler", "user_fetch", "referral"]),
+      ),
+    )
+    .groupBy(aiTrafficEvents.path)
+    .orderBy(desc(hits))
+    .limit(limit);
+}
+
+export async function sumDiscards(
+  projectId: string,
+  organizationId: string,
+  fromHour: string,
+) {
+  const [row] = await db
+    .select({
+      count: sql<number>`cast(coalesce(sum(${aiTrafficDiscards.count}), 0) as integer)`,
+    })
+    .from(aiTrafficDiscards)
+    .innerJoin(aiTrafficSites, eq(aiTrafficSites.id, aiTrafficDiscards.siteId))
+    .where(
+      and(
+        siteScope(projectId, organizationId),
+        gte(aiTrafficDiscards.hour, fromHour),
+      ),
+    );
+  return row?.count ?? 0;
 }
