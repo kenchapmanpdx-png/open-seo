@@ -7,6 +7,7 @@ import {
   aiTrafficDailyJob,
   aiTrafficTickJob,
 } from "@/server/features/ai-traffic/aiTrafficJobs";
+import { bingDailySyncJob } from "@/server/features/bing/bingSync";
 
 const EVERY_FIVE_MINUTES = "*/5 * * * *";
 const DAILY = "17 3 * * *";
@@ -15,7 +16,7 @@ type ForkJob = { name: string; run: () => Promise<unknown> };
 
 const FORK_SCHEDULED_JOBS: Record<string, ForkJob[]> = {
   [EVERY_FIVE_MINUTES]: [aiTrafficTickJob],
-  [DAILY]: [aiTrafficDailyJob],
+  [DAILY]: [aiTrafficDailyJob, bingDailySyncJob],
 };
 
 export async function runForkScheduledJobs(
