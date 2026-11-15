@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ReportService } from "@/server/features/reports/services/ReportService";
 import { HandbookService } from "./HandbookService";
 
 const { testDb } = await vi.hoisted(async () => {
@@ -8,6 +9,9 @@ const { testDb } = await vi.hoisted(async () => {
 });
 vi.mock("cloudflare:workers", () => ({ env: { DATABASE_PROVIDER: "d1" } }));
 vi.mock("@/db", () => ({ db: testDb.db }));
+vi.mock("@/server/features/reports/services/ReportService", () => ({
+  ReportService: { saveReport: vi.fn() },
+}));
 
 beforeEach(async () => {
   await testDb.seedProject();
@@ -27,5 +31,31 @@ describe("HandbookService.getEvidence", () => {
       expect.objectContaining({ excerpt: "<title>", bodyUrl: null }),
     );
     expect(await HandbookService.getEvidence("other", "evidence")).toBeNull();
+  });
+});
+
+describe("HandbookService.publishToReports", () => {
+  const publish = (projectId: string) =>
+    HandbookService.publishToReports({
+      projectId,
+      organizationId: "organization",
+      userId: "user",
+      runId: "run",
+    });
+
+  it("treats another project's run as not found", async () => {
+    await expect(publish("other")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(ReportService.saveReport).not.toHaveBeenCalled();
+  });
+
+  it("saves the client report under the handbook-audit skill", async () => {
+    await publish("project");
+    expect(ReportService.saveReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: "project",
+        skill: "handbook-audit",
+        createdByUserId: "user",
+      }),
+    );
   });
 });
