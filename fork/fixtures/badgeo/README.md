@@ -33,6 +33,8 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/events/unlinked-run-2026.html`           | Event detail in the sitemap, linked from nowhere (dynamic slug so it joins `/events/*`) | P2-10, P3-12   |
 | `/Bad_Slug.html`                           | Uppercase + underscore slug, linked from `/about/`, in the sitemap                      | P2-12          |
 | `/admin/`                                  | noindex + `Disallow: /admin/` (not crawled) + linked from the `/about/` footer          | P3-14, P3-16   |
+| `/events/page/2.html`                      | Pagination page canonical → `/events/` (also not self-canonical, P3-04)                 | P3-21, P3-04   |
+| `/search.html?q=run`                       | Internal search `noindex, nofollow` (rule wants `noindex,follow` or Disallow)           | P3-23          |
 | `/old-event.html` (`_redirects.json`)      | 301 → `/`, still linked from `/events/` (moved URL sent to the homepage)                | P3-08, P3-05   |
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                          | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                    | P3-02          |

@@ -4,6 +4,7 @@ import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
 import { hiddenPagesCheck } from "./hidden-pages";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
+import { listNavigationCheck } from "./list-navigation";
 import { notFoundCheck } from "./not-found";
 import { redirectedLinksCheck } from "./redirected-links";
 import { robotsGroupsCheck } from "./robots-groups";
@@ -28,4 +29,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   redirectedLinksCheck,
   crawlCoverageCheck,
   hiddenPagesCheck,
+  listNavigationCheck,
 ];
