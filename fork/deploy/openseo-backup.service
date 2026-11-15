@@ -1,0 +1,8 @@
+[Unit]
+Description=OpenSEO nightly Supabase backup
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO@
+ExecStart=/usr/bin/env bash fork/scripts/backup.sh
