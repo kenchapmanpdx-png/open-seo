@@ -179,6 +179,50 @@ async function listFindings(projectId: string, runId: string) {
     .orderBy(handbookFindings.code);
 }
 
+const evidenceColumns = {
+  id: handbookEvidence.id,
+  findingId: handbookEvidence.findingId,
+  itemId: handbookEvidence.itemId,
+  kind: handbookEvidence.kind,
+  url: handbookEvidence.url,
+  storageKey: handbookEvidence.storageKey,
+  excerpt: handbookEvidence.excerpt,
+  byteSize: handbookEvidence.byteSize,
+  contentType: handbookEvidence.contentType,
+};
+
+/** A run's evidence excerpts (bodies stay in the evidence store). */
+async function listEvidence(projectId: string, runId: string, limit = 500) {
+  return db
+    .select(evidenceColumns)
+    .from(handbookEvidence)
+    .innerJoin(handbookRuns, eq(handbookRuns.id, handbookEvidence.runId))
+    .where(
+      and(
+        eq(handbookEvidence.runId, runId),
+        eq(handbookRuns.projectId, projectId),
+      ),
+    )
+    .orderBy(handbookEvidence.itemId, handbookEvidence.url)
+    .limit(limit);
+}
+
+/** One evidence row, only when its run belongs to `projectId`. */
+async function getEvidence(projectId: string, evidenceId: string) {
+  const rows = await db
+    .select(evidenceColumns)
+    .from(handbookEvidence)
+    .innerJoin(handbookRuns, eq(handbookRuns.id, handbookEvidence.runId))
+    .where(
+      and(
+        eq(handbookEvidence.id, evidenceId),
+        eq(handbookRuns.projectId, projectId),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 /** URLs the upstream crawl fetched with 200 (workflow seed list, ADR-001). */
 async function listCrawledUrls(auditId: string) {
   const rows = await db
@@ -356,6 +400,8 @@ export const HandbookRepository = {
   getRun,
   listItemStatuses,
   listFindings,
+  listEvidence,
+  getEvidence,
   listCrawledUrls,
   saveRunResult,
 } as const;
