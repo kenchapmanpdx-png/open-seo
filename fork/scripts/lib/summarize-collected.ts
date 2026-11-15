@@ -54,6 +54,18 @@ export function summarizeCollected(c: CollectedData) {
               }
             : null;
         break;
+      case "outbound":
+        out[key] =
+          c.outbound.status === "ok"
+            ? c.outbound.links.map((l) => ({
+                url: l.url,
+                sources: l.sourceUrls.length,
+                browser: l.browser?.status ?? null,
+                bot: l.bot?.status ?? null,
+                final: l.browser?.finalUrl ?? null,
+              }))
+            : null;
+        break;
       default:
         out[key] = value;
     }
