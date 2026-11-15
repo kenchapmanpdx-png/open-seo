@@ -3,5 +3,6 @@
   "/index.html": ["P3-03"],
   "/about": ["P3-02"],
   "/old-event.html": ["P3-08", "P3-05"],
-  "/sitemap-build.xml": ["P3-17"]
+  "/sitemap-build.xml": ["P3-17"],
+  "/assets/app.3f9a1c.js": ["P7-07"]
 }

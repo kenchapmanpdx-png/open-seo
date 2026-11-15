@@ -8,7 +8,8 @@ declares the registry item ids it must fire in
 no HTML page live in `_expect.json` (pseudo-page path → item ids).
 
 - `{{ORIGIN}}` in `robots.txt` / `sitemap.xml` is replaced with the server origin.
-- `_headers.json`: response headers per path. `"*"` applies to every path unless
+- `_headers.json`: response headers per path (`/no-headers.html` keeps only
+  `cache-control`). `"*"` applies to every path unless
   the exact path has its own entry, which replaces `"*"` (an empty object = no
   extra headers).
 
@@ -42,6 +43,7 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/blank-target.html`                       | `target="_blank"` link to https://example.org/ without rel (outbound fetch needs network) | P4-12          |
 | `/contact.html`                            | Clean control: mailto channel in server HTML (P5-16 PASS)                                 | —              |
 | `/lazy-hero.html`                          | Hero `<img>`: data: URI src + `data-src`, `loading=lazy`, no width/height or srcset       | P7-02, P7-03   |
+| `/assets/app.3f9a1c.js` (`_expect.json`)   | Hashed script loaded by `/`, served `cache-control: max-age=60` (HTML gets `no-cache`)    | P7-07          |
 | `/old-event.html` (`_redirects.json`)      | 301 → `/`, still linked from `/events/` (moved URL sent to the homepage)                  | P3-08, P3-05   |
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                            | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                      | P3-02          |
