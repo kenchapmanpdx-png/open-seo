@@ -1,0 +1,51 @@
+{
+  "_note": "synthetic (no OPENAI_API_KEY): Responses API shape, web_search tool",
+  "model": "gpt-6-luna-2026-09-01",
+  "output": [
+    {
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "best trail running shoes phoenix"
+      }
+    },
+    {
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "trail running store phoenix reviews",
+        "queries": ["trail running store phoenix reviews"]
+      }
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "**Acme Running** is a popular pick ([acme.com](https://www.acme.com/shoes?utm_source=openai)). Reviewers also like [RunHub](https://runhub.example/review#top).",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "url": "https://www.acme.com/shoes?utm_source=openai",
+              "title": "Acme Running shoes"
+            },
+            {
+              "type": "url_citation",
+              "url": "https://runhub.example/review#top",
+              "title": "RunHub review"
+            },
+            {
+              "type": "url_citation",
+              "url": "https://www.acme.com/shoes",
+              "title": "Acme duplicate"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "usage": { "input_tokens": 1200, "output_tokens": 300 }
+}

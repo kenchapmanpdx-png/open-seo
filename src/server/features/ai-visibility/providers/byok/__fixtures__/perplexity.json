@@ -1,0 +1,22 @@
+{
+  "_note": "synthetic (no PERPLEXITY_API_KEY): Sonar chat completions shape",
+  "model": "sonar",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Acme Running is popular [1]."
+      }
+    }
+  ],
+  "search_results": [
+    {
+      "title": "Acme Running shoes",
+      "url": "https://www.acme.com/shoes",
+      "date": "2026-10-01"
+    }
+  ],
+  "citations": ["https://www.acme.com/shoes"],
+  "usage": { "prompt_tokens": 10, "completion_tokens": 20 }
+}
