@@ -19,11 +19,11 @@ import { clip, normalizeUrl } from "./support";
 
 /** A fail below this confidence is reported as unsure, not OPEN. */
 const MIN_FAIL_CONFIDENCE = 0.5;
-const SAMPLE_PAGES = 8;
+export const SAMPLE_PAGES = 8;
 
-type View = { url: string; text: string };
+export type View = { url: string; text: string };
 
-type Spec = {
+export type Spec = {
   itemId: string;
   rubricId: string;
   title: string;
@@ -31,7 +31,7 @@ type Spec = {
   effort: Effort;
 };
 
-function htmlPages(ctx: CheckContext): PageSnapshot[] {
+export function htmlPages(ctx: CheckContext): PageSnapshot[] {
   const pages = ctx.collected.pages;
   if (pages.status !== "ok") return [];
   return pages.snapshots.filter(
@@ -40,7 +40,7 @@ function htmlPages(ctx: CheckContext): PageSnapshot[] {
 }
 
 /** Home first, then one rank-1 sample per template, then crawl order. */
-function samplePages(ctx: CheckContext, max: number): PageSnapshot[] {
+export function samplePages(ctx: CheckContext, max: number): PageSnapshot[] {
   const pages = htmlPages(ctx);
   const byUrl = new Map(pages.map((p) => [normalizeUrl(p.url), p]));
   const picked = new Map<string, PageSnapshot>();
@@ -57,7 +57,7 @@ function samplePages(ctx: CheckContext, max: number): PageSnapshot[] {
   return [...picked.values()];
 }
 
-function headLines(s: PageSnapshot): string {
+export function headLines(s: PageSnapshot): string {
   return [
     `Title: ${s.head.title ?? "(none)"}`,
     `Meta description: ${s.head.metaDescription ?? "(none)"}`,
@@ -66,7 +66,7 @@ function headLines(s: PageSnapshot): string {
 }
 
 /** Visible text from the first H1 on (skips header navigation). */
-function mainText(s: PageSnapshot, chars: number): string {
+export function mainText(s: PageSnapshot, chars: number): string {
   const h1 = s.h1[0];
   const at = h1 ? s.markup.text.indexOf(h1) : -1;
   return s.markup.text.slice(Math.max(at, 0), Math.max(at, 0) + chars);
@@ -75,17 +75,18 @@ function mainText(s: PageSnapshot, chars: number): string {
 const isLocal = (ctx: CheckContext) =>
   ctx.siteProfile.some((a) => a.code === "SP7" && a.value === "Y");
 
-async function judged(
+export async function judged(
   ctx: CheckContext,
   spec: Spec,
   views: readonly View[],
+  facts: Record<string, unknown> = {},
 ): Promise<CheckResult> {
   if (!ctx.judge) throw new Error("no judge");
   const result = await ctx.judge({
     itemId: spec.itemId,
     rubricId: spec.rubricId,
     pages: views,
-    facts: { local: isLocal(ctx) },
+    facts: { local: isLocal(ctx), ...facts },
   });
   const tag = `${result.call.model}, confidence ${result.confidence.toFixed(2)}`;
   const unsure =
@@ -164,7 +165,20 @@ async function judged(
   };
 }
 
-function llmCheck(
+/** One status for one item, no findings (NA / BLOCKED before any judge call). */
+export function only(
+  itemId: string,
+  status: "NA" | "BLOCKED",
+  note: string,
+): CheckResult {
+  return {
+    statuses: [{ itemId, status, note, evidenceRefs: [] }],
+    findings: [],
+    evidence: [],
+  };
+}
+
+export function llmCheck(
   id: string,
   spec: Spec,
   views: (ctx: CheckContext) => View[] | string,
@@ -176,19 +190,7 @@ function llmCheck(
     requires: ["pages"],
     run: async (ctx) => {
       const pages = views(ctx);
-      if (typeof pages === "string")
-        return {
-          statuses: [
-            {
-              itemId: spec.itemId,
-              status: "NA",
-              note: pages,
-              evidenceRefs: [],
-            },
-          ],
-          findings: [],
-          evidence: [],
-        };
+      if (typeof pages === "string") return only(spec.itemId, "NA", pages);
       if (pages.length === 0) throw new Error("no HTML pages to judge");
       return judged(ctx, spec, pages);
     },
