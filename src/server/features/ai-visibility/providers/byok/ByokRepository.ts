@@ -1,7 +1,8 @@
-import { and, asc, eq, lte } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lte } from "drizzle-orm";
 import { chunk } from "remeda";
 import { db } from "@/db";
 import {
+  aiSourceCategories,
   aiWebQueries,
   byokAiAnswers,
   byokAiMatches,
@@ -11,7 +12,15 @@ import {
   byokAiTrackerProviders,
 } from "@/db/integrations-tables";
 import { runBatch } from "@/db/runBatch";
-import { aiPrompts, aiTrackers, projects } from "@/db/schema";
+import {
+  aiMatches,
+  aiObservations,
+  aiPrompts,
+  aiRuns,
+  aiSources,
+  aiTrackers,
+  projects,
+} from "@/db/schema";
 
 // BYOK AI visibility persistence (ADR-015 §1). Every read starts from a
 // tracker joined to its project, so callers scope by organization there.
@@ -132,6 +141,225 @@ async function advanceSchedule(
   return claimed.length > 0;
 }
 
+// ---- Reads for the BYOK page / comparison (WO-B6-033) ----
+
+const IDS_PER_QUERY = 90; // D1 parameter cap
+
+async function inChunks<T>(
+  ids: string[],
+  read: (ids: string[]) => Promise<T[]>,
+) {
+  const out: T[] = [];
+  for (const part of chunk(ids, IDS_PER_QUERY)) out.push(...(await read(part)));
+  return out;
+}
+
+/** The project's tracker, only when the project belongs to the organization. */
+async function getProjectTracker(projectId: string, organizationId: string) {
+  const [row] = await db
+    .select({ trackerId: aiTrackers.id })
+    .from(aiTrackers)
+    .innerJoin(projects, eq(projects.id, aiTrackers.projectId))
+    .where(
+      and(
+        eq(aiTrackers.projectId, projectId),
+        eq(projects.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  return row?.trackerId ?? null;
+}
+
+async function getSchedule(trackerId: string) {
+  const [row] = await db
+    .select()
+    .from(byokAiSchedules)
+    .where(eq(byokAiSchedules.trackerId, trackerId))
+    .limit(1);
+  return row ?? null;
+}
+
+function listRuns(trackerId: string, limit: number) {
+  return db
+    .select()
+    .from(byokAiRuns)
+    .where(eq(byokAiRuns.trackerId, trackerId))
+    .orderBy(desc(byokAiRuns.startedAt))
+    .limit(limit);
+}
+
+function listUpstreamRuns(trackerId: string, limit: number) {
+  return db
+    .select({
+      id: aiRuns.id,
+      status: aiRuns.status,
+      createdAt: aiRuns.createdAt,
+      completedAt: aiRuns.completedAt,
+    })
+    .from(aiRuns)
+    .where(eq(aiRuns.trackerId, trackerId))
+    .orderBy(desc(aiRuns.createdAt))
+    .limit(limit);
+}
+
+/** BYOK answers of one run with their own-brand match, sources and fan-out. */
+async function listRunAnswers(runId: string) {
+  const answers = await db
+    .select({
+      id: byokAiAnswers.id,
+      promptId: byokAiAnswers.promptId,
+      provider: byokAiAnswers.provider,
+      status: byokAiAnswers.status,
+    })
+    .from(byokAiAnswers)
+    .where(eq(byokAiAnswers.runId, runId));
+  const ids = answers.map((a) => a.id);
+  const [matches, sources, queries] = await Promise.all([
+    inChunks(ids, (part) =>
+      db
+        .select({
+          answerId: byokAiMatches.answerId,
+          mentioned: byokAiMatches.mentioned,
+          cited: byokAiMatches.cited,
+          firstMention: byokAiMatches.firstMention,
+        })
+        .from(byokAiMatches)
+        .where(
+          and(
+            inArray(byokAiMatches.answerId, part),
+            eq(byokAiMatches.own, true),
+          ),
+        ),
+    ),
+    inChunks(ids, (part) =>
+      db
+        .select({
+          answerId: byokAiSources.answerId,
+          category: byokAiSources.category,
+        })
+        .from(byokAiSources)
+        .where(inArray(byokAiSources.answerId, part)),
+    ),
+    inChunks(ids, (part) =>
+      db
+        .select({
+          answerId: aiWebQueries.answerId,
+          isFanout: aiWebQueries.isFanout,
+        })
+        .from(aiWebQueries)
+        .where(inArray(aiWebQueries.answerId, part)),
+    ),
+  ]);
+  return { answers, matches, sources, queries };
+}
+
+/** Upstream (DataForSEO) answers of one run, same shape as `listRunAnswers`. */
+async function listUpstreamRunAnswers(runId: string) {
+  const answers = await db
+    .select({
+      id: aiObservations.id,
+      promptId: aiObservations.promptId,
+      engine: aiObservations.engine,
+      status: aiObservations.status,
+    })
+    .from(aiObservations)
+    .where(eq(aiObservations.runId, runId));
+  const ids = answers.map((a) => a.id);
+  const [matches, sources] = await Promise.all([
+    inChunks(ids, (part) =>
+      db
+        .select({
+          answerId: aiMatches.observationId,
+          mentioned: aiMatches.mentioned,
+          cited: aiMatches.cited,
+          firstMention: aiMatches.firstMention,
+        })
+        .from(aiMatches)
+        .where(
+          and(inArray(aiMatches.observationId, part), eq(aiMatches.own, true)),
+        ),
+    ),
+    inChunks(ids, (part) =>
+      db
+        .select({
+          answerId: aiSources.observationId,
+          category: aiSourceCategories.category,
+        })
+        .from(aiSources)
+        .leftJoin(
+          aiSourceCategories,
+          eq(aiSourceCategories.sourceId, aiSources.id),
+        )
+        .where(inArray(aiSources.observationId, part)),
+    ),
+  ]);
+  return { answers, matches, sources };
+}
+
+/** Every stored web query of the tracker's BYOK answers (newest runs first). */
+function listTrackerWebQueries(trackerId: string, limit: number) {
+  return db
+    .select({
+      promptId: byokAiAnswers.promptId,
+      provider: byokAiAnswers.provider,
+      query: aiWebQueries.query,
+      normalized: aiWebQueries.normalized,
+      isFanout: aiWebQueries.isFanout,
+    })
+    .from(aiWebQueries)
+    .innerJoin(byokAiAnswers, eq(byokAiAnswers.id, aiWebQueries.answerId))
+    .innerJoin(byokAiRuns, eq(byokAiRuns.id, byokAiAnswers.runId))
+    .where(eq(byokAiRuns.trackerId, trackerId))
+    .orderBy(desc(byokAiRuns.startedAt))
+    .limit(limit);
+}
+
+// ---- Settings writes (WO-B6-033) ----
+
+async function setTrackerProvider(
+  trackerId: string,
+  provider: (typeof byokAiTrackerProviders.$inferInsert)["provider"],
+  model: string | null,
+) {
+  if (model === null) {
+    await db
+      .delete(byokAiTrackerProviders)
+      .where(
+        and(
+          eq(byokAiTrackerProviders.trackerId, trackerId),
+          eq(byokAiTrackerProviders.provider, provider),
+        ),
+      );
+    return;
+  }
+  await db
+    .insert(byokAiTrackerProviders)
+    .values({ trackerId, provider, model })
+    .onConflictDoUpdate({
+      target: [
+        byokAiTrackerProviders.trackerId,
+        byokAiTrackerProviders.provider,
+      ],
+      set: { model },
+    });
+}
+
+async function setSchedule(
+  trackerId: string,
+  schedule: { intervalDays: number; nextRunAt: string } | null,
+) {
+  if (schedule === null) {
+    await db
+      .delete(byokAiSchedules)
+      .where(eq(byokAiSchedules.trackerId, trackerId));
+    return;
+  }
+  await db
+    .insert(byokAiSchedules)
+    .values({ trackerId, ...schedule })
+    .onConflictDoUpdate({ target: byokAiSchedules.trackerId, set: schedule });
+}
+
 export const ByokRepository = {
   getTrackerScope,
   listActivePrompts,
@@ -141,4 +369,13 @@ export const ByokRepository = {
   saveAnswer,
   listDueSchedules,
   advanceSchedule,
+  getProjectTracker,
+  getSchedule,
+  listRuns,
+  listUpstreamRuns,
+  listRunAnswers,
+  listUpstreamRunAnswers,
+  listTrackerWebQueries,
+  setTrackerProvider,
+  setSchedule,
 };
