@@ -3,6 +3,7 @@
 // upstream jobs. Every job is isolated: a failure is logged and never
 // reaches the upstream scheduled handler. B6 work orders add jobs here.
 
+import { outcomeDueCheckJob } from "@/server/features/agency/outcomeJobs";
 import {
   aiTrafficDailyJob,
   aiTrafficTickJob,
@@ -21,6 +22,7 @@ const FORK_SCHEDULED_JOBS: Record<string, ForkJob[]> = {
     aiTrafficTickJob,
     categorizeSourcesJob,
     byokScheduleJob,
+    outcomeDueCheckJob,
   ],
   [DAILY]: [aiTrafficDailyJob, bingDailySyncJob],
 };
