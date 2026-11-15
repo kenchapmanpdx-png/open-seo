@@ -83,14 +83,14 @@ async function updateSettings(input: {
   return getSettings(input.projectId);
 }
 
+/**
+ * A run plus its scored report.json, for the run page and the MCP tools.
+ * Null when the run is not in `projectId` (tenant scoping).
+ */
 async function getRunDetail(projectId: string, runId: string) {
-  const run = await HandbookRepository.getRun(projectId, runId);
-  if (!run) return null;
-  const [items, findings] = await Promise.all([
-    HandbookRepository.listItemStatuses(projectId, runId),
-    HandbookRepository.listFindings(projectId, runId),
-  ]);
-  return { run, items, findings };
+  const rows = await getReportRows(projectId, runId);
+  if (!rows) return null;
+  return { run: rows.run, report: buildReport(rows) };
 }
 
 /**
@@ -103,7 +103,12 @@ async function getRunReport(
   runId: string,
 ): Promise<ReportJson | null> {
   const rows = await getReportRows(projectId, runId);
-  if (!rows) return null;
+  return rows ? buildReport(rows) : null;
+}
+
+function buildReport(
+  rows: NonNullable<Awaited<ReturnType<typeof getReportRows>>>,
+): ReportJson {
   const { run } = rows;
   const phaseOf = new Map(REGISTRY.map((e) => [e.id, e.phase]));
   const codesByItem = new Map<string, string[]>();
