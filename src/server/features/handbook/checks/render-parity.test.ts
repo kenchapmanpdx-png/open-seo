@@ -52,4 +52,19 @@ describe("renderParityCheck", () => {
     const result = await run(rendered("/x", 100, 60));
     expect(statusOf(result, "P2-07")).toBe("OPEN");
   });
+
+  it("flags a form that exists only in the rendered DOM", async () => {
+    const page = rendered("/x", 105);
+    const result = await run({ ...page, js: { ...page.js, forms: 1 } });
+    expect(statusOf(result, "P2-08")).toBe("OPEN");
+    expect(result.findings[0].detail).toContain(
+      "forms: raw HTML 0 · rendered 1",
+    );
+  });
+
+  it("keeps P2-08 PASS when the rendered form count is absent or equal", async () => {
+    const page = rendered("/x", 105);
+    const equal = await run({ ...page, js: { ...page.js, forms: 0 } });
+    expect(statusOf(equal, "P2-08")).toBe("PASS");
+  });
 });
