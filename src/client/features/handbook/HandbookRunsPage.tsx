@@ -88,6 +88,19 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
               >
                 Backlinks (Common Crawl)
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    to="/p/$projectId/handbook/agency"
+                    params={{ projectId }}
+                  />
+                }
+              >
+                Agency
+              </Button>
             </>
           }
         />
