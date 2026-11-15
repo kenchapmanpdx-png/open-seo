@@ -132,13 +132,12 @@ export function renderReviewMd(
     for (const e of f.evidence)
       evidenceKinds.set(e.kind, (evidenceKinds.get(e.kind) ?? 0) + 1);
 
-  const fixable = report.findings
-    .filter((f) => f.fixability === "FIXABLE")
-    .sort(
-      (a, b) =>
-        a.severity.localeCompare(b.severity) ||
-        EFFORT_RANK[a.effort] - EFFORT_RANK[b.effort],
-    );
+  const fixable = report.findings.filter((f) => f.fixability === "FIXABLE");
+  fixable.sort(
+    (a, b) =>
+      a.severity.localeCompare(b.severity) ||
+      EFFORT_RANK[a.effort] - EFFORT_RANK[b.effort],
+  );
   const topFixes = new Map<string, Finding[]>();
   for (const f of fixable)
     topFixes.set(f.fix, [...(topFixes.get(f.fix) ?? []), f]);
