@@ -20,16 +20,24 @@ import {
   siblingHosts,
 } from "@/server/features/handbook/engine/safe-fetch";
 import { createMemoryEvidenceStore } from "@/server/features/handbook/engine/memory-evidence-store";
-import { createSupabaseEvidenceStore } from "@/server/features/handbook/engine/supabase-evidence-store";
+import {
+  createSupabaseEvidenceStore,
+  createSupabaseSignedUrl,
+} from "@/server/features/handbook/engine/supabase-evidence-store";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 
 const DEFAULT_MAX_PAGES = 200;
+const SIGNED_URL_SECONDS = 300;
+
+async function supabaseConfig() {
+  const url = await getOptionalEnvValue("SUPABASE_URL");
+  const serviceRoleKey = await getOptionalEnvValue("SUPABASE_SERVICE_ROLE_KEY");
+  return url && serviceRoleKey ? { url, serviceRoleKey } : null;
+}
 
 async function evidenceStore(): Promise<EvidenceStore> {
-  const url = await getOptionalEnvValue("SUPABASE_URL");
-  const key = await getOptionalEnvValue("SUPABASE_SERVICE_ROLE_KEY");
-  if (url && key)
-    return createSupabaseEvidenceStore({ url, serviceRoleKey: key });
+  const config = await supabaseConfig();
+  if (config) return createSupabaseEvidenceStore(config);
   // ADR-003 fallback: excerpts still land in handbook_evidence; bodies are dropped.
   console.warn(
     "handbook: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing; evidence bodies not persisted",
@@ -64,6 +72,25 @@ async function getRunDetail(projectId: string, runId: string) {
     HandbookRepository.listFindings(projectId, runId),
   ]);
   return { run, items, findings };
+}
+
+/**
+ * One evidence excerpt plus a short-lived signed URL to the full body.
+ * Null when the evidence does not belong to `projectId` (tenant scoping).
+ */
+async function getEvidence(projectId: string, evidenceId: string) {
+  const evidence = await HandbookRepository.getEvidence(projectId, evidenceId);
+  if (!evidence) return null;
+  const config = evidence.storageKey ? await supabaseConfig() : null;
+  const bodyUrl =
+    config && evidence.storageKey
+      ? await createSupabaseSignedUrl(
+          config,
+          evidence.storageKey,
+          SIGNED_URL_SECONDS,
+        )
+      : null;
+  return { ...evidence, bodyUrl };
 }
 
 /**
@@ -154,6 +181,9 @@ export const HandbookService = {
   updateSettings,
   listRuns: (projectId: string) => HandbookRepository.listRuns(projectId),
   getRunDetail,
+  listEvidence: (projectId: string, runId: string) =>
+    HandbookRepository.listEvidence(projectId, runId),
+  getEvidence,
   executeRun,
   listCrawledUrls: (auditId: string) =>
     HandbookRepository.listCrawledUrls(auditId),
