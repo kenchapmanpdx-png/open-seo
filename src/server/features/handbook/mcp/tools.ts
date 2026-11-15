@@ -16,6 +16,7 @@ import { HandbookService } from "@/server/features/handbook/services/HandbookSer
 import { aiTrafficSummarySchema } from "@/server/features/ai-traffic/contracts";
 import { AiTrafficService } from "@/server/features/ai-traffic/aiTrafficService";
 import { byokComparisonTool } from "@/server/features/ai-visibility/providers/byok/byokMcpTool";
+import { ccBacklinksTool } from "@/server/features/backlinks/providers/commoncrawl/ccMcpTool";
 import { bingSummaryTool } from "@/server/features/bing/bingMcpTool";
 import { AppError } from "@/server/lib/errors";
 import { buildProjectMeta } from "@/server/mcp/context";
@@ -382,4 +383,5 @@ export function registerHandbookTools(
   register(aiTrafficSummaryTool);
   register(bingSummaryTool);
   register(byokComparisonTool);
+  register(ccBacklinksTool);
 }

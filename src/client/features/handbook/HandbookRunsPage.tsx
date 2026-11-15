@@ -75,6 +75,19 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
               >
                 AI visibility (own keys)
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    to="/p/$projectId/handbook/backlinks-cc"
+                    params={{ projectId }}
+                  />
+                }
+              >
+                Backlinks (Common Crawl)
+              </Button>
             </>
           }
         />
