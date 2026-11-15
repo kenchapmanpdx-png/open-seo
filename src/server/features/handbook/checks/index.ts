@@ -9,6 +9,7 @@ import { imageMarkupCheck } from "./image-markup";
 import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { listNavigationCheck } from "./list-navigation";
+import { llmsMirrorsCheck } from "./llms-mirrors";
 import { notFoundCheck } from "./not-found";
 import { outboundLinksCheck } from "./outbound-links";
 import { pageStructureCheck } from "./page-structure";
@@ -48,4 +49,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   rawCopyCheck,
   imageMarkupCheck,
   cachePolicyCheck,
+  llmsMirrorsCheck,
 ];
