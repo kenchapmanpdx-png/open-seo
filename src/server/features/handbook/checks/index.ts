@@ -8,6 +8,7 @@ import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { listNavigationCheck } from "./list-navigation";
 import { notFoundCheck } from "./not-found";
+import { outboundLinksCheck } from "./outbound-links";
 import { pageStructureCheck } from "./page-structure";
 import { redirectedLinksCheck } from "./redirected-links";
 import { robotsGroupsCheck } from "./robots-groups";
@@ -40,4 +41,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   headTagsCheck,
   socialMetaCheck,
   pageStructureCheck,
+  outboundLinksCheck,
 ];
