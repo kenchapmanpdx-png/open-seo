@@ -1,4 +1,5 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
+import { a11yMarkupCheck } from "./a11y-markup";
 import { aboutPeopleCheck } from "./about-people";
 import { botParityCheck } from "./bot-parity";
 import { cachePolicyCheck } from "./cache-policy";
@@ -62,4 +63,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   schemaLocalBusinessCheck,
   schemaListsArticlesCheck,
   schemaVisibilityCheck,
+  a11yMarkupCheck,
 ];
