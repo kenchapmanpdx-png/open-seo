@@ -44,6 +44,17 @@ function counts(items: readonly Item[]) {
   return [...byStatus].map(([s, n]) => `${n} ${s}`).join(", ");
 }
 
+/**
+ * WO-B4-006: without the render collector the grade cannot see JS-only
+ * content or S1 render defects. Detected from the runner's BLOCKED notes
+ * ("render unavailable: …"), as ReportJson has no collector field.
+ */
+function provisionalLine(report: ReportJson): string | null {
+  return report.items.some((i) => i.note?.startsWith("render unavailable"))
+    ? "Grade provisional: render evidence missing (JS-only content and S1 render defects cannot be seen)"
+    : null;
+}
+
 const phasesOf = (report: ReportJson) => [
   ...new Set(report.items.map((i) => i.phase)),
 ];
@@ -55,10 +66,12 @@ export function renderStatusMd(
 ): string {
   const textOf = new Map(registry.map((e) => [e.id, e.text]));
   const sp12 = report.siteProfile.find((sp) => sp.code === "SP12");
+  const provisional = provisionalLine(report);
   const date = day(report.generatedAt);
   const lines = [
     "# SEO/GEO Status",
     `handbook: ${report.handbookVersion} | mode: ${report.run.mode} | tier: ${report.run.tier} (${cell(report.run.tierEvidence)}) | updated: ${date}`,
+    ...(provisional ? [provisional] : []),
     "## Site Profile",
     "| SP | Y/N/? | evidence | confidence |",
     "| --- | --- | --- | --- |",
@@ -127,6 +140,7 @@ export function renderReviewMd(
   const textOf = new Map(registry.map((e) => [e.id, e.text]));
   const score = report.score;
   const platform = report.site.platform ?? "not detected";
+  const provisional = provisionalLine(report);
   const evidenceKinds = new Map<string, number>();
   for (const f of report.findings)
     for (const e of f.evidence)
@@ -148,6 +162,7 @@ export function renderReviewMd(
     `- Handbook: v${report.handbookVersion} · Date: ${day(report.generatedAt)} · Mode: ${report.run.mode} · Tier: ${report.run.tier} (${cell(report.run.tierEvidence)}) · Platform: ${platform}`,
     `- Evidence: ${[...evidenceKinds].map(([k, n]) => `${k} ×${n}`).join(", ") || "none"} · run ${report.run.id}`,
     "- Ranking, traffic and backlink data: not used (EP-7).",
+    ...(provisional ? [`- ${provisional}`] : []),
     "",
   ];
   if (score) {

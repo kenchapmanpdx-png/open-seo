@@ -1,11 +1,13 @@
 import {
   REPORT_JSON_VERSION,
+  type REVIEW_REPORT_SECTIONS,
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
 import { CONTRACTS_VERSION } from "@/server/features/handbook/contracts/version";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { HandbookMode } from "@/server/features/handbook/contracts/status";
 import type { RunResult } from "./runner";
+import { renderReviewMd, renderStatusMd } from "../export/markdown";
 import { scoreItems } from "./scoring";
 
 /**
@@ -35,7 +37,7 @@ export function buildReportJson(input: {
     contractsVersion: CONTRACTS_VERSION,
     handbookVersion: input.handbookVersion,
     generatedAt: input.finishedAt ?? input.startedAt,
-    site: { origin: input.origin, platform: null },
+    site: { origin: input.origin, platform: platformOf(result) },
     run: {
       id: input.runId,
       mode: input.mode,
@@ -83,7 +85,80 @@ export function buildReportJson(input: {
     checkerErrors: result.checkerErrors,
     outsideScope: [],
   };
-  return { ...report, score: scoreReport(report) };
+  const scored = { ...report, score: scoreReport(report) };
+  const confirmed = confirmExports(scored, input.registry);
+  return { ...confirmed, score: scoreReport(confirmed) };
+}
+
+/** Platform named by the P0-03 check note ("platform: Squarespace (…) via …"). */
+function platformOf(result: RunResult): string | null {
+  const note = result.statuses.find((s) => s.itemId === "P0-03")?.note;
+  return note?.match(/^platform: (.+?) \(/)?.[1] ?? null;
+}
+
+/** Heading each REVIEW_REPORT_SECTIONS entry renders as in `renderReviewMd`. */
+const SECTION_HEADING: Record<(typeof REVIEW_REPORT_SECTIONS)[number], string> =
+  {
+    Header: "# On-site SEO/GEO review",
+    Grade: "## Grade:",
+    "Site Profile": "## Site Profile",
+    "Top fixes": "## Top fixes",
+    "Findings by severity": "## Findings",
+    Passes: "## Passes",
+    "Limited (platform)": "## Limited (platform)",
+    "Blocked (owner access)": "## Blocked (owner access)",
+    "Outside scope — noted": "## Outside scope — noted",
+    "Checker errors": "## Checker errors",
+    "Residual weaknesses": "## Residual weaknesses",
+  };
+const STATUS_HEADINGS = ["## Site Profile", "## Decisions", "## Checklist"];
+
+const missingHeadings = (md: string, headings: readonly string[]) =>
+  headings.filter((h) => !md.split("\n").some((l) => l.startsWith(h)));
+
+const decide = (gaps: string[], what: string) => ({
+  status: gaps.length === 0 ? ("PASS" as const) : ("OPEN" as const),
+  note:
+    gaps.length === 0
+      ? `${what} rendered with every section`
+      : `${what} missing: ${gaps.join(", ")}`,
+});
+
+/**
+ * WO-B4-006: P0-01 (status file) and RV-02 (EP-7 report sections + score)
+ * are PASS once their export renders complete; they stay DEFERRED when the
+ * runner left them so and are untouched when out of scope (NA at intake).
+ */
+function confirmExports(
+  report: ReportJson,
+  registry: readonly RegistryEntry[],
+): ReportJson {
+  const verdicts = new Map<string, { status: "PASS" | "OPEN"; note: string }>();
+  const deferred = (id: string) =>
+    report.items.some((i) => i.itemId === id && i.status === "DEFERRED");
+  if (deferred("P0-01"))
+    verdicts.set(
+      "P0-01",
+      decide(
+        missingHeadings(renderStatusMd(report, registry), STATUS_HEADINGS),
+        "seo-geo-status.md",
+      ),
+    );
+  if (deferred("RV-02")) {
+    const gaps = missingHeadings(
+      renderReviewMd(report, registry),
+      Object.values(SECTION_HEADING),
+    );
+    if (!report.score) gaps.push("EP-7 score");
+    verdicts.set("RV-02", decide(gaps, "EP-7 review report"));
+  }
+  return {
+    ...report,
+    items: report.items.map((i) => {
+      const v = verdicts.get(i.itemId);
+      return v ? { ...i, ...v } : i;
+    }),
+  };
 }
 
 /**
