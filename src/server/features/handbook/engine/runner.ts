@@ -25,6 +25,7 @@ import { ITEM_SCORE } from "@/server/features/handbook/contracts/scoring";
 import { normalizeUrl } from "../checks/support";
 import { LlmBudgetError } from "../llm/judge";
 import { runIntake, type Intake } from "./intake";
+import { processVerdicts } from "./process-items";
 import { evidenceKey, materialize } from "./evidence";
 
 /**
@@ -226,7 +227,11 @@ export async function runHandbook(
     );
   }
 
-  const statuses = reconcile(input.registry, intake, verdicts);
+  const statuses = processVerdicts(
+    reconcile(input.registry, intake, verdicts),
+    pending,
+    intake,
+  );
   const { findings, evidence } = await materialize(
     input,
     runtime,

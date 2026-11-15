@@ -87,4 +87,22 @@ describe("renderReviewMd", () => {
     );
     expect(md).toContain("Handbook v4.6.");
   });
+
+  it("marks the grade provisional when render evidence is missing", () => {
+    const md = renderReviewMd(
+      report({
+        items: [
+          {
+            itemId: "P2-01",
+            phase: "P2",
+            status: "BLOCKED",
+            note: "render unavailable: no sidecar",
+            findingCodes: [],
+          },
+        ],
+      }),
+      registry,
+    );
+    expect(md).toContain("- Grade provisional: render evidence missing");
+  });
 });
