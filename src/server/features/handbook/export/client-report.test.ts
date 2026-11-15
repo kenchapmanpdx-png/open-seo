@@ -60,6 +60,40 @@ const finding = (detail: string): ReportJson["findings"][number] => ({
   ],
 });
 
+/** Outcome metric row; values are strings, null = not connected. */
+const metric = (
+  over: Partial<{ itemId: string; url: string; metric: string }> & {
+    before: string | null;
+    after: string | null;
+  },
+) => ({
+  itemId: "P3-01",
+  url: "https://example.com/a",
+  metric: "handbook_status",
+  source: "test",
+  beforeValue: over.before,
+  afterValue: over.after,
+  ...over,
+});
+const check = (completedAt: string, offsetWeeks: number) => ({
+  offsetWeeks,
+  dueAt: completedAt,
+  status: "done",
+  completedAt,
+  metrics: [
+    metric({ before: "OPEN", after: "PASS" }),
+    // Two finding classes on one URL: clicks count once.
+    metric({ metric: "gsc_clicks_28d", before: "10", after: "25" }),
+    metric({
+      itemId: "P3-02",
+      metric: "gsc_clicks_28d",
+      before: "10",
+      after: "25",
+    }),
+    metric({ metric: "bing_clicks_28d", before: null, after: null }),
+  ],
+});
+
 describe("renderClientReportHtml", () => {
   it("renders page text as escaped text, never markup", () => {
     const html = renderClientReportHtml(
@@ -113,38 +147,6 @@ describe("renderClientReportHtml", () => {
     expect(new TextEncoder().encode(html).length).toBeLessThanOrEqual(500_000);
   });
   it("shows completed outcome checks up to the report date, never estimates", () => {
-    const metric = (
-      over: Partial<{ itemId: string; url: string; metric: string }> & {
-        before: string | null;
-        after: string | null;
-      },
-    ) => ({
-      itemId: "P3-01",
-      url: "https://example.com/a",
-      metric: "handbook_status",
-      source: "test",
-      beforeValue: over.before,
-      afterValue: over.after,
-      ...over,
-    });
-    const check = (completedAt: string, offsetWeeks: number) => ({
-      offsetWeeks,
-      dueAt: completedAt,
-      status: "done",
-      completedAt,
-      metrics: [
-        metric({ before: "OPEN", after: "PASS" }),
-        // Two finding classes on one URL: clicks count once.
-        metric({ metric: "gsc_clicks_28d", before: "10", after: "25" }),
-        metric({
-          itemId: "P3-02",
-          metric: "gsc_clicks_28d",
-          before: "10",
-          after: "25",
-        }),
-        metric({ metric: "bing_clicks_28d", before: null, after: null }),
-      ],
-    });
     const html = renderClientReportHtml(report(), [], {
       outcomes: [
         {
