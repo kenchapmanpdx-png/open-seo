@@ -1,0 +1,64 @@
+{
+  "id": "why-F18",
+  "site": "why",
+  "golden": "F18",
+  "itemId": "P5-07",
+  "expected": "fail",
+  "input": {
+    "itemId": "P5-07",
+    "rubricId": "entity-test",
+    "pages": [
+      {
+        "url": "https://whyracingevents.com/",
+        "text": "Title: WHY RACING EVENTS | Premier PNW Marathons, Triathlons & 5Ks\nMeta description: Join the Pacific Northwest's most supportive racing community. Discover 20+ premier marathons, half marathons, trail runs, and triathlons. What's your WHY?\nH1: PREMIER PNW RACING: RUN. RIDE. REMEMBER.\n\nPREMIER PNW RACING: RUN. RIDE. REMEMBER. From your first 5K to your 50th triathlon, join the Pacific Northwest's most supportive triathlon and racing community. Every WHY RACING EVENT features fully insured and certified courses, an unforgettable post-race festival experience, and amazing food at the finish line. View All Races Your Registration Supports Local Charities 50,000+ Athletes Strong 20+ Premier PNW Events Stunning Scenic Courses Epic Swag & Medals Live Music & After Parties Your Registration Supports Local Charities 50,000+ Athletes Strong 20+ Premier PNW Events Stunning Scenic Courses Epic Swag & Medals Live Music & After Parties Find Your Why Upcoming Races From winter snowshoeing to summer triathlons and fall marathons. Click Register Now & Event Details on any event to find that event's specific details. Filter by Distance All Events 5K 10K Half Marathon Marathon Ultra (25K+) Trail Run Triathlon No Events Found Try selecting different distance filters above. Connection Error We couldn't load the upcoming races. If you are the administrator, please check your Vercel Environment Variables. January - March Start the year strong with winter adventures April - June Spring into action with trail runs and triathlons July - September Summer racing at its finest October - December Finish the year with fall favorites and holiday races Partner Events Curated races from our PNW partners What Runners Are Saying Join thousands of athletes who've found their WHY \"Great race and professional production! Great event every year... Great post party and the course is straight out and back. Medal is great... Why Racing does a good job always!\" Finisher Spring Classic Duathlon & Half Marathon \"Why racing put on another great show. The course has changed with it shifting over to the new waterfront... Race swag was top notch, with amazing medal... Plus free race pictures!\" Participant Couve Clover Run \"Had a lot of fun... Great food at the end. Such a professional set up fro"
+      },
+      {
+        "url": "https://whyracingevents.com/events",
+        "text": "Title: PNW Race Calendar: Running, Trail & Triathlon | WHY RACING EVENTS\nMeta description: Upcoming running, trail and triathlon races in Washington and Oregon: 5K, 10K, half marathon, marathon and ultra. Dates, locations and registration.\nH1: Upcoming Races"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/about.html",
+        "text": "Title: About WHY RACING EVENTS | PNW Race Production Team\nMeta description: Meet WHY RACING EVENTS, the premier race production team in the Pacific Northwest. Discover our mission, meet our team, and register for your next event!\nH1: THE STORY OF PNW RACING: WHY."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/training.html",
+        "text": "Title: PNW Race Training Programs & Coaching | WHY RACING EVENTS\nMeta description: Find a PNW running club, cycling team, triathlon group or coach for your next WHY RACING EVENT. Train smarter near Portland & Vancouver, WA.\nH1: PNW Training Programs: Master Your Journey."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/beneficiary.html",
+        "text": "Title: PNW Race Beneficiaries & Fundraising | WHY RACING EVENTS\nMeta description: WHY RACING EVENTS proudly supports the PNW community. We've raised over $3 million for local charities. Race with purpose and give back today!\nH1: PNW Race Charities: Racing for a Cause."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/volunteers.html",
+        "text": "Title: PNW Race Volunteer Opportunities | WHY RACING EVENTS\nMeta description: Join the WHY RACING EVENTS volunteer crew. Support PNW athletes, earn race credits and experience the best racing in Washington and Oregon.\nH1: PNW Race Volunteer Opportunities: Be Part of the Spirit."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/locations.html",
+        "text": "Title: PNW Race Travel Guide & Event Locations | WHY RACING EVENTS\nMeta description: Plan your PNW race weekend: top-rated hotels, dining and attractions near marathon and triathlon venues across Washington and Oregon.\nH1: PNW Travel Guide: Race, Stay, Explore."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/partners.html",
+        "text": "Title: PNW Race Sponsorship Opportunities | WHY RACING EVENTS\nMeta description: Reach 50,000+ active PNW consumers through WHY RACING EVENTS sponsorships: marathon, triathlon, 5K and duathlon packages with measurable ROI.\nH1: PNW RACE SPONSORSHIP WHY RACING EVENTS"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/community.html",
+        "text": "Title: PNW Racing Community & Athlete Teams | WHY RACING EVENTS\nMeta description: Join the most supportive PNW racing community: local athletes, training teams and ambassadors across Washington and Oregon, from 5K to triathlon.\nH1: Partner Race Companies: Stronger Together."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/first-5k.html",
+        "text": "Title: Your First 5K Guide | Training Plans & PNW Race Day Tips\nMeta description: Ready to run your first 5K? Discover the ultimate beginner's guide. Get free couch-to-5K training plans, expert race day tips, and PNW community support.\nH1: Your Guide to Running Your First 5K | Training Plans & PNW Race Tips"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/corporate-wellness.html",
+        "text": "Title: Corporate Wellness Programs | WHY RACING EVENTS\nMeta description: Boost morale and health at work: sponsor employee race entries, build a corporate team and compete for the Corporate Cup with WHY RACING EVENTS.\nH1: Corporate Wellness."
+      },
+      {
+        "url": "https://whyracingevents.com/events/ho-ho-5k",
+        "text": "Title: Ho Ho 5K in Portland, OR | WHY RACING EVENTS\nMeta description: Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026. Registration, course details and race day info.\nH1: Ho Ho 5K"
+      }
+    ],
+    "facts": {
+      "local": false
+    }
+  }
+}

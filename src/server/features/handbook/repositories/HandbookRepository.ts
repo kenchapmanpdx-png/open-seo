@@ -9,6 +9,7 @@ import {
   handbookFindings,
   handbookFindingUrls,
   handbookItemStatuses,
+  handbookLlmCalls,
   handbookPageSnapshots,
   handbookProjectSettings,
   handbookRuns,
@@ -23,6 +24,7 @@ import type {
   SiteTier,
 } from "@/server/features/handbook/contracts/status";
 import type { RunResult } from "@/server/features/handbook/engine/runner";
+import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
 
 /**
  * Handbook persistence (ADR-002). Every caller-keyed read filters by
@@ -391,6 +393,24 @@ async function saveFindings(runId: string, result: RunResult) {
   );
 }
 
+/** K5 call log (ADR-007) + the run's total LLM cost (idempotent). */
+async function saveLlmCalls(runId: string, calls: readonly LlmCallLog[]) {
+  const rows = await Promise.all(
+    calls.map(async (c, i) => ({
+      id: await rowId(runId, "llm", String(i)),
+      runId,
+      ...c,
+    })),
+  );
+  await executeInBatches(rows, (tx, row) =>
+    tx.insert(handbookLlmCalls).values(row).onConflictDoNothing(),
+  );
+  await db
+    .update(handbookRuns)
+    .set({ llmCostUsd: calls.reduce((sum, c) => sum + c.costUsd, 0) })
+    .where(eq(handbookRuns.id, runId));
+}
+
 export const HandbookRepository = {
   getProjectSetting,
   upsertProjectSetting,
@@ -404,4 +424,5 @@ export const HandbookRepository = {
   getEvidence,
   listCrawledUrls,
   saveRunResult,
+  saveLlmCalls,
 } as const;

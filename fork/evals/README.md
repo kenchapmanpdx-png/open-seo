@@ -1,0 +1,27 @@
+# K5 judge eval set (B3 R2.4)
+
+Cases are golden findings the LLM checks must reproduce, built from the judge
+inputs of a `handbook-audit.ts --llm` run (page views exactly as the checks
+build them). Threshold: ADR-007.
+
+    pnpm exec tsx fork/scripts/handbook-audit.ts https://whyracingevents.com --llm --out fork/runs/llm-trial/why
+    pnpm exec tsx fork/scripts/llm-eval.ts build why fork/runs/llm-trial/why
+    pnpm exec tsx fork/scripts/llm-eval.ts run [--model anthropic/claude-haiku-5.5]
+
+Results land in `results/<date>-<model>.md`.
+
+| Case        | Golden                     | Item  | Expected | Pages                   |
+| ----------- | -------------------------- | ----- | -------- | ----------------------- |
+| why-F09     | same FAQ on event pages    | P5-05 | fail     | event pages with FAQ    |
+| why-F10     | conflicting stats          | P5-02 | fail     | fact table, no llms.txt |
+| why-F14     | slogan H1s                 | P4-02 | fail     | 20 head views           |
+| why-F15     | superlatives, PNW          | P5-04 | fail     | 8 sampled pages         |
+| why-F18     | names spelled several ways | P5-07 | fail     | 12 head views + home    |
+| why-F19     | llms.txt 21 vs 18 events   | P5-02 | fail     | llms.txt only           |
+| why-PASS-02 | event titles state topic   | P4-02 | pass     | `/events/<slug>` only   |
+| ryan-F02    | brand-only titles          | P4-02 | fail     | head views              |
+| ryan-F11    | uncited superlatives       | P5-04 | fail     | sampled pages           |
+| ryan-A06    | names spelled several ways | P5-07 | fail     | head views + home       |
+
+Not in the set yet: ryan F12 (P5-11 awards as images; no rubric, B4 WO),
+ryan A05 (P5-08, deterministic in `crawl.raw-copy`), ryan F14 (P5-09, B4 WO).

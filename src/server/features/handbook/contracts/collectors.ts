@@ -210,6 +210,8 @@ export type LlmsData = {
     contentType: string | null;
     storageKey: string | null;
     links: readonly string[];
+    /** Body text when 200, ≤20,000 chars (contracts 1.2.0; fact table). */
+    text?: string;
   }>;
   mdMirrors: ReadonlyArray<{
     pageUrl: string;
