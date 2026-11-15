@@ -17,6 +17,9 @@ const VARIANT = /^(variant|color|colour|size|sku)$/i;
 const selfCanonical = (s: PageSnapshot) =>
   !s.head.canonical || normalizeUrl(s.head.canonical) === normalizeUrl(s.url);
 
+const describe = (s: PageSnapshot) =>
+  `${s.url} → ${s.status}; canonical ${s.head.canonical ?? "(none)"}`;
+
 const hreflangTags = (s: PageSnapshot) =>
   s.head.hreflang
     .map((h) => `<link rel="alternate" hreflang="${h.lang}" href="${h.href}">`)
@@ -96,8 +99,6 @@ export const hreflangCheck: HandbookCheck = {
       out.na("P3-25", "no variant URLs crawled");
       return out.build();
     }
-    const describe = (s: PageSnapshot) =>
-      `${s.url} → ${s.status}; canonical ${s.head.canonical ?? "(none)"}`;
     const notOk = variants.filter((s) => s.status !== 200);
     const selfCount = variants.filter(selfCanonical).length;
     const mixed = selfCount > 0 && selfCount < variants.length;
