@@ -4,11 +4,11 @@ autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken 
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
 needs_ken: (empty unless status = needs-ken: one line per item Ken must do)
-current_batch: B4
-batch_file: fork/batches/B4-light-product-deploy.md
+current_batch: B5
+batch_file: fork/batches/B5-heavy-v1-signoff.md
 required_model: Opus 5.5 (SINGLE) · SPLIT: per batch table below
-current_run: 13
-next_action: B4 — continue the queue at WO-B4-010 (run page grade card), then 011…015 (executor protocol in fork/batches/B2-light-deterministic.md). WO-B4-001…009 done (003 ESCALATE part → WO-B5-C13 contracts 1.3.0 in B5). Eval: 21 cases built in fork/evals/cases (r13b sidecar runs); `llm-eval.ts run` BLOCKED-KEN until OpenRouter credits are topped up (WO-B3-EVAL). Sidecar token: the running sidecar's token is unknown to a new run — in ONE shell: `export HANDBOOK_SIDECAR_TOKEN=$(openssl rand -hex 24); docker compose -f fork/sidecar/compose.yaml up -d --force-recreate`, wait for /health, then run the CLI with `--sidecar http://127.0.0.1:4777` (template: run both golden sites with --llm ≈ 140 s + 100 s). Route tree: new routes need `src/routeTree.gen.ts` regenerated (`pnpm exec vite dev` ~45 s). Carry-over BLOCKED-KEN: OpenRouter credits; in-app UI smoke (Playwright host libs). BadGEO harness not re-run this run (do it in WO-B4-015).
+current_run: 14
+next_action: B5 R1 — `git fetch upstream` (rebase if new commits), review B4 with REVIEW-CHECKLIST.md, security pass, then step 6: the MCP registration hook (`registerHandbookTools(register);` in `registerOpenSeoTools`, log in UPSTREAM-EDITS) and WO-B5-C13 (contracts 1.3.0). Also in B5 R1: local prod smoke (`run-local.sh prod`, one cron tick on `/cdn-cgi/local/scheduled`), Supabase advisors. Carry-over BLOCKED-KEN: OpenRouter credits (LLM eval, `--llm`, cost per audit); in-app UI smoke (Playwright host libs); Vercel live publish (agent permission refused — Ken runs `publish-report.ts`); units not installed (`install-units.sh`). Sidecar token: rotate in ONE shell before CLI runs (see RUNBOOK).
 contracts_version: 1.2.0 (B3 R2: additive `CheckContext.judge`, llms `text`; 1.1.0 B3 R1 `requests[].beforeLoad`; 1.0.0 frozen at end of B1)
 extra_site: (Ken: optional third site URL for regression runs; blank = skip)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -32,8 +32,8 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | B1    | fork/batches/B1-heavy-foundation.md     | HEAVY         | done        |
 | B2    | fork/batches/B2-light-deterministic.md  | LIGHT         | done        |
 | B3    | fork/batches/B3-heavy-judgment.md       | HEAVY         | done        |
-| B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | in-progress |
-| B5    | fork/batches/B5-heavy-v1-signoff.md     | HEAVY (Opus)  | —           |
+| B4    | fork/batches/B4-light-product-deploy.md | LIGHT         | done        |
+| B5    | fork/batches/B5-heavy-v1-signoff.md     | HEAVY (Opus)  | in-progress |
 | B6    | fork/batches/B6-light-integrations.md   | LIGHT         | —           |
 | B7    | fork/batches/B7-heavy-v2.md             | HEAVY         | —           |
 
@@ -54,6 +54,7 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | 11  | 2026-11-14 | Opus 5.5 | B3 R2: K5 judge wired into runner (no key / budget → BLOCKED), OpenRouter model + price table (`HANDBOOK_LLM_MODEL`), `handbook_llm_call` persistence, CLI `--llm`; 5 exemplar LLM checks + cross-page fact table (P5-02/P9-02); eval set (10 cases) + `llm-eval.ts`, threshold in ADR-007; contracts 1.2.0; live: why 14→15, ryan 21→22 golden caught; OpenRouter credits exhausted → eval run BLOCKED-KEN; tests 2175 pass                                                                           | B3 R3 |
 | 12  | 2026-11-14 | Opus 5.5 | B3 R3: EP-7 scorer (K6) in report.json + `scoreReport` re-scoring; golden grades why 39 (Δ0) / ryan 47.8 (Δ−0.2) on sidecar runs; P3-20 XHR-only → S2 (Squarespace telemetry false S1 cap); K7 markdown exports (EP-5 status file, audit baseline, EP-7 review report); ADR-011 runtime, ADR-012 exports                                                                                                                                                                                               | B3 R4 |
 | 13  | 2026-11-14 | Opus 5.5 | B4 r1: WO-B4-001…009 — LLM checks P5-06/P5-11/P5-15, P4-07/P5-09/P2-03, P5-03 (no source fetch: ESCALATE → WO-B5-C13), entity test v2 name mentions; golden leftovers P7-05 fonts, P8-02 template labels, P3-11 canonical twin; runner process verdicts P1-03/RV-01 + export-confirmed P0-01/P0-02/RV-02, platform, provisional line; seo-owner-todo.md; client report HTML (≤ 500 KB); publish to upstream Reports + run page actions; 21 eval cases (eval run BLOCKED-KEN: credits); tests 2205 pass | B4 r2 |
+| 14  | 2026-11-14 | Opus 5.5 | B4 r2: WO-B4-010 run page grade card/phases/findings by severity (getRunDetail → scored report); 011 MCP tools (K8 names + publish) + fork skill, hook → B5; 012 Vercel publisher (live publish BLOCKED-KEN: permission); 013 systemd units, cron tick, backup; 014 RUNBOOK; 015 regression BadGEO 38/0/0, why 39 Δ0 18/30, ryan 47.8 Δ−0.2 21/36; B4 report; tests 2207 pass                                                                                                                          | B5 R1 |
 
 ## Batch history
 
@@ -62,4 +63,5 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 | B1    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B1.md |
 | B2    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B2.md |
 | B3    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B3.md |
-| B4    | Opus 5.5 | 2026-11-14 | —          | fork/reports/B4.md |
+| B4    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B4.md |
+| B5    | Opus 5.5 | —          | —          | fork/reports/B5.md |
