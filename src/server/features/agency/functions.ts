@@ -2,7 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireProjectContext } from "@/serverFunctions/middleware";
 import { AgencyService } from "./agencyService";
+import { renderFollowupsMd } from "@/server/features/handbook/export/followups";
+import {
+  HANDBOOK_VERSION,
+  REGISTRY,
+} from "@/server/features/handbook/registry";
 import { agencyBrandSchema, agencyClientSchema } from "./contracts";
+import { OutcomeService } from "./outcomeService";
 
 // Agency settings server functions (ADR-017 §1–2). `projectId` in each
 // validator triggers project authorization; the service scopes by org too.
@@ -57,3 +63,37 @@ export const saveAgencyClient = createServerFn({ method: "POST" })
       client,
     );
   });
+
+// Outcome record (ADR-017 §3): record a fix batch from a run's findings, and
+// export `seo-followups.md`.
+
+export const recordOutcomeFixBatch = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(
+    z.object({
+      projectId,
+      runId: z.string().min(1),
+      // Empty = every finding of the run.
+      findingCodes: z.array(z.string().min(1).max(80)).max(500),
+    }),
+  )
+  .handler(async ({ data, context }) =>
+    OutcomeService.recordFixBatch(
+      { projectId: context.projectId, organizationId: context.organizationId },
+      { runId: data.runId, findingCodes: data.findingCodes },
+    ),
+  );
+
+export const getOutcomeFollowupsMd = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(z.object({ projectId }))
+  .handler(async ({ context }) =>
+    renderFollowupsMd(
+      await OutcomeService.getOutcomeRecord({
+        projectId: context.projectId,
+        organizationId: context.organizationId,
+      }),
+      REGISTRY,
+      HANDBOOK_VERSION,
+    ),
+  );
