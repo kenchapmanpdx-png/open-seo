@@ -1,13 +1,15 @@
-# BadGEO: named AI groups carry only Allow and miss the * Disallow set (P3-15, P9-05).
+# BadGEO: named AI groups miss the * Disallow set (P3-15, P9-05); /assets/private/ is disallowed in every group (P3-20).
 User-agent: *
 Disallow: /private/
 Disallow: /admin/
 Disallow: /*?sort=
+Disallow: /assets/private/
 
 User-agent: GPTBot
 User-agent: ClaudeBot
 User-agent: PerplexityBot
 Allow: /
+Disallow: /assets/private/
 
 Sitemap: {{ORIGIN}}/sitemap.xml
 Sitemap: {{ORIGIN}}/sitemap-build.xml

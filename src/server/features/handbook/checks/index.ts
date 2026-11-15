@@ -19,6 +19,7 @@ import { pageStructureCheck } from "./page-structure";
 import { rawCopyCheck } from "./raw-copy";
 import { redirectedLinksCheck } from "./redirected-links";
 import { renderParityCheck } from "./render-parity";
+import { renderResourcesCheck } from "./render-resources";
 import { robotsGroupsCheck } from "./robots-groups";
 import { schemaBasicsCheck } from "./schema-basics";
 import { schemaEventCheck } from "./schema-event";
@@ -69,4 +70,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   renderParityCheck,
   firstScreenActionCheck,
   consentLcpCheck,
+  renderResourcesCheck,
 ];
