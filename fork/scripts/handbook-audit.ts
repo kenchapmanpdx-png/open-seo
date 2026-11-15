@@ -92,6 +92,30 @@ export async function runCliAudit(argv: string[]) {
     allowedHosts: "any",
     maxBytes: 256 * 1024,
   });
+  // Per-collector timing (WO-B2-001): wrap collect() here; the runner stays unchanged.
+  const timing: Record<string, number> = {};
+  const log = (event: string, fields: Record<string, unknown>) =>
+    console.error(event, JSON.stringify(fields));
+  const collectors = createDefaultCollectors({
+    followLinks: true,
+    maxPages,
+  }).map((collector) => ({
+    ...collector,
+    collect: async (...args: Parameters<typeof collector.collect>) => {
+      const t0 = performance.now();
+      log("handbook.collector.start", { key: collector.key });
+      try {
+        return await collector.collect(...args);
+      } finally {
+        timing[collector.key] = Math.round(performance.now() - t0);
+        log("handbook.collector.end", {
+          key: collector.key,
+          ms: timing[collector.key],
+        });
+      }
+    },
+  }));
+  const t0 = performance.now();
   const result = await runHandbook(
     {
       runId,
@@ -99,7 +123,7 @@ export async function runCliAudit(argv: string[]) {
       mode,
       tierOverride,
       registry: REGISTRY,
-      collectors: createDefaultCollectors({ followLinks: true, maxPages }),
+      collectors,
       checks: HANDBOOK_CHECKS,
       maxPages,
     },
@@ -108,9 +132,10 @@ export async function runCliAudit(argv: string[]) {
       fetch,
       fetchOffsite,
       store: createFsEvidenceStore(join(outDir, "evidence")),
-      log: (event, fields) => console.error(event, JSON.stringify(fields)),
+      log,
     },
   );
+  const totalMs = Math.round(performance.now() - t0);
   const report = buildReportJson({
     result,
     registry: REGISTRY,
@@ -131,14 +156,22 @@ export async function runCliAudit(argv: string[]) {
   );
   await writeFormatted(
     join(outDir, "collected.json"),
-    JSON.stringify(summarizeCollected(result.collected), null, 2),
+    JSON.stringify(
+      {
+        // report.json (K7) has no timing slot; timing lives here.
+        meta: { timing: { collectorsMs: timing, totalMs } },
+        ...summarizeCollected(result.collected),
+      },
+      null,
+      2,
+    ),
   );
-  return { outDir, report, result };
+  return { outDir, report, result, timing: { collectorsMs: timing, totalMs } };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   runCliAudit(process.argv.slice(2))
-    .then(({ outDir, report }) => {
+    .then(({ outDir, report, timing }) => {
       const counts = new Map<string, number>();
       for (const item of report.items)
         counts.set(item.status, (counts.get(item.status) ?? 0) + 1);
@@ -146,6 +179,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         `${report.site.origin} · tier ${report.run.tier} · ${report.findings.length} findings`,
       );
       console.log([...counts].map(([s, n]) => `${s} ${n}`).join(" · "));
+      console.log(
+        `timing ${timing.totalMs}ms · ${Object.entries(timing.collectorsMs)
+          .map(([k, ms]) => `${k} ${ms}`)
+          .join(" · ")}`,
+      );
       console.log(`→ ${outDir}`);
     })
     .catch((error) => {

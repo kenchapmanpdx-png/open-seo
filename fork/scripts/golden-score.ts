@@ -10,11 +10,16 @@
  * (collected.json next to report.json). Expected passes → caught when every
  * listed item is PASS, partial when some are.
  *
- *   pnpm exec tsx fork/scripts/golden-score.ts <report.json> <expected.yaml>
+ * `--md <path>` (or `--report` → fork/reports/B2-golden.md) also writes a
+ * per-site section into that markdown file, replacing an earlier section
+ * for the same site.
+ *
+ *   pnpm exec tsx fork/scripts/golden-score.ts <report.json> <expected.yaml> [--report | --md <path>]
  */
 import { writeFormatted } from "./lib/write-formatted";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { parseArgs } from "node:util";
 import { parse } from "yaml";
 import { z } from "zod";
 import {
@@ -224,17 +229,77 @@ export async function scoreGolden(reportPath: string, expectedPath: string) {
   ].join("\n");
   const out = join(dirname(reportPath), "golden-score.md");
   await writeFormatted(out, md);
-  return { findings, passes, out };
+  return { site: expected.site, report, findings, passes, out };
+}
+
+const DEFAULT_MD = "fork/reports/B2-golden.md";
+const SECTION = (site: string) => `<!-- golden:${site} -->`;
+
+/** Per-site section (finding id · items · verdict), replacing an earlier one. */
+async function appendSiteSection(
+  mdPath: string,
+  reportPath: string,
+  scored: Awaited<ReturnType<typeof scoreGolden>>,
+) {
+  const { site, report, findings, passes } = scored;
+  const count = (rows: Scored[], v: Verdict) =>
+    rows.filter((r) => r.verdict === v).length;
+  const headline = (rows: Scored[]) =>
+    `caught ${count(rows, "caught")} · partial ${count(rows, "partial")} · missed ${count(rows, "missed")} · site-changed ${count(rows, "site-changed")} · total ${rows.length}`;
+  const section = [
+    SECTION(site),
+    `## ${site}`,
+    "",
+    `Run date ${report.generatedAt.slice(0, 10)} · report ${reportPath}`,
+    "",
+    `Findings: ${headline(findings)}`,
+    "",
+    `Passes: ${headline(passes)}`,
+    "",
+    "| finding | items | verdict |",
+    "| --- | --- | --- |",
+    ...findings.map(
+      (r) => `| ${r.entry.id} | ${r.entry.items.join(", ")} | ${r.verdict} |`,
+    ),
+    "",
+    SECTION(site),
+  ].join("\n");
+  const current = existsSync(mdPath)
+    ? readFileSync(mdPath, "utf8")
+    : "# B2 golden scores\n";
+  const marker = SECTION(site);
+  const start = current.indexOf(marker);
+  const end = start < 0 ? -1 : current.indexOf(marker, start + marker.length);
+  const next =
+    start >= 0 && end >= 0
+      ? current.slice(0, start) + section + current.slice(end + marker.length)
+      : `${current.trimEnd()}\n\n${section}\n`;
+  await writeFormatted(mdPath, next);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const [reportPath, expectedPath] = process.argv.slice(2);
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: {
+      report: { type: "boolean", default: false },
+      md: { type: "string" },
+    },
+  });
+  const [reportPath, expectedPath] = positionals;
   if (!reportPath || !expectedPath) {
-    console.error("usage: golden-score.ts <report.json> <expected.yaml>");
+    console.error(
+      "usage: golden-score.ts <report.json> <expected.yaml> [--report | --md <path>]",
+    );
     process.exit(2);
   }
+  const mdPath = values.md ?? (values.report ? DEFAULT_MD : null);
   scoreGolden(reportPath, expectedPath)
-    .then(({ findings, passes, out }) => {
+    .then(async (scored) => {
+      const { findings, passes, out } = scored;
+      if (mdPath) {
+        await appendSiteSection(mdPath, reportPath, scored);
+        console.log(`→ ${mdPath}`);
+      }
       for (const [name, rows] of [
         ["findings", findings],
         ["passes", passes],
