@@ -35,19 +35,34 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
           title="Handbook"
           description="SEO/GEO handbook checks with evidence for every finding."
           actions={
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={
-                <Link
-                  to="/p/$projectId/handbook/ai-traffic"
-                  params={{ projectId }}
-                />
-              }
-            >
-              AI traffic
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    to="/p/$projectId/handbook/ai-traffic"
+                    params={{ projectId }}
+                  />
+                }
+              >
+                AI traffic
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    to="/p/$projectId/handbook/bing"
+                    params={{ projectId }}
+                  />
+                }
+              >
+                Bing
+              </Button>
+            </>
           }
         />
         <QueryState
