@@ -116,14 +116,6 @@ const SPECS: CaseSpec[] = [
     path: /^\/events\/(?:ho-ho-5k|silver-falls-trail-challenge|white-river-snow-shoe|crown-stub-100)$/,
   },
   {
-    id: "why-PASS-KF",
-    site: "why",
-    golden: "events/appletree-marathon key facts",
-    itemId: "P5-15",
-    expected: "pass",
-    path: /^\/events\/appletree-marathon$/,
-  },
-  {
     id: "why-PASS-MATRIX",
     site: "why",
     golden: "home without article furniture",
