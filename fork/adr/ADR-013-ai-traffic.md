@@ -27,8 +27,8 @@
   3. Parse JSON array or NDJSON with the K9 `vercelDrainEntrySchema` (loose: unknown fields ignored). Keep only `source ∈ {static, lambda, edge, external, redirect}` entries with a `proxy` object; drop build/firewall/console lines.
   4. Map to K9 `trafficEvent` (`normalizeVercelDrainEntry`: same field mapping as Canonry `normalize.ts`, plus `remoteIp` from `proxy.clientIp`).
   5. **Pre-filter at the edge**: keep an event only if its UA contains a `DEFAULT_AI_CRAWLER_USER_AGENT_SUBSTRINGS` token or its referer / `utm_source` matches an AI referrer rule. Everything else is counted (per site, per hour, `human_or_other`) and discarded. Raw human traffic never leaves Vercel; this also keeps Supabase rows small.
-  6. Insert kept events with `ON CONFLICT (site_id, event_id) DO NOTHING` (drain retries are idempotent). Upsert the hourly discard counter.
-- The receiver connects to Supabase with its own Postgres role `traffic_ingest` (SELECT on `ai_traffic_site` + `ai_traffic_site_host` to resolve the site, INSERT on `ai_traffic_event`, INSERT/UPDATE on `ai_traffic_discard`, USAGE on schema; nothing else). Connection string lives only in the receiver project's Vercel env (`TRAFFIC_INGEST_DB_URL`, Supabase transaction pooler). RLS stays on (`supabase-harden.sql`); the role gets an explicit insert policy.
+  6. Insert kept events with `ON CONFLICT DO NOTHING` — no conflict target: a target needs SELECT on its columns, which `traffic_ingest` does not have; the unique (`site_id`,`event_id`) index still makes drain retries idempotent (B5 R4a, verified on Postgres 17). Upsert the hourly discard counter.
+- The receiver connects to Supabase with its own Postgres role `traffic_ingest` (SELECT on `ai_traffic_site` + `ai_traffic_site_host` to resolve the site, INSERT on `ai_traffic_event`, SELECT/INSERT/UPDATE on `ai_traffic_discard` (SELECT needed by the upsert), USAGE on schema; nothing else). Connection string lives only in the receiver project's Vercel env (`TRAFFIC_INGEST_DB_URL`, Supabase transaction pooler). RLS stays on (`supabase-harden.sql`); the role gets an explicit insert policy.
 - Which site an event belongs to: `ai_traffic_site` maps a Vercel `projectId` (+ optional host list) to an OpenSEO `project_id`. Unknown `projectId` → dropped and counted in a discard row with `site_id` NULL (so a mis-wired drain is visible).
 - Classification happens in the app, not in the receiver: the receiver only filters and stores evidence. Rules can change and re-run over stored rows (`reclassify`).
 
@@ -93,3 +93,9 @@ K9 in `src/server/features/ai-traffic/contracts.ts`: `vercelDrainEntrySchema`, `
 - Receiver: unit tests for signature (good/bad/missing), size cap, NDJSON + array parse, pre-filter, idempotent insert (fixture payload under `fork/fixtures/traffic/vercel-drain-sample.json`, synthetic).
 - Classifier: Canonry's own test cases ported for the copied functions (rules regressions), plus one self-traffic test per fork UA.
 - Live: one Vercel site with drain → `ai_traffic_daily` rows by operator/purpose (P3 exit). No live site → BLOCKED-KEN, verified on fixtures.
+
+## Amendments (B5 R4a, schema)
+
+- `ai_traffic_daily` key columns `rule_id` and `verification` are NOT NULL with `''` for "none" (a nullable column cannot sit in a composite PK on Postgres, and upserts need the PK).
+- `ai_traffic_event` gains `received_at`; `ai_traffic_class` gains `classified_at`.
+- `traffic_ingest` (in `fork/scripts/supabase-harden.sql`) is created NOLOGIN; the receiver WO enables login with a generated password written only to the receiver's Vercel env. Verified on Postgres 17: site lookup + event insert + discard upsert allowed; event read/update/delete, class, projects, handbook tables and site update denied.

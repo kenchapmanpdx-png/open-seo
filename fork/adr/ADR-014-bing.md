@@ -67,3 +67,8 @@ K10 in `src/server/features/bing/contracts.ts`: `bingSiteBindingSchema`, `bingAi
 - Client tests on the ported fixtures (date parsing, -1 positions, page-stat quirk, throttle cooldown).
 - CSV import test with a synthetic export; idempotent re-import.
 - Live: BLOCKED-KEN until `BING_WEBMASTER_API_KEY` exists and one site is verified in BWT.
+
+## Amendments (B5 R4a, schema)
+
+- `bing_credential` (`organization_id` PK, `encrypted_api_key`) holds the per-organization key.
+- `bing_ai_import` columns: `site_id`, `imported_by`, `file_hash` (unique per site: re-importing the same file is a no-op), `evidence_path`, `rows_read`, `rows_upserted`, `imported_at`. `bing_ai_grounding_query` PK is named `bing_ai_grounding_query_pk` (the generated name exceeds Postgres' 63-byte limit).

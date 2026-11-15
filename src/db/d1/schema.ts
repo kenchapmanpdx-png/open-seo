@@ -16,3 +16,4 @@ export * from "../ai-visibility.schema";
 export * from "../local-seo.schema";
 export * from "../stripe-projects.schema";
 export * from "../handbook.schema";
+export * from "../integrations.schema";
