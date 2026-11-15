@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { JudgeResult } from "@/server/features/handbook/contracts/llm";
 import { REGISTRY } from "@/server/features/handbook/registry";
-import { context, snapshot, statusOf } from "./check-test-fixtures";
+import type { JudgeInput } from "@/server/features/handbook/contracts/llm";
+import {
+  context,
+  llmContext,
+  snapshot,
+  statusOf,
+  stubJudge,
+  textPage,
+} from "./check-test-fixtures";
 import { LLM_CHECKS } from "./llm-copy";
 
 const titlesCheck = LLM_CHECKS.find((c) => c.id === "llm.titles-h1")!;
 const faqCheck = LLM_CHECKS.find((c) => c.id === "llm.page-specific-faq")!;
 const factCheck = LLM_CHECKS.find((c) => c.id === "llm.fact-table")!;
+const entityCheck = LLM_CHECKS.find((c) => c.id === "llm.entity-test")!;
 
 const home = snapshot("/");
 const services = {
@@ -121,5 +130,23 @@ describe("LLM copy checks", () => {
     expect(seen.join("\n")).not.toContain("503-555-0100");
     expect(statusOf(result, "P5-02")).toBe("OPEN");
     expect(statusOf(result, "P9-02")).toBe("OPEN");
+  });
+
+  it("shows the entity judge every body-text spelling of the brand", async () => {
+    const seen: JudgeInput[] = [];
+    const pages = [
+      textPage("/", "Welcome.", { title: "Trail Races | WHY Racing Events" }),
+      textPage("/a", "Join WHY Racing Events today."),
+      textPage("/b", "Why Racing events are fun for all."),
+    ];
+    await entityCheck.run(
+      llmContext(
+        { pages: { status: "ok", snapshots: pages } },
+        stubJudge({}, seen),
+      ),
+    );
+    const text = seen[0].pages.map((p) => p.text).join("\n");
+    expect(text).toContain("Join WHY Racing Events today.");
+    expect(text).toContain("Why Racing events are fun for all.");
   });
 });

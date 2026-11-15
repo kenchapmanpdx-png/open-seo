@@ -21,6 +21,7 @@ import {
 import { listNavigationCheck } from "./list-navigation";
 import { LLM_CONTENT_CHECKS } from "./llm-content";
 import { LLM_CHECKS } from "./llm-copy";
+import { sourceCheck } from "./llm-sources";
 import { LLM_TEMPLATE_CHECKS } from "./llm-templates";
 import { llmsMirrorsCheck } from "./llms-mirrors";
 import { notFoundCheck } from "./not-found";
@@ -94,4 +95,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   ...LLM_CHECKS,
   ...LLM_CONTENT_CHECKS,
   ...LLM_TEMPLATE_CHECKS,
+  sourceCheck,
 ];
