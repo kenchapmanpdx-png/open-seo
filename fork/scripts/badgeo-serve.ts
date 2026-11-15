@@ -29,6 +29,8 @@ const TYPES: Record<string, string> = {
   ".xml": "application/xml; charset=utf-8",
   ".json": "application/json",
   ".md": "text/markdown; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
 };
 
 function resolveFile(pathname: string): string | null {
@@ -52,9 +54,11 @@ function resolveFile(pathname: string): string | null {
  * The default `127.0.0.1.nip.io` resolves to 127.0.0.1 via public wildcard
  * DNS: the engine's safeFetch rejects IP-literal loopback targets
  * (`isCrawlableUrl`), so the harness crawls through this name instead.
+ * `host: "0.0.0.0"` lets the Docker render sidecar reach the server
+ * (fork/sidecar/compose.badgeo.yaml maps the name to the host gateway).
  */
 export async function startBadgeo(
-  options: { port?: number; originHost?: string } = {},
+  options: { port?: number; originHost?: string; host?: string } = {},
 ): Promise<{ origin: string; close: () => Promise<void> }> {
   const headerMap = headersSchema.parse(
     JSON.parse(readFileSync(join(BADGEO_ROOT, "_headers.json"), "utf8")),
@@ -102,7 +106,7 @@ export async function startBadgeo(
     res.end(req.method === "HEAD" ? undefined : body);
   });
   await new Promise<void>((done) =>
-    server.listen(options.port ?? 0, "127.0.0.1", done),
+    server.listen(options.port ?? 0, options.host ?? "127.0.0.1", done),
   );
   const address: AddressInfo | string | null = server.address();
   if (!address || typeof address === "string") throw new Error("no address");

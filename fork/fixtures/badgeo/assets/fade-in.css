@@ -1,0 +1,7 @@
+.reveal {
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.reveal.shown {
+  opacity: 1;
+}

@@ -1,0 +1,9 @@
+# BadGEO override (WO-B2-027): lets the sidecar reach the BadGEO server on the
+# WSL/Docker host. badgeo-serve binds 0.0.0.0 when run with --sidecar.
+#   HANDBOOK_SIDECAR_TOKEN=… docker compose -f fork/sidecar/compose.yaml -f fork/sidecar/compose.badgeo.yaml up -d
+services:
+  sidecar:
+    extra_hosts:
+      - "127.0.0.1.nip.io:host-gateway"
+    environment:
+      HANDBOOK_SIDECAR_ALLOW_PRIVATE: "1"
