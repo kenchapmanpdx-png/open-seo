@@ -8,6 +8,7 @@ import {
   aiTrafficTickJob,
 } from "@/server/features/ai-traffic/aiTrafficJobs";
 import { categorizeSourcesJob } from "@/server/features/ai-visibility/citations/categorizeUpstreamSources";
+import { byokScheduleJob } from "@/server/features/ai-visibility/providers/byok/byokRunService";
 import { bingDailySyncJob } from "@/server/features/bing/bingSync";
 
 const EVERY_FIVE_MINUTES = "*/5 * * * *";
@@ -16,7 +17,11 @@ const DAILY = "17 3 * * *";
 type ForkJob = { name: string; run: () => Promise<unknown> };
 
 const FORK_SCHEDULED_JOBS: Record<string, ForkJob[]> = {
-  [EVERY_FIVE_MINUTES]: [aiTrafficTickJob, categorizeSourcesJob],
+  [EVERY_FIVE_MINUTES]: [
+    aiTrafficTickJob,
+    categorizeSourcesJob,
+    byokScheduleJob,
+  ],
   [DAILY]: [aiTrafficDailyJob, bingDailySyncJob],
 };
 
