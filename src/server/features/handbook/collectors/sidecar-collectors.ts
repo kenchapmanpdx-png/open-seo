@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import type {
   AxeData,
   CollectedData,
@@ -104,6 +104,33 @@ async function perUrl<T>(
 
 const encode = (text: string) => new TextEncoder().encode(text);
 
+/** Visible text of an axe node's outer HTML, ≤120 chars (P8-02, contracts 1.3.0). */
+const nodeText = (html: string) =>
+  extractHtmlFacts(html, "https://axe.invalid/").markup.text.slice(0, 120);
+
+// Lighthouse `render-blocking-resources` audit details (P7-05, contracts 1.3.0).
+const renderBlockingSchema = z.object({
+  audits: z.object({
+    "render-blocking-resources": z.object({
+      details: z.object({
+        items: z.array(
+          z.object({ url: z.string(), wastedMs: z.number().nonnegative() }),
+        ),
+      }),
+    }),
+  }),
+});
+
+/** Undefined when the report lacks the audit (older Lighthouse or no items). */
+function renderBlocking(report: unknown) {
+  const parsed = renderBlockingSchema.safeParse(report);
+  return parsed.success
+    ? parsed.data.audits["render-blocking-resources"].details.items.map(
+        (item) => ({ url: item.url, wastedMs: Math.round(item.wastedMs) }),
+      )
+    : undefined;
+}
+
 export function createSidecarCollectors(config: SidecarConfig) {
   const render: Collector<"render"> = {
     key: "render",
@@ -141,16 +168,18 @@ export function createSidecarCollectors(config: SidecarConfig) {
               )
             : null,
         ]);
+        const jsFacts = extractHtmlFacts(js.value.html, js.value.finalUrl);
         const page: RenderData["pages"][number] = {
           url,
           js: {
             finalUrl: js.value.finalUrl,
             status: js.value.status,
             renderedKey,
-            words: extractHtmlFacts(js.value.html, js.value.finalUrl).words,
+            words: jsFacts.words,
             requests: js.value.requests,
             opacityZeroWords: js.value.opacityZeroWords,
             firstScreenActions: js.value.firstScreenActions,
+            forms: jsFacts.markup.counts.forms,
           },
           noJs: {
             status: noJs.value.status,
@@ -185,6 +214,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
             help: v.help,
             nodes: v.nodes.length,
             sampleTargets: v.nodes.slice(0, 5).map((n) => n.target.join(" ")),
+            sampleTexts: v.nodes.slice(0, 3).map((n) => nodeText(n.html)),
           })),
         };
         return { ok: true, value: page };
@@ -225,6 +255,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
           tbtMs: res.value.metrics.tbtMs,
           lcpElement: res.value.lcpElement,
           storageKey,
+          renderBlocking: renderBlocking(res.value.report),
         };
         return { ok: true, value: page };
       });
