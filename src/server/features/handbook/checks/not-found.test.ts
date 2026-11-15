@@ -56,4 +56,33 @@ describe("crawl.not-found", () => {
     const result = await run(404, { words: 100 });
     expect(statusOf(result, "P3-11")).toBe("OPEN");
   });
+
+  it("cites the live page (and its canonical) the 404 body duplicates", async () => {
+    const about = snapshot("/about", { canonical: "/about-rms" });
+    const result = await notFoundCheck.run(
+      context({
+        variants: {
+          status: "ok",
+          probes: [
+            {
+              kind: "unknown-path",
+              url: URL_,
+              finalUrl: URL_,
+              status: 404,
+              redirectChain: [],
+              title: "About | RMS",
+              words: 300,
+            },
+          ],
+        },
+        pages: {
+          status: "ok",
+          snapshots: [
+            { ...about, head: { ...about.head, title: "About | RMS" } },
+          ],
+        },
+      }),
+    );
+    expect(result.findings[0]?.urls).toEqual([URL_, `${ORIGIN}/about-rms`]);
+  });
 });
