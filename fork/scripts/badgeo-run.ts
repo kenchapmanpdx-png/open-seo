@@ -5,7 +5,10 @@
  * page, and nothing else may. "Fired" = a finding citing the item whose urls
  * include the page. Exit 1 on any missing/unexpected unless --report-only.
  *
- *   pnpm exec tsx fork/scripts/badgeo-run.ts [--report-only]
+ * `--only P3-01,P3-02` keeps rows whose expected ∪ fired ids intersect the
+ * filter and ignores ids outside it (exit code counts filtered rows only).
+ *
+ *   pnpm exec tsx fork/scripts/badgeo-run.ts [--report-only] [--only <ids>]
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -90,14 +93,35 @@ export function compare(
   });
 }
 
+/** Restrict rows and their id lists to the `--only` ids. */
+function onlyIds(rows: Row[], ids: readonly string[]): Row[] {
+  const keep = (list: string[]) => list.filter((id) => ids.includes(id));
+  return rows
+    .filter((r) => [...r.expected, ...r.fired].some((id) => ids.includes(id)))
+    .map((r) => ({
+      page: r.page,
+      expected: keep(r.expected),
+      fired: keep(r.fired),
+      missing: keep(r.missing),
+      unexpected: keep(r.unexpected),
+    }));
+}
+
 async function main() {
   const { values } = parseArgs({
-    options: { "report-only": { type: "boolean", default: false } },
+    options: {
+      "report-only": { type: "boolean", default: false },
+      only: { type: "string" },
+    },
   });
+  const only = values.only
+    ?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const server = await startBadgeo();
   try {
     const date = new Date().toISOString().slice(0, 10);
-    const { report } = await runCliAudit([
+    const { report, timing } = await runCliAudit([
       server.origin,
       "--allow-private",
       "--mode",
@@ -107,7 +131,8 @@ async function main() {
       "--out",
       join("fork/runs/badgeo", date),
     ]);
-    const rows = compare(report, loadExpectations());
+    const all = compare(report, loadExpectations());
+    const rows = only ? onlyIds(all, only) : all;
     const list = (ids: string[]) => ids.join(", ") || "—";
     console.log("| page | expected | fired | missing | unexpected |");
     console.log("| --- | --- | --- | --- | --- |");
@@ -119,7 +144,7 @@ async function main() {
     const missing = rows.reduce((n, r) => n + r.missing.length, 0);
     const unexpected = rows.reduce((n, r) => n + r.unexpected.length, 0);
     console.log(
-      `\npages ${rows.length} · missing ${missing} · unexpected ${unexpected} · findings ${report.findings.length}`,
+      `\npages ${rows.length} · missing ${missing} · unexpected ${unexpected} · findings ${report.findings.length} · ${timing.totalMs}ms`,
     );
     if ((missing > 0 || unexpected > 0) && !values["report-only"])
       process.exitCode = 1;
