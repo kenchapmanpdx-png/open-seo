@@ -16,6 +16,7 @@ import { pageStructureCheck } from "./page-structure";
 import { rawCopyCheck } from "./raw-copy";
 import { redirectedLinksCheck } from "./redirected-links";
 import { robotsGroupsCheck } from "./robots-groups";
+import { schemaBasicsCheck } from "./schema-basics";
 import { securityHeadersCheck } from "./security-headers";
 import { sitemapLastmodCheck } from "./sitemap-lastmod";
 import { socialMetaCheck } from "./social-meta";
@@ -50,4 +51,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   imageMarkupCheck,
   cachePolicyCheck,
   llmsMirrorsCheck,
+  schemaBasicsCheck,
 ];
