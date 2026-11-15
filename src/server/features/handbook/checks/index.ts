@@ -1,5 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import { botParityCheck } from "./bot-parity";
+import { cachePolicyCheck } from "./cache-policy";
 import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
 import { headTagsCheck } from "./head-tags";
@@ -46,4 +47,5 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   outboundLinksCheck,
   rawCopyCheck,
   imageMarkupCheck,
+  cachePolicyCheck,
 ];

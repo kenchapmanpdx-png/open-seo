@@ -4,7 +4,13 @@
     "content-security-policy": "default-src 'self'; frame-ancestors 'none'",
     "x-content-type-options": "nosniff",
     "referrer-policy": "strict-origin-when-cross-origin",
-    "permissions-policy": "camera=(), microphone=()"
+    "permissions-policy": "camera=(), microphone=()",
+    "cache-control": "no-cache"
   },
-  "/no-headers.html": {}
+  "/no-headers.html": {
+    "cache-control": "no-cache"
+  },
+  "/assets/app.3f9a1c.js": {
+    "cache-control": "max-age=60"
+  }
 }
