@@ -31,7 +31,12 @@ function hubPages(ctx: CheckContext): { page: PageSnapshot; items: number }[] {
     const parent = t.urlPattern.slice(0, -2);
     const members = new Set(t.urls.map(normalizeUrl));
     for (const p of pages) {
-      if (members.has(normalizeUrl(p.url))) continue;
+      // Detail pages linking their siblings ("more events") are not hubs.
+      if (
+        members.has(normalizeUrl(p.url)) ||
+        pathOf(p.url).startsWith(`${parent}/`)
+      )
+        continue;
       const linked = new Set(
         p.links.map((l) => normalizeUrl(l.href)).filter((h) => members.has(h)),
       ).size;
@@ -95,17 +100,14 @@ const localPagesCheck: HandbookCheck = {
     );
     const ratios = sharedSentenceRatios(swaps);
     const twins = swaps.filter((_, i) => ratios[i] >= 0.6);
-    // (b) one page listing ≥ 4 services with no page per service (ryan F14).
+    // (b) a services/locations page with no page below it (ryan F14); the
+    // judge reads its text to tell one real service from a list of many.
     const single = pages.filter((p) => {
       const path = pathOf(p.url);
-      if (!SERVICE_PATH.test(path)) return false;
-      const children = pages.filter((q) =>
-        pathOf(q.url).startsWith(`${path}/`),
+      return (
+        SERVICE_PATH.test(path) &&
+        !pages.some((q) => pathOf(q.url).startsWith(`${path}/`))
       );
-      const sections = p.markup.headings.filter(
-        (h) => h.landmark === null && (h.level === 2 || h.level === 3),
-      );
-      return children.length === 0 && sections.length >= 4;
     });
     if (twins.length === 0 && single.length === 0) {
       const out = createResult(["P5-09"]);
@@ -116,7 +118,7 @@ const localPagesCheck: HandbookCheck = {
       );
       out.pass(
         "P5-09",
-        "no title-swap pages with ≥ 60% shared sentences and no single all-services page (deterministic, no llm call)",
+        "no title-swap pages with ≥ 60% shared sentences and no services/locations page without child pages (deterministic, no llm call)",
         [ref],
       );
       return out.build();
@@ -128,10 +130,7 @@ const localPagesCheck: HandbookCheck = {
       })),
       ...single.slice(0, 2).map((p) => ({
         url: p.url,
-        text: `${headLines(p)}\nSection headings:\n${p.markup.headings
-          .filter((h) => h.landmark === null && h.level <= 3)
-          .map((h) => `- ${h.text}`)
-          .join("\n")}\nNo crawled page below ${pathOf(p.url)}/.`,
+        text: `${headLines(p)}\nNo crawled page below ${pathOf(p.url)}/.\n\n${p.markup.text.slice(0, 3_000)}`,
       })),
     ];
     return judged(

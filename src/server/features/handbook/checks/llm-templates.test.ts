@@ -46,22 +46,11 @@ describe("LLM template checks", () => {
     expect(result.evidence).toHaveLength(1);
   });
 
-  it("opens P5-09 when the judge fails a single all-services page", async () => {
-    const base = textPage("/service", "We do it all.", {
+  it("opens P5-09 when the judge fails a services page with no page per service", async () => {
+    const services = textPage("/service", "Fit. Repair. Coaching. Testing.", {
       title: "Services | Brand",
     });
-    const services = {
-      ...base,
-      markup: {
-        ...base.markup,
-        headings: ["Fit", "Repair", "Coaching", "Testing"].map((text) => ({
-          level: 2,
-          text,
-          landmark: null,
-        })),
-      },
-    };
-    const quote = { url: services.url, text: "- Repair" };
+    const quote = { url: services.url, text: "Repair." };
     const result = await check("llm.local-pages").run(
       llmContext(
         pagesOf(services),

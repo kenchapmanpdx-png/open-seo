@@ -36,6 +36,7 @@ import {
 import { buildReportJson } from "@/server/features/handbook/engine/report";
 import {
   renderAuditBaselineMd,
+  renderOwnerTodoMd,
   renderReviewMd,
   renderStatusMd,
 } from "@/server/features/handbook/export/markdown";
@@ -209,6 +210,10 @@ export async function runCliAudit(argv: string[]) {
     await writeFormatted(
       join(outDir, "seo-audit-baseline.md"),
       renderAuditBaselineMd(report),
+    );
+    await writeFormatted(
+      join(outDir, "seo-owner-todo.md"),
+      renderOwnerTodoMd(report, REGISTRY),
     );
   }
   await writeFormatted(
