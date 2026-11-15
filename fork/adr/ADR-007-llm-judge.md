@@ -31,3 +31,11 @@
 ## Verification
 
 - Eval set from golden audits (B3); quote-verifier unit tests (substring, normalization, adversarial near-matches).
+
+## Build decisions (B3 R2, run 11)
+
+- Model: `HANDBOOK_LLM_MODEL` (default `anthropic/claude-sonnet-5.5`, $2/$10 per M tokens), not `OPENROUTER_MODEL`, which upstream's SAM agent owns. Price table in `llm/model.ts`; an unknown model is budgeted at $15/$75 so the cap still holds. Access via upstream `getOpenRouterAccess` (own key or Every App gateway).
+- Runner: LLM-class checks receive `ctx.judge` (contracts 1.2.0). No judge → items BLOCKED `no llm key`. `LlmBudgetError` → that check's items and every later LLM check's items BLOCKED `llm budget`. Provider errors → BLOCKED `check error: …`.
+- Checks (`checks/llm-copy.ts`): one judge call per check over a page sample (home, one rank-1 sample per template, crawl order; 8–25 pages), never per page. A `fail` below confidence 0.5 is treated as `unsure`. Fail evidence = each verified quote (`textQuote`); PASS evidence = the judged page views.
+- Measured cost: whyracingevents $0.09, ryanmscottsdale $0.06 per run (five checks, before the fact table).
+- Eval threshold: recall ≥ 80% on golden fails and 0 fails on golden passes (`fork/evals/`, `fork/scripts/llm-eval.ts`; exit 1 below threshold).

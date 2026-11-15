@@ -47,6 +47,7 @@ export type LlmCallLog = {
 export type ModelPrice = { input: number; output: number };
 
 export class LlmBudgetError extends Error {
+  override name = "LlmBudgetError";
   constructor(spentUsd: number, budgetUsd: number) {
     super(
       `llm budget: $${spentUsd.toFixed(4)} spent of $${budgetUsd.toFixed(2)}`,

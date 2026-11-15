@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
-import { getOptionalEnvValue } from "@/server/lib/runtime-env";
+import { getOpenRouterAccess } from "@/server/lib/openrouter";
+import { getOptionalEnvValue, getWorkersEnv } from "@/server/lib/runtime-env";
 import {
   HANDBOOK_VERSION,
   REGISTRY,
@@ -24,6 +25,13 @@ import {
   createSupabaseEvidenceStore,
   createSupabaseSignedUrl,
 } from "@/server/features/handbook/engine/supabase-evidence-store";
+import { LLM_BUDGET_ENV } from "@/server/features/handbook/contracts/llm";
+import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
+import {
+  createHandbookJudge,
+  HANDBOOK_LLM_MODEL_ENV,
+  parseBudgetUsd,
+} from "@/server/features/handbook/llm/model";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 
 const DEFAULT_MAX_PAGES = 200;
@@ -123,6 +131,18 @@ async function executeRun(input: {
     contractsVersion: CONTRACTS_VERSION,
     mode: input.mode,
   });
+  const llmCalls: LlmCallLog[] = [];
+  const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
+  const judge = access
+    ? createHandbookJudge({
+        access,
+        modelId: await getOptionalEnvValue(HANDBOOK_LLM_MODEL_ENV),
+        budgetUsd: parseBudgetUsd(await getOptionalEnvValue(LLM_BUDGET_ENV)),
+        log: async (call) => {
+          llmCalls.push(call);
+        },
+      })
+    : null;
   try {
     const result = await runHandbook(
       {
@@ -138,6 +158,7 @@ async function executeRun(input: {
         }),
         checks: HANDBOOK_CHECKS,
         maxPages: DEFAULT_MAX_PAGES,
+        judge,
       },
       {
         projectId: input.projectId,
@@ -153,6 +174,7 @@ async function executeRun(input: {
       },
     );
     await HandbookRepository.saveRunResult(input.runId, result);
+    await HandbookRepository.saveLlmCalls(input.runId, llmCalls);
     await HandbookRepository.finishRun({
       projectId: input.projectId,
       runId: input.runId,

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import { REGISTRY } from "@/server/features/handbook/registry";
+import type { Judge } from "@/server/features/handbook/contracts/llm";
+import { LlmBudgetError } from "../llm/judge";
 import { createMemoryEvidenceStore } from "./memory-evidence-store";
 import { runHandbook } from "./runner";
 
@@ -29,7 +31,11 @@ function check(
   };
 }
 
-async function run(checks: HandbookCheck[], itemId = item!.id) {
+async function run(
+  checks: HandbookCheck[],
+  itemId = item!.id,
+  judge: Judge | null = null,
+) {
   const result = await runHandbook(
     {
       runId: "r1",
@@ -39,6 +45,7 @@ async function run(checks: HandbookCheck[], itemId = item!.id) {
       collectors: [pagesOk],
       checks,
       maxPages: 10,
+      judge,
     },
     {
       projectId: "p1",
@@ -66,6 +73,17 @@ const finding = {
   urls: ["https://example.com/"],
   source: "deterministic" as const,
 };
+
+const llmCheck = (itemId: string): HandbookCheck => ({
+  id: `llm.${itemId}`,
+  itemIds: [itemId],
+  class: "LLM",
+  requires: ["pages"],
+  run: async (ctx) => {
+    await ctx.judge?.({ itemId, rubricId: "r", pages: [] });
+    throw new Error("judge expected to throw");
+  },
+});
 
 describe("runHandbook invariants", () => {
   it("blocks an item whose finding cites no stored evidence", async () => {
@@ -123,5 +141,23 @@ describe("runHandbook invariants", () => {
     );
     expect(status?.status).toBe("OPEN");
     expect(status?.note).toContain(finding.urls[0]);
+  });
+
+  it("blocks LLM items without a judge, and every later LLM item once the budget is spent", async () => {
+    const checks = [llmCheck("P5-01"), llmCheck("P5-04")];
+    expect(await run(checks, "P5-04")).toMatchObject({
+      status: "BLOCKED",
+      note: "no llm key",
+    });
+    let calls = 0;
+    const judge: Judge = async () => {
+      calls += 1;
+      throw new LlmBudgetError(1, 1);
+    };
+    expect(await run(checks, "P5-04", judge)).toMatchObject({
+      status: "BLOCKED",
+      note: "llm budget",
+    });
+    expect(calls).toBe(1);
   });
 });

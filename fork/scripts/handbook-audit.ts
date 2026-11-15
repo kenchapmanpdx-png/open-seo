@@ -6,7 +6,12 @@
  * report.json (K7), seo-geo-status.md (EP-5 draft), collected.json (collector
  * summary) and evidence/ (stored bodies). No DB writes.
  *
- *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--max-pages 60] [--out dir]
+ *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--max-pages 60] [--out dir] [--llm]
+ *
+ * --llm runs the LLM-class checks through the K5 judge (OpenRouter key from
+ * the environment or .env.local; model HANDBOOK_LLM_MODEL; cap
+ * HANDBOOK_LLM_BUDGET_USD) and writes llm-calls.json. Without it those items
+ * are BLOCKED `no llm key`.
  */
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -35,6 +40,17 @@ import {
   handbookModeSchema,
   siteTierSchema,
 } from "@/server/features/handbook/contracts/status";
+import {
+  LLM_BUDGET_ENV,
+  type Judge,
+  type JudgeInput,
+} from "@/server/features/handbook/contracts/llm";
+import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
+import {
+  createHandbookJudge,
+  HANDBOOK_LLM_MODEL_ENV,
+  parseBudgetUsd,
+} from "@/server/features/handbook/llm/model";
 import { createFsEvidenceStore } from "./lib/fs-evidence-store";
 import { writeFormatted } from "./lib/write-formatted";
 import { summarizeCollected } from "./lib/summarize-collected";
@@ -50,12 +66,13 @@ export async function runCliAudit(argv: string[]) {
       out: { type: "string" },
       "allow-private": { type: "boolean", default: false },
       sidecar: { type: "string" },
+      llm: { type: "boolean", default: false },
     },
   });
   const input = positionals[0];
   if (!input) {
     throw new Error(
-      "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--max-pages 60] [--out dir] [--sidecar http://127.0.0.1:4777]",
+      "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--max-pages 60] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm]",
     );
   }
   const mode = handbookModeSchema.parse(values.mode);
@@ -128,6 +145,17 @@ export async function runCliAudit(argv: string[]) {
       }
     },
   }));
+  const llmCalls: LlmCallLog[] = [];
+  // Judge inputs are kept even when a call fails: fork/scripts/llm-eval.ts
+  // builds its eval cases from them.
+  const llmInputs: JudgeInput[] = [];
+  const realJudge = values.llm ? cliJudge(llmCalls) : null;
+  const judge: Judge | null = realJudge
+    ? (judgeInput) => {
+        llmInputs.push(judgeInput);
+        return realJudge(judgeInput);
+      }
+    : null;
   const t0 = performance.now();
   const result = await runHandbook(
     {
@@ -139,6 +167,7 @@ export async function runCliAudit(argv: string[]) {
       collectors,
       checks: HANDBOOK_CHECKS,
       maxPages,
+      judge,
     },
     {
       projectId: "cli",
@@ -179,7 +208,41 @@ export async function runCliAudit(argv: string[]) {
       2,
     ),
   );
+  if (values.llm)
+    await writeFormatted(
+      join(outDir, "llm-calls.json"),
+      JSON.stringify(
+        {
+          totalUsd: llmCalls.reduce((sum, c) => sum + c.costUsd, 0),
+          calls: llmCalls,
+          inputs: llmInputs,
+        },
+        null,
+        2,
+      ),
+    );
   return { outDir, report, result, timing: { collectorsMs: timing, totalMs } };
+}
+
+export function cliJudge(calls: LlmCallLog[]) {
+  if (!process.env.OPENROUTER_API_KEY) {
+    // Loads keys into the environment without printing them.
+    try {
+      process.loadEnvFile(".env.local");
+    } catch {
+      // handled below
+    }
+  }
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("--llm needs OPENROUTER_API_KEY");
+  return createHandbookJudge({
+    access: { apiKey, baseURL: process.env.OPENROUTER_BASE_URL },
+    modelId: process.env[HANDBOOK_LLM_MODEL_ENV],
+    budgetUsd: parseBudgetUsd(process.env[LLM_BUDGET_ENV]),
+    log: async (call) => {
+      calls.push(call);
+    },
+  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

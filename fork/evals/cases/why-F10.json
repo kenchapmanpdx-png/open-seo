@@ -1,0 +1,108 @@
+{
+  "id": "why-F10",
+  "site": "why",
+  "golden": "F10",
+  "itemId": "P5-02",
+  "expected": "fail",
+  "input": {
+    "itemId": "P5-02",
+    "rubricId": "stats-consistency",
+    "pages": [
+      {
+        "url": "https://whyracingevents.com/",
+        "text": "Meta description: Join the Pacific Northwest's most supportive racing community. Discover 20+ premier marathons, half marathons, trail runs, and triathlons. What's your WHY?\nFrom your first 5K to your 50th triathlon, join the Pacific Northwest's most supportive triathlon and racing community.\nFilter by Distance All Events 5K 10K Half Marathon Marathon Ultra (25K+) Trail Run Triathlon No Events Found Try selecting different distance filters above."
+      },
+      {
+        "url": "https://whyracingevents.com/events",
+        "text": "Meta description: Upcoming running, trail and triathlon races in Washington and Oregon: 5K, 10K, half marathon, marathon and ultra. Dates, locations and registration."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/about.html",
+        "text": "Meta description: Meet WHY RACING EVENTS, the premier race production team in the Pacific Northwest. Discover our mission, meet our team, and register for your next event!\nProud Partners $3,000,000+ Donated to Charity 50,000+ Athletes Served 21 Annual Events 2014 Year Founded What's Your WHY?\nRead full story I began trail running in my 30’s and drifted to triathlons when I “grew up.” My love for being in the outdoors in a variety of conditions and sports culminated in beginning to work for WHY RACING EVENTS."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/training.html",
+        "text": "Meta description: Find a PNW running club, cycling team, triathlon group or coach for your next WHY RACING EVENT. Train smarter near Portland & Vancouver, WA.\nFrom your first 5K to your fastest marathon, we provide the resources, clubs, and community you need to cross every finish line with confidence.\nWe are 100% committed to providing you with the guidance, support, resources and various types of training programs to help inspire you every step of the way.\nStart with our First 5K Guide : an 8-week beginner plan and what to expect on race day."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/beneficiary.html",
+        "text": "Meta description: WHY RACING EVENTS proudly supports the PNW community. We've raised over $3 million for local charities. Race with purpose and give back today!\nProud Partners 3 M+ Total Raised 50 + Local Beneficiaries 2014 Giving Back Since Our Mission Every WHY RACING EVENTS is partnered with one or more local beneficiaries."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/partners.html",
+        "text": "Meta description: Reach 50,000+ active PNW consumers through WHY RACING EVENTS sponsorships: marathon, triathlon, 5K and duathlon packages with measurable ROI.\n50k+ Active Participants 14 Regional Events $112k Avg.\nHousehold Income 79% College Educated A High-Value Audience Our athletes aren't just active.\nYear-Round Scale With 14 events, we offer a full-year marketing calendar with a single contract.\nStop negotiating 20 tiny deals."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/community.html",
+        "text": "Meta description: Join the most supportive PNW racing community: local athletes, training teams and ambassadors across Washington and Oregon, from 5K to triathlon.\nCapped at 475 entries and frequently sells out.\n$600 / 6 months • $1,000 / 12 months Advertise Your Race Here List Your Event Running a local race or community fitness event in the PNW?"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/first-5k.html",
+        "text": "Meta description: Ready to run your first 5K? Discover the ultimate beginner's guide. Get free couch-to-5K training plans, expert race day tips, and PNW community support.\n\"What if I can't finish?\" Reality: If you can walk 45 minutes, you can finish.\nBy Week 8, you'll be ready to run 30 minutes, enough to finish any 5K.\nWeek 1 Walk More, Run a Little Day 1 Alternate 60s jog / 90s walk × 8 Day 2 Alternate 60s jog / 90s walk × 8 Day 3 Alternate 60s jog / 90s walk × 8 Tip: Go slower than you think you should.\nWeek 2 Building the Habit Day 1 Alternate 90s jog / 2min walk × 6 Day 2 Alternate 90s jog / 2min walk × 6 Day 3 Alternate 90s jog / 2min walk × 6 Tip: Rest days matter.\nWeek 3 First 3-Minute Run Day 1 90s jog , 90s walk , 3min jog , 3min walk × 2 Day 2 Repeat Day 1 Day 3 Repeat Day 1 Tip: 3 minutes will feel long.\nWeek 4 Extending the Runs Day 1 3min jog , 90s walk , 5min jog , 2.5min walk , 3min , 90s , 5min Day 2 Repeat Day 1 Day 3 Repeat Day 1 Tip: Halfway there!\nWeek 5 The 20-Minute Breakthrough Day 1 5min jog , 3min walk , 5min jog , 3min walk , 5min jog Day 2 8min jog , 5min walk , 8min jog Day 3 20min jog (no walking!) Tip: Day 3 is a milestone.\nWeek 6 Building Consistency Day 1 5min jog , 3min walk , 8min jog , 3min walk , 5min jog Day 2 10min jog , 3min walk , 10min jog Day 3 22min jog Tip: You're a runner now.\nWeek 7 Nearly There Day 1 25min jog Day 2 25min jog Day 3 25min jog Tip: Find your pace.\nDay 1 28min jog Day 2 28min jog Day 3 30min jog .\n2 Race Morning Arrive 45 min early."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/corporate-wellness.html",
+        "text": "Meta description: Boost morale and health at work: sponsor employee race entries, build a corporate team and compete for the Corporate Cup with WHY RACING EVENTS.\nBuild Your Team Whether your crew is chasing personal records or walking their first 5K together, our events give every employee a finish line to celebrate."
+      },
+      {
+        "url": "https://whyracingevents.com/events/couve-clover-run",
+        "text": "Meta description: Couve Clover Run (1 Mile, 3 Mile, 7 Mile, 10 Mile) in Vancouver, WA on Sunday, March 21, 2027. Registration, course details and race day info.\nRegister Now About Couve Clover Run Join us for the 11th Annual Couve Clover Run and celebrate in your festive green while running or walking 3, 7 or 10 miles along an extremely fast and scenic course to support local charities!\nRace Day Details Date Sunday, March 21, 2027 Location Vancouver Waterfront Park Distances 1 Mile, 3 Mile, 7 Mile, 10 Mile Race Type Running Registration Open Frequently Asked Questions What is the refund policy?\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/girlfriends-half-marathon-10k-6k",
+        "text": "Meta description: Girlfriends Half Marathon, 10K & 6K (6K • 10K • Half Marathon) in Vancouver, WA on Sunday, October 10, 2027.\nRegister Now About Girlfriends Half Marathon, 10K & 6K The Girlfriends Run is a half marathon, 10K and 6K on the Vancouver Waterfront, starting at 695 Waterfront Way.\nA 6K walk is offered, and virtual 6K, 10K and half marathon options let you take part from anywhere.\nTogether, the Girlfriends and the Pink Brigade have raised over $900,000.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/resolution-run",
+        "text": "Meta description: Resolution Run (5K Run/Walk • 10K Run/Walk) in La Center, WA on Saturday, January 9, 2027. Registration, course details and race day info.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/pacific-coast-running-festival",
+        "text": "Meta description: Pacific Coast Running Festival (Half Marathon • 10K • 5K) in Long Beach, WA on Saturday, September 25, 2027.\nRegister Now About Pacific Coast Running Festival The Pacific Coast Running Festival has something for the whole family including Sand Marathon, Half Marathon, 5K, 10K, Kids Dashes, and Tour de Pacific Bike!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/bigfoot-5k-10k",
+        "text": "Meta description: Bigfoot 5K/10K (10K • 5K) in Yacolt, WA on Sunday, July 4, 2027. Registration, course details and race day info.\nRegister Now About Bigfoot 5K/10K Join us for a scenic run through the heart of Sasquatch country!\nThe Bigfoot 5K/10K takes you through the beautiful Skamania County trails with stunning views of the Columbia River Gorge.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/santa-s-holiday-hustle-5k-dirty-santa-trail-run-10k",
+        "text": "Meta description: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K (5K, Dirty Santa 10K Trail Run) in Camas, WA on Saturday, December 19, 2026.\nRegister Now About Santa ' s Holiday Hustle 5K & Dirty Santa Trail Run 10K Join us to celebrate the holidays in an active and festive way!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/white-river-snow-shoe",
+        "text": "Meta description: White River Snow Shoe (4K, 8K) in Government Camp, OR on Sunday, January 31, 2027. Registration, course details and race day info.\nHood Meadows on Highway 35.\nChoose the 4K, one loop through the upper White River canyon, or the 8K, two loops of the same course."
+      },
+      {
+        "url": "https://whyracingevents.com/events/spring-classic-duathlon-half-marathon-10k-5k",
+        "text": "Meta description: Spring Classic Duathlon, Half Marathon, 10K & 5K (5K • 10K • Half Marathon) in Vancouver, WA on Saturday, May 1, 2027.\nRegister Now About Spring Classic Duathlon, Half Marathon, 10K & 5K Dust off the cob-webs and start the multi-sport racing season with the 41st Annual Spring Classic!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/hagg-lake-triathlon-trail-festival",
+        "text": "Meta description: Hagg Lake Triathlon & Trail Festival (Sprint Triathlon • Olympic Triathlon • Skullman 70.3) in Gaston, OR on Saturday, August 7, 2027.\nRegister Now About Hagg Lake Triathlon & Trail Festival Come race at the 45th Annual Hagg Lake Triathlon & Trail Festival!\nNow offering Off-Road Triathlon (USAT Cross Triathlon Nationals), Paddle Triathlon, Trail Half Marathon, and Trail 5K.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/crown-stub-100",
+        "text": "Meta description: Crown Stub 100 (100 Mile) in Buxton, OR on Saturday, April 24, 2027. Registration, course details and race day info.\nRegister Now About Crown Stub 100 Crown Stub 100 is Bivouac Racing ' s 100-mile ultramarathon based at Stub Stewart State Park near Buxton, Oregon, with over 7,000 feet of climbing.\nThe first leg heads north on the Banks-Vernonia State Trail, around Vernonia Lake, then east on the Crown Zellerbach Trail for roughly 20 miles, turning before Scappoose.\nAfter passing back through the park, runners head about 10 miles south on the Banks-Vernonia Trail to Banks and back, then finish with one 6.5-mile loop of the Stub Stewart Trail Challenge course.\nExpect mostly asphalt on the Banks-Vernonia Trail, mostly hard-packed gravel on the Crown Zellerbach Trail, and about 10 percent dirt trail inside the park.\n100-mile finishers earn a buckle.\nThe 100 starts at noon and the relay at 2 PM."
+      },
+      {
+        "url": "https://whyracingevents.com/events/stub-stewart-trail-challenge",
+        "text": "Meta description: Stub Stewart Trail Challenge (¼ Marathon, ½ Marathon, ¾ Marathon, Marathon, Ultra (5 loops)) in Buxton, OR on Sunday, April 25, 2027.\nGolden Truckers go to the top male and female finisher at each distance, and finishing five loops under the 10-hour cutoff earns a special award."
+      },
+      {
+        "url": "https://whyracingevents.com/events/battle-to-the-pacific",
+        "text": "Meta description: Battle to the Pacific (5K, 15K, 20K, Ruck Challenge (35 lb), Ruck/Vest Light Weight (20 lb+)) in Hammond, OR on Saturday, November 21, 2026.\nChoose a 5K, 15K or 20K run, or take on a ruck.\nThe Ruck Challenge carries a 35 lb pack (base weight, not counting food or water), and the Ruck/Vest Light Weight division carries 20 lb or more.\nThe Ruck Challenge measures you against the US Army standard of 12 miles with 35 lb in about three hours, and finishers who beat three hours earn a GET RUCKED \" Exceeding the Standard \" T-shirt.\nRucks start at 9:00 AM, the 15K and 20K at 9:15 AM, and the 5K at 9:30 AM."
+      },
+      {
+        "url": "https://whyracingevents.com/events/girlfriends-all-women-s-triathlon-fitness-festival",
+        "text": "Meta description: Girlfriends Triathlon & Fitness Festival (Sprint Triathlon • 5K) in Vancouver, WA on Sunday, July 11, 2027. Registration, course details and race day info.\nRegister Now About Girlfriends Triathlon & Fitness Festival The 30th Annual Girlfriends All-Women ' s Triathlon & Fitness Festival offers something for everyone - Sprint Triathlon, Duathlon & AquaBike, Relay teams and 5km run.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+      },
+      {
+        "url": "https://whyracingevents.com/events/hellz-bellz-ultra",
+        "text": "Meta description: Hellz Bellz Ultra (50-Mile Ultra, 50K (Hellz Gate — new 2026), Trail Marathon (Purgatory)) in Yacolt, WA on Saturday, July 3, 2027."
+      }
+    ],
+    "facts": {
+      "local": false
+    }
+  }
+}

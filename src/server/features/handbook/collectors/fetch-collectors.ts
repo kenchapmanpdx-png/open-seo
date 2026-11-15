@@ -231,6 +231,7 @@ export const llmsCollector: Collector<"llms"> = {
           ? await ctx.storeBody("llmsTxt", url, bytesOf(res.body), "text/plain")
           : null,
         links,
+        ...(ok ? { text: res.body.slice(0, 20_000) } : {}),
       });
     }
     const pages =
