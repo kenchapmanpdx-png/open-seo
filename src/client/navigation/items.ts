@@ -66,6 +66,11 @@ const projectNavItems = [
     icon: ClipboardCheck,
   },
   {
+    to: "/p/$projectId/handbook" as const,
+    label: "Handbook",
+    icon: ClipboardCheck,
+  }, // fork: ADR-010
+  {
     to: "/p/$projectId/ai-visibility" as const,
     label: "Prompt Tracking",
     icon: ChartLine,
@@ -154,6 +159,7 @@ export function getProjectNavGroups(projectId: string) {
         byPath("/p/$projectId/local-seo"),
         byPath("/p/$projectId/saved"),
         byPath("/p/$projectId/audit"),
+        byPath("/p/$projectId/handbook"), // fork: ADR-010
       ],
     },
     {
