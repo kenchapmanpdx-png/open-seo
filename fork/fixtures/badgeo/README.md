@@ -39,6 +39,8 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/index.html` (`_expect.json`)             | Static server answers 200 for `/index.html` (duplicate of `/`)                          | P3-03          |
 | `/about` (`_expect.json`)                  | Slash-toggled probe of `/about/` answers 200 (both slash forms live)                    | P3-02          |
 
+Unit tests only (no BadGEO page): hreflang P3-24 / variant URLs P3-25 (single-language site).
+
 Status: B1 R5 exemplars pass. `pnpm exec tsx fork/scripts/badgeo-run.ts` exits 0
 (every expectation fires on its page, nothing else fires).
 
