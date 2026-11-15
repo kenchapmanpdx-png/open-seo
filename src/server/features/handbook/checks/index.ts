@@ -11,6 +11,11 @@ import { hiddenPagesCheck } from "./hidden-pages";
 import { imageMarkupCheck } from "./image-markup";
 import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
+import {
+  labMetricsCheck,
+  pageWeightCheck,
+  resourceHintsCheck,
+} from "./lab-performance";
 import { listNavigationCheck } from "./list-navigation";
 import { llmsMirrorsCheck } from "./llms-mirrors";
 import { notFoundCheck } from "./not-found";
@@ -71,4 +76,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   firstScreenActionCheck,
   consentLcpCheck,
   renderResourcesCheck,
+  labMetricsCheck,
+  pageWeightCheck,
+  resourceHintsCheck,
 ];
