@@ -1,6 +1,9 @@
 import { sort } from "remeda";
 import { Parser } from "htmlparser2";
-import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import type {
+  PageMarkup,
+  PageSnapshot,
+} from "@/server/features/handbook/contracts/collectors";
 
 /**
  * One streaming pass over raw HTML → the parsed facts every raw-HTML check
@@ -10,7 +13,7 @@ import type { PageSnapshot } from "@/server/features/handbook/contracts/collecto
  */
 export type HtmlFacts = Pick<
   PageSnapshot,
-  "head" | "h1" | "links" | "images"
+  "head" | "h1" | "links" | "images" | "markup"
 > & {
   jsonLdBlocks: string[];
   words: number;
@@ -19,6 +22,12 @@ export type HtmlFacts = Pick<
 };
 
 const SKIP_TEXT = new Set(["script", "style", "noscript", "template", "svg"]);
+const LANDMARKS = ["header", "nav", "footer", "aside"] as const;
+const isLandmark = (tag: string): tag is (typeof LANDMARKS)[number] =>
+  (LANDMARKS as readonly string[]).includes(tag);
+const HEADING = /^h([1-6])$/;
+const MAX_TEXT = 20_000;
+type Landmark = PageMarkup["headings"][number]["landmark"];
 const STRUCTURAL = new Set([
   "header",
   "nav",
@@ -50,7 +59,19 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     hreflang: [],
   };
   const h1: string[] = [];
-  const links: { href: string; text: string; rel: string | null }[] = [];
+  const links: HtmlFacts["links"][number][] = [];
+  const headings: PageMarkup["headings"][number][] = [];
+  const navLabels: (string | null)[] = [];
+  const scripts: PageMarkup["scripts"][number][] = [];
+  const headLinks: PageMarkup["headLinks"][number][] = [];
+  const buttons: PageMarkup["buttons"][number][] = [];
+  const counts = { tables: 0, lists: 0, forms: 0, iframes: 0, videos: 0 };
+  let mainCount = 0;
+  let textLength = 0;
+  const textParts: string[] = [];
+  let headingBuf: { level: number; landmark: Landmark; text: string[] } | null =
+    null;
+  let button: { ariaLabel: string | null; text: string[] } | null = null;
   const images: HtmlFacts["images"][number][] = [];
   const jsonLdBlocks: string[] = [];
   const hreflang: { lang: string; href: string }[] = [];
@@ -60,8 +81,13 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   let skipDepth = 0;
   let titleBuf: string[] | null = null;
   let h1Buf: string[] | null = null;
-  let anchor: { href: string; rel: string | null; text: string[] } | null =
-    null;
+  let anchor: {
+    href: string;
+    rel: string | null;
+    target: string | null;
+    ariaLabel: string | null;
+    text: string[];
+  } | null = null;
   let jsonLdBuf: string[] | null = null;
 
   const resolve = (href: string) => {
@@ -72,6 +98,67 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     }
   };
 
+  const landmark = (): Landmark => {
+    for (let i = stack.length - 1; i >= 0; i -= 1) {
+      const tag = stack[i] ?? "";
+      if (isLandmark(tag)) return tag;
+    }
+    return null;
+  };
+
+  function readMarkupOpen(name: string, attrs: Record<string, string>) {
+    const level = HEADING.exec(name)?.[1];
+    if (level)
+      headingBuf = { level: Number(level), landmark: landmark(), text: [] };
+    if (name === "main") mainCount += 1;
+    if (name === "nav")
+      navLabels.push(attrs["aria-label"] ?? attrs["aria-labelledby"] ?? null);
+    if (name === "script") {
+      scripts.push({
+        src: attrs.src ? resolve(attrs.src) : null,
+        type: attrs.type ?? null,
+        async: "async" in attrs,
+        defer: "defer" in attrs,
+        inHead: stack.includes("head"),
+      });
+    }
+    if (name === "link" && attrs.href) {
+      const rel = (attrs.rel ?? "").toLowerCase();
+      if (!/canonical/.test(rel) && !attrs.hreflang)
+        headLinks.push({
+          rel,
+          href: resolve(attrs.href),
+          as: attrs.as ?? null,
+          type: attrs.type ?? null,
+        });
+    }
+    if (name === "button")
+      button = { ariaLabel: attrs["aria-label"] ?? null, text: [] };
+    if (name === "table") counts.tables += 1;
+    if (name === "ul" || name === "ol" || name === "dl") counts.lists += 1;
+    if (name === "form") counts.forms += 1;
+    if (name === "iframe") counts.iframes += 1;
+    if (name === "video") counts.videos += 1;
+  }
+
+  function readMarkupClose(name: string) {
+    if (HEADING.test(name) && headingBuf) {
+      headings.push({
+        level: headingBuf.level,
+        text: collapse(headingBuf.text.join("")),
+        landmark: headingBuf.landmark,
+      });
+      headingBuf = null;
+    }
+    if (name === "button" && button) {
+      buttons.push({
+        text: collapse(button.text.join(" ")),
+        ariaLabel: button.ariaLabel,
+      });
+      button = null;
+    }
+  }
+
   const parser = new Parser(
     {
       onopentag(name, attrs) {
@@ -80,6 +167,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
           skeletonParts.add(stack.filter((t) => STRUCTURAL.has(t)).join("/"));
         }
         if (name === "html" && attrs.lang) head.lang = attrs.lang;
+        readMarkupOpen(name, attrs);
         if (name === "title" && head.title === null) titleBuf = [];
         if (name === "h1") h1Buf = [];
         if (name === "script") {
@@ -94,12 +182,16 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
           anchor = {
             href: resolve(attrs.href),
             rel: attrs.rel ?? null,
+            target: attrs.target ?? null,
+            ariaLabel: attrs["aria-label"] ?? null,
             text: [],
           };
         }
         if (name === "img") {
           images.push({
             src: resolve(attrs.src ?? ""),
+            dataSrc: attrs["data-src"] ? resolve(attrs["data-src"]) : null,
+            srcset: attrs.srcset ?? null,
             alt: attrs.alt ?? null,
             width: attrs.width ?? null,
             height: attrs.height ?? null,
@@ -115,6 +207,12 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         if (skipDepth > 0) return;
         if (h1Buf) h1Buf.push(text);
         if (anchor) anchor.text.push(text);
+        if (headingBuf) headingBuf.text.push(text);
+        if (button) button.text.push(text);
+        if (textLength < MAX_TEXT) {
+          textParts.push(text);
+          textLength += text.length;
+        }
         words += countWords(text);
       },
       onclosetag(name) {
@@ -125,6 +223,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
           head.title = collapse(titleBuf.join(""));
           titleBuf = null;
         }
+        readMarkupClose(name);
         if (name === "h1" && h1Buf) {
           h1.push(collapse(h1Buf.join("")));
           h1Buf = null;
@@ -139,6 +238,8 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
             href: anchor.href,
             text: collapse(anchor.text.join(" ")),
             rel: anchor.rel,
+            target: anchor.target,
+            ariaLabel: anchor.ariaLabel,
           });
           anchor = null;
         }
@@ -158,6 +259,16 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     h1,
     links,
     images,
+    markup: {
+      headings,
+      mainCount,
+      navLabels,
+      scripts,
+      headLinks,
+      buttons,
+      counts,
+      text: collapse(textParts.join(" ")).slice(0, MAX_TEXT),
+    },
     jsonLdBlocks,
     words,
     skeleton: sort([...skeletonParts], (a, b) => a.localeCompare(b)).join("|"),

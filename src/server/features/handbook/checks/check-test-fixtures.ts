@@ -27,6 +27,7 @@ export function context(collected: Partial<CollectedData>): CheckContext {
       headers: off,
       variants: off,
       botFetch: off,
+      outbound: off,
       jsonld: off,
       templates: off,
       render: off,
@@ -54,6 +55,7 @@ export function snapshot(
     contentType: "text/html",
     rawKey: null,
     wordsRaw: 100,
+    bytesRaw: 1000,
     head: {
       title: null,
       metaDescription: null,
@@ -73,9 +75,21 @@ export function snapshot(
       href: new URL(href, ORIGIN).href,
       text: "",
       rel: null,
+      target: null,
+      ariaLabel: null,
     })),
     images: [],
     xRobotsTag: null,
+    markup: {
+      headings: [],
+      mainCount: 1,
+      navLabels: [],
+      scripts: [],
+      headLinks: [],
+      buttons: [],
+      counts: { tables: 0, lists: 0, forms: 0, iframes: 0, videos: 0 },
+      text: "",
+    },
   };
 }
 
