@@ -1,3 +1,4 @@
+import { sort } from "remeda";
 import type { FollowupBatch } from "./followups";
 
 /**
@@ -58,16 +59,17 @@ export function renderResultsSection(
   reportDate: string,
   esc: (text: string) => string,
 ): string {
-  const checks: Check[] = batches
+  const done = batches
     .flatMap((b) => b.checks.map((c) => ({ ...c, fixedAt: b.fixedAt })))
     .filter(
       (c) =>
         c.status === "done" &&
         c.completedAt !== null &&
         c.completedAt <= reportDate,
-    )
-    .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""))
-    .slice(0, MAX_CHECKS);
+    );
+  const checks: Check[] = sort(done, (a, b) =>
+    (b.completedAt ?? "").localeCompare(a.completedAt ?? ""),
+  ).slice(0, MAX_CHECKS);
   if (checks.length === 0) return "";
   const parts = ["<h2>Results since last report</h2>"];
   for (const check of checks) {

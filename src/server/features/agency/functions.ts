@@ -9,6 +9,7 @@ import {
 } from "@/server/features/handbook/registry";
 import { agencyBrandSchema, agencyClientSchema } from "./contracts";
 import { OutcomeService } from "./outcomeService";
+import { OverviewService } from "./overviewService";
 
 // Agency settings server functions (ADR-017 §1–2). `projectId` in each
 // validator triggers project authorization; the service scopes by org too.
@@ -96,4 +97,14 @@ export const getOutcomeFollowupsMd = createServerFn({ method: "POST" })
       REGISTRY,
       HANDBOOK_VERSION,
     ),
+  );
+
+export const getProjectOverview = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(z.object({ projectId }))
+  .handler(async ({ context }) =>
+    OverviewService.get({
+      projectId: context.projectId,
+      organizationId: context.organizationId,
+    }),
   );
