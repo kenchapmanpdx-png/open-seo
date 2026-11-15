@@ -1,0 +1,48 @@
+{
+  "id": "why-PASS-02",
+  "site": "why",
+  "golden": "PASS-02",
+  "itemId": "P4-02",
+  "expected": "pass",
+  "input": {
+    "itemId": "P4-02",
+    "rubricId": "titles-h1",
+    "pages": [
+      {
+        "url": "https://whyracingevents.com/events/ho-ho-5k",
+        "text": "Title: Ho Ho 5K in Portland, OR | WHY RACING EVENTS\nMeta description: Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026. Registration, course details and race day info.\nH1: Ho Ho 5K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/bigfoot-5k-10k",
+        "text": "Title: Bigfoot 5K/10K in Yacolt, WA | WHY RACING EVENTS\nMeta description: Bigfoot 5K/10K (10K • 5K) in Yacolt, WA on Sunday, July 4, 2027. Registration, course details and race day info.\nH1: Bigfoot 5K/10K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/scary-run",
+        "text": "Title: Scary Run: Not on the Current Race Calendar\nMeta description: Scary Run in Washougal, WA is not on the current WHY RACING EVENTS calendar. See upcoming races in Washington and Oregon.\nH1: Scary Run"
+      },
+      {
+        "url": "https://whyracingevents.com/events/couve-clover-run",
+        "text": "Title: Couve Clover Run in Vancouver, WA | WHY RACING EVENTS\nMeta description: Couve Clover Run (1 Mile, 3 Mile, 7 Mile, 10 Mile) in Vancouver, WA on Sunday, March 21, 2027. Registration, course details and race day info.\nH1: Couve Clover Run"
+      },
+      {
+        "url": "https://whyracingevents.com/events/girlfriends-half-marathon-10k-6k",
+        "text": "Title: Girlfriends Run Half Marathon, 10K & 6K in Vancouver, WA\nMeta description: Girlfriends Half Marathon, 10K & 6K (6K • 10K • Half Marathon) in Vancouver, WA on Sunday, October 10, 2027.\nH1: Girlfriends Half Marathon, 10K & 6K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/resolution-run",
+        "text": "Title: Resolution Run in La Center, WA | WHY RACING EVENTS\nMeta description: Resolution Run (5K Run/Walk • 10K Run/Walk) in La Center, WA on Saturday, January 9, 2027. Registration, course details and race day info.\nH1: Resolution Run"
+      },
+      {
+        "url": "https://whyracingevents.com/events/pacific-coast-running-festival",
+        "text": "Title: Pacific Coast Running Festival in Long Beach, WA\nMeta description: Pacific Coast Running Festival (Half Marathon • 10K • 5K) in Long Beach, WA on Saturday, September 25, 2027.\nH1: Pacific Coast Running Festival"
+      },
+      {
+        "url": "https://whyracingevents.com/events/santa-s-holiday-hustle-5k-dirty-santa-trail-run-10k",
+        "text": "Title: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K in Camas\nMeta description: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K (5K, Dirty Santa 10K Trail Run) in Camas, WA on Saturday, December 19, 2026.\nH1: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K"
+      }
+    ],
+    "facts": {
+      "local": false
+    }
+  }
+}

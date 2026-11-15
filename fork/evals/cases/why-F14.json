@@ -1,0 +1,96 @@
+{
+  "id": "why-F14",
+  "site": "why",
+  "golden": "F14",
+  "itemId": "P4-02",
+  "expected": "fail",
+  "input": {
+    "itemId": "P4-02",
+    "rubricId": "titles-h1",
+    "pages": [
+      {
+        "url": "https://whyracingevents.com/",
+        "text": "Title: WHY RACING EVENTS | Premier PNW Marathons, Triathlons & 5Ks\nMeta description: Join the Pacific Northwest's most supportive racing community. Discover 20+ premier marathons, half marathons, trail runs, and triathlons. What's your WHY?\nH1: PREMIER PNW RACING: RUN. RIDE. REMEMBER."
+      },
+      {
+        "url": "https://whyracingevents.com/events",
+        "text": "Title: PNW Race Calendar: Running, Trail & Triathlon | WHY RACING EVENTS\nMeta description: Upcoming running, trail and triathlon races in Washington and Oregon: 5K, 10K, half marathon, marathon and ultra. Dates, locations and registration.\nH1: Upcoming Races"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/about.html",
+        "text": "Title: About WHY RACING EVENTS | PNW Race Production Team\nMeta description: Meet WHY RACING EVENTS, the premier race production team in the Pacific Northwest. Discover our mission, meet our team, and register for your next event!\nH1: THE STORY OF PNW RACING: WHY."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/training.html",
+        "text": "Title: PNW Race Training Programs & Coaching | WHY RACING EVENTS\nMeta description: Find a PNW running club, cycling team, triathlon group or coach for your next WHY RACING EVENT. Train smarter near Portland & Vancouver, WA.\nH1: PNW Training Programs: Master Your Journey."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/beneficiary.html",
+        "text": "Title: PNW Race Beneficiaries & Fundraising | WHY RACING EVENTS\nMeta description: WHY RACING EVENTS proudly supports the PNW community. We've raised over $3 million for local charities. Race with purpose and give back today!\nH1: PNW Race Charities: Racing for a Cause."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/volunteers.html",
+        "text": "Title: PNW Race Volunteer Opportunities | WHY RACING EVENTS\nMeta description: Join the WHY RACING EVENTS volunteer crew. Support PNW athletes, earn race credits and experience the best racing in Washington and Oregon.\nH1: PNW Race Volunteer Opportunities: Be Part of the Spirit."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/locations.html",
+        "text": "Title: PNW Race Travel Guide & Event Locations | WHY RACING EVENTS\nMeta description: Plan your PNW race weekend: top-rated hotels, dining and attractions near marathon and triathlon venues across Washington and Oregon.\nH1: PNW Travel Guide: Race, Stay, Explore."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/partners.html",
+        "text": "Title: PNW Race Sponsorship Opportunities | WHY RACING EVENTS\nMeta description: Reach 50,000+ active PNW consumers through WHY RACING EVENTS sponsorships: marathon, triathlon, 5K and duathlon packages with measurable ROI.\nH1: PNW RACE SPONSORSHIP WHY RACING EVENTS"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/community.html",
+        "text": "Title: PNW Racing Community & Athlete Teams | WHY RACING EVENTS\nMeta description: Join the most supportive PNW racing community: local athletes, training teams and ambassadors across Washington and Oregon, from 5K to triathlon.\nH1: Partner Race Companies: Stronger Together."
+      },
+      {
+        "url": "https://whyracingevents.com/pages/first-5k.html",
+        "text": "Title: Your First 5K Guide | Training Plans & PNW Race Day Tips\nMeta description: Ready to run your first 5K? Discover the ultimate beginner's guide. Get free couch-to-5K training plans, expert race day tips, and PNW community support.\nH1: Your Guide to Running Your First 5K | Training Plans & PNW Race Tips"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/corporate-wellness.html",
+        "text": "Title: Corporate Wellness Programs | WHY RACING EVENTS\nMeta description: Boost morale and health at work: sponsor employee race entries, build a corporate team and compete for the Corporate Cup with WHY RACING EVENTS.\nH1: Corporate Wellness."
+      },
+      {
+        "url": "https://whyracingevents.com/events/ho-ho-5k",
+        "text": "Title: Ho Ho 5K in Portland, OR | WHY RACING EVENTS\nMeta description: Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026. Registration, course details and race day info.\nH1: Ho Ho 5K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/bigfoot-5k-10k",
+        "text": "Title: Bigfoot 5K/10K in Yacolt, WA | WHY RACING EVENTS\nMeta description: Bigfoot 5K/10K (10K • 5K) in Yacolt, WA on Sunday, July 4, 2027. Registration, course details and race day info.\nH1: Bigfoot 5K/10K"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/admin/races.html",
+        "text": "Title: Race Admin | WHY RACING EVENTS\nMeta description: Staff sign-in for WHY RACING EVENTS race management.\nH1: Race Admin Panel"
+      },
+      {
+        "url": "https://whyracingevents.com/events/scary-run",
+        "text": "Title: Scary Run: Not on the Current Race Calendar\nMeta description: Scary Run in Washougal, WA is not on the current WHY RACING EVENTS calendar. See upcoming races in Washington and Oregon.\nH1: Scary Run"
+      },
+      {
+        "url": "https://whyracingevents.com/events/couve-clover-run",
+        "text": "Title: Couve Clover Run in Vancouver, WA | WHY RACING EVENTS\nMeta description: Couve Clover Run (1 Mile, 3 Mile, 7 Mile, 10 Mile) in Vancouver, WA on Sunday, March 21, 2027. Registration, course details and race day info.\nH1: Couve Clover Run"
+      },
+      {
+        "url": "https://whyracingevents.com/events/girlfriends-half-marathon-10k-6k",
+        "text": "Title: Girlfriends Run Half Marathon, 10K & 6K in Vancouver, WA\nMeta description: Girlfriends Half Marathon, 10K & 6K (6K • 10K • Half Marathon) in Vancouver, WA on Sunday, October 10, 2027.\nH1: Girlfriends Half Marathon, 10K & 6K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/resolution-run",
+        "text": "Title: Resolution Run in La Center, WA | WHY RACING EVENTS\nMeta description: Resolution Run (5K Run/Walk • 10K Run/Walk) in La Center, WA on Saturday, January 9, 2027. Registration, course details and race day info.\nH1: Resolution Run"
+      },
+      {
+        "url": "https://whyracingevents.com/events/pacific-coast-running-festival",
+        "text": "Title: Pacific Coast Running Festival in Long Beach, WA\nMeta description: Pacific Coast Running Festival (Half Marathon • 10K • 5K) in Long Beach, WA on Saturday, September 25, 2027.\nH1: Pacific Coast Running Festival"
+      },
+      {
+        "url": "https://whyracingevents.com/events/santa-s-holiday-hustle-5k-dirty-santa-trail-run-10k",
+        "text": "Title: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K in Camas\nMeta description: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K (5K, Dirty Santa 10K Trail Run) in Camas, WA on Saturday, December 19, 2026.\nH1: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K"
+      }
+    ],
+    "facts": {
+      "local": false
+    }
+  }
+}
