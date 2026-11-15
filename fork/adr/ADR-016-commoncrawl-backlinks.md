@@ -77,3 +77,7 @@ K12 in `src/server/features/backlinks/providers/commoncrawl/contracts.ts`: `ccRe
 - Unit tests: release-id parse/compare, reverse domain, summary/new/lost set logic.
 - Query test on a tiny synthetic vertices/edges pair (≤ 10 rows, gz) under `fork/fixtures/commoncrawl/` — runs only in the fork script test (DuckDB native).
 - Live: one real release for one project (P6 exit). Long download = expected, not BLOCKED.
+
+## Amendments (B5 R4a, schema)
+
+- `cc_release.window` is `window_label` (WINDOW is reserved in Postgres). `cc_release.bytes` is `bigint` on Postgres (release files exceed 2 GB). `cc_backlink_domain` is also unique on (`summary_id`, `linking_domain`).
