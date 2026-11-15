@@ -4,10 +4,10 @@ Status: `todo` · `doing` · `done` · `ESCALATE` · `BLOCKED-KEN`. HEAVY writes
 
 | WO        | Batch | Title                                                                                                 | Depends         | Status | Commit | Note                                     |
 | --------- | ----- | ----------------------------------------------------------------------------------------------------- | --------------- | ------ | ------ | ---------------------------------------- |
-| WO-B2-001 | B2    | Harness: badgeo-run `--only`, golden report writer, per-audit timing                                  |                 | done   |        |                                          |
-| WO-B2-002 | B2    | CRAWL: host/protocol/slash/index variants (one-hop permanent redirects)                               | WO-B2-001       | todo   |        | P3-01, P3-02, P3-03                      |
-| WO-B2-003 | B2    | CRAWL: canonical form (self-canonical, links = canonical = <loc> form, tracking params)               | WO-B2-001       | todo   |        | P3-04                                    |
-| WO-B2-004 | B2    | CRAWL: real 404s + 404 template                                                                       | WO-B2-001       | todo   |        | P3-10, P3-11                             |
+| WO-B2-001 | B2    | Harness: badgeo-run `--only`, golden report writer, per-audit timing                                  |                 | done | f41753fd |                                          |
+| WO-B2-002 | B2    | CRAWL: host/protocol/slash/index variants (one-hop permanent redirects)                               | WO-B2-001       | done | a8c36595 | P3-01, P3-02, P3-03                      |
+| WO-B2-003 | B2    | CRAWL: canonical form (self-canonical, links = canonical = <loc> form, tracking params)               | WO-B2-001       | done | 56bf2cd3 | P3-04; protocol-relative canonical not detectable (html-facts resolves it); canonical-mismatch not added to sitemap (would double-fire P3-12) |
+| WO-B2-004 | B2    | CRAWL: real 404s + 404 template                                                                       | WO-B2-001       | done | 1c0a5a4c | P3-10, P3-11; unit tests only: no collector probe under a template dir (collector not in Files), so _softfound.json skipped |
 | WO-B2-005 | B2    | CRAWL: links to redirected/retired URLs; moved URLs → homepage                                        | WO-B2-001       | todo   |        | P3-08, P3-05, P3-07                      |
 | WO-B2-006 | B2    | CRAWL: crawl coverage, detail→index links, URL slugs, header nav hubs                                 | WO-B2-001       | todo   |        | P3-13, P2-10, P2-12, P2-11               |
 | WO-B2-007 | B2    | ROBOTS/HEADERS: hidden pages + admin paths (noindex vs Disallow, never both)                          | WO-B2-001       | todo   |        | P3-14, P3-16                             |
