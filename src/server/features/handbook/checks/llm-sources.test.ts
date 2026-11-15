@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { Judge } from "@/server/features/handbook/contracts/llm";
+import type { SafeFetch } from "@/server/features/handbook/contracts/collectors";
+import type {
+  Judge,
+  JudgeInput,
+} from "@/server/features/handbook/contracts/llm";
 import {
   llmContext,
   statusOf,
@@ -15,6 +19,17 @@ const pages = { pages: { status: "ok" as const, snapshots: [page] } };
 const noCall: Judge = async () => {
   throw new Error("judge must not be called");
 };
+
+const fetchOffsite: SafeFetch = async (url) => ({
+  url,
+  finalUrl: url,
+  status: 200,
+  headers: [],
+  body: "<html><body><p>Of those asked, 87% of runners use a written plan.</p></body></html>",
+  truncated: false,
+  redirectChain: [],
+  timingMs: 1,
+});
 
 describe("LLM source check", () => {
   it("opens P5-03 when the judge fails an uncited claim", async () => {
@@ -46,5 +61,36 @@ describe("LLM source check", () => {
       llmContext({ pages: { status: "ok", snapshots: [plain] } }, noCall),
     );
     expect(statusOf(result, "P5-03")).toBe("NA");
+  });
+
+  it("fetches the cited page and quotes the matching passage to the judge", async () => {
+    const source = "https://research.example.org/runners";
+    const cited = {
+      ...page,
+      links: [
+        {
+          href: source,
+          text: "2023 survey",
+          rel: null,
+          target: null,
+          ariaLabel: null,
+        },
+      ],
+    };
+    const seen: JudgeInput[] = [];
+    const result = await sourceCheck.run({
+      ...llmContext(
+        { pages: { status: "ok", snapshots: [cited] } },
+        stubJudge({}, seen),
+      ),
+      fetchOffsite,
+    });
+    expect(seen[0].pages[0].text).toContain(
+      'source text: "Of those asked, 87% of runners use a written plan."',
+    );
+    expect(result.evidence.find((e) => e.url === source)?.excerpt).toContain(
+      "87% of runners",
+    );
+    expect(result.statuses[0].note).toContain("1 cited page(s) fetched");
   });
 });

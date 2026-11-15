@@ -34,6 +34,11 @@ type Pair = {
   render: RenderData["pages"][number];
 };
 
+const formsOf = (p: Pair) => ({
+  raw: p.snap.markup.counts.forms,
+  rendered: p.render.js.forms,
+});
+
 const numbers = (p: Pair) =>
   `raw (JS off, server HTML) ${p.raw} words · rendered ${p.rendered} words · browser JS off ${p.noJs} words`;
 
@@ -120,16 +125,47 @@ export const renderParityCheck: HandbookCheck = {
         passRefs(),
       );
 
-    // P2-08 — comparison exists per template.
+    // P2-08 — "Raw HTML (JS off) vs rendered DOM compared per template
+    // (§17)": the comparison exists per template, and (sidecar ≥ 1.3.0) a
+    // form that only exists after JavaScript is reported.
+    const jsForms = pairs.filter((p) => {
+      const f = formsOf(p);
+      return f.rendered !== undefined && f.rendered > f.raw;
+    });
+    const formLine = (p: Pair) =>
+      `${p.url} — forms: raw HTML ${formsOf(p).raw} · rendered ${formsOf(p).rendered ?? "?"}`;
     const rendered = new Set(pairs.map((p) => p.templateKey));
     const missing = templateList.filter((t) => !rendered.has(t.key));
-    out.pass(
-      "P2-08",
-      missing.length === 0
-        ? `raw vs rendered compared for all ${pairs.length} template samples`
-        : `raw vs rendered compared for ${pairs.length} templates; not rendered (sample cap): ${missing.map((t) => t.key).join(", ")}`,
-      passRefs(),
-    );
+    if (jsForms.length > 0)
+      out.finding({
+        itemIds: ["P2-08"],
+        severity: "S4",
+        title: "Form exists only after JavaScript runs",
+        detail: `${jsForms.map(formLine).join("\n")}\nCrawlers and visitors without JavaScript see no form (contact, booking or search).`,
+        fix: "Put the <form> (fields, labels and a working action URL) in the server HTML; let JavaScript enhance it instead of creating it.",
+        fixability: "FIXABLE",
+        effort: "M",
+        urls: jsForms.map((p) => p.url),
+        evidenceRefs: jsForms
+          .slice(0, 5)
+          .flatMap((p) => [
+            out.evidence("rawHtml", p.url, formLine(p), p.snap.rawKey),
+            out.evidence(
+              "renderedDom",
+              p.url,
+              formLine(p),
+              p.render.js.renderedKey,
+            ),
+          ]),
+      });
+    else
+      out.pass(
+        "P2-08",
+        missing.length === 0
+          ? `raw vs rendered compared for all ${pairs.length} template samples`
+          : `raw vs rendered compared for ${pairs.length} templates; not rendered (sample cap): ${missing.map((t) => t.key).join(", ")}`,
+        passRefs(),
+      );
 
     // P2-09 — word counts within ~20% (both directions).
     const drift = pairs.filter((p) => {

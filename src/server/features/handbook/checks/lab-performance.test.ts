@@ -120,4 +120,50 @@ describe("pageWeightCheck", () => {
     expect(statusOf(result, "P7-05")).toBe("OPEN");
     expect(result.findings[0].detail).toContain("Google Fonts");
   });
+
+  const lhPage = (renderBlocking?: { url: string; wastedMs: number }[]) => ({
+    status: "ok" as const,
+    pages: [
+      {
+        url,
+        formFactor: "mobile" as const,
+        environment: "test",
+        performance: 0.9,
+        lcpMs: 1000,
+        cls: 0,
+        tbtMs: 0,
+        lcpElement: null,
+        storageKey: "lh",
+        ...(renderBlocking ? { renderBlocking } : {}),
+      },
+    ],
+  });
+
+  it("lists Lighthouse render-blocking URLs ≥ 500 ms as P7-05 evidence", async () => {
+    const css = `${ORIGIN}/app.css`;
+    const result = await pageWeightCheck.run(
+      context({
+        pages: { status: "ok", snapshots: [withMarkup({})] },
+        lighthouse: lhPage([
+          { url: css, wastedMs: 820 },
+          { url: `${ORIGIN}/tiny.css`, wastedMs: 40 },
+        ]),
+      }),
+    );
+    expect(statusOf(result, "P7-05")).toBe("OPEN");
+    expect(result.findings[0].detail).not.toContain("tiny.css");
+    expect(result.evidence.find((e) => e.kind === "lighthouse")?.excerpt).toBe(
+      `${css} — wastedMs 820`,
+    );
+  });
+
+  it("keeps P7-05 PASS when Lighthouse has no renderBlocking field", async () => {
+    const result = await pageWeightCheck.run(
+      context({
+        pages: { status: "ok", snapshots: [withMarkup({})] },
+        lighthouse: lhPage(),
+      }),
+    );
+    expect(statusOf(result, "P7-05")).toBe("PASS");
+  });
 });
