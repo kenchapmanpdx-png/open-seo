@@ -2,15 +2,18 @@ import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import { botParityCheck } from "./bot-parity";
 import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
+import { headTagsCheck } from "./head-tags";
 import { hiddenPagesCheck } from "./hidden-pages";
 import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { listNavigationCheck } from "./list-navigation";
 import { notFoundCheck } from "./not-found";
+import { pageStructureCheck } from "./page-structure";
 import { redirectedLinksCheck } from "./redirected-links";
 import { robotsGroupsCheck } from "./robots-groups";
 import { securityHeadersCheck } from "./security-headers";
 import { sitemapLastmodCheck } from "./sitemap-lastmod";
+import { socialMetaCheck } from "./social-meta";
 import { urlInventoryCheck } from "./url-inventory";
 import { urlVariantsCheck } from "./url-variants";
 
@@ -34,4 +37,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   listNavigationCheck,
   hreflangCheck,
   sitemapLastmodCheck,
+  headTagsCheck,
+  socialMetaCheck,
+  pageStructureCheck,
 ];

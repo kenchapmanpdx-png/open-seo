@@ -15,7 +15,7 @@ Status: `todo` · `doing` · `done` · `ESCALATE` · `BLOCKED-KEN`. HEAVY writes
 | WO-B2-009 | B2    | CRAWL: hreflang reciprocity + product variant URL contract (deterministic part)                       | WO-B2-001       | done | 731cafa3 | P3-24, P3-25                             |
 | WO-B2-010 | B2    | CRAWL: sitemap lastmod provenance (deterministic part)                                                | WO-B2-001       | done | 715093eb | P3-17                                    |
 | WO-B2-011 | B2    | CRAWL: titles, meta descriptions, H1, viewport, hard-coded years                                      | WO-B2-001       | done | 8d0b55db | P4-01, P4-03, P4-04, P4-06               |
-| WO-B2-012 | B2    | CRAWL: Open Graph / Twitter, article OG, max-image-preview                                            | WO-B2-001       | todo   |        | P4-09, P4-10, P4-11                      |
+| WO-B2-012 | B2    | CRAWL: Open Graph / Twitter, article OG, max-image-preview                                            | WO-B2-001       | done | 675270a7 | P4-09, P4-10, P4-11                      |
 | WO-B2-013 | B2    | CRAWL: heading order, one <main>, nav/footer labels; structured content in tables/lists               | WO-B2-001       | todo   |        | P4-08, P5-12                             |
 | WO-B2-014 | B2    | BOTFETCH/CRAWL: outbound collector + outbound link health; target=\_blank rel                         | WO-B2-001       | todo   |        | P5-13, P4-12                             |
 | WO-B2-015 | B2    | CRAWL: raw-HTML copy hygiene — loading/error strings, address/tel/hours, contact channels             | WO-B2-001       | todo   |        | P2-04, P5-08, P5-16                      |
