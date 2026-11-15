@@ -36,6 +36,13 @@ describe("thirdPartyCheck", () => {
     expect(statusOf(result, "P7-04")).toBe("OPEN");
   });
 
+  it("blocks P7-04 instead of passing when render evidence is missing", async () => {
+    const result = await thirdPartyCheck.run(
+      context({ pages: { status: "ok", snapshots: [page()] } }),
+    );
+    expect(statusOf(result, "P7-04")).toBe("BLOCKED");
+  });
+
   it("flags a pixel request at load when SP6 = Y", async () => {
     const result = await thirdPartyCheck.run({
       ...renderedWith([
