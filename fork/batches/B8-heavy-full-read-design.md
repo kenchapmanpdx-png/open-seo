@@ -26,7 +26,7 @@ Checkpoint.
 1. Contracts (bump `CONTRACTS_VERSION` 1.5.0; additive where possible):
    - K2: markup video fields (`preload`, `loop`, width/height / `aspect-ratio`, `sources[]`, `tracks[]`, `inRawHtml`) + `embeds[]` (provider, videoId, src, `loading`, size, facade) (FULL-READ §3.12); `PageSnapshot.headers`, `ttfbMs`; crawl `discoveredBy: raw|sitemap|seed|render`; coverage `{discovered, read, capped}`; template boilerplate split (FULL-READ §3.11).
    - K3: render request `transferBytes`, `aborted`, `protocol`; `blockBeacons` request flag; media requests recorded + aborted (never downloaded); per video / embed element first-screen flag + reserved-size flag; batch endpoint or client-side concurrency (choose in ADR-021); `fork/sidecar/openapi.yaml` + sidecar implementation.
-   - K14 `PageProfile` (Zod; incl. `videoText` transcript|summary|none) + K15 `SiteFactMap` (Zod).
+   - K14 `PageProfile` (Zod; incl. `videoText` transcript|summary|none, `sections[]` {heading, isQuestion, answerFirst}, FAQ pairs {question, answerWords, standsAlone}) + K15 `SiteFactMap` (Zod).
    - Registry: `registry-supp.ts` types (SUPP-nn), report section "Additional findings".
    - Escalation log type in report contract.
 2. Schema both dialects (`src/db/` SQLite + Postgres; parity test must pass): `handbook_page_profile`, `handbook_run_stage`, `handbook_run_lease`, run `depth` + coverage columns. Migrations up + down round-trip; `fork/scripts/supabase-harden.sql` covers new tables; `run-local.sh migrate` on Supabase.
@@ -79,6 +79,7 @@ WOs (template `fork/templates/WO.md`), one per row, explicit files, acceptance c
 | WO-B9-028 | AI-bot policy map (home × ≈ 23 UA tokens vs robots groups) |
 | WO-B9-029 | CrUX field data when `CRUX_API_KEY` set (P7-10), else BLOCKED-KEN |
 | WO-B9-032 | Video & embeds (FULL-READ §3.12): media recorded + aborted, HEAD / Range sizes, page weight incl. load-time video, P7-01 size cap, SUPP-08…12, `videoText`; BadGEO serves a fake media URL that answers HEAD with a large `Content-Length` (no video files in the repo) |
+| WO-B9-033 | Answer-engine set (FULL-READ §6): SUPP-13 snippet blockers (meta + `X-Robots-Tag` + `data-nosnippet` share), SUPP-14 fake lists, SUPP-15 question headings + answer-first, SUPP-16 stand-alone FAQ answers; report section "Answer-engine readiness" |
 | WO-B9-031 | `HANDBOOK_LIGHTHOUSE` = `templates` or `all` (`all`: batches of 25, mobile only, run cap +0.6 min/page, time estimate shown before start) |
 | WO-B9-090 | Integration pass: BadGEO, 3 goldens `--depth full --sidecar --llm`, evals, perf; report |
 
