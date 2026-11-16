@@ -62,6 +62,8 @@ describe("renderResourcesCheck", () => {
   it("keeps a blocked XHR below S1 (data vs telemetry is unknown)", async () => {
     const result = await run("/assets/private/beacon", "xhr");
     expect(result.findings.map((f) => f.severity)).toEqual(["S2"]);
+    // The runner rejects a below-default severity that has no reason.
+    expect(result.findings[0]?.severityReason).toBeTruthy();
   });
 
   it("passes allowed scripts", async () => {
