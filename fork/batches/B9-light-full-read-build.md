@@ -13,7 +13,7 @@ Input: `fork/queue.md` (WO-B9-\*), `fork/FULL-READ.md`, ADR-018…021, contracts
 
 ## Expected order
 
-022 → 021 → 001 → 002 → 003 → 004 → 005 → 006 → 007 → 031 → 008 → 009 → 028 → 010 → 011 → 012 → 013 → 032 → 014 → 027 → 029 → 019 → 020 → 015 → 016 → 017 → 018 → 025 → 023 → 024 → 026 → 090.
+022 → 021 → 001 → 002 → 003 → 004 → 005 → 006 → 007 → 031 → 008 → 009 → 028 → 010 → 011 → 012 → 013 → 032 → 014 → 027 → 029 → 019 → 020 → 015 → 016 → 017 → 033 → 018 → 025 → 023 → 024 → 026 → 090.
 (Queue + staged workflow first: every later WO runs on the new runtime and cannot exhaust the Supabase pool.)
 
 ## Exit
