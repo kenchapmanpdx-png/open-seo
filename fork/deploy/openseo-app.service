@@ -5,6 +5,8 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=@REPO@
+# No Playwright build for this distro id; the sidecar CLI paths and ui-smoke need it.
+Environment=PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64
 ExecStart=/usr/bin/env bash fork/scripts/run-local.sh prod
 Restart=always
 RestartSec=10
