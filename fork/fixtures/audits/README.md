@@ -4,6 +4,7 @@
 |---|---|---|---|---|
 | `whyracingevents-2026-11-13.md` | https://whyracingevents.com | v4.2 | REVIEW | 39 (54 uncapped) |
 | `ryanmscottsdale-2026-11-13.md` | https://www.ryanmscottsdale.com | v4.0 | AUDIT | 48 |
+| `bluetreefunding-2026-11-15.md` | https://bluetreefunding.com | v4.6 | REVIEW | 41 |
 
 ## Use
 - Expected output for the handbook engine: every finding ID (F/A/S prefixes) + every "Passes" line.
