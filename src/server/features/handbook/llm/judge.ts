@@ -121,7 +121,6 @@ export function createJudge(options: {
           prompt,
           output: Output.object({ schema: llmVerdictSchema }),
           maxOutputTokens: MAX_OUTPUT_TOKENS,
-          temperature: 0,
         });
         tokensIn += result.usage.inputTokens ?? 0;
         tokensOut += result.usage.outputTokens ?? 0;
