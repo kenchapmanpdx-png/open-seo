@@ -24,9 +24,9 @@ Checkpoint.
 ## R2 — Contracts 1.5.0 + schema
 
 1. Contracts (bump `CONTRACTS_VERSION` 1.5.0; additive where possible):
-   - K2: `PageSnapshot.headers`, `ttfbMs`; crawl `discoveredBy: raw|sitemap|seed|render`; coverage `{discovered, read, capped}`; template boilerplate split (FULL-READ §3.11).
-   - K3: render request `transferBytes`, `aborted`, `protocol`; `blockBeacons` request flag; batch endpoint or client-side concurrency (choose in ADR-021); `fork/sidecar/openapi.yaml` + sidecar implementation.
-   - K14 `PageProfile` (Zod) + K15 `SiteFactMap` (Zod).
+   - K2: markup video fields (`preload`, `loop`, width/height / `aspect-ratio`, `sources[]`, `tracks[]`, `inRawHtml`) + `embeds[]` (provider, videoId, src, `loading`, size, facade) (FULL-READ §3.12); `PageSnapshot.headers`, `ttfbMs`; crawl `discoveredBy: raw|sitemap|seed|render`; coverage `{discovered, read, capped}`; template boilerplate split (FULL-READ §3.11).
+   - K3: render request `transferBytes`, `aborted`, `protocol`; `blockBeacons` request flag; media requests recorded + aborted (never downloaded); per video / embed element first-screen flag + reserved-size flag; batch endpoint or client-side concurrency (choose in ADR-021); `fork/sidecar/openapi.yaml` + sidecar implementation.
+   - K14 `PageProfile` (Zod; incl. `videoText` transcript|summary|none) + K15 `SiteFactMap` (Zod).
    - Registry: `registry-supp.ts` types (SUPP-nn), report section "Additional findings".
    - Escalation log type in report contract.
 2. Schema both dialects (`src/db/` SQLite + Postgres; parity test must pass): `handbook_page_profile`, `handbook_run_stage`, `handbook_run_lease`, run `depth` + coverage columns. Migrations up + down round-trip; `fork/scripts/supabase-harden.sql` covers new tables; `run-local.sh migrate` on Supabase.
@@ -38,7 +38,7 @@ Checkpoint.
 ## R3 — Goldens + evals
 
 1. M3 (`fork/MAINTENANCE.md`): `fork/fixtures/audits/bluetreefunding-2026-11-15.md` (verbatim source added by Ken, read-only; README row present) → `fork/fixtures/expected/bluetreefunding.com.expected.yaml` (every finding + Passes line, `detectableBy`). F12 (Section 179 currency) = `truth-verification [Ken]`, excluded from catch rate; F13 keeps conflicts + unsourced (on-page).
-2. Re-classify golden findings that are SUPP or outside-scope: map to SUPP ids / `outside-scope`; keep `detectableBy`.
+2. Re-classify golden findings that are SUPP or outside-scope: map to SUPP ids / `outside-scope`; keep `detectableBy`. Findings or notes covering only the dropped items (FULL-READ §6: sensitive forms, SPF/DMARC, author archives, generator meta) → `outside-scope [Ken]`. bluetree F10 video part (hero `preload="auto"`, autoplay files 6.2–16.2 MB) → P7-01 + SUPP-08.
 3. Judge eval: rebuild `why-F19` with llms.txt + the site pages that state the event count; add cases for bluetree F12–F15 content items **excluding** truth verification (F12 Section 179 currency → drop; keep "unsourced / conflicting").
 4. New extraction eval `fork/evals/extract/`: per golden, the quotes a PageProfile must contain (stats, names, superlatives, placeholders, awards); scorer script `fork/scripts/extract-eval.ts` (spec here, built in B9).
 
@@ -68,7 +68,7 @@ WOs (template `fork/templates/WO.md`), one per row, explicit files, acceptance c
 | WO-B9-017 | Judge rewiring: targeted views from fact map; all head lines for P4-02/P4-07 |
 | WO-B9-018 | Budget formula, concurrency, backoff, stability rule |
 | WO-B9-019 | P5-03 off by default → N/A (operator) |
-| WO-B9-020 | SUPP-01…08 checks + "Additional findings" + outside-scope notes (SPF/DMARC etc.) |
+| WO-B9-020 | SUPP-01…07 checks + "Additional findings" section |
 | WO-B9-021 | Staged workflow steps + `handbook_run_stage` + resume |
 | WO-B9-022 | Run lease/queue + pool max 5 |
 | WO-B9-023 | Storage gzip + retention + quota warning |
@@ -78,7 +78,7 @@ WOs (template `fork/templates/WO.md`), one per row, explicit files, acceptance c
 | WO-B9-027 | Template boilerplate split + per-template map call |
 | WO-B9-028 | AI-bot policy map (home × ≈ 23 UA tokens vs robots groups) |
 | WO-B9-029 | CrUX field data when `CRUX_API_KEY` set (P7-10), else BLOCKED-KEN |
-| WO-B9-030 | Outside-scope notes: SPF/DMARC via DNS-over-HTTPS, author archives, generator meta |
+| WO-B9-032 | Video & embeds (FULL-READ §3.12): media recorded + aborted, HEAD / Range sizes, page weight incl. load-time video, P7-01 size cap, SUPP-08…12, `videoText`; BadGEO serves a fake media URL that answers HEAD with a large `Content-Length` (no video files in the repo) |
 | WO-B9-031 | `HANDBOOK_LIGHTHOUSE` = `templates` or `all` (`all`: batches of 25, mobile only, run cap +0.6 min/page, time estimate shown before start) |
 | WO-B9-090 | Integration pass: BadGEO, 3 goldens `--depth full --sidecar --llm`, evals, perf; report |
 

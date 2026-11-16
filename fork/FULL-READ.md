@@ -7,6 +7,7 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
 - Catch everything an agent-run handbook audit (`fork/fixtures/audits/*`) catches, at app cost and repeatability.
 - Principle: **read every page; measure performance per template; escalate when anything looks off.**
 - [Ken] No truth / legal / external-source verification of site statements. Internal consistency across the site's own pages stays (it is what AI answers quote).
+- [Ken] Scope = Google rankings, SEO, GEO / AI visibility. Anything the app adds beyond the handbook (SUPP rules, escalations, notes) must affect one of these, or it is not built. Handbook §41 items stay exactly as the handbook defines them (the handbook decides; Ken edits it).
 
 ## 1. Current gaps (measured 2026-11-16, ken/main 5089808)
 
@@ -22,7 +23,8 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
 | .md mirrors        | first 5 pages                                                      | Partial                                                                                                                                                                 |
 | Outbound links     | per check                                                          | Partial                                                                                                                                                                 |
 | LLM checks         | first 8 sampled pages (`SAMPLE_PAGES`), text clipped 2.5–6 k chars | Site-level conflicts, name variants, thin pages, awards, leftovers outside the sample missed (golden misses: why F08 F10 F14 F15 F16 F19 F30; ryan F02 F11 F12 F14 A06) |
-| Non-§41 defects    | not checked                                                        | ryan F17 generic anchors; bluetree F17 duplicate text, F20 internal `_blank`, F11 counters, sensitive forms indexable                                                   |
+| Non-§41 defects    | not checked                                                        | ryan F17 generic anchors; bluetree F17 duplicate text, F20 internal `_blank`, F11 counters                                                                              |
+| Video              | hero `<video>` poster + pause only (P7-01)                         | Video file size, `preload`, embeds, transcript, VideoObject fields not checked (bluetree F10: 5 autoplay videos, 6.2–16.2 MB each)                                      |
 | P5-03 source check | fetches off-site sources                                           | Conflicts with [Ken] rule                                                                                                                                               |
 | In-app run         | one workflow step, 30-min timeout, retries 1                       | Large sites time out; no resume                                                                                                                                         |
 | Concurrency        | 3 first audits at once exhausted the Supabase session pool (15)    | Runs fail / orphan at 0 pages                                                                                                                                           |
@@ -46,6 +48,7 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
 3. **Render** (sidecar K3 1.2.0): per request `transferBytes`, `aborted`, `protocol` (Resource Timing `nextHopProtocol`, for HTTP/1.1 detection); page weight per page; `firstScreenActions` + `opacityZeroWords` are returned for every rendered page (first-screen CTA per page at no extra cost); concurrency 3 (`HANDBOOK_RENDER_CONCURRENCY`).
    - `blockBeacons: true` default: analytics / ad / pixel requests are recorded then aborted, so detection (P7-04) works without polluting the client's analytics from the audit IP.
    - Never submit forms; only scroll.
+   - Never download video / audio bodies: media requests are recorded then aborted (§3.12). Page weight = transferred bytes + declared size of media that starts loading with the page (`autoplay` or `preload="auto"`).
    - Screenshots: first-screen mobile for every template rank-1 + home + contact + hub pages.
 4. **Numeric parity**: per page, numbers in visible raw text vs rendered text (counters shipping `0`/`$0`/`0%`) → finding with both values (bluetree F11 class).
 5. **Duplicate content**: MinHash/LSH on 5-word shingles across all pages → clusters with Jaccard ≥ 0.8; boilerplate-sentence ratio per page; duplicate text blocks inside one page.
@@ -55,6 +58,13 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
 9. **AI-bot policy map**: home × every known AI/search UA token (≈ 23: GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-User, anthropic-ai, PerplexityBot, Perplexity-User, Google-Extended, Googlebot, Bingbot, Applebot, Applebot-Extended, Amazonbot, CCBot, Bytespider, meta-externalagent, DuckAssistBot, MistralAI-User, cohere-ai, …) vs robots.txt groups → stated policy vs served policy (bluetree F27 class).
 10. **Field data** (optional): CrUX API per origin + top templates when `CRUX_API_KEY` is set (free Google Cloud key, CrUX API enabled); else P7-10 BLOCKED-KEN.
 11. **Boilerplate split**: text shared by ≥ 80 % of a template's pages = template boilerplate, stored once per template; page-unique text stored per page (feeds §5 map efficiently).
+12. **Video & embeds (no media download)**:
+    - Size: one `HEAD` per unique media URL (every `<source>`; cap 200) → `Content-Length`; fallback `GET` with `Range: bytes=0-0` → `Content-Range` total; still unknown → noted, no finding.
+    - Per `<video>` (raw + rendered DOM): sources + type, `poster`, `autoplay`, `muted`, `loop`, `controls`, `preload`, width/height or CSS `aspect-ratio`, `<track>` kinds, first mobile screen (Y/N), present in raw HTML (Y/N).
+    - Per video `<iframe>` (YouTube, Vimeo, Wistia, Loom, …): provider + video id, `loading`, width/height or `aspect-ratio`, first screen (Y/N), click-to-load thumbnail (facade) (Y/N).
+    - Decorative video = `autoplay` + `muted` + `loop` + no `controls` (background) → speed rules only. Every other video = content video.
+    - Lighthouse is the one exception: it loads pages as a visitor would, video included, because that is what Google measures.
+    - Not checked (no ranking / AI-visibility effect, or needs the file downloaded): codec, bitrate, format, `muted` / `playsinline`, view counts.
 
 ## 4. Escalation rules (the "investigator")
 
@@ -65,8 +75,7 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
 | Raw vs render word gap > 20 % on any page                                                           | Render diff stored for every page of that template                                                                                                                              | —                                                                  |
 | llms.txt or any `.md` mirror present                                                                | Probe mirrors for all pages                                                                                                                                                     | cap 200                                                            |
 | Any LCP > 4 s on a template                                                                         | Lighthouse on 2 more pages of that template                                                                                                                                     | cap +10                                                            |
-| Any page weight > 5 MB                                                                              | Lighthouse on that page                                                                                                                                                         | cap +5                                                             |
-| Sensitive form fields (SSN, DOB, bank, card) on an indexable page                                   | Finding (SUPP) + list every such URL                                                                                                                                            | —                                                                  |
+| Any page weight > 5 MB (incl. video that loads with the page)                                       | Lighthouse on that page                                                                                                                                                         | cap +5                                                             |
 
 - Escalations log to the report ("Escalated: … because …").
 
@@ -90,11 +99,20 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
   | SUPP-02 | Internal links with `target=_blank` | §12 |
   | SUPP-03 | Duplicate text blocks inside one page (raw HTML) | §14 |
   | SUPP-04 | Counters / numbers wrong in raw HTML vs rendered | §6, §14 |
-  | SUPP-05 | Sensitive-data form on an indexable URL | §30 |
-  | SUPP-06 | Test / dev / numbered-slug pages in sitemap or index (`-dev`, `test`, `-2`, `copy`, `\d$`) | §10, §17 |
-  | SUPP-07 | Empty social meta (`content=""`) | §2 |
-  | SUPP-08 | Bot-check / interstitial page returned as HTTP 200 content | §18 |
-- "Outside scope — noted" (informational, never scored): SPF/DMARC (DNS TXT via DNS-over-HTTPS), public author/user archive URLs, generator meta. No form submission, no login attempts, no vulnerability probing.
+  | SUPP-05 | Test / dev / numbered-slug pages in sitemap or index (`-dev`, `test`, `-2`, `copy`, `\d$`) | §10, §17 |
+  | SUPP-06 | Empty social meta (`content=""`) | §2 |
+  | SUPP-07 | Bot-check / interstitial page returned as HTTP 200 content | §18 |
+- Video set (§3.12; ranking = Core Web Vitals / video results, GEO = text AI can read). Hero video stays handbook item P7-01, now with a real size check (`HANDBOOK_VIDEO_MAX_MB`, default 5, per file and per page total for video that loads with the page).
+  | id | Rule | Effect | § |
+  |---|---|---|---|
+  | SUPP-08 | Non-hero video loads with the page (`autoplay` or `preload="auto"`) and is > `HANDBOOK_VIDEO_MAX_MB` (file or page total) | Page speed (LCP) | §14, §15 |
+  | SUPP-09 | Video or video embed with no reserved size (no width/height, no `aspect-ratio`) | Layout shift (CLS) | §14, §15 |
+  | SUPP-10 | Video embed loads its player with the page: below the first screen without `loading="lazy"`, or in the first screen without a click-to-load thumbnail | Page speed (LCP, INP) | §14, §15 |
+  | SUPP-11 | Content video with no transcript or text summary as page text (a captions file or schema `transcript` alone = partial) | AI answers can't use it | §15, §16 |
+  | SUPP-12 | Content video: no VideoObject; or VideoObject missing `name`, `thumbnailUrl`, `uploadDate`; thumbnail not fetchable (HEAD ≠ 200 image) or blocked by robots.txt; video URL blocked by robots.txt; > 10 content videos site-wide (SP4) and no `<video:video>` sitemap entries. Re-validate required fields against Google's current video doc [SPEC] | Google video results | §15, §24 |
+- Transcript detection: `PageProfile.videoText` = `transcript` \| `summary` \| `none` (§5 map) for pages with a content video.
+- Dropped [Ken 2026-11-16, SEO/GEO/rankings scope]: sensitive-data forms on indexable URLs (was SUPP-05; escalation row removed), SPF/DMARC, author-archive and generator-meta notes (was WO-B9-030). Golden findings or notes covering only these → `outside-scope [Ken]`, excluded from catch rate.
+- No form submission, no login attempts, no vulnerability probing.
 
 ## 7. Runtime
 
