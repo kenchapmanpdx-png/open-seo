@@ -35,7 +35,7 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
 | `quick`          | spot checks, CI | as today        | as today           | —                                                                         | as today           | as today                                                                   | as today                                         |
 
 - Env / CLI: `HANDBOOK_DEPTH` = `full` or `quick`; CLI `--depth`. Report header states depth; grades compare only within the same depth (EP-7).
-- Lighthouse scope: `HANDBOOK_LIGHTHOUSE` = `templates` (default) or `all` (every 200 HTML page, ~30 s each). Performance is template-driven, so `templates` + escalations is the efficient default; `all` is for one-off deep dives.
+- Lighthouse scope: `HANDBOOK_LIGHTHOUSE` = `templates` (default) or `all` (every 200 HTML page, ~30 s each). Performance is template-driven, so `templates` + escalations is the efficient default; `all` is for one-off deep dives. In `all` mode: Lighthouse runs in batches of 25 (one `pgStep` each), mobile only (desktop = home), run cap rises by 0.6 min per Lighthouse page, and CLI + UI show the time estimate before start. Every page still gets server time (`ttfbMs`) and page weight (`transferBytes`) in both modes.
 - Cap `HANDBOOK_MAX_PAGES` default 1000 (app + CLI). Over cap: stratified fill (every template, then round-robin per template); coverage line "read N of M discovered"; grade flagged `partial coverage` if N/M < 0.9.
 - Infinite-space guard: after 300 pages, ≤ 100 pages per template; query-string URLs deduped to their canonical; calendar/facet patterns (`?page=`, `/page/N/`, date paths) capped at 20 each.
 
@@ -98,7 +98,7 @@ Source of truth for B8–B10. Overrides sampling defaults in BLUEPRINT §3.3 whe
 
 ## 7. Runtime
 
-1. **Staged run**: `crawl → render(batches of 25) → axe → lighthouse → map(batches of 20) → reduce → checks → report`; each stage a separate `pgStep` in `workflow/hook.ts` (fork file), idempotent by `runId + stage + batch`, state in `handbook_run_stage`. Step timeout 30 min each; whole-run cap `HANDBOOK_RUN_MAX_MINUTES` (default 90) → stop cleanly with partial coverage.
+1. **Staged run**: `crawl → render(batches of 25) → axe → lighthouse(batches of 25) → map(batches of 20) → reduce → checks → report`; each stage a separate `pgStep` in `workflow/hook.ts` (fork file), idempotent by `runId + stage + batch`, state in `handbook_run_stage`. Step timeout 30 min each; whole-run cap `HANDBOOK_RUN_MAX_MINUTES` (default 90) → stop cleanly with partial coverage.
 2. **Memory**: bodies streamed to the evidence store; stages reload facts from DB; no stage holds > 1 batch of bodies.
 3. **Run queue**: one handbook run per machine at a time (DB lease row, 2-h expiry); others wait `queued`; CLI runs that write to Supabase take the same lease. Postgres pool max 5 per process.
 4. **Storage**: gzip bodies; full bodies kept for the last 2 runs per project, older runs keep excerpts + findings; warn at 80 % of Supabase Storage quota.
