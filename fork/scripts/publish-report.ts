@@ -5,12 +5,14 @@
  *   pnpm exec tsx fork/scripts/publish-report.ts <report.json>
  *   pnpm exec tsx fork/scripts/publish-report.ts --unpublish <slug>
  *
- * Writes fork/vercel/reports/r/<slug>/index.html (slug: 32-char base64url,
+ * Writes fork/vercel/reports/build/r/<slug>/index.html, served as
+ * /r/<slug>/ (slug: 32-char base64url,
  * unguessable), deploys the whole fork/vercel/reports directory to the
  * `openseo-reports` Vercel project (production), then checks the live URL
  * sends `x-robots-tag: noindex` and the root is a 404. VERCEL_TOKEN comes
  * from the environment or .env.local and is never printed. Published
- * snapshots are not committed (r/ is gitignored), so every deploy ships the
+ * snapshots are not committed (build/ is gitignored; under build/ so
+ * `prettier --check .` skips them), so every deploy ships the
  * snapshots on this machine; published.json maps slug → run id + dates.
  */
 import { randomBytes } from "node:crypto";
@@ -31,6 +33,8 @@ import { renderClientReportHtml } from "@/server/features/handbook/export/client
 import { REGISTRY } from "@/server/features/handbook/registry";
 
 const ROOT = "fork/vercel/reports";
+/** Local snapshot store; its contents deploy at the site root (/r/<slug>/). */
+const SNAPSHOTS = join(ROOT, "build");
 const PROJECT = "openseo-reports";
 const API = "https://api.vercel.com";
 /** Local bookkeeping, never deployed. */
@@ -91,17 +95,22 @@ function screenshots(reportPath: string): Map<string, string> {
   if (!existsSync(collectedPath)) return shots;
   const collected = z
     .object({
+      // Collected<RenderData>: { status, pages } (pages absent when BLOCKED).
       render: z
-        .array(
-          z.object({
-            url: z.string(),
-            firstScreenKey: z.string().nullish(),
-          }),
-        )
+        .object({
+          pages: z
+            .array(
+              z.object({
+                url: z.string(),
+                firstScreenKey: z.string().nullish(),
+              }),
+            )
+            .nullish(),
+        })
         .nullish(),
     })
     .parse(JSON.parse(readFileSync(collectedPath, "utf8")));
-  for (const page of collected.render ?? []) {
+  for (const page of collected.render?.pages ?? []) {
     const file = page.firstScreenKey
       ? join(dir, "evidence", `${page.firstScreenKey}.gz`)
       : null;
@@ -136,7 +145,7 @@ async function teamQuery(): Promise<string> {
 async function deploy(): Promise<string> {
   const team = await teamQuery();
   const files = listFiles(ROOT).map((path) => ({
-    file: relative(ROOT, path),
+    file: relative(path.startsWith(`${SNAPSHOTS}/`) ? SNAPSHOTS : ROOT, path),
     data: readFileSync(path, "utf8"),
   }));
   const created = await vercel(
@@ -215,8 +224,8 @@ async function publish(reportPath: string) {
     screenshots: screenshots(reportPath),
   });
   const slug = randomBytes(24).toString("base64url");
-  mkdirSync(join(ROOT, "r", slug), { recursive: true });
-  writeFileSync(join(ROOT, "r", slug, "index.html"), html);
+  mkdirSync(join(SNAPSHOTS, "r", slug), { recursive: true });
+  writeFileSync(join(SNAPSHOTS, "r", slug, "index.html"), html);
   const base = await deploy();
   writePublished({
     ...readPublished(),
@@ -234,7 +243,7 @@ async function unpublish(slug: string) {
   const published = readPublished();
   const entry = published[slug];
   if (!entry) throw new Error(`unknown slug ${slug}`);
-  rmSync(join(ROOT, "r", slug), { recursive: true, force: true });
+  rmSync(join(SNAPSHOTS, "r", slug), { recursive: true, force: true });
   const base = await deploy();
   writePublished({
     ...published,
