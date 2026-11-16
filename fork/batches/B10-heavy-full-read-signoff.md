@@ -12,7 +12,7 @@ Read: `fork/FULL-READ.md` §9 (acceptance), `fork/reports/B9.md`, `fork/template
 
 1. Run FULL-READ §9 metrics: 3 goldens `--depth full --sidecar --llm`, BadGEO, judge eval, extraction eval, speed, cost, rerun cost, 1000-page scale.
 2. Every golden `missed`/`partial` with `detectableBy` ∈ {deterministic, render, llm}: fix rule / prompt / view selection, or record the reason (site-changed, owner-only, truth-verification [Ken]).
-3. Tuning allowed: rubrics, prompts, thresholds, view selection, escalation triggers. Not allowed: weakening evidence rules, scoring SUPP, external verification.
+3. Tuning allowed: rubrics, prompts, thresholds, view selection, escalation triggers. Not allowed: weakening evidence rules, scoring SUPP, external verification, checks with no effect on rankings / SEO / GEO (FULL-READ §0).
 4. Repeat until §9 targets met or 3 tuning rounds; record each round.
 
 ## R3 — Repeatability, docs, release
