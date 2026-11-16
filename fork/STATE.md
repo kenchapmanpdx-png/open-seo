@@ -11,14 +11,13 @@ needs_ken: (build done; these BLOCKED-KEN items remain, see fork/queue.md)
 - BING_WEBMASTER_API_KEY: live Bing sync + a real AI Performance CSV import (WO-B6-021/022)
 - BYOK provider keys (OpenAI/Anthropic/Gemini/Perplexity): live smoke (WO-B6-031)
 - Vercel live publish: run `fork/scripts/publish-report.ts <report.json>` and check noindex + root 404 (WO-B4-012)
-- In-app UI smoke: install Playwright host libs (handbook, AI traffic, Bing, BYOK, Common Crawl, agency, overview pages)
 - Units: `bash fork/scripts/install-units.sh` (systemd in WSL)
 - Live MCP run with an OAuth client
 - Supabase has no projects yet (carried over from the B6 STATE note)
   current_batch: MAINT
   batch_file: fork/MAINTENANCE.md
   required_model: per loop (fork/MAINTENANCE.md; SINGLE = Opus 5.5)
-  current_run: 23
+  current_run: 24
   next_action: Build complete (B1–B7). Maintenance: weekly M1 rebase; M2 on a new handbook version; M3 on a new field audit — `Read fork/MAINTENANCE.md and run loop M<n>.` Ken items: needs_ken above.
   contracts_version: 1.4.0 (B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
   extra_site: (Ken: optional third site URL for regression runs; blank = skip)
@@ -75,6 +74,7 @@ needs_ken: (build done; these BLOCKED-KEN items remain, see fork/queue.md)
 | 21  | 2026-11-14 | Opus 5.5 | B6 r4: WO-B6-040 Common Crawl libs (`@duckdb/node-api` devDependency allowed this run); 041 CLI + monthly timer, live import 19m24s (whyracingevents.com 91 referring domains via temporary smoke project, removed); 042 Common Crawl page + MCP `cc_backlinks_get` (catalog 92); 050 agency brand/client/white-label report + seeded report template; 060 C13 fields derived in collectors (no K3 change); tests 2301 pass                                                                                                                              | B6 WO-B6-051 |
 | 22  | 2026-11-14 | Opus 5.5 | B6 r5: WO-B6-051 outcome record (fix/flip batches → +4/+12 checks, 5-min due job with lease claim, URL-limited deterministic rerun, GSC/Bing/AI-traffic sources, BLOCKED rows, `seo-followups.md`, run-page buttons); 061 C13 consumers (P2-08 JS-only form S4, P7-05 Lighthouse render-blocking, P8-02 sampleTexts, P5-03 ≤10 cited pages fetched); 090 regression (BadGEO no-sidecar 38/0/0; golden no-sidecar; sidecar runs BLOCKED-KEN: token) + B6 report; B6 exit; tests 2309 pass                                                                 | B7 R1        |
 | 23  | 2026-11-14 | Opus 5.5 | B7 R1 + R2: no upstream commits; B6 review (P7-04 BLOCKED not PASS without render; licenses OK; key settings role gate kept as upstream; WO-B4-003 closed); `ai_answer_mentions` outcome source + client-report "Results since last report"; project overview page (handbook grade, AI traffic, AI answer mention rate, monthly cost estimate); perf probe 500 pages 1.6 s / heap +6 MB; tag `handbook-v2.0.0`; fork/MAINTENANCE.md (M1–M3) + rebase and handbook-sync drills; B7 report; tests 2312 pass                                                | MAINT        |
+| 24  | 2026-11-15 | Opus 5.5 | INTERACTIVE: in-app UI smoke (WO-M-UISMOKE) — new `fork/scripts/ui-smoke.mjs`; 8/8 fork pages render with no console/page/server errors on `run-local.sh dev`; handbook toggle persists; example.com audit → handbook run hb-2666999b… (F 39) rendered. No app fixes needed. DataForSEO-dependent views (BYOK/AI-visibility data) not exercised: account not verified. Upstream observation (not fixed): one `organization_slug_unique` error on the first local-admin load (`src/server/auth/workspace-merge.ts` upsert race)                           | MAINT        |
 
 ## Batch history
 
