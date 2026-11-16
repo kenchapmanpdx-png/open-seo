@@ -1,0 +1,22 @@
+# K5 eval · 2026-11-16 · claude-sonnet-5-5
+
+Recall on golden fails 11/14 (79%) · false fails on golden passes 0 · cost $0.2043 · threshold (ADR-007) recall ≥ 80% and false fails ≤ 0: **FAIL**
+
+| Case            | Item  | Expected | Verdict |     | Detail                                                                                                                                                                               |
+| --------------- | ----- | -------- | ------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ryan-A06        | P5-07 | fail     | fail    | ✓   | 0.80 · 4 quote(s) · The home page meta description and H1 reveal luxury hair care, and Scottsdale is in the brand name, so the entity test part holds. However, the brand is written |
+| ryan-F02        | P4-02 | fail     | fail    | ✓   | 0.93 · 3 quote(s) · The home page title is brand-only and its H1 leads with a promo (gift card banner). The services page title is a bare page label ('SERVICES — Brand'), and the O |
+| ryan-F11        | P5-04 | fail     | fail    | ✓   | 0.90 · 6 quote(s) · Several pages use unsupported superlatives ("ultimate destination", "most curated", "number one salon", "most elite") with no on-page citation. The stylists pag |
+| ryan-F12        | P5-11 | fail     | fail    | ✓   | 0.93 · 2 quote(s) · The page shows award images (Best of Our Valley winner, Readers Choice 2025) but lists no award-like text sentences or links. No awarding body, year, or source  |
+| ryan-F14        | P5-09 | fail     | fail    | ✓   | 0.80 · 2 quote(s) · The /service page lists hair, extensions, color, treatment, chemical, makeup and skin care services on a single page, and no crawled page exists below it for an |
+| why-F02         | P2-03 | fail     | fail    | ✓   | 0.70 · 1 quote(s) · The server HTML of the API-driven races list shows the empty state 'No Events Found' with no 'as of' date or timestamp. It is not neutral copy, so it presents a |
+| why-F09         | P5-05 | fail     | fail    | ✓   | 0.97 · 3 quote(s) · All nine pages carry the identical five-question FAQ (refund policy, stroller or dog, gear check, rain, t-shirt swap), so the same questions repeat across pages |
+| why-F10         | P5-02 | fail     | fail    | ✓   | 0.80 · 2 quote(s) · The About page states 21 annual events, while the Partners page says the company has 14 events (also "14 Regional Events"). Both count the company's events with |
+| why-F14         | P4-02 | fail     | fail    | ✓   | 0.60 · 2 quote(s) · The home page title puts the brand ahead of what the site offers, which the rubric says should come first. The admin page title is a bare page label plus brand, |
+| why-F15         | P5-04 | fail     | fail    | ✓   | 0.93 · 6 quote(s) · Multiple pages use unsupported superlatives (premier, most supportive, best) and percentage claims (79%, 100%) with no on-page citation. Acronyms such as PNW ar |
+| why-F16         | P5-15 | fail     | pass    | ✗   | 0.55 · 0 quote(s) · The one page with text (Ho Ho 5K) has a labelled key-facts block (Date, Location, Distances, Race Type, Registration) and unique details such as the Cook Park a |
+| why-F18         | P5-07 | fail     | fail    | ✓   | 0.72 · 2 quote(s) · The home page title, description and H1 make clear this is a race-event business, and local is false, so that part passes. The brand is written in capitals (WHY |
+| why-F19         | P5-02 | fail     | pass    | ✗   | 0.85 · 0 quote(s) · Only one page (llms.txt) was provided, and it contains a single statistic ($3M+ in charitable giving) with no conflicting value. The event dates and names are n |
+| why-HUB         | P4-07 | fail     | pass    | ✗   | 0.88 · 0 quote(s) · Both hub titles name the collection and add a specific promise (race types, region, travel guide for race weekends) plus the brand. Neither is a bare label like |
+| why-PASS-02     | P4-02 | pass     | pass    | ✓   | 0.80 · 0 quote(s) · Every title leads with the specific event name (and place) before the brand or with no brand at all, so none is brand-only or a bare label. Every H1 is the even |
+| why-PASS-MATRIX | P5-06 | pass     | pass    | ✓   | 0.93 · 0 quote(s) · The page is a home page and shows no author byline, key takeaways box, references list, or visible published/updated stamp. The testimonials are anonymous revie |
