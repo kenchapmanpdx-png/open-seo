@@ -86,6 +86,12 @@ export const renderResourcesCheck: HandbookCheck = {
       out.finding({
         itemIds: ["P3-20"],
         severity: staticBlocked ? "S1" : "S2",
+        ...(staticBlocked
+          ? {}
+          : {
+              severityReason:
+                "only XHR/fetch calls are blocked; they may be telemetry rather than content",
+            }),
         title: "robots.txt blocks resources needed to render the page",
         detail: blocked
           .slice(0, 20)
