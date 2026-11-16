@@ -79,7 +79,7 @@ WOs (template `fork/templates/WO.md`), one per row, explicit files, acceptance c
 | WO-B9-028 | AI-bot policy map (home × ≈ 23 UA tokens vs robots groups) |
 | WO-B9-029 | CrUX field data when `CRUX_API_KEY` set (P7-10), else BLOCKED-KEN |
 | WO-B9-030 | Outside-scope notes: SPF/DMARC via DNS-over-HTTPS, author archives, generator meta |
-| WO-B9-031 | `HANDBOOK_LIGHTHOUSE` = `templates` or `all` |
+| WO-B9-031 | `HANDBOOK_LIGHTHOUSE` = `templates` or `all` (`all`: batches of 25, mobile only, run cap +0.6 min/page, time estimate shown before start) |
 | WO-B9-090 | Integration pass: BadGEO, 3 goldens `--depth full --sidecar --llm`, evals, perf; report |
 
 - Mark WOs needing contract/schema not done in R2 as R2 follow-ups now, not ESCALATE later.
