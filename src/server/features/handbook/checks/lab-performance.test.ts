@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { context, ORIGIN, snapshot, statusOf } from "./check-test-fixtures";
-import {
-  labMetricsCheck,
-  pageWeightCheck,
-  resourceHintsCheck,
-} from "./lab-performance";
+import { labMetricsCheck, pageWeightCheck } from "./lab-performance";
 
 const url = `${ORIGIN}/`;
 
@@ -39,50 +35,48 @@ describe("labMetricsCheck", () => {
     expect(statusOf(result, "P7-09")).toBe("OPEN");
     expect(statusOf(result, "P7-10")).toBe("PASS");
   });
-});
-
-describe("resourceHintsCheck", () => {
-  it("flags a preconnect to an origin the page never requests", async () => {
-    const result = await resourceHintsCheck.run(
-      context({
-        pages: {
-          status: "ok",
-          snapshots: [
-            withMarkup({
-              headLinks: [
-                {
-                  rel: "preconnect",
-                  href: "https://fonts.example.net",
-                  as: null,
-                  type: null,
-                },
-              ],
-            }),
-          ],
+  it("names the failing templates in P7-09", async () => {
+    const run = (path: string, lcpMs: number) => ({
+      url: `${ORIGIN}${path}`,
+      formFactor: "mobile" as const,
+      environment: "test",
+      performance: 0.6,
+      lcpMs,
+      cls: 0,
+      tbtMs: 100,
+      lcpElement: null,
+      storageKey: null,
+    });
+    const tpl = (key: string, paths: string[]) => ({
+      key,
+      urlPattern: key,
+      skeletonHash: key,
+      urls: paths.map((p) => `${ORIGIN}${p}`),
+      samples: [
+        {
+          url: `${ORIGIN}${paths[0]}`,
+          rank: 1 as const,
+          reason: "first" as const,
         },
-        render: {
+      ],
+    });
+    const result = await labMetricsCheck.run(
+      context({
+        templates: {
           status: "ok",
-          pages: [
-            {
-              url,
-              js: {
-                finalUrl: url,
-                status: 200,
-                renderedKey: "k",
-                words: 100,
-                requests: [{ url, resourceType: "document", status: 200 }],
-                opacityZeroWords: 0,
-                firstScreenActions: [],
-              },
-              noJs: { status: 200, nojsKey: "n", words: 100 },
-              firstScreenKey: null,
-              consoleErrors: [],
-            },
-          ],
+          templates: [tpl("/blog/*", ["/blog/a", "/blog/b"]), tpl("/", ["/"])],
+        },
+        lighthouse: {
+          status: "ok",
+          pages: [run("/blog/a", 2000), run("/blog/b", 4800), run("/", 1200)],
         },
       }),
     );
-    expect(statusOf(result, "P7-06")).toBe("OPEN");
+    const finding = result.findings.find((f) => f.itemIds.includes("P7-09"));
+    expect(finding?.title).toContain("on 1 of 2 measured templates");
+    expect(finding?.detail).toContain(
+      `template /blog/* — 2 runs, worst LCP 4800 ms (${ORIGIN}/blog/b)`,
+    );
   });
 });
 

@@ -1,5 +1,10 @@
+import { sort } from "remeda";
 import type { CollectedData } from "@/server/features/handbook/contracts/collectors";
-import type { Escalation } from "@/server/features/handbook/contracts/exports";
+import type {
+  Escalation,
+  HandbookDepth,
+} from "@/server/features/handbook/contracts/exports";
+import type { LighthouseData } from "@/server/features/handbook/contracts/render-data";
 import { normalizeUrl } from "@/server/features/handbook/checks/support";
 import { isWordDrift } from "@/server/features/handbook/checks/render-parity";
 
@@ -17,14 +22,14 @@ type EscalationRule = {
   action: string;
   /** Most URLs one fired group may act on; null = no cap. */
   cap: number | null;
-  fire: (collected: CollectedData) => Fired[];
+  fire: (collected: CollectedData, depth: HandbookDepth) => Fired[];
 };
 
 type Template = { key: string; urls: string[]; rank1: string | null };
 
-function templatesOf(collected: CollectedData): Template[] {
+function templatesOf(collected: Partial<CollectedData>): Template[] {
   const t = collected.templates;
-  if (t.status !== "ok") return [];
+  if (t?.status !== "ok") return [];
   return t.templates.map((tpl) => ({
     key: tpl.key,
     urls: [...tpl.urls],
@@ -33,10 +38,118 @@ function templatesOf(collected: CollectedData): Template[] {
 }
 
 /** Rendered pages by normalized URL (empty without a render). */
-function renderedOf(collected: CollectedData) {
+function renderedOf(collected: Partial<CollectedData>) {
   const r = collected.render;
   return new Map(
-    r.status === "ok" ? r.pages.map((p) => [normalizeUrl(p.url), p]) : [],
+    r?.status === "ok" ? r.pages.map((p) => [normalizeUrl(p.url), p]) : [],
+  );
+}
+
+/** Lighthouse at `full` (FULL-READ §2, §4 rows 5–6; ADR-018). */
+const LH_RANK1_CAP = 15;
+const LH_HEAVIEST = 3;
+const LH_SLOW_LCP_MS = 4000;
+const LH_MORE_PER_TEMPLATE = 2;
+const LH_SLOW_CAP = 10;
+const LH_HEAVY_BYTES = 5_000_000;
+const LH_HEAVY_CAP = 5;
+
+const weightOf = (p: { js: { pageWeightBytes?: number | null } }) =>
+  p.js.pageWeightBytes ?? 0;
+
+/**
+ * Mobile Lighthouse base set at `full`: rank-1 of every template (cap 15)
+ * then the 3 heaviest rendered pages, deduped. The collector runs it; the
+ * escalation rules recompute it to tell base runs from escalated ones.
+ */
+export function lighthouseMobileBase(
+  collected: Partial<CollectedData>,
+): string[] {
+  const rank1 = templatesOf(collected)
+    .flatMap((t) => (t.rank1 ? [t.rank1] : []))
+    .slice(0, LH_RANK1_CAP);
+  const heaviest = sort(
+    [...renderedOf(collected).values()].filter((p) => weightOf(p) > 0),
+    (a, b) => weightOf(b) - weightOf(a),
+  )
+    .slice(0, LH_HEAVIEST)
+    .map((p) => p.url);
+  const seen = new Set<string>();
+  return [...rank1, ...heaviest].filter((u) => {
+    const key = normalizeUrl(u);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const mb = (bytes: number) => `${(bytes / 1_000_000).toFixed(1)} MB`;
+
+/**
+ * Lighthouse escalations from the base mobile runs: a template whose base
+ * run has LCP > 4 s gets 2 more of its rendered pages (cap +10 overall);
+ * every rendered page over 5 MB gets its own run (cap +5; already measured
+ * pages count as done).
+ */
+export function lighthouseEscalations(
+  collected: Partial<CollectedData>,
+  baseRuns: LighthouseData["pages"],
+): { slow: Fired[]; heavy: Fired[] } {
+  const base = new Set(lighthouseMobileBase(collected).map(normalizeUrl));
+  const rendered = renderedOf(collected);
+  let budget = LH_SLOW_CAP;
+  const slow = templatesOf(collected).flatMap((tpl): Fired[] => {
+    const inTpl = new Set(tpl.urls.map(normalizeUrl));
+    const run = sort(
+      baseRuns.filter(
+        (r) =>
+          r.formFactor === "mobile" &&
+          inTpl.has(normalizeUrl(r.url)) &&
+          (r.lcpMs ?? 0) > LH_SLOW_LCP_MS,
+      ),
+      (a, b) => (b.lcpMs ?? 0) - (a.lcpMs ?? 0),
+    ).at(0);
+    if (!run) return [];
+    const more = tpl.urls
+      .filter((u) => !base.has(normalizeUrl(u)))
+      .filter((u) => rendered.size === 0 || rendered.has(normalizeUrl(u)))
+      .slice(0, LH_MORE_PER_TEMPLATE);
+    if (more.length === 0) return [];
+    const urls = more.slice(0, budget);
+    budget -= urls.length;
+    return [
+      {
+        because: `template ${tpl.key} page ${run.url} has lab LCP ${Math.round(run.lcpMs ?? 0)} ms (> 4 s)`,
+        urls,
+        capped: urls.length < more.length,
+      },
+    ];
+  });
+  const heavyPages = sort(
+    [...rendered.values()].filter((p) => weightOf(p) > LH_HEAVY_BYTES),
+    (a, b) => weightOf(b) - weightOf(a),
+  );
+  const heavy: Fired[] =
+    heavyPages.length === 0
+      ? []
+      : [
+          {
+            because: heavyPages
+              .map((p) => `${p.url} weighs ${mb(weightOf(p))} (> 5 MB)`)
+              .join("; "),
+            urls: heavyPages.slice(0, LH_HEAVY_CAP).map((p) => p.url),
+            capped: heavyPages.length > LH_HEAVY_CAP,
+          },
+        ];
+  return { slow, heavy };
+}
+
+/** Base mobile runs of a finished `full` Lighthouse collector. */
+function baseRunsOf(collected: CollectedData): LighthouseData["pages"] {
+  if (collected.lighthouse.status !== "ok") return [];
+  const base = new Set(lighthouseMobileBase(collected).map(normalizeUrl));
+  return collected.lighthouse.pages.filter(
+    (r) => r.formFactor === "mobile" && base.has(normalizeUrl(r.url)),
   );
 }
 
@@ -100,12 +213,35 @@ const ESCALATION_RULES: readonly EscalationRule[] = [
       });
     },
   },
+  {
+    // Lighthouse escalations run inside the `full` Lighthouse collector
+    // (quick keeps home + 2 samples and escalates nothing).
+    trigger: "template-slow-lcp",
+    action: "Lighthouse on 2 more pages of that template",
+    cap: null,
+    fire: (collected, depth) =>
+      depth === "full"
+        ? lighthouseEscalations(collected, baseRunsOf(collected)).slow
+        : [],
+  },
+  {
+    trigger: "page-weight-over-5mb",
+    action: "Lighthouse on that page",
+    cap: null,
+    fire: (collected, depth) =>
+      depth === "full"
+        ? lighthouseEscalations(collected, baseRunsOf(collected)).heavy
+        : [],
+  },
 ];
 
 /** Every rule over what was collected; one log line per fired escalation. */
-export function collectEscalations(collected: CollectedData): Escalation[] {
+export function collectEscalations(
+  collected: CollectedData,
+  depth: HandbookDepth = "quick",
+): Escalation[] {
   return ESCALATION_RULES.flatMap((rule) =>
-    rule.fire(collected).map((f) => {
+    rule.fire(collected, depth).map((f) => {
       const capped =
         f.capped || (rule.cap !== null && f.urls.length > rule.cap);
       const escalation: Escalation = {
