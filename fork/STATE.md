@@ -3,13 +3,13 @@
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: (none blocking B8; earlier optional items below)
-current_batch: B8
-batch_file: fork/batches/B8-heavy-full-read-design.md
+needs_ken: (none blocking B9; earlier optional items below)
+current_batch: B9
+batch_file: fork/batches/B9-light-full-read-build.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 28
-next_action: B8 R2 follow-up — additive contracts 1.5.1 for the B9 WO gaps (table in fork/reports/B8.md R4 → "R2 follow-ups": coverage, URL_VARIANT_KINDS case + /page/2/, botFetch round, numericMismatches, mainWords/minhash/duplicateBlocks, CheckContext.pageProfiles + siteFactMap, AI-bot policyMap, CrUX slot, mediaSizes, nosnippetWords/fakeListRuns); bump version + sidecar health if K3 touched; update each WO's 'R2 follow-up' section to done; checks; then B8 exit (report, STATE → B9, start-build.sh --check)
-contracts_version: 1.5.0 (B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
+current_run: 29
+next_action: B9 first WO in Expected order: WO-B9-022 (then 021 → 001 → 002 …); executor protocol = B2 § "Executor protocol (all LIGHT batches)"
+contracts_version: 1.5.1 (B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
@@ -45,8 +45,8 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done        |
 | B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done        |
 | B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done        |
-| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | in-progress |
-| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | —           |
+| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | done        |
+| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | in-progress |
 | B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | —           |
 | B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | —           |
 
@@ -82,6 +82,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 26  | 2026-11-18 | Opus 5.5 | B8 R1 (AUTOPILOT): rebased onto upstream v0.1.29 (21 commits; tools.test catalog 85+8=93); checks green (2346 tests); measured engine 60/200/500 synthetic (2.4 s, heap 158 MB at 500), live why 33 pages w/ sidecar 2m40s, bluetree 41, ryan 11; sidecar 27/52/54 renders/min at c=1/2/3 (server MAX_RENDERS=2 cap); local workerd not 128 MB-limited (idle 283 MB); Anthropic prices verified (model.ts correct); ADR-018…021 accepted; `handbook-audit.ts --sidecar` loads its token itself; new sidecar-throughput.ts; B8 report R1                                                                                                                                                                                                                                                                                                                                                  | B8 R2        |
 | 27  | 2026-11-18 | Opus 5.5 | B8 R2 (AUTOPILOT): contracts 1.5.0 (K2 headers/ttfb/discoveredBy/video/embeds/coverage/boilerplate, K3 1.2.0 beacon+media abort/transferBytes/protocol/mediaElements, K14 PageProfile, K15 SiteFactMap, SUPP-01…16 registry, report depth/coverage/additionalFindings/answerEngineReadiness/escalations); schema both dialects (handbook_page_profile, run_stage, run_lease, run depth + coverage) migrations sqlite 0074 / pg 0052, down round-trip SQLite + PG17, Supabase migrated + hardened (108 tables, RLS all); sidecar 1.2.0 image built (MAX_RENDERS env), 9 sidecar tests; tests 2349 pass. STATE not updated that run (fixed run 28)                                                                                                                                                                                                                                         | B8 R3        |
 | 28  | 2026-11-18 | Opus 5.5 | B8 R3 + R4 (AUTOPILOT): R4 = 34 B9 WOs + queue (93f86e6e), 10 contract gaps → R2 follow-up 1.5.1 before exit; R3: bluetree golden expected YAML (28 findings + 3 outside-scope + 12 passes) + M3 triage (R1 run 18 caught; `--llm` run 22 caught, $≈0.3); why/ryan SUPP + scope reclassification; golden-score `excluded` + `supp`; handbook-sync checks SUPP ids; judge eval why-F19 hand-rebuilt + blue-F13/F14/F15/F15-badge (Sonnet recall 14/18, 0 false fails, $0.28; misses → WO-B9-015/016/017/018); extraction eval `fork/evals/extract/` (44 verified quotes) + scorer spec; tests 2349 pass                                                                                                                                                                                                                                                                                   | B8 R2 fu     |
+| 29  | 2026-11-18 | Opus 5.5 | B8 R2 follow-up + exit (AUTOPILOT): contracts 1.5.1 — pages coverage, `paginated-home` variant (case variant = existing `uppercase-path`), bot-fetch round + policyMap, numericMismatches + mediaSizes (engine-side, no K3 change), PageSnapshot mainWords/minhash/duplicateBlocks, PageMarkup nosnippetWords/fakeListRuns, CrUX `LighthouseData.field`, CheckContext pageProfiles + siteFactMap, evidence kind factMap; render/axe/lighthouse types moved to `contracts/render-data.ts` (400-line lint cap); 10 WOs + queue + B9 pin → 1.5.1; `start-build.sh --check` exit 0 (sidecar on 1.5.1); B8 report exit; tests 2349 pass                                                                                                                                                                                                                                                       | B9 WO-B9-022 |
 
 ## Batch history
 
@@ -94,3 +95,4 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B5    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B5.md |
 | B6    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B6.md |
 | B7    | Opus 5.5 | 2026-11-14 | 2026-11-14 | fork/reports/B7.md |
+| B8    | Opus 5.5 | 2026-11-18 | 2026-11-18 | fork/reports/B8.md |
