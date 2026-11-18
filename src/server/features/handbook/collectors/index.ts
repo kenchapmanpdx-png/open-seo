@@ -5,12 +5,12 @@ import type {
 import { createCrawlCollectors, type CrawlOptions } from "./site-crawl";
 import {
   botFetchCollector,
-  headersCollector,
   llmsCollector,
   robotsCollector,
   sitemapCollector,
   variantsCollector,
 } from "./fetch-collectors";
+import { headersCollector } from "./headers-collector";
 import { outboundCollector } from "./outbound";
 import {
   createSidecarCollectors,
