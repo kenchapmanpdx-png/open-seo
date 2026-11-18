@@ -1,0 +1,48 @@
+{
+  "id": "blue-F15-badge",
+  "site": "blue",
+  "golden": "F15 HIPAA badge as image only",
+  "itemId": "P5-11",
+  "expected": "fail",
+  "input": {
+    "itemId": "P5-11",
+    "rubricId": "awards-as-text",
+    "pages": [
+      {
+        "url": "https://bluetreefunding.com/medical-funding/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- No hard credit pull – just a soft check that won ’ t affect your score.\nAward-like links:\n(none)"
+      },
+      {
+        "url": "https://bluetreefunding.com/healthcare-revenue-services/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- Blue Tree Funding prioritizes our clients needs so they can provide care to their patients to the absolute best of their ability.\nAward-like links:\n(none)"
+      },
+      {
+        "url": "https://bluetreefunding.com/healthcare-pre-funding-dev/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- No, pre-funding won ’ t affect your credit.\nAward-like links:\n(none)"
+      },
+      {
+        "url": "https://bluetreefunding.com/working-capital/bankroll/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- Blue Tree Funding prioritizes our clients needs so they can provide care to their patients to the absolute best of their ability.\nAward-like links:\n(none)"
+      },
+      {
+        "url": "https://bluetreefunding.com/vendor/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- Blue Tree Funding prioritizes our clients needs so they can provide care to their patients to the absolute best of their ability.\nAward-like links:\n(none)"
+      },
+      {
+        "url": "https://bluetreefunding.com/all-others/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- Get Approved Equipment Loan Features Amounts from $10,000 up to $5,000,000 Approval as fast as 24 hours Funding typically within 2 business days Flexible & Extended Terms Available Won ’ t appear on personal credit No personal collateral required Get Approved Why Blue Tree Funding?\nAward-like links:\n(none)"
+      },
+      {
+        "url": "https://bluetreefunding.com/medical-dental/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- Equipment Loan Features Amounts from $10,000 up to $5,000,000 Approval as fast as 24 hours Funding typically within 2 business days Flexible & Extended Terms Available Won ’ t appear on personal credit No personal collateral required Get Approved Why Blue Tree Funding?\n- Blue Tree Funding prioritizes our clients needs so they can provide care to their patients to the absolute best of their ability.\nAward-like links:\n(none)"
+      },
+      {
+        "url": "https://bluetreefunding.com/working-capital/",
+        "text": "Award-like images:\n(none)\nAward-like text:\n- Our clients get the financing they need, with manageable payments that won’t increase as revenue grows.\n- Blue Tree Funding prioritizes our clients needs so they can provide care to their patients to the absolute best of their ability.\nAward-like links:\n(none)"
+      }
+    ],
+    "facts": {
+      "local": true
+    }
+  }
+}

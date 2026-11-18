@@ -31,7 +31,11 @@ type CaseSpec = {
   path?: RegExp;
 };
 
-/** Golden findings (fork/fixtures/expected/*.yaml) the judge must reproduce. */
+/**
+ * Golden findings (fork/fixtures/expected/*.yaml) the judge must reproduce.
+ * Hand-built cases (`note` in the JSON, e.g. why-F19) are not listed here, so
+ * `build` never overwrites them.
+ */
 const SPECS: CaseSpec[] = [
   {
     id: "why-F09",
@@ -68,14 +72,6 @@ const SPECS: CaseSpec[] = [
     golden: "F18",
     itemId: "P5-07",
     expected: "fail",
-  },
-  {
-    id: "why-F19",
-    site: "why",
-    golden: "F19",
-    itemId: "P5-02",
-    expected: "fail",
-    path: /^\/llms/,
   },
   {
     id: "why-PASS-02",
@@ -151,6 +147,38 @@ const SPECS: CaseSpec[] = [
     site: "ryan",
     golden: "F14",
     itemId: "P5-09",
+    expected: "fail",
+  },
+  // B8 R3.3: bluetree F13–F15 content items; F12 (Section 179 currency) is
+  // truth verification [Ken] and has no case.
+  {
+    id: "blue-F13",
+    site: "blue",
+    golden: "F13 conflicting / unsourced terms + approval times",
+    itemId: "P5-02",
+    expected: "fail",
+  },
+  {
+    id: "blue-F14",
+    site: "blue",
+    golden: "F14 template leftovers ($ 99 Per Month, (555) 555-5555)",
+    itemId: "P5-04",
+    expected: "fail",
+    path: /^\/(?:|rcm-connect\/|vilo\/)$/,
+  },
+  {
+    id: "blue-F15",
+    site: "blue",
+    golden: "F15 superlatives + undefined acronyms",
+    itemId: "P5-04",
+    expected: "fail",
+    path: /^\/(?!vilo\/|rcm-connect\/)/,
+  },
+  {
+    id: "blue-F15-badge",
+    site: "blue",
+    golden: "F15 HIPAA badge as image only",
+    itemId: "P5-11",
     expected: "fail",
   },
 ];
@@ -261,5 +289,5 @@ else if (command === "run")
   });
 else
   console.error(
-    "usage: llm-eval.ts build <why|ryan> <run-dir> | run [--model slug]",
+    "usage: llm-eval.ts build <why|ryan|blue> <run-dir> | run [--model slug]",
   );

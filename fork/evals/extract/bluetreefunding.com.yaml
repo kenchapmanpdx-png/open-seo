@@ -1,0 +1,127 @@
+site: bluetreefunding.com
+origin: https://bluetreefunding.com
+cases:
+  # F13 — conflicting / unsourced figures (on-page only)
+  - {
+      golden: F13,
+      url: /medical-funding/,
+      field: stats,
+      quote: "96 % Approval Rate",
+      expect: { value: "96" },
+    }
+  - {
+      golden: F13,
+      url: /rcm-connect/,
+      field: stats,
+      quote: "You Keep 94% of Collections",
+      expect: { value: "94" },
+    }
+  - {
+      golden: F13,
+      url: /medical-dental/,
+      field: stats,
+      quote: "over $3 billion worth of medical and dental equipment",
+    }
+  - {
+      golden: F13,
+      url: /working-capital/,
+      field: stats,
+      quote: "tens of thousands of businesses",
+    }
+  - {
+      golden: F13,
+      url: /,
+      field: stats,
+      quote: "FLEXIBLE TERMS FROM 12-72 MONTHS",
+    }
+  - { golden: F13, url: /, field: stats, quote: "typically same day approval" }
+  - { golden: F13, url: /, field: stats, quote: "Approval within 24 hours" }
+  - {
+      golden: F13,
+      url: /medical-dental/,
+      field: stats,
+      quote: "Approval as fast as 24 hours",
+    }
+  - {
+      golden: F13,
+      url: /medical-dental/,
+      field: stats,
+      quote: "Funding typically within 2 business days",
+    }
+  - {
+      golden: F13,
+      url: /medical-funding/,
+      field: stats,
+      quote: "within 48 hours",
+    }
+  # F14 — template leftovers
+  - {
+      golden: F14,
+      url: /,
+      field: placeholders,
+      quote: "Old Way of Funding $ 99 Per Month",
+    }
+  - {
+      golden: F14,
+      url: /rcm-connect/,
+      field: placeholders,
+      quote: "Blue Tree Records + Revenue $ 99 Per Month",
+    }
+  - { golden: F14, url: /vilo/, field: placeholders, quote: "(555) 555-5555" }
+  # F15 — superlatives, compliance claims, acronyms
+  - {
+      golden: F15,
+      url: /,
+      field: superlatives,
+      quote: "the best pricing available",
+    }
+  - { golden: F15, url: /, field: superlatives, quote: "Simply Better Funding" }
+  - {
+      golden: F15,
+      url: /working-capital/,
+      field: superlatives,
+      quote: "the most competitive pricing in the industry",
+    }
+  - {
+      golden: F15,
+      url: /working-capital/,
+      field: superlatives,
+      quote: "Industry-Leading Loan Products",
+    }
+  - {
+      golden: F15,
+      url: /financing-hci/,
+      field: superlatives,
+      quote: "unlike any other leasing or financing provider in the industry",
+    }
+  - {
+      golden: F15,
+      url: /medical-funding/,
+      field: awards,
+      quote: "HIPAA Compliant",
+      expect: { hasSource: false },
+    }
+  - {
+      golden: F15,
+      url: /rcm-connect/,
+      field: superlatives,
+      quote: "100% Compliant",
+    }
+  - { golden: F15, url: /, field: undefinedAcronyms, quote: "BTF" }
+  # F18N — name variants
+  - {
+      golden: F18N,
+      url: /,
+      field: names,
+      quote: "Blue Tree Funding",
+      expect: { kind: brand },
+    }
+  - {
+      golden: F18N,
+      url: /,
+      field: names,
+      quote: "BTF",
+      expect: { kind: brand },
+    }
+  # F12 is truth-verification [Ken]: the figure is still extracted (it feeds stat conflicts), never checked against section179.org
+  - { golden: F12, url: /, field: stats, quote: "up to $1,000,000" }
