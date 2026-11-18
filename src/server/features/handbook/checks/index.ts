@@ -13,11 +13,8 @@ import { hiddenPagesCheck } from "./hidden-pages";
 import { imageMarkupCheck } from "./image-markup";
 import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
-import {
-  labMetricsCheck,
-  pageWeightCheck,
-  resourceHintsCheck,
-} from "./lab-performance";
+import { labMetricsCheck, pageWeightCheck } from "./lab-performance";
+import { resourceHintsCheck } from "./resource-hints";
 import { listNavigationCheck } from "./list-navigation";
 import { LLM_CONTENT_CHECKS } from "./llm-content";
 import { LLM_CHECKS } from "./llm-copy";

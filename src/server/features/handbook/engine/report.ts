@@ -98,7 +98,7 @@ export function buildReportJson(input: {
     checkerErrors: result.checkerErrors,
     outsideScope: [],
   };
-  const escalations = collectEscalations(result.collected);
+  const escalations = collectEscalations(result.collected, input.depth);
   if (escalations.length > 0) report.escalations = escalations;
   const scored = { ...report, score: scoreReport(report) };
   const confirmed = confirmExports(scored, input.registry);

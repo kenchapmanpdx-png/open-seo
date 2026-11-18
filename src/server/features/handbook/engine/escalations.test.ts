@@ -97,4 +97,42 @@ describe("collectEscalations", () => {
       ["render-word-gap", 3],
     ]);
   });
+
+  it("reports Lighthouse escalations at full depth only", () => {
+    const base = collected([
+      rendered("/fade/one", 100, 0),
+      rendered("/fade/two", 100, 0),
+      {
+        ...rendered("/fade/three", 100, 0),
+        js: { ...rendered("/fade/three", 100, 0).js, pageWeightBytes: 6e6 },
+      },
+    ]);
+    const data = {
+      ...base,
+      lighthouse: {
+        status: "ok" as const,
+        pages: [
+          {
+            url: href("/fade/one"),
+            formFactor: "mobile" as const,
+            environment: "e",
+            performance: 0.3,
+            lcpMs: 5200,
+            cls: 0,
+            tbtMs: 0,
+            lcpElement: null,
+            storageKey: null,
+          },
+        ],
+      },
+    };
+    expect(collectEscalations(data, "quick")).toEqual([]);
+    expect(
+      collectEscalations(data, "full").map((e) => [e.trigger, e.urls]),
+    ).toEqual([
+      // /fade/three is a heaviest page, so already in the base set.
+      ["template-slow-lcp", [href("/fade/two")]],
+      ["page-weight-over-5mb", [href("/fade/three")]],
+    ]);
+  });
 });
