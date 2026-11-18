@@ -40,6 +40,12 @@ import {
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
 import { scoreReport } from "@/server/features/handbook/engine/report";
+import {
+  DEPTH_ENV,
+  MAX_PAGES_ENV,
+  resolveDepth,
+  resolveMaxPages,
+} from "@/server/features/handbook/engine/depth";
 import { renderClientReportHtml } from "@/server/features/handbook/export/client-report";
 import { ReportRepository } from "@/server/features/reports/repositories/ReportRepository";
 import { AgencyService } from "@/server/features/agency/agencyService";
@@ -47,7 +53,8 @@ import { OutcomeService } from "@/server/features/agency/outcomeService";
 import { ReportService } from "@/server/features/reports/services/ReportService";
 import { AppError } from "@/server/lib/errors";
 
-const DEFAULT_MAX_PAGES = 200;
+/** Pre-B9 app cap, kept for `HANDBOOK_DEPTH=quick`. */
+const QUICK_MAX_PAGES = 200;
 const SIGNED_URL_SECONDS = 300;
 
 async function supabaseConfig() {
@@ -162,6 +169,16 @@ function buildReport(
       tierEvidence: "",
       startedAt: run.startedAt,
       finishedAt: run.finishedAt,
+      depth: run.depth,
+      ...(run.coverageDiscovered !== null && run.coverageRead !== null
+        ? {
+            coverage: {
+              discovered: run.coverageDiscovered,
+              read: run.coverageRead,
+              capped: run.coverageCapped,
+            },
+          }
+        : {}),
     },
     score: null,
     siteProfile: rows.siteProfile.map((sp) => ({
@@ -268,6 +285,12 @@ async function executeRun(input: {
     .where(eq(projects.id, input.projectId))
     .limit(1);
   if (!project) throw new Error("handbook: project not found");
+  const depth = resolveDepth(await getOptionalEnvValue(DEPTH_ENV));
+  const maxPages = resolveMaxPages({
+    depth,
+    env: await getOptionalEnvValue(MAX_PAGES_ENV),
+    quickDefault: QUICK_MAX_PAGES,
+  });
   await HandbookRepository.createRun({
     id: input.runId,
     projectId: input.projectId,
@@ -277,6 +300,7 @@ async function executeRun(input: {
     handbookVersion: HANDBOOK_VERSION,
     contractsVersion: CONTRACTS_VERSION,
     mode: input.mode,
+    depth,
   });
   const llmCalls: LlmCallLog[] = [];
   const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
@@ -301,10 +325,10 @@ async function executeRun(input: {
         collectors: createDefaultCollectors({
           seedUrls: input.seedUrls,
           followLinks: true,
-          maxPages: DEFAULT_MAX_PAGES,
+          maxPages,
         }),
         checks: HANDBOOK_CHECKS,
-        maxPages: DEFAULT_MAX_PAGES,
+        maxPages,
         judge,
       },
       {
@@ -327,6 +351,10 @@ async function executeRun(input: {
       runId: input.runId,
       status: "completed",
       tier: result.intake.tier,
+      coverage:
+        result.collected.pages.status === "ok"
+          ? result.collected.pages.coverage
+          : undefined,
     });
     return {
       runId: input.runId,
