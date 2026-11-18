@@ -7,8 +7,8 @@ needs_ken: (none blocking B8; earlier optional items below)
 current_batch: B8
 batch_file: fork/batches/B8-heavy-full-read-design.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 25
-next_action: B8 R1 — rebase, measure (caps, sidecar throughput, in-app memory, LLM tokens/prices), ADR-018…021. Spec: fork/FULL-READ.md (Ken 2026-11-16: read every page; no external truth/legal verification).
+current_run: 26
+next_action: B8 R2 — contracts 1.5.0 (K2/K3 additions, K14 PageProfile, K15 SiteFactMap, registry-supp types, escalation log, report sections), schema both dialects (handbook_page_profile, handbook_run_stage, handbook_run_lease, run depth + coverage) + migrations + harden SQL, sidecar K3 1.2.0 incl. MAX_RENDERS env (ADR-018…021 accepted; measurements in fork/reports/B8.md)
 contracts_version: 1.4.0 (B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -34,19 +34,19 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                          | Model (SPLIT) | Status |
-| ----- | --------------------------------------------- | ------------- | ------ |
-| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done   |
-| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done   |
-| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done   |
-| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done   |
-| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done   |
-| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done   |
-| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done   |
-| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | —      |
-| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | —      |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | —      |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | —      |
+| Batch | File                                          | Model (SPLIT) | Status      |
+| ----- | --------------------------------------------- | ------------- | ----------- |
+| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done        |
+| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done        |
+| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done        |
+| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done        |
+| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done        |
+| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done        |
+| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done        |
+| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | in-progress |
+| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | —           |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | —           |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | —           |
 
 ## Run log
 
@@ -77,6 +77,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 23  | 2026-11-14 | Opus 5.5 | B7 R1 + R2: no upstream commits; B6 review (P7-04 BLOCKED not PASS without render; licenses OK; key settings role gate kept as upstream; WO-B4-003 closed); `ai_answer_mentions` outcome source + client-report "Results since last report"; project overview page (handbook grade, AI traffic, AI answer mention rate, monthly cost estimate); perf probe 500 pages 1.6 s / heap +6 MB; tag `handbook-v2.0.0`; fork/MAINTENANCE.md (M1–M3) + rebase and handbook-sync drills; B7 report; tests 2312 pass                                                                                                                                                                                                                                                                                                                                                                                | MAINT        |
 | 24  | 2026-11-15 | Opus 5.5 | INTERACTIVE: in-app UI smoke (WO-M-UISMOKE) — new `fork/scripts/ui-smoke.mjs`; 8/8 fork pages render with no console/page/server errors on `run-local.sh dev`; handbook toggle persists; example.com audit → handbook run hb-2666999b… (F 39) rendered. No app fixes needed. DataForSEO-dependent views (BYOK/AI-visibility data) not exercised: account not verified. Upstream observation (not fixed): one `organization_slug_unique` error on the first local-admin load (`src/server/auth/workspace-merge.ts` upsert race)                                                                                                                                                                                                                                                                                                                                                           | MAINT        |
 | 25  | 2026-11-16 | Opus 5.5 | INTERACTIVE: Ken items cleared. Projects created in-app for whyracingevents, ryanmscottsdale, bluetreefunding; in-app why audit (30 pages) → handbook run hb-2d111d7e… T3, 46 findings, 11 Anthropic judge calls $0.18, findings + evidence + full body render, ui-smoke 8/8. Sidecar token rotated into .env.local (shell append); BadGEO --sidecar 0/0/0; golden --sidecar --llm why 21/30, ryan 26/36 ($0.34). Fixed P3-20 XHR-only finding without severityReason (runner BLOCKED it on ryan) and publish-report screenshot reader (render is {status,pages}). Vercel publish live: noindex + root 404. BYOK Anthropic smoke PASS. Units installed + active with PLAYWRIGHT_HOST_PLATFORM_OVERRIDE. Observed: 3 concurrent first audits exhausted the Supabase session pool (15) on `run-local.sh dev` — why audit failed, ryan/blue first audits orphaned at 0 pages (RUNBOOK note) | MAINT        |
+| 26  | 2026-11-18 | Opus 5.5 | B8 R1 (AUTOPILOT): rebased onto upstream v0.1.29 (21 commits; tools.test catalog 85+8=93); checks green (2346 tests); measured engine 60/200/500 synthetic (2.4 s, heap 158 MB at 500), live why 33 pages w/ sidecar 2m40s, bluetree 41, ryan 11; sidecar 27/52/54 renders/min at c=1/2/3 (server MAX_RENDERS=2 cap); local workerd not 128 MB-limited (idle 283 MB); Anthropic prices verified (model.ts correct); ADR-018…021 accepted; `handbook-audit.ts --sidecar` loads its token itself; new sidecar-throughput.ts; B8 report R1                                                                                                                                                                                                                                                                                                                                                  | B8 R2        |
 
 ## Batch history
 
