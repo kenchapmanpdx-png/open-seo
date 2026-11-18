@@ -17,19 +17,36 @@ import {
   type LighthouseRequest,
   type RenderRequest,
 } from "@/server/features/handbook/contracts/sidecar";
+import type { HandbookDepth } from "@/server/features/handbook/contracts/exports";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
+import { normalizeUrl } from "@/server/features/handbook/checks/support";
+import { createLimiter } from "./limiter";
 
 /**
  * K3 client collectors (ADR-004): `render`, `axe` and `lighthouse` call the
- * local render sidecar for one sample URL per template (rank 1, max 16;
- * Lighthouse: home + first 2 samples, mobile). The sidecar is operator
- * config (never a site URL), so it is called with plain fetch, not the
- * site-scoped SSRF fetch. Per-URL failures are logged and skipped; when
+ * local render sidecar. `quick`: one sample URL per template (rank 1, max
+ * 16). `full` (FULL-READ §2/§3.3): `render` covers every 200 HTML page,
+ * scrolled to the end, first-screen screenshots only for template rank-1,
+ * home, contact and hub pages. Axe: samples; Lighthouse: home + first 2
+ * samples, mobile, one at a time. Every sidecar call goes through one limiter
+ * (`concurrency`, default 3 = the sidecar's default MAX_RENDERS, ADR-018);
+ * beacons are always recorded then aborted (ADR-021). The sidecar is
+ * operator config (never a site URL), so it is called with plain fetch, not
+ * the site-scoped SSRF fetch. Per-URL failures are logged and skipped; when
  * every URL fails the collector is unavailable with the first reason.
  */
-export type SidecarConfig = { url: string; token: string };
+export type SidecarConfig = {
+  url: string;
+  token: string;
+  /** Default `quick` (pre-B9 sampling). */
+  depth?: HandbookDepth;
+  /** `HANDBOOK_RENDER_CONCURRENCY`; clamped to 1…8, default 3. */
+  concurrency?: number;
+};
 
+const DEFAULT_CONCURRENCY = 3;
 const MAX_SAMPLES = 16;
+const CONTACT_PATH = /\/contact/i;
 const RENDER_TIMEOUT_MS = 90_000;
 const LIGHTHOUSE_TIMEOUT_MS = 180_000;
 
@@ -77,6 +94,53 @@ function sampleUrls(collected: Partial<CollectedData>): string[] | null {
     .slice(0, MAX_SAMPLES);
 }
 
+const HTML_TYPE = /html/i;
+
+/** `full`: every live 200 HTML page (not a redirect), first-seen order. */
+function livePageUrls(collected: Partial<CollectedData>): string[] | null {
+  const pages = collected.pages;
+  if (!pages || pages.status !== "ok") return null;
+  const seen = new Set<string>();
+  return pages.snapshots.flatMap((s) => {
+    const url = normalizeUrl(s.url);
+    const live =
+      s.status === 200 &&
+      normalizeUrl(s.finalUrl) === url &&
+      HTML_TYPE.test(s.contentType ?? "html");
+    if (!live || seen.has(url)) return [];
+    seen.add(url);
+    return [s.url];
+  });
+}
+
+/**
+ * First-screen screenshot targets (FULL-READ §3.3): template rank-1
+ * samples, home, contact pages and hubs (a directory URL with ≥ 2 rendered
+ * pages below it).
+ */
+function screenshotTargets(
+  urls: readonly string[],
+  samples: readonly string[],
+): Set<string> {
+  const paths = urls.map((u) => new URL(u).pathname);
+  const out = new Set(samples.map(normalizeUrl));
+  urls.forEach((url, i) => {
+    const path = paths[i];
+    const dir = path.endsWith("/") ? path : `${path}/`;
+    const children = paths.filter((p) => p !== path && p.startsWith(dir));
+    if (path === "/" || CONTACT_PATH.test(path) || children.length >= 2)
+      out.add(normalizeUrl(url));
+  });
+  return out;
+}
+
+/** Σ transferBytes, unknown sizes (aborted, opaque) skipped. */
+function pageWeight(
+  requests: ReadonlyArray<{ transferBytes?: number | null }>,
+): number {
+  return requests.reduce((sum, r) => sum + (r.transferBytes ?? 0), 0);
+}
+
 /** Runs `each` per URL; unavailable only when every URL failed. */
 async function perUrl<T>(
   ctx: CollectorContext,
@@ -91,8 +155,10 @@ async function perUrl<T>(
     return { status: "unavailable", reason: "no template samples" };
   const pages: T[] = [];
   let firstError: string | null = null;
-  for (const url of urls) {
-    const outcome = await each(url);
+  // All URLs start at once; the shared limiter caps sidecar calls in flight.
+  const outcomes = await Promise.all(urls.map((url) => each(url)));
+  for (const [i, outcome] of outcomes.entries()) {
+    const url = urls[i];
     if (outcome.ok) pages.push(outcome.value);
     else {
       firstError ??= outcome.reason;
@@ -134,24 +200,57 @@ function renderBlocking(report: unknown) {
 }
 
 export function createSidecarCollectors(config: SidecarConfig) {
+  const full = config.depth === "full";
+  const want = config.concurrency ?? DEFAULT_CONCURRENCY;
+  const limit = createLimiter(
+    Number.isInteger(want) && want >= 1
+      ? Math.min(want, 8)
+      : DEFAULT_CONCURRENCY,
+  );
+  const sidecar = <T extends z.ZodTypeAny>(
+    path: string,
+    body: RenderRequest | AxeRequest | LighthouseRequest,
+    schema: T,
+    timeoutMs: number,
+  ) => limit(() => call(config, path, body, schema, timeoutMs));
+  // Lighthouse cannot run two audits at once in one sidecar process.
+  const oneAtATime = createLimiter(1);
+
   const render: Collector<"render"> = {
     key: "render",
-    dependsOn: ["templates"],
-    collect: (ctx, collected) =>
-      perUrl(ctx, "render", sampleUrls(collected), async (url) => {
-        const base = { url, viewport: "mobile", scrollToEnd: false } as const;
+    dependsOn: full ? ["templates", "pages"] : ["templates"],
+    collect: (ctx, collected) => {
+      const samples = sampleUrls(collected);
+      const urls = full && samples ? livePageUrls(collected) : samples;
+      const shots = full
+        ? screenshotTargets(urls ?? [], samples ?? [])
+        : new Set((samples ?? []).map(normalizeUrl));
+      return perUrl(ctx, "render", urls, async (url) => {
+        const base = {
+          url,
+          viewport: "mobile",
+          scrollToEnd: full,
+          blockBeacons: true,
+        } as const;
         const [js, noJs] = await Promise.all([
-          call(
-            config,
+          sidecar(
             "/render",
-            { ...base, javascript: true, screenshot: "firstScreen" },
+            {
+              ...base,
+              javascript: true,
+              screenshot: shots.has(normalizeUrl(url)) ? "firstScreen" : "none",
+            },
             renderResponseSchema,
             RENDER_TIMEOUT_MS,
           ),
-          call(
-            config,
+          sidecar(
             "/render",
-            { ...base, javascript: false, screenshot: "none" },
+            {
+              ...base,
+              scrollToEnd: false,
+              javascript: false,
+              screenshot: "none",
+            },
             renderResponseSchema,
             RENDER_TIMEOUT_MS,
           ),
@@ -179,6 +278,8 @@ export function createSidecarCollectors(config: SidecarConfig) {
             renderedKey,
             words: jsFacts.words,
             requests: js.value.requests,
+            pageWeightBytes: pageWeight(js.value.requests),
+            mediaElements: js.value.mediaElements,
             opacityZeroWords: js.value.opacityZeroWords,
             firstScreenActions: js.value.firstScreenActions,
             forms: jsFacts.markup.counts.forms,
@@ -192,7 +293,8 @@ export function createSidecarCollectors(config: SidecarConfig) {
           consoleErrors: js.value.consoleErrors,
         };
         return { ok: true, value: page };
-      }),
+      });
+    },
   };
 
   const axe: Collector<"axe"> = {
@@ -200,8 +302,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
     dependsOn: ["templates"],
     collect: (ctx, collected) =>
       perUrl(ctx, "axe", sampleUrls(collected), async (url) => {
-        const res = await call(
-          config,
+        const res = await sidecar(
           "/axe",
           { url, viewport: "mobile", scrollToEnd: true },
           axeResponseSchema,
@@ -233,12 +334,13 @@ export function createSidecarCollectors(config: SidecarConfig) {
         ? [home, ...samples.filter((u) => u !== home)].slice(0, 3)
         : null;
       return perUrl(ctx, "lighthouse", urls, async (url) => {
-        const res = await call(
-          config,
-          "/lighthouse",
-          { url, formFactor: "mobile" },
-          lighthouseResponseSchema,
-          LIGHTHOUSE_TIMEOUT_MS,
+        const res = await oneAtATime(() =>
+          sidecar(
+            "/lighthouse",
+            { url, formFactor: "mobile" },
+            lighthouseResponseSchema,
+            LIGHTHOUSE_TIMEOUT_MS,
+          ),
         );
         if (!res.ok) return res;
         const storageKey = await ctx.storeBody(

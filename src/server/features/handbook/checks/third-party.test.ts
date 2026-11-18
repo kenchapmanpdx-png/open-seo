@@ -77,6 +77,24 @@ describe("thirdPartyCheck", () => {
     expect(statusOf(await run(true), "P7-04")).toBe("OPEN");
     expect(statusOf(await run(false), "P7-04")).toBe("PASS");
   });
+
+  it("counts an aborted first-party GA4 beacon as a detected tag", async () => {
+    const result = await thirdPartyCheck.run({
+      ...renderedWith([
+        {
+          url: `${ORIGIN}/g/collect?v=2&tid=G-X`,
+          resourceType: "ping",
+          status: null,
+          beforeLoad: true,
+          aborted: "beacon",
+        },
+      ]),
+      siteProfile: [
+        { code: "SP6", value: "N", evidence: "test", confidence: "high" },
+      ],
+    });
+    expect(statusOf(result, "P7-04")).toBe("OPEN");
+  });
 });
 
 type Requests = Extract<

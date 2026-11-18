@@ -1,7 +1,10 @@
 import { sort } from "remeda";
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import type { LighthouseData } from "@/server/features/handbook/contracts/render-data";
+import type {
+  LighthouseData,
+  RenderData,
+} from "@/server/features/handbook/contracts/render-data";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -9,14 +12,18 @@ import { createResult, normalizeUrl } from "./support";
  * the raw-HTML parts run without the render sidecar:
  * - labMetricsCheck (Lighthouse): LCP ≤ 2.5 s / CLS ≤ 0.1 per sample (P7-09),
  *   CLS measured (P7-08), lab environment recorded (P7-10). CrUX → DATA (B6).
- * - pageWeightCheck (raw HTML): HTML weight (P2-05), render-blocking scripts
- *   and animation libraries in <head> (P7-05).
+ * - pageWeightCheck (raw HTML + render when present): HTML weight and total
+ *   page weight per rendered page (P2-05, Σ transferBytes; media bodies are
+ *   aborted by the sidecar and not sized yet), render-blocking scripts and
+ *   animation libraries in <head> (P7-05).
  * - resourceHintsCheck (raw HTML + render): preconnect only to origins the
  *   rendered page uses; image preload only for the hero; ≤3 preloads (P7-06).
  */
 const LCP_MS = 2500;
 const CLS = 0.1;
 const HTML_BYTES = 500_000;
+/** Total page weight (Σ transfer bytes) per rendered page (§15 "multi-MB"). */
+const PAGE_BYTES = 5_000_000;
 const BLOCKING_SCRIPTS = 5;
 const MAX_PRELOADS = 3;
 /** Lighthouse render-blocking savings worth naming in P7-05. */
@@ -64,6 +71,24 @@ const fontBlockers = (s: PageSnapshot) =>
     const hit = FONT_SERVICES.find(([re]) => re.test(url));
     return hit ? [`${hit[1]} blocks rendering: ${url}`] : [];
   });
+
+const mb = (bytes: number) => `${(bytes / 1_000_000).toFixed(1)} MB`;
+
+/** Rendered-page weight line + top 10 requests by bytes (evidence excerpt). */
+function weightLines(p: RenderData["pages"][number]) {
+  const requests = p.js.requests;
+  const media = requests.filter((q) => q.aborted === "media").length;
+  const top = sort(
+    requests.filter((q) => (q.transferBytes ?? 0) > 0),
+    (a, b) => (b.transferBytes ?? 0) - (a.transferBytes ?? 0),
+  ).slice(0, 10);
+  return {
+    line: `${p.url} — ${mb(p.js.pageWeightBytes ?? 0)} over ${requests.length} requests${media > 0 ? ` (${media} media not sized)` : ""}`,
+    excerpt: top
+      .map((q) => `${mb(q.transferBytes ?? 0)} ${q.resourceType} ${q.url}`)
+      .join("\n"),
+  };
+}
 
 const host = (url: string) => {
   try {
@@ -171,7 +196,34 @@ export const pageWeightCheck: HandbookCheck = {
     const ref = (s: PageSnapshot, excerpt: string) =>
       out.evidence("rawHtml", s.url, excerpt, s.rawKey);
 
-    // P2-05 — HTML weight (image weights need a contract field, B3).
+    // P2-05 — total page weight per rendered page (Σ transfer bytes).
+    const { render } = ctx.collected;
+    const weighed =
+      render.status === "ok"
+        ? render.pages.filter((p) => typeof p.js.pageWeightBytes === "number")
+        : [];
+    const overweight = weighed.filter(
+      (p) => (p.js.pageWeightBytes ?? 0) > PAGE_BYTES,
+    );
+    const weightRef = (p: (typeof weighed)[number]) => {
+      const w = weightLines(p);
+      const excerpt = `${w.line}\n${w.excerpt}`;
+      return out.evidence("renderedDom", p.url, excerpt, p.js.renderedKey);
+    };
+    if (overweight.length > 0)
+      out.finding({
+        itemIds: ["P2-05"],
+        severity: "S3",
+        title: "Pages heavier than 5 MB",
+        detail: overweight.map((p) => weightLines(p).line).join("\n"),
+        fix: "Resize photos to about 2× their largest display size, serve WebP/AVIF with srcset and width/height, and lazy-load images below the first screen.",
+        fixability: "FIXABLE",
+        effort: "M",
+        urls: overweight.map((p) => p.url),
+        evidenceRefs: overweight.slice(0, 5).map(weightRef),
+      });
+
+    // P2-05 — HTML weight.
     const heavy = pagesLive.filter((s) => s.bytesRaw > HTML_BYTES);
     if (heavy.length > 0)
       out.finding({
@@ -189,12 +241,21 @@ export const pageWeightCheck: HandbookCheck = {
           .slice(0, 5)
           .map((s) => ref(s, `HTML ${s.bytesRaw} bytes`)),
       });
-    else {
+    else if (weighed.length === 0)
+      out.blocked(
+        "P2-05",
+        `total page weight not measured: ${render.status === "ok" ? "rendered pages carry no transfer sizes (sidecar < 1.2.0)" : "render unavailable"} (${pagesLive.length} pages, HTML ≤ 500 KB)`,
+      );
+    else if (overweight.length === 0) {
       const biggest = sort(pagesLive, (a, b) => b.bytesRaw - a.bytesRaw);
+      const heaviest = sort(
+        weighed,
+        (a, b) => (b.js.pageWeightBytes ?? 0) - (a.js.pageWeightBytes ?? 0),
+      )[0];
       out.pass(
         "P2-05",
-        `${pagesLive.length} pages, largest HTML ${Math.round((biggest[0]?.bytesRaw ?? 0) / 1000)} KB; total weight incl. images needs a contract field (B3)`,
-        biggest.slice(0, 1).map((s) => ref(s, `HTML ${s.bytesRaw} bytes`)),
+        `${pagesLive.length} pages, largest HTML ${Math.round((biggest[0]?.bytesRaw ?? 0) / 1000)} KB; ${weighed.length} rendered pages ≤ 5 MB, heaviest ${weightLines(heaviest).line}`,
+        [weightRef(heaviest)],
       );
     }
 

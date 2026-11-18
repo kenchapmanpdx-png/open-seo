@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import type {
   CollectedData,
   CollectorContext,
 } from "@/server/features/handbook/contracts/collectors";
+import { snapshot } from "@/server/features/handbook/checks/check-test-fixtures";
 import { createSidecarCollectors } from "./sidecar-collectors";
 
 const ORIGIN = "https://example.com";
@@ -34,6 +36,18 @@ const collected: Partial<CollectedData> = {
       },
     ],
   },
+};
+
+const rendered0 = {
+  finalUrl: `${ORIGIN}/`,
+  status: 200,
+  html: "<html><body><p>one</p></body></html>",
+  screenshotPng: null,
+  consoleErrors: [],
+  requests: [],
+  opacityZeroWords: 0,
+  firstScreenActions: [],
+  timingMs: 10,
 };
 
 const rendered = (html: string) => ({
@@ -140,5 +154,75 @@ describe("sidecar axe + lighthouse collectors (contracts 1.3.0 fields)", () => {
     expect(lhResult).toMatchObject({
       pages: [{ renderBlocking: [{ url: `${ORIGIN}/a.css`, wastedMs: 313 }] }],
     });
+  });
+});
+
+const renderBody = z.object({
+  url: z.string(),
+  javascript: z.boolean(),
+  blockBeacons: z.boolean(),
+});
+
+describe("render depth", () => {
+  const paths = Array.from({ length: 20 }, (_, i) => `/p${i}`);
+  const site: Partial<CollectedData> = {
+    pages: {
+      status: "ok",
+      snapshots: [
+        ...paths.map((p) => snapshot(p)),
+        snapshot("/gone", { status: 404 }),
+      ],
+    },
+    templates: {
+      status: "ok",
+      templates: paths.map((p) => ({
+        key: p,
+        urlPattern: p,
+        skeletonHash: p,
+        urls: [`${ORIGIN}${p}`],
+        samples: [{ url: `${ORIGIN}${p}`, rank: 1, reason: "first" }],
+      })),
+    },
+  };
+  /** URLs sent for a JS-on render; every call asks for beacons blocked. */
+  const jsRendered = () =>
+    fetchMock.mock.calls.flatMap(([, init]) => {
+      const body = renderBody.parse(JSON.parse(z.string().parse(init?.body)));
+      expect(body.blockBeacons).toBe(true);
+      return body.javascript ? [body.url] : [];
+    });
+
+  beforeEach(() => {
+    fetchMock.mockImplementation(async () =>
+      Response.json({
+        ...rendered0,
+        requests: [
+          { url: "a", resourceType: "script", status: 200, transferBytes: 10 },
+          { url: "b", resourceType: "ping", status: null, transferBytes: null },
+          { url: "c", resourceType: "image", status: 200, transferBytes: 5 },
+        ],
+      }),
+    );
+  });
+
+  it("full renders every 200 HTML page and sums transfer bytes", async () => {
+    const [fullRender] = createSidecarCollectors({
+      url: "http://sidecar",
+      token: "t",
+      depth: "full",
+    });
+    const result = await fullRender.collect(ctx, site);
+    if (result.status !== "ok") throw new Error(result.reason);
+    expect(result.pages).toHaveLength(20);
+    expect(result.pages[0].js.pageWeightBytes).toBe(15);
+    expect(new Set(jsRendered())).toEqual(
+      new Set(paths.map((p) => `${ORIGIN}${p}`)),
+    );
+  });
+
+  it("quick keeps at most 16 template samples", async () => {
+    const result = await render.collect(ctx, site);
+    if (result.status !== "ok") throw new Error(result.reason);
+    expect(result.pages).toHaveLength(16);
   });
 });

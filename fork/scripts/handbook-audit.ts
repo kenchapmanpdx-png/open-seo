@@ -147,7 +147,13 @@ export async function runCliAudit(argv: string[]) {
     throw new Error(`--sidecar needs ${SIDECAR_TOKEN_ENV} in the environment`);
   const sidecar =
     values.sidecar && sidecarToken
-      ? { url: values.sidecar, token: sidecarToken }
+      ? {
+          url: values.sidecar,
+          token: sidecarToken,
+          depth,
+          concurrency:
+            Number(process.env.HANDBOOK_RENDER_CONCURRENCY) || undefined,
+        }
       : null;
   const collectors = createDefaultCollectors(
     {
