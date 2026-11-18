@@ -28,7 +28,6 @@ import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
 import { evidenceKey, materialize } from "./evidence";
 import {
-  collectStage,
   completeCollected,
   createMemoryStageStore,
   createMemoryStageTracker,
@@ -36,6 +35,7 @@ import {
   runStagedHandbook,
   type StageContext,
 } from "./stages";
+import { collectRunStage } from "./render-pass";
 
 /**
  * Runtime-agnostic handbook run (ADR-001): collectors → intake → checks →
@@ -123,8 +123,7 @@ export async function runHandbook(
   const ctx = collectorContext(input, runtime);
   await runStagedHandbook(
     {
-      collect: (stage, prior) =>
-        collectStage(input.collectors, ctx, stage, prior),
+      collect: (stage, prior) => collectRunStage(input, ctx, stage, prior),
       evaluate: async (collected) => {
         out.result = await evaluateRun(input, runtime, collected);
       },

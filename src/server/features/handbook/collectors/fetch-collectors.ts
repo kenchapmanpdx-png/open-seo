@@ -336,6 +336,7 @@ export const variantsCollector: Collector<"variants"> = {
         "unknown-path",
         `${origin.origin}/handbook-probe-${Date.now().toString(36)}-not-found`,
       ],
+      ["paginated-home", `${origin.origin}/page/2/`],
     ];
     if (inner) {
       const u = new URL(inner.finalUrl);

@@ -66,10 +66,11 @@ describe("crawl.coverage", () => {
     expect(statusOf(result, "P2-12")).toBe("OPEN");
   });
 
-  it("records coverage counts in the P3-13 note", async () => {
-    const result = await run([snapshot("/"), snapshot("/a")], ["/", "/b"]);
+  it("records coverage counts and JS-only links in the P3-13 note", async () => {
+    const jsOnly = { ...snapshot("/a"), discoveredBy: "render" as const };
+    const result = await run([snapshot("/"), jsOnly], ["/", "/b"]);
     expect(result.statuses.find((s) => s.itemId === "P3-13")?.note).toBe(
-      "sitemap 2 · crawled 2 · both 1 · sitemap-only 1 · crawled-only 1",
+      "sitemap 2 · crawled 2 · both 1 · sitemap-only 1 · crawled-only 1 · JS-only links: 1",
     );
   });
 });
