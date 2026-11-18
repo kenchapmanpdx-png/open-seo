@@ -3,7 +3,6 @@ import { sha256Hex } from "@/server/lib/audit/ids";
 import { decide, parseRobots } from "@/server/features/handbook/engine/robots";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
-import { assetUrls } from "./asset-urls";
 import {
   BOT_USER_AGENTS,
   type BotFetchData,
@@ -39,7 +38,7 @@ const ROBOTS_PATHS = ["/", "/llms.txt", "/sitemap.xml"];
 const MAX_SITEMAPS = 50;
 const MAX_SITEMAP_URLS = 50_000;
 
-async function tryFetch(
+export async function tryFetch(
   ctx: CollectorContext,
   url: string,
   init?: Parameters<CollectorContext["fetch"]>[1],
@@ -256,15 +255,11 @@ export const llmsCollector: Collector<"llms"> = {
   },
 };
 
-/**
- * Home, then the first sample of every template, then (with `allPages`) the
- * other samples and every crawled 200 page — capped at `max`.
- */
+/** Home, then the first sample of every template — capped at `max`. */
 function probeUrls(
   ctx: CollectorContext,
   collected: Partial<CollectedData>,
   max: number,
-  allPages = false,
 ) {
   const urls = new Set([new URL("/", ctx.origin).href]);
   const templates =
@@ -273,46 +268,8 @@ function probeUrls(
     const first = t.samples[0]?.url;
     if (first) urls.add(first);
   }
-  if (allPages) {
-    for (const t of templates) for (const s of t.samples) urls.add(s.url);
-    if (collected.pages?.status === "ok") {
-      for (const s of collected.pages.snapshots)
-        if (s.status === 200) urls.add(s.finalUrl);
-    }
-  }
   return [...urls].slice(0, max);
 }
-
-export const headersCollector: Collector<"headers"> = {
-  key: "headers",
-  dependsOn: ["templates", "pages"],
-  async collect(ctx, collected) {
-    const responses = [];
-    // Headers can differ per path (edge rules), so probe beyond samples.
-    for (const url of probeUrls(ctx, collected, 40, true)) {
-      const res = await tryFetch(ctx, url);
-      if (res)
-        responses.push({
-          url: res.finalUrl,
-          status: res.status,
-          headers: res.headers,
-        });
-    }
-    // Up to 4 same-host assets from the home page for cache policy (P7-07).
-    for (const url of assetUrls(collected)) {
-      const res = await tryFetch(ctx, url);
-      if (res)
-        responses.push({
-          url: res.finalUrl,
-          status: res.status,
-          headers: res.headers,
-        });
-    }
-    if (responses.length === 0)
-      return { status: "unavailable", reason: "no response" };
-    return { status: "ok", responses };
-  },
-};
 
 export const variantsCollector: Collector<"variants"> = {
   key: "variants",
