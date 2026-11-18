@@ -108,3 +108,21 @@ export type RegistryClass = z.infer<typeof registryClassSchema>;
 export type EvidenceKind = z.infer<typeof evidenceKindSchema>;
 export type Severity = z.infer<typeof severitySchema>;
 export type RegistryEntry = z.infer<typeof registryEntrySchema>;
+
+/**
+ * Supplementary rule (ADR-020): an app rule outside handbook §41. Same
+ * finding + evidence contracts, `itemId` = `SUPP-nn`; reported under
+ * "Additional findings" and never scored. `effect` is the FULL-READ §0 scope
+ * test — an entry with no ranking / SEO / GEO effect is not added. 1.5.0
+ */
+export const suppEntrySchema = z.object({
+  id: z.string().regex(/^SUPP-\d{2}$/),
+  title: z.string().min(1),
+  /** Handbook § numbers the rule derives from. */
+  refs: z.array(z.number().int().min(0)).min(1),
+  class: z.enum(["deterministic", "render", "llm"]),
+  severityDefault: severitySchema,
+  effect: z.enum(["ranking", "SEO", "GEO"]),
+  evidence: z.array(evidenceKindSchema).min(1),
+});
+export type SuppEntry = z.infer<typeof suppEntrySchema>;

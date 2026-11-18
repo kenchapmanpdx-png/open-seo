@@ -116,6 +116,61 @@ export type PageSnapshot = {
   }>;
   xRobotsTag: string | null;
   markup: PageMarkup;
+  /**
+   * Response headers of the crawl fetch: lower-cased names, `set-cookie`
+   * values dropped, each value ≤ 2 kB (ADR-021). Headers-by-value checks read
+   * these instead of re-fetching the page. 1.5.0
+   */
+  headers?: ReadonlyArray<readonly [string, string]>;
+  /** Time to first byte of the crawl fetch, ms. 1.5.0 */
+  ttfbMs?: number | null;
+  /** How the crawl found this URL (render = second pass, JS-only link). 1.5.0 */
+  discoveredBy?: DiscoveredBy;
+};
+
+export const DISCOVERED_BY = ["raw", "sitemap", "seed", "render"] as const;
+export type DiscoveredBy = (typeof DISCOVERED_BY)[number];
+
+/** `<video>` element facts (FULL-READ §3.12). Raw HTML; rendered DOM adds first-screen flags (K3). */
+export type MarkupVideo = {
+  src: string | null;
+  poster: string | null;
+  autoplay: boolean;
+  muted: boolean;
+  controls: boolean;
+  /** `preload` attribute as written (null = absent). 1.5.0 */
+  preload?: string | null;
+  loop?: boolean;
+  width?: string | null;
+  height?: string | null;
+  /** CSS `aspect-ratio` from the inline style, if any. 1.5.0 */
+  aspectRatio?: string | null;
+  sources?: ReadonlyArray<{ src: string; type: string | null }>;
+  tracks?: ReadonlyArray<{ kind: string | null; src: string | null }>;
+  /** Present in the raw (server) HTML, not only after render. 1.5.0 */
+  inRawHtml?: boolean;
+};
+
+export const EMBED_PROVIDERS = [
+  "youtube",
+  "vimeo",
+  "wistia",
+  "loom",
+  "other",
+] as const;
+export type EmbedProvider = (typeof EMBED_PROVIDERS)[number];
+
+/** Video `<iframe>` embed facts (FULL-READ §3.12). 1.5.0 */
+export type MarkupEmbed = {
+  provider: EmbedProvider;
+  videoId: string | null;
+  src: string;
+  loading: string | null;
+  width: string | null;
+  height: string | null;
+  aspectRatio: string | null;
+  /** Click-to-load thumbnail instead of the player iframe at load. */
+  facade: boolean;
 };
 
 /** Raw-HTML structure facts for CRAWL / PERF / A11Y checks (one parse pass). */
@@ -144,13 +199,9 @@ export type PageMarkup = {
     type: string | null;
   }>;
   buttons: ReadonlyArray<{ text: string; ariaLabel: string | null }>;
-  videos: ReadonlyArray<{
-    src: string | null;
-    poster: string | null;
-    autoplay: boolean;
-    muted: boolean;
-    controls: boolean;
-  }>;
+  videos: ReadonlyArray<MarkupVideo>;
+  /** Video iframe embeds (YouTube, Vimeo, Wistia, Loom, …). 1.5.0 */
+  embeds?: ReadonlyArray<MarkupEmbed>;
   counts: {
     tables: number;
     lists: number;
@@ -324,7 +375,20 @@ export type TemplatesData = {
       rank: 1 | 2 | 3;
       reason: "first" | "median" | "largest";
     }>;
+    /**
+     * Text blocks shared by ≥ 80 % of the template's pages, stored once per
+     * template (FULL-READ §3.11, ADR-021). Page-unique text = page text minus
+     * these blocks. 1.5.0
+     */
+    boilerplate?: { blocks: readonly string[]; words: number };
   }>;
+};
+
+/** Crawl coverage (ADR-018): read < discovered when the page cap applied. 1.5.0 */
+export type Coverage = {
+  discovered: number;
+  read: number;
+  capped: boolean;
 };
 
 export type RenderData = {
@@ -341,7 +405,19 @@ export type RenderData = {
         status: number | null;
         /** Started before the load event (Resource Timing); absent from older sidecars. 1.1.0 */
         beforeLoad?: boolean;
+        /** Bytes over the wire (Resource Timing `transferSize`, else body size). 1.5.0 */
+        transferBytes?: number | null;
+        /** Recorded then aborted by the sidecar (beacon or media). 1.5.0 */
+        aborted?: "beacon" | "media" | null;
+        /** Resource Timing `nextHopProtocol` (h2, h3, http/1.1). 1.5.0 */
+        protocol?: string | null;
       }>;
+      /** Σ transferBytes + declared size of media that loads with the page. 1.5.0 */
+      pageWeightBytes?: number | null;
+      /** Rendered `<video>` / video iframe layout facts (FULL-READ §3.12). 1.5.0 */
+      mediaElements?: ReadonlyArray<RenderedMediaElement>;
+      /** Same-host links present only in the rendered DOM (second crawl pass). 1.5.0 */
+      renderOnlyLinks?: readonly string[];
       opacityZeroWords: number;
       /** `<form>` count in the rendered DOM (P2-08 JS-only forms). 1.3.0 */
       forms?: number;
@@ -355,6 +431,16 @@ export type RenderData = {
     firstScreenKey: string | null;
     consoleErrors: readonly string[];
   }>;
+};
+
+/** One `<video>` or video `<iframe>` after render. 1.5.0 */
+export type RenderedMediaElement = {
+  kind: "video" | "iframe";
+  src: string | null;
+  /** Intersects the first mobile viewport. */
+  firstScreen: boolean;
+  /** Has width/height attributes or a computed `aspect-ratio` (no layout shift). */
+  reservedSize: boolean;
 };
 
 export type AxeData = {

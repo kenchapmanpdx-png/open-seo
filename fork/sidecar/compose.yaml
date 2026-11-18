@@ -5,12 +5,13 @@ services:
     build:
       context: ../..
       dockerfile: fork/sidecar/Dockerfile
-    image: handbook-sidecar:1.1.0
+    image: handbook-sidecar:1.2.0
     ports:
       - "127.0.0.1:4777:4777"
     environment:
       HANDBOOK_SIDECAR_TOKEN: ${HANDBOOK_SIDECAR_TOKEN:?set HANDBOOK_SIDECAR_TOKEN}
       HANDBOOK_SIDECAR_ALLOW_PRIVATE: ${HANDBOOK_SIDECAR_ALLOW_PRIVATE:-0}
+      HANDBOOK_SIDECAR_MAX_RENDERS: ${HANDBOOK_SIDECAR_MAX_RENDERS:-3}
     ipc: host
     init: true
     restart: unless-stopped

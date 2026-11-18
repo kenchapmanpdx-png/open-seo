@@ -8,6 +8,12 @@
  * texts, Lighthouse render-blocking items, loose MCP output objects;
  * 1.4.0, B5: integration contracts K9–K13 beside their features — ai-traffic,
  * bing, ai-visibility/providers/byok, backlinks/providers/commoncrawl,
- * agency — ADR-013…017).
+ * agency — ADR-013…017;
+ * 1.5.0, B8: full-read additions (ADR-018…021) — K2 page headers / TTFB /
+ * discoveredBy / video + embed facts / coverage / boilerplate split, K3
+ * sidecar 1.2.0 (transferBytes, aborted, protocol, blockBeacons, media
+ * elements), K14 `PageProfile`, K15 `SiteFactMap`, SUPP registry types,
+ * report depth / coverage / escalations / additional findings / answer-engine
+ * readiness).
  */
-export const CONTRACTS_VERSION = "1.4.0";
+export const CONTRACTS_VERSION = "1.5.0";

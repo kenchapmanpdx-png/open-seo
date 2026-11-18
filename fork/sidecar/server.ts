@@ -18,6 +18,7 @@ import {
   type RenderResponse,
 } from "../../src/server/features/handbook/contracts/sidecar";
 import { CONTRACTS_VERSION } from "../../src/server/features/handbook/contracts/version";
+import { maxRendersFromEnv } from "./classify";
 
 /**
  * K3 render sidecar (ADR-004, ADR-009): bearer-token HTTP API on
@@ -25,9 +26,8 @@ import { CONTRACTS_VERSION } from "../../src/server/features/handbook/contracts/
  * so the HTTP layer is testable without a browser; `main()` wires the real
  * ones. Requests and responses are validated with the K3 Zod schemas.
  */
-export const SIDECAR_VERSION = "1.1.0";
+export const SIDECAR_VERSION = "1.2.0";
 const MAX_BODY = 64 * 1024;
-const MAX_RENDERS = 2;
 
 export type Engines = {
   chromium: () => Promise<string>;
@@ -45,6 +45,8 @@ export type SidecarOptions = {
   allowPrivate: boolean;
   engines: Engines;
   resolve?: (host: string) => Promise<string[]>;
+  /** Concurrent browser tasks; default `HANDBOOK_SIDECAR_MAX_RENDERS` or 3 (ADR-018). */
+  maxRenders?: number;
 };
 
 class HttpError extends Error {
@@ -128,7 +130,7 @@ function parse<T extends z.ZodTypeAny>(schema: T, value: unknown): z.output<T> {
   return result.data as z.output<T>;
 }
 
-/** Caps concurrent browser work at MAX_RENDERS. */
+/** Caps concurrent browser work (render + axe + Lighthouse share it). */
 function limiter(max: number) {
   let active = 0;
   const queue: (() => void)[] = [];
@@ -145,7 +147,10 @@ function limiter(max: number) {
 }
 
 export function createSidecar(options: SidecarOptions): Server {
-  const limit = limiter(MAX_RENDERS);
+  const limit = limiter(
+    options.maxRenders ??
+      maxRendersFromEnv(process.env.HANDBOOK_SIDECAR_MAX_RENDERS),
+  );
   const { engines } = options;
 
   async function route(req: IncomingMessage): Promise<unknown> {

@@ -25,4 +25,7 @@ export const {
   handbookEvidence,
   handbookBotFetches,
   handbookLlmCalls,
+  handbookRunStages,
+  handbookRunLeases,
+  handbookPageProfiles,
 } = schema;
