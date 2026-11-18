@@ -1,0 +1,414 @@
+# Golden expectations derived from fork/fixtures/audits/bluetreefunding-2026-11-15.md (read-only source; M3, B8 R3).
+# urls: paths relative to origin; `*` = any segment. items: registry ids (src/server/features/handbook/registry.ts).
+# detectableBy: deterministic (raw fetch/headers/robots/JSON-LD) | render (sidecar: JS on/off, screenshot, Lighthouse, axe) | llm | data (third-party account data) | owner.
+# class: registry class of the primary item. severity: the golden audit's severity. note: scorer hints (site-changed, scope).
+# supp: supplementary rule ids (src/server/features/handbook/registry-supp.ts, ADR-020); matched against report
+# findings + additionalFindings like items. A SUPP-only entry has items: [].
+# scope: entry excluded from the catch rate (golden-score verdict `excluded`): "outside-scope [Ken]" (FULL-READ §0/§6:
+# not rankings/SEO/GEO, incl. the dropped sensitive-forms / SPF-DMARC / author-archive / generator-meta items) ·
+# "truth-verification [Ken]" (checking a claim against an external source) · "off-site" (backlink / ranking data, EP-7).
+# The golden F10 is split: F10 (lab LCP, weight, caching, fonts) and F10V (video part → P7-01 + SUPP-08, B8 R3.2).
+site: bluetreefunding.com
+origin: https://bluetreefunding.com
+audit: fork/fixtures/audits/bluetreefunding-2026-11-15.md
+auditHandbookVersion: "4.6"
+registryHandbookVersion: "4.6"
+mode: REVIEW
+tier: T3
+grade: { final: 41, uncapped: 41 }
+
+findings:
+  - id: F01
+    title: "Bot-check interstitial (openresty) served as HTTP 200 content; intermittent on HTTPS, always on plain HTTP"
+    items: [P9-01]
+    supp: [SUPP-07]
+    urls: [/, /contact/]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S2
+    note: "intermittent: 14 of 200 bot-UA HTTPS fetches (7%); every plain-HTTP fetch. A run may see 0 challenges (FULL-READ §3 interstitial detector + bot-parity ×2)"
+  - id: F02
+    title: "No HTTP→HTTPS redirect (http:// and http://www. → 200 interstitial)"
+    items: [P3-01]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "site-changed on 2026-11-18 (http:// and http://www. → 301 https://bluetreefunding.com/ from the build host; golden saw the interstitial — may be egress-dependent)"
+  - id: F03
+    title: "No security headers on any HTTPS response (HSTS, CSP, nosniff, Referrer-Policy, Permissions-Policy, XFO)"
+    items: [P8-01, P8-05]
+    urls: [/]
+    class: HEADERS
+    detectableBy: deterministic
+    severity: S2
+  - id: F04
+    title: "Test / dev / duplicate pages indexable + in sitemap; empty category archive; 15 sitemap URLs without internal link"
+    items: [P3-12, P3-14]
+    supp: [SUPP-05]
+    urls:
+      - /healthcare-pre-funding-dev/
+      - /pocket-nurse3/
+      - /1045-2/
+      - /nicole/
+      - /vilo/
+      - /vendor/
+      - /healthcare-revenue-services/
+      - /partner/mining-financing/
+      - /partner/compass-mining/
+      - /financing-hci/
+      - /construction-financing/
+      - /partner/pocket-nurse/
+      - /pocket-nurse/
+      - /category/uncategorized/
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "the 'indexable URLs collect SSNs' part is a sensitive-form item → dropped [Ken 2026-11-16]; inventory + test/dev + duplicates stay"
+  - id: F05
+    title: "No H1 on 33 of 40 pages; no <main>; slogan h5 first; level skips; footer labels as h3"
+    items: [P4-01, P4-08]
+    urls: [/, /contact/, /equipment-leasing/, /working-capital/, /pocket-nurse/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+  - id: F06
+    title: "Brand-only home title, bare label titles, hub titles without promise, mixed suffix; entity test fails"
+    items: [P4-02, P4-07, P4-01, P5-07]
+    urls:
+      [
+        /,
+        /contact/,
+        /construction/,
+        /consumer/,
+        /nicole/,
+        /vilo/,
+        /pocket-nurse3/,
+        /1045-2/,
+        /equipment-leasing/,
+        /working-capital/,
+      ]
+    class: LLM
+    detectableBy: llm
+    severity: S2
+  - id: F07
+    title: "Meta descriptions empty, placeholder, slogan-only or auto-cut body text (34 of 40 > 177 chars); duplicates"
+    items: [P4-03, P4-01]
+    urls: [/application/, /nicole/, /1045-2/, /vilo/, /]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+  - id: F08
+    title: "Viewport blocks zoom (maximum-scale=1, user-scalable=0) on 38 of 40 pages"
+    items: [P4-04]
+    urls: [/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+  - id: F09
+    title: 'No og:image / twitter:image anywhere; empty content="" fb:pages, fb:app_id, twitter:site, twitter:creator'
+    items: [P4-09]
+    supp: [SUPP-06]
+    urls: [/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+  - id: F10
+    title: "Lab mobile LCP fails 10 of 10 templates (3.7–12.7 s); 43.7 MB home; CSS-background LCP; no asset caching; HTTP/1.1; cold TTFB 3.1–3.5 s; render-blocking fonts"
+    items: [P7-09, P2-05, P7-03, P7-05, P7-07, P7-06]
+    urls:
+      [
+        /,
+        /working-capital/,
+        /financing-hci/,
+        /construction-financing/,
+        /equipment-leasing/,
+      ]
+    class: PERF
+    detectableBy: render
+    severity: S2
+  - id: F10V
+    title: "Hero video preload=auto, 5 autoplay slider videos 6.2–16.2 MB each, no poster / pause / reduced motion; 17.1 MB and 6.2 MB background videos"
+    items: [P7-01]
+    supp: [SUPP-08]
+    urls: [/, /working-capital/, /financing-hci/, /construction-financing/]
+    class: RENDER
+    detectableBy: render
+    severity: S2
+    note: "video part of golden F10 (B8 R3.2); file sizes need HEAD / Range on media URLs (WO-B9-032)"
+  - id: F11
+    title: 'Counters JS-only and wrong in raw HTML ("$ 0 /mo", "0 %", "0 mo"; mock dashboard "$0")'
+    items: [P2-01, P2-09]
+    supp: [SUPP-04]
+    urls: [/pocket-nurse/, /pocket-nurse3/, /medical-funding/]
+    class: RENDER
+    detectableBy: render
+    severity: S2
+  - id: F12
+    title: "Stale Section 179 figure ($1,000,000 vs the cited source's 2026 limit); 100% tax-deductible without limits"
+    items: [P5-03]
+    urls: [/, /vendor/, /healthcare-revenue-services/]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+    scope: "truth-verification [Ken]"
+    note: "checking a figure against section179.org = external truth verification (FULL-READ §0); P5-03 operator-disabled"
+  - id: F13
+    title: "Conflicting terms / approval / funding times across pages; unsourced stats (96%, 94%, $3 billion, tens of thousands); testimonials without company or date"
+    items: [P5-02]
+    urls:
+      [
+        /,
+        /working-capital/,
+        /medical-funding/,
+        /rcm-connect/,
+        /pocket-nurse/,
+        /financing-hci/,
+        /medical-dental/,
+      ]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+    note: "on-page only: conflicts between the site's own pages + missing source/date; not checked against external sources"
+  - id: F14
+    title: 'Template leftovers: "$ 99 Per Month" in the Traditional Banks column, "(555) 555-5555", stray "1 1", Cookie Policy → home'
+    items: [P5-04, P5-12]
+    urls: [/, /rcm-connect/, /vilo/]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+  - id: F15
+    title: "Unsupported superlatives; compliance claims without basis (HIPAA badge image, 100% Compliant); acronyms not spelled out"
+    items: [P5-04, P5-11]
+    urls:
+      [
+        /,
+        /rcm-connect/,
+        /medical-funding/,
+        /working-capital/,
+        /equipment-leasing/,
+      ]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+    note: "on-page support only (claim stated without basis / as image); no external verification"
+  - id: F16
+    title: "Salient entrance animations keep content at opacity 0 without JS (home 348 hidden words)"
+    items: [P2-07]
+    urls: [/, /equipment-leasing/, /working-capital/*, /franchise/]
+    class: RENDER
+    detectableBy: render
+    severity: S3
+  - id: F17
+    title: "Duplicate text in raw HTML: slider slogan h2 ×4, fancy-box titles ×2, boilerplate paragraph ×2 on 8 pages"
+    items: [P2-09]
+    supp: [SUPP-03]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+  - id: F18
+    title: "No Organization node; 3 conflicting org nodes (MedicalBusiness, LocalBusiness, bare Organization) without @id; WebSite without publisher; no BreadcrumbList"
+    items: [P6-03, P6-01, P6-06, P6-09]
+    urls: [/, /rcm-connect/, /medical-funding/]
+    class: SCHEMA
+    detectableBy: deterministic
+    severity: S3
+  - id: F18N
+    title: 'Name variants "Blue Tree Funding", "BlueTree Funding", "Blue Tree", "BTF"'
+    items: [P5-07]
+    urls: [/*]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+    note: "name-variant part of golden F18 (P5-07 'names + entity test 0 (F06, F18)')"
+  - id: F19
+    title: "FAQPage markup disagrees with the visible FAQ (questions missing / reworded, answers contradict)"
+    items: [P6-07]
+    urls: [/medical-funding/, /rcm-connect/]
+    class: SCHEMA
+    detectableBy: llm
+    severity: S3
+  - id: F20
+    title: "Working Capital hub + 5 services missing from header nav; orphan /consumer/; generic anchors; internal links target=_blank"
+    items: [P2-11, P4-12]
+    supp: [SUPP-01, SUPP-02]
+    urls:
+      [
+        /,
+        /working-capital/,
+        /consumer/,
+        /cbd/,
+        /application/,
+        /terms-and-conditions/,
+      ]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+  - id: F21
+    title: "Outbound: Calendly 404, fundedbiz 307, twitter.com 301; Gmail-pasted links to http:// home"
+    items: [P5-13, P3-08]
+    urls: [/franchise/, /privacy-policy/, /*]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S3
+  - id: F22
+    title: "No About / company page; no named people, Person schema or editorial standards (SP6)"
+    items: [P5-17, P5-10]
+    urls: [/about/, /about-us/, /]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+  - id: F23
+    title: "Thin / near-identical industry and partner pages (112–351 words); inconsistent URL hierarchy and slugs"
+    items: [P5-15, P2-12]
+    urls:
+      [
+        /construction/,
+        /construction-financing/,
+        /partner/*,
+        /1045-2/,
+        /pocket-nurse3/,
+        /nicole/,
+      ]
+    class: LLM
+    detectableBy: llm
+    severity: S3
+  - id: F24
+    title: "First mobile screen without a labelled button (/contact/, /vilo/)"
+    items: [P5-14]
+    urls: [/contact/, /vilo/]
+    class: RENDER
+    detectableBy: render
+    severity: S3
+  - id: F25
+    title: 'Unnamed social icon links + slider arrows; alt="" on content images; contrast 2.8–4.21:1; autoplay without reduced motion'
+    items: [P8-04, P8-02, P8-06]
+    urls: [/, /medical-funding/, /rcm-connect/, /pocket-nurse/, /financing-hci/]
+    class: A11Y
+    detectableBy: render
+    severity: S3
+  - id: F26
+    title: "/CONTACT/ → 200 + canonical; /page/2/ → copy of home; home in 2 child sitemaps; empty category sitemap"
+    items: [P3-12, P3-04]
+    urls: [/CONTACT/, /page/2/, /sitemaps.xml, /]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+  - id: F27
+    title: "AI-bot policy split: robots.txt allows all, Apache 403 to GPTBot / Bytespider / meta-externalagent; decision unrecorded"
+    items: [P9-01, P9-04]
+    urls: [/, /robots.txt]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S4
+  - id: F28
+    title: "tel: without + (not E.164); two contact emails"
+    items: [P5-08]
+    urls: [/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "P5-08 is gated on SP7 (= ? in the golden) → may be N/A in a run"
+  - id: N01
+    title: "Email DNS: SPF ok, DMARC p=none (Outside scope — noted)"
+    items: []
+    urls: []
+    class: null
+    detectableBy: deterministic
+    severity: null
+    scope: "outside-scope [Ken]"
+    note: "SPF/DMARC dropped [Ken 2026-11-16]"
+  - id: N02
+    title: 'Username "admin" exposed by /author/admin/; generator meta "WordPress 7.1.4" (Outside scope — noted)'
+    items: []
+    urls: [/author/admin/]
+    class: null
+    detectableBy: deterministic
+    severity: null
+    scope: "outside-scope [Ken]"
+    note: "author-archive + generator-meta notes dropped [Ken 2026-11-16]"
+  - id: N03
+    title: "Application accepts 264 MB PDF uploads; 4 indexable SSN forms; sensitive-form data flow (Outside scope — noted / BLOCKED)"
+    items: []
+    urls: [/application/, /nicole/, /1045-2/, /partner/doclab/]
+    class: null
+    detectableBy: owner
+    severity: null
+    scope: "outside-scope [Ken]"
+    note: "sensitive-data forms dropped [Ken 2026-11-16]"
+
+passes:
+  - id: PASS-01
+    title: "Self-canonical on all 40 pages; canonical = sitemap <loc> = link form; utm canonicalizes; https://www → apex one hop; trailing slash 301"
+    items: [P3-04, P3-02, P3-19]
+    urls: [/*]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-02
+    title: "Real 404 with own noindex template; /?p=1 404; sitemap aliases 301 /sitemaps.xml"
+    items: [P3-10, P3-11]
+    urls: [/this-page-does-not-exist/]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-03
+    title: "robots.txt: one * group, Disallow /wp-admin/ only; no render-resource blocks; Sitemap → live index"
+    items: [P3-15, P3-20]
+    urls: [/robots.txt]
+    class: ROBOTS
+    detectableBy: deterministic
+  - id: PASS-04
+    title: "Sitemap lastmod from WordPress modified dates; not a build date"
+    items: [P3-17]
+    urls: [/sitemaps.xml]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-05
+    title: "Internal search ?s= → noindex, follow; not Disallowed"
+    items: [P3-23]
+    urls: [/]
+    class: ROBOTS
+    detectableBy: deterministic
+  - id: PASS-06
+    title: "wp-admin 302 login; wp-login noindex; xmlrpc 403; users API 401"
+    items: [P3-16]
+    urls: [/wp-admin/, /wp-login.php]
+    class: HEADERS
+    detectableBy: deterministic
+  - id: PASS-07
+    title: "max-image-preview:large + max-snippet:-1 on all indexable pages"
+    items: [P4-11]
+    urls: [/*]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-08
+    title: "CLS ≤ 0.005 on 10 mobile templates"
+    items: [P7-08]
+    urls:
+      [/, /equipment-leasing/, /working-capital/, /medical-funding/, /contact/]
+    class: PERF
+    detectableBy: render
+  - id: PASS-09
+    title: "Page-specific FAQs on /medical-funding/ and /rcm-connect/; no boilerplate FAQ; page-type matrix ok"
+    items: [P5-05, P5-06]
+    urls: [/medical-funding/, /rcm-connect/]
+    class: LLM
+    detectableBy: llm
+  - id: PASS-10
+    title: "/contact/: phone, email, form, office addresses in server HTML"
+    items: [P5-16]
+    urls: [/contact/]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-11
+    title: "JSON-LD parses on all 3 pages; absolute https URLs; no empty fields; no placeholder sentinels"
+    items: [P6-02, P6-15]
+    urls: [/, /rcm-connect/, /medical-funding/]
+    class: SCHEMA
+    detectableBy: deterministic
+  - id: PASS-12
+    title: "Detail pages linked from crawlable hub pages; no hard-coded years in headings"
+    items: [P2-10, P4-06]
+    urls: [/equipment-leasing/, /working-capital/]
+    class: CRAWL
+    detectableBy: deterministic

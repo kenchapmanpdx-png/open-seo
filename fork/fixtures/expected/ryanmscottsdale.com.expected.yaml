@@ -2,7 +2,12 @@
 # incl. Addendum (A01–A10) and Addendum 2 (S01–S03) with their corrections applied.
 # urls: paths relative to origin; `*` = any segment. items: registry ids (src/server/features/handbook/registry.ts);
 # [] = no §41 item covers it (coverage gap or out of scope).
-# detectableBy: deterministic | render | llm | data | owner. scope: out = off-site / excluded; scorer skips it.
+# supp: supplementary rule ids (src/server/features/handbook/registry-supp.ts, ADR-020); matched against report
+# findings + additionalFindings like items. A SUPP-only entry has items: [].
+# detectableBy: deterministic | render | llm | data | owner.
+# scope: entry excluded from the catch rate (golden-score verdict `excluded`): "outside-scope [Ken]" (FULL-READ §0/§6:
+# not rankings/SEO/GEO, incl. the dropped sensitive-forms / SPF-DMARC / author-archive / generator-meta items) ·
+# "truth-verification [Ken]" (checking a claim against an external source) · "off-site" (backlink / ranking data, EP-7).
 site: ryanmscottsdale.com
 origin: https://www.ryanmscottsdale.com
 audit: fork/fixtures/audits/ryanmscottsdale-2026-11-13.md
@@ -51,6 +56,7 @@ findings:
   - id: F06
     title: "/stylists-test indexable + in sitemap; typo title; stale roster"
     items: [P3-12, P4-03, P5-02]
+    supp: [SUPP-05]
     urls: [/stylists-test]
     class: CRAWL
     detectableBy: deterministic
@@ -91,6 +97,7 @@ findings:
     class: LLM
     detectableBy: llm
     severity: S3
+    note: "P5-03 operator-disabled (N/A, FULL-READ §5.5); the on-page part is P5-04"
   - id: F12
     title: "Awards as images only (no text, year, source link)"
     items: [P5-11]
@@ -115,6 +122,7 @@ findings:
   - id: F15
     title: "Each price printed twice in raw HTML"
     items: [P5-12, P2-09]
+    supp: [SUPP-03]
     urls: [/service]
     class: CRAWL
     detectableBy: deterministic
@@ -129,11 +137,12 @@ findings:
   - id: F17
     title: 'Generic anchors ("Read more", "Click here")'
     items: []
+    supp: [SUPP-01]
     urls: [/our-stylists, /]
     class: CRAWL
     detectableBy: deterministic
     severity: S3
-    note: "no §41 item; §12 rule only (coverage gap)"
+    note: "no §41 item; §12 rule → SUPP-01"
   - id: F18
     title: "HSTS max-age=0; no CSP / Referrer-Policy / Permissions-Policy; XFO twice"
     items: [P8-05, P8-01]
@@ -190,8 +199,8 @@ findings:
     class: null
     detectableBy: deterministic
     severity: null
-    scope: out
-    note: 'off-site email DNS; "Outside scope — noted"'
+    scope: "outside-scope [Ken]"
+    note: 'off-site email DNS; "Outside scope — noted"; SPF/DMARC dropped [Ken 2026-11-16]'
   - id: A03
     title: "Spammy backlink profile"
     items: []
@@ -199,7 +208,7 @@ findings:
     class: null
     detectableBy: data
     severity: null
-    scope: out
+    scope: off-site
     note: "off-site backlinks"
   - id: A04
     title: "Ranking context"
@@ -208,7 +217,7 @@ findings:
     class: null
     detectableBy: data
     severity: null
-    scope: out
+    scope: off-site
     note: "ranking data excluded (EP-7)"
   - id: A05
     title: "Address not machine-parseable; two tel: formats"

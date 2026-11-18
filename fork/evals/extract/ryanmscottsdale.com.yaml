@@ -1,0 +1,47 @@
+site: ryanmscottsdale.com
+origin: https://www.ryanmscottsdale.com
+cases:
+  # F11 — uncited superlatives (case differs on the page; the scorer normalises)
+  - {
+      golden: F11,
+      url: /,
+      field: superlatives,
+      quote: "the ultimate destination in luxury hair care",
+    }
+  - {
+      golden: F11,
+      url: /,
+      field: superlatives,
+      quote: "Scottsdale's go-to salon",
+    }
+  # F12 — awards only as images (alt = file name)
+  - {
+      golden: F12,
+      url: /,
+      field: awards,
+      quote: "Bestofourvalley_Winner_ryanm.png",
+      expect: { source: imageAlt, hasYear: false },
+    }
+  - {
+      golden: F12,
+      url: /,
+      field: awards,
+      quote: "NahaFinalist_ryanm.png",
+      expect: { source: imageAlt, hasYear: false },
+    }
+  # A06 — brand spelled several ways
+  - {
+      golden: A06,
+      url: /,
+      field: names,
+      quote: "Ryan M. Scottsdale",
+      expect: { kind: brand },
+    }
+  - {
+      golden: A06,
+      url: /,
+      field: names,
+      quote: "RYAN M SCOTTSDALE",
+      expect: { kind: brand },
+    }
+  - { golden: A06, url: /, field: undefinedAcronyms, quote: "RMS" }

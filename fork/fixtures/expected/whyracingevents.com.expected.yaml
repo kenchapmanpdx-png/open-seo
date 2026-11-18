@@ -2,6 +2,11 @@
 # urls: paths relative to origin; `*` = any segment. items: registry ids (src/server/features/handbook/registry.ts).
 # detectableBy: deterministic (raw fetch/headers/robots/JSON-LD) | render (sidecar: JS on/off, screenshot, Lighthouse, axe) | llm | data (third-party account data) | owner.
 # class: registry class of the primary item. severity: the golden audit's severity. note: scorer hints (site-changed, scope).
+# supp: supplementary rule ids (src/server/features/handbook/registry-supp.ts, ADR-020); matched against report
+# findings + additionalFindings like items. A SUPP-only entry has items: [].
+# scope: entry excluded from the catch rate (golden-score verdict `excluded`): "outside-scope [Ken]" (FULL-READ §0/§6:
+# not rankings/SEO/GEO, incl. the dropped sensitive-forms / SPF-DMARC / author-archive / generator-meta items) ·
+# "truth-verification [Ken]" (checking a claim against an external source) · "off-site" (backlink / ranking data, EP-7).
 site: whyracingevents.com
 origin: https://whyracingevents.com
 audit: fork/fixtures/audits/whyracingevents-2026-11-13.md
@@ -154,6 +159,7 @@ findings:
     class: LLM
     detectableBy: llm
     severity: S3
+    note: "P5-03 operator-disabled (N/A, FULL-READ §5.5); the on-page part is P5-04"
   - id: F16
     title: "Thin event and Training pages (138–236 words)"
     items: [P5-15]
@@ -272,6 +278,15 @@ findings:
     class: CRAWL
     detectableBy: llm
     severity: S4
+  - id: N01
+    title: "Email DNS: SPF ok, DMARC p=none (Outside scope — noted)"
+    items: []
+    urls: []
+    class: null
+    detectableBy: deterministic
+    severity: null
+    scope: "outside-scope [Ken]"
+    note: "SPF/DMARC dropped [Ken 2026-11-16]"
 
 passes:
   - id: PASS-01
