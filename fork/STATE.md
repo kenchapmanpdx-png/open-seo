@@ -13,7 +13,7 @@ contracts_version: 1.4.0 (B5 R3: integration contracts K9–K13, ADR-013…017; 
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
-Optional BLOCKED-KEN items (do not block B8–B10):
+Optional BLOCKED-KEN items (do not block B8–B11):
 
 - WO-B6-012: add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts` (alters traffic_ingest role, creates a billable Vercel drain)
 - BING_WEBMASTER_API_KEY: live Bing sync + a real AI Performance CSV import (WO-B6-021/022)
@@ -28,24 +28,25 @@ Optional BLOCKED-KEN items (do not block B8–B10):
 4. Missing credential or access (run `bash fork/scripts/preflight.sh`; never read `.env*`) → mark only the dependent WOs/steps `BLOCKED-KEN` and continue everything else.
 5. End of run scope or ~70% context: commit (every run must produce ≥1 commit; it is the autopilot progress signal), update this file (run log, next_action). AUTOPILOT → exit. INTERACTIVE → keep going (auto-compact handles context).
 6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
-7. Last batch in the sequence (B10) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
+7. Last batch in the sequence (B11) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
 8. `status: needs-ken` only when no remaining work in the current or any later batch can proceed without Ken.
 9. Ken switches to SPLIT (weekly usage low) → follow SPLIT rules from the next run. Weekly limit fully reached → autopilot stops; resume later with the same command.
 
 ## Batch sequence
 
-| Batch | File                                        | Model (SPLIT) | Status |
-| ----- | ------------------------------------------- | ------------- | ------ |
-| B1    | fork/batches/B1-heavy-foundation.md         | HEAVY         | done   |
-| B2    | fork/batches/B2-light-deterministic.md      | LIGHT         | done   |
-| B3    | fork/batches/B3-heavy-judgment.md           | HEAVY         | done   |
-| B4    | fork/batches/B4-light-product-deploy.md     | LIGHT         | done   |
-| B5    | fork/batches/B5-heavy-v1-signoff.md         | HEAVY (Opus)  | done   |
-| B6    | fork/batches/B6-light-integrations.md       | LIGHT         | done   |
-| B7    | fork/batches/B7-heavy-v2.md                 | HEAVY         | done   |
-| B8    | fork/batches/B8-heavy-full-read-design.md   | HEAVY         | —      |
-| B9    | fork/batches/B9-light-full-read-build.md    | LIGHT         | —      |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md | HEAVY         | —      |
+| Batch | File                                          | Model (SPLIT) | Status |
+| ----- | --------------------------------------------- | ------------- | ------ |
+| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done   |
+| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done   |
+| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done   |
+| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done   |
+| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done   |
+| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done   |
+| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done   |
+| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | —      |
+| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | —      |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | —      |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | —      |
 
 ## Run log
 
