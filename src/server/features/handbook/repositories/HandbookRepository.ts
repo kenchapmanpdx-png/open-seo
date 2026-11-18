@@ -24,6 +24,8 @@ import type {
   SiteTier,
 } from "@/server/features/handbook/contracts/status";
 import type { RunResult } from "@/server/features/handbook/engine/runner";
+import type { Coverage } from "@/server/features/handbook/contracts/collectors";
+import type { HandbookDepth } from "@/server/features/handbook/contracts/exports";
 import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
 
 /**
@@ -82,6 +84,8 @@ async function createRun(input: {
   handbookVersion: string;
   contractsVersion: string;
   mode: HandbookMode;
+  /** Absent = DB default `quick` (outcome reruns). */
+  depth?: HandbookDepth;
 }) {
   await db
     .insert(handbookRuns)
@@ -95,6 +99,7 @@ async function finishRun(input: {
   status: RunStatus;
   tier?: SiteTier | null;
   errorCode?: string | null;
+  coverage?: Coverage;
 }) {
   await db
     .update(handbookRuns)
@@ -102,6 +107,13 @@ async function finishRun(input: {
       status: input.status,
       tier: input.tier ?? null,
       errorCode: input.errorCode ?? null,
+      ...(input.coverage
+        ? {
+            coverageDiscovered: input.coverage.discovered,
+            coverageRead: input.coverage.read,
+            coverageCapped: input.coverage.capped,
+          }
+        : {}),
       finishedAt: new Date().toISOString(),
     })
     .where(

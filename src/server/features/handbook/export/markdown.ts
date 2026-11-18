@@ -1,6 +1,7 @@
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { ItemStatus } from "@/server/features/handbook/contracts/status";
+import { depthLine } from "../engine/depth";
 
 /**
  * K7 markdown exports, rendered from a ReportJson (spec: fork/adr/ADR-012).
@@ -71,6 +72,7 @@ export function renderStatusMd(
   const lines = [
     "# SEO/GEO Status",
     `handbook: ${report.handbookVersion} | mode: ${report.run.mode} | tier: ${report.run.tier} (${cell(report.run.tierEvidence)}) | updated: ${date}`,
+    depthLine(report.run.depth, report.run.coverage),
     ...(provisional ? [provisional] : []),
     "## Site Profile",
     "| SP | Y/N/? | evidence | confidence |",
@@ -233,6 +235,7 @@ export function renderReviewMd(
     `# On-site SEO/GEO review — ${new URL(report.site.origin).host}`,
     "",
     `- Handbook: v${report.handbookVersion} · Date: ${day(report.generatedAt)} · Mode: ${report.run.mode} · Tier: ${report.run.tier} (${cell(report.run.tierEvidence)}) · Platform: ${platform}`,
+    `- ${depthLine(report.run.depth, report.run.coverage)}`,
     `- Evidence: ${[...evidenceKinds].map(([k, n]) => `${k} ×${n}`).join(", ") || "none"} · run ${report.run.id}`,
     "- Ranking, traffic and backlink data: not used (EP-7).",
     ...(provisional ? [`- ${provisional}`] : []),

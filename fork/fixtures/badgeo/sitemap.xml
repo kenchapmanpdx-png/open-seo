@@ -3,6 +3,7 @@
   <url><loc>{{ORIGIN}}/</loc><lastmod>2026-11-01</lastmod></url>
   <url><loc>{{ORIGIN}}/about/</loc></url>
   <url><loc>{{ORIGIN}}/events/</loc></url>
+  <url><loc>{{ORIGIN}}/calendar/</loc></url>
   <url><loc>{{ORIGIN}}/events/spring-run-2026.html</loc></url>
   <url><loc>{{ORIGIN}}/events/thin-event.html</loc></url>
   <url><loc>{{ORIGIN}}/broken-jsonld.html</loc></url>

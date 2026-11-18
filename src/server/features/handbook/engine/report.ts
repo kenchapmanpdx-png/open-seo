@@ -1,6 +1,7 @@
 import {
   REPORT_JSON_VERSION,
   type REVIEW_REPORT_SECTIONS,
+  type HandbookDepth,
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
 import { CONTRACTS_VERSION } from "@/server/features/handbook/contracts/version";
@@ -27,6 +28,8 @@ export function buildReportJson(input: {
   mode: HandbookMode;
   startedAt: string;
   finishedAt: string | null;
+  /** ADR-018; absent = `quick`. */
+  depth?: HandbookDepth;
 }): ReportJson {
   const { result } = input;
   const phaseOf = new Map(input.registry.map((e) => [e.id, e.phase]));
@@ -49,6 +52,11 @@ export function buildReportJson(input: {
       tierEvidence: result.intake.tierEvidence,
       startedAt: input.startedAt,
       finishedAt: input.finishedAt,
+      depth: input.depth ?? "quick",
+      ...(result.collected.pages.status === "ok" &&
+      result.collected.pages.coverage
+        ? { coverage: result.collected.pages.coverage }
+        : {}),
     },
     score: null,
     siteProfile: result.intake.siteProfile,

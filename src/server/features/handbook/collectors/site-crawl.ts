@@ -3,8 +3,15 @@ import { sha256Hex } from "@/server/lib/audit/ids";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { SafeFetchBlockedError } from "@/server/features/handbook/engine/safe-fetch";
+import {
+  groupByPattern,
+  infiniteSpaceGuard,
+  pathPatterns,
+  stratifiedFill,
+} from "@/server/features/handbook/engine/depth";
 import type {
   CollectedData,
+  Coverage,
   Collector,
   CollectorContext,
   JsonLdData,
@@ -37,11 +44,16 @@ export function createCrawlCollectors(options: CrawlOptions) {
     key: "pages",
     dependsOn: ["robots", "sitemap"],
     async collect(ctx, collected) {
-      const snapshots = await crawl(ctx, collected, options, extras);
+      const { snapshots, coverage } = await crawl(
+        ctx,
+        collected,
+        options,
+        extras,
+      );
       if (snapshots.length === 0) {
         return { status: "unavailable", reason: "no page could be fetched" };
       }
-      return { status: "ok", snapshots };
+      return { status: "ok", snapshots, coverage };
     },
   };
 
@@ -88,20 +100,19 @@ async function crawl(
   collected: Partial<CollectedData>,
   options: CrawlOptions,
   extras: Map<string, PageExtra>,
-): Promise<PageSnapshot[]> {
+): Promise<{ snapshots: PageSnapshot[]; coverage: Coverage }> {
   const home = new URL("/", ctx.origin).href;
-  const queue: string[] = [home, ...(options.seedUrls ?? [])];
-  if (collected.sitemap?.status === "ok") {
-    queue.push(...collected.sitemap.urls.map((u) => u.loc));
-  }
   const robots = collected.robots?.status === "ok" ? collected.robots : null;
-  const seen = new Set<string>();
+  // Discovery order is kept; the infinite-space guard and the stratified
+  // fill pick from it in BFS waves (ADR-018).
+  const discovered: string[] = [];
+  const known = new Set<string>();
+  const attempted = new Set<string>();
   const snapshots: PageSnapshot[] = [];
-
-  while (queue.length > 0 && snapshots.length < options.maxPages) {
-    const url = normalize(queue.shift() ?? "");
-    if (!url || seen.has(url)) continue;
-    seen.add(url);
+  const discover = (raw: string) => {
+    const url = normalize(raw);
+    if (!url || known.has(url)) return;
+    known.add(url);
     const parsed = new URL(url);
     const hostRobots = robots?.hosts.find((h) => h.host === parsed.host);
     if (
@@ -113,35 +124,67 @@ async function crawl(
         parsed.pathname,
       ).allowed
     ) {
-      continue;
+      return;
     }
-    const page = await fetchPage(ctx, url);
-    if (!page) continue;
-    const finalNorm = normalize(page.snapshot.finalUrl);
-    if (finalNorm && finalNorm !== url && seen.has(finalNorm)) {
-      // Redirect to a page already crawled: keep a body-less stub so link
-      // checks see `url → finalUrl` (P3-08). No rawKey/links/extras, so
-      // templates and JSON-LD skip it; page-fact checks filter finalUrl = url.
-      snapshots.push({ ...page.snapshot, rawKey: null, links: [], images: [] });
-      continue;
-    }
-    if (finalNorm) seen.add(finalNorm);
-    snapshots.push(page.snapshot);
-    extras.set(url, page.extra);
-    if (options.followLinks && page.snapshot.status === 200) {
-      for (const link of page.snapshot.links) {
-        const target = normalize(link.href);
-        if (
-          target &&
-          new URL(target).host === parsed.host &&
-          !seen.has(target)
-        ) {
-          queue.push(target);
-        }
+    discovered.push(url);
+  };
+  const pending = () =>
+    infiniteSpaceGuard(discovered).filter((u) => !attempted.has(u));
+
+  for (const url of [home, ...(options.seedUrls ?? [])]) discover(url);
+  if (collected.sitemap?.status === "ok") {
+    for (const u of collected.sitemap.urls) discover(u.loc);
+  }
+
+  for (;;) {
+    const room = options.maxPages - snapshots.length;
+    const next = pending();
+    if (room <= 0 || next.length === 0) break;
+    const wave =
+      next.length > room ? stratifiedFill(groupByPattern(next), room) : next;
+    for (const url of wave) {
+      if (snapshots.length >= options.maxPages) break;
+      attempted.add(url);
+      const page = await fetchPage(ctx, url);
+      if (!page) continue;
+      const finalNorm = normalize(page.snapshot.finalUrl);
+      if (finalNorm && finalNorm !== url && attempted.has(finalNorm)) {
+        // Redirect to a page already crawled: keep a body-less stub so link
+        // checks see `url → finalUrl` (P3-08). No rawKey/links/extras, so
+        // templates and JSON-LD skip it; page-fact checks filter finalUrl = url.
+        snapshots.push({
+          ...page.snapshot,
+          rawKey: null,
+          links: [],
+          images: [],
+        });
+        continue;
+      }
+      if (finalNorm) attempted.add(finalNorm);
+      snapshots.push(page.snapshot);
+      extras.set(url, page.extra);
+      if (options.followLinks && page.snapshot.status === 200) {
+        sameHostLinks(page.snapshot).forEach(discover);
       }
     }
   }
-  return snapshots;
+  const unread = pending().length;
+  return {
+    snapshots,
+    coverage: {
+      discovered: snapshots.length + unread,
+      read: snapshots.length,
+      capped: unread > 0,
+    },
+  };
+}
+
+function sameHostLinks(snapshot: PageSnapshot): string[] {
+  const host = new URL(snapshot.url).host;
+  return snapshot.links.flatMap((link) => {
+    const target = normalize(link.href);
+    return target && new URL(target).host === host ? [target] : [];
+  });
 }
 
 async function fetchPage(
@@ -287,35 +330,6 @@ function flattenNodes(value: unknown): JsonLdNode[] {
 // ---------------------------------------------------------------------------
 // Template clustering (ADR-006)
 // ---------------------------------------------------------------------------
-
-const DYNAMIC_SEGMENT =
-  /^(?:\d+|[0-9a-f]{8}-[0-9a-f-]{27}|[0-9a-f]{12,}|.*\d.*-.*|.*-.*\d.*)$/i;
-
-/** Path pattern per ADR-006: dynamic segments and ≥3-sibling runs become `*`. */
-export function pathPatterns(urls: readonly string[]): Map<string, string> {
-  const segs = new Map(
-    urls.map((u) => [u, new URL(u).pathname.split("/").filter(Boolean)]),
-  );
-  const out = new Map<string, string>();
-  for (const [url, parts] of segs) {
-    if (parts.length === 0) {
-      out.set(url, "/");
-      continue;
-    }
-    const pattern = parts.map((part, i) => {
-      if (DYNAMIC_SEGMENT.test(part)) return "*";
-      // Siblings: same depth, every other segment equal.
-      let siblings = 0;
-      for (const other of segs.values()) {
-        if (other.length !== parts.length) continue;
-        if (other.every((o, j) => j === i || o === parts[j])) siblings += 1;
-      }
-      return siblings >= 3 ? "*" : part;
-    });
-    out.set(url, "/" + pattern.join("/"));
-  }
-  return out;
-}
 
 async function clusterTemplates(
   snapshots: readonly PageSnapshot[],

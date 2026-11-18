@@ -134,13 +134,15 @@ async function main() {
   const server = await startBadgeo(values.sidecar ? { host: "0.0.0.0" } : {});
   try {
     const date = new Date().toISOString().slice(0, 10);
-    const { report, timing } = await runCliAudit([
+    const { report, result, timing } = await runCliAudit([
       server.origin,
       "--allow-private",
       "--mode",
       "AUDIT",
+      "--depth",
+      "quick",
       "--max-pages",
-      "50",
+      "80",
       "--out",
       join("fork/runs/badgeo", date),
       ...(values.sidecar ? ["--sidecar", values.sidecar] : []),
@@ -161,6 +163,18 @@ async function main() {
     console.log(
       `\npages ${rows.length} · missing ${missing} · blocked ${blocked} · unexpected ${unexpected} · findings ${report.findings.length} · ${timing.totalMs}ms`,
     );
+    // WO-B9-001: infinite-space guard (warning only, not a failure).
+    const calendarRead =
+      result.collected.pages.status === "ok"
+        ? result.collected.pages.snapshots.filter((p) =>
+            /\/calendar\/page\/\d+\/$/.test(p.url),
+          ).length
+        : 0;
+    if (report.run.coverage?.capped || calendarRead > 20) {
+      console.log(
+        `WARNING: coverage capped ${report.run.coverage?.capped ?? "?"} · /calendar/page/N/ read ${calendarRead} (want capped false, ≤ 20)`,
+      );
+    }
     if ((missing > 0 || unexpected > 0) && !values["report-only"])
       process.exitCode = 1;
   } finally {
