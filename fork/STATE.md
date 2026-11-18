@@ -8,14 +8,12 @@ current_batch: B9
 batch_file: fork/batches/B9-light-full-read-build.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 29
-next_action: B9 first WO in Expected order: WO-B9-022 (then 021 → 001 → 002 …); executor protocol = B2 § "Executor protocol (all LIGHT batches)"
+next_action: B9 WO-B9-021 (staged workflow; deps done), then 022 → 002 → 003 … per Depends. Note: B9 file "Expected order" lists 022 → 021 → 001 but Depends run 001 → 021 → 022; follow Depends (executor step 1)
 contracts_version: 1.5.1 (B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
 Optional BLOCKED-KEN items (do not block B8–B11):
-
-- PUSH: `ken/main` was rebased onto upstream v0.1.29 in run 26; `git push --force-with-lease origin ken/main` was refused by the permission classifier. Ken runs it once (or allow it); later runs commit locally until then
 
 - WO-B6-012: add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts` (alters traffic_ingest role, creates a billable Vercel drain)
 - BING_WEBMASTER_API_KEY: live Bing sync + a real AI Performance CSV import (WO-B6-021/022)
