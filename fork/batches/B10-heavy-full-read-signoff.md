@@ -24,4 +24,4 @@ Read: `fork/FULL-READ.md` §9 (acceptance), `fork/reports/B9.md`, `fork/template
 ## Exit
 
 - `fork/reports/B10.md`: §9 table (target vs actual), remaining misses with reasons, spend per site, runtime per site.
-- STATE: B10 done → `status: done`; `needs_ken:` lists remaining `BLOCKED-KEN`; `current_batch: MAINT`; commit + push.
+- STATE: B10 done → B11 (`current_batch: B11`, `batch_file: fork/batches/B11-heavy-scaled-content-copy.md`, `next_action: B11 R1`); commit + push. SINGLE → continue into B11.

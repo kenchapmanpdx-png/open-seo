@@ -59,7 +59,7 @@ WOs (template `fork/templates/WO.md`), one per row, explicit files, acceptance c
 | WO-B9-008 | Interstitial/challenge detector (vendor + generic + hash) |
 | WO-B9-009 | Bot-parity escalation all pages × 5 bots ×2; plain-HTTP probes; safety stops |
 | WO-B9-010 | Numeric parity raw vs render (SUPP-04) |
-| WO-B9-011 | MinHash duplicates + in-page duplicate blocks (SUPP-03) |
+| WO-B9-011 | MinHash duplicates (clusters ≥ 0.8 → P3-12) + thin pages (< 50 words → P3-12; list → P5-15 view) + in-page duplicate blocks (SUPP-03) |
 | WO-B9-012 | Outbound links all unique (cap 500) |
 | WO-B9-013 | Images sized from render requests (P2-05) |
 | WO-B9-014 | .md mirror escalation |
