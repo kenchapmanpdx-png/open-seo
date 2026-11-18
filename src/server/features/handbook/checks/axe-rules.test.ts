@@ -87,6 +87,34 @@ describe("axeRulesCheck", () => {
     );
   });
 
+  it("merges one rule across pages into one finding grouped by template", async () => {
+    const page = (path: string): AxeData["pages"][number] => ({
+      url: `${ORIGIN}${path}`,
+      violations: [
+        {
+          id: "label",
+          impact: "critical",
+          help: "Form elements must have labels",
+          nodes: 1,
+          sampleTargets: ["input"],
+        },
+      ],
+    });
+    const result = await axeRulesCheck.run(
+      context({
+        axe: {
+          status: "ok",
+          pages: [page("/a"), page("/b"), page("/c")],
+        },
+      }),
+    );
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0].urls).toHaveLength(3);
+    expect(result.findings[0].detail).toMatch(
+      /^Templates: \(no template\) \(3 pages\)/,
+    );
+  });
+
   it("passes a page without violations", async () => {
     const result = await run([]);
     expect(ITEMS.map((id) => statusOf(result, id))).toEqual([
