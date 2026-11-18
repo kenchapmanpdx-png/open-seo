@@ -1,5 +1,5 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import type { AxeData } from "@/server/features/handbook/contracts/collectors";
+import type { AxeData } from "@/server/features/handbook/contracts/render-data";
 import { createResult, normalizeUrl } from "./support";
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RenderData } from "@/server/features/handbook/contracts/collectors";
+import type { RenderData } from "@/server/features/handbook/contracts/render-data";
 import { context, ORIGIN, snapshot, statusOf } from "./check-test-fixtures";
 import { renderParityCheck } from "./render-parity";
 

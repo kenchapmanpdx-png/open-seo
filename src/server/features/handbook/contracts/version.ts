@@ -14,6 +14,11 @@
  * sidecar 1.2.0 (transferBytes, aborted, protocol, blockBeacons, media
  * elements), K14 `PageProfile`, K15 `SiteFactMap`, SUPP registry types,
  * report depth / coverage / escalations / additional findings / answer-engine
- * readiness).
+ * readiness);
+ * 1.5.1, B8: R2 follow-ups for B9 — pages coverage, `paginated-home` variant,
+ * bot-fetch round + AI-bot policy map, render numeric mismatches + media
+ * sizes, PageSnapshot main words / minhash / duplicate blocks, PageMarkup
+ * nosnippet words / fake list runs, CrUX field slot, CheckContext page
+ * profiles + site fact map, evidence kind `factMap`. No K3 change.
  */
-export const CONTRACTS_VERSION = "1.5.0";
+export const CONTRACTS_VERSION = "1.5.1";
