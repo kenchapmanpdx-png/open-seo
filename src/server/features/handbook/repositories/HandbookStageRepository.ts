@@ -1,0 +1,113 @@
+import { and, eq, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { handbookRunStages } from "@/db/handbook-tables";
+import type {
+  StageName,
+  StageRow,
+  StageTracker,
+} from "@/server/features/handbook/engine/stages";
+
+/**
+ * `handbook_run_stage` rows (ADR-018): one per `(runId, stage, batch)`.
+ * Writes are upserts on the primary key, so a replayed step rewrites its own
+ * row instead of duplicating it. Callers pass a run id the workflow created
+ * for the project; rows cascade with the run.
+ */
+const now = () => new Date().toISOString();
+
+function forRun(runId: string): StageTracker {
+  const where = (stage: StageName, batch: number) =>
+    and(
+      eq(handbookRunStages.runId, runId),
+      eq(handbookRunStages.stage, stage),
+      eq(handbookRunStages.batch, batch),
+    );
+  const upsert = async (
+    stage: StageName,
+    batch: number,
+    set: Partial<typeof handbookRunStages.$inferInsert>,
+  ) => {
+    await db
+      .insert(handbookRunStages)
+      .values({ runId, stage, batch, ...set })
+      .onConflictDoUpdate({
+        target: [
+          handbookRunStages.runId,
+          handbookRunStages.stage,
+          handbookRunStages.batch,
+        ],
+        set,
+      });
+  };
+  const get = async (
+    stage: StageName,
+    batch: number,
+  ): Promise<StageRow | null> => {
+    const rows = await db
+      .select({
+        status: handbookRunStages.status,
+        attempt: handbookRunStages.attempt,
+      })
+      .from(handbookRunStages)
+      .where(where(stage, batch))
+      .limit(1);
+    return rows[0] ?? null;
+  };
+
+  return {
+    get,
+    async start(stage, batch) {
+      await db
+        .insert(handbookRunStages)
+        .values({
+          runId,
+          stage,
+          batch,
+          status: "running",
+          attempt: 1,
+          startedAt: now(),
+        })
+        .onConflictDoUpdate({
+          target: [
+            handbookRunStages.runId,
+            handbookRunStages.stage,
+            handbookRunStages.batch,
+          ],
+          set: {
+            status: "running",
+            attempt: sql`${handbookRunStages.attempt} + 1`,
+            error: null,
+            startedAt: now(),
+            finishedAt: null,
+          },
+        });
+      const row = await get(stage, batch);
+      return row?.attempt ?? 1;
+    },
+    async finish(stage, batch, itemsDone) {
+      await upsert(stage, batch, {
+        status: "done",
+        itemsTotal: itemsDone,
+        itemsDone,
+        error: null,
+        finishedAt: now(),
+      });
+    },
+    async fail(stage, batch, error) {
+      await upsert(stage, batch, {
+        status: "failed",
+        error: error.slice(0, 500),
+        finishedAt: now(),
+      });
+    },
+    async skip(stage, batch, reason) {
+      await upsert(stage, batch, {
+        status: "skipped",
+        error: reason,
+        finishedAt: now(),
+      });
+    },
+  };
+}
+
+export const HandbookStageRepository = { forRun } as const;
