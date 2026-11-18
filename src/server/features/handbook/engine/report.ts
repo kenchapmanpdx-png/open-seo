@@ -112,6 +112,9 @@ const SECTION_HEADING: Record<(typeof REVIEW_REPORT_SECTIONS)[number], string> =
     "Limited (platform)": "## Limited (platform)",
     "Blocked (owner access)": "## Blocked (owner access)",
     "Outside scope — noted": "## Outside scope — noted",
+    "Additional findings": "## Additional findings",
+    "Answer-engine readiness": "## Answer-engine readiness",
+    Escalations: "## Escalations",
     "Checker errors": "## Checker errors",
     "Residual weaknesses": "## Residual weaknesses",
   };

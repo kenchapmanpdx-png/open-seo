@@ -13,6 +13,11 @@ export const renderRequestSchema = z.object({
   screenshot: z.enum(["none", "firstScreen", "fullPage"]),
   scrollToEnd: z.boolean(),
   timeoutMs: z.number().int().min(1_000).max(60_000).default(30_000),
+  /**
+   * Record then abort analytics / ad / pixel requests (fixed in-repo host
+   * list) so the audit never fires the client's tags (ADR-021). K3 1.2.0.
+   */
+  blockBeacons: z.boolean().default(true),
 });
 export type RenderRequest = z.input<typeof renderRequestSchema>;
 
@@ -31,8 +36,25 @@ export const renderResponseSchema = z.object({
       status: z.number().int().nullable(),
       /** Request started before the load event (Resource Timing). Added in 1.1.0. */
       beforeLoad: z.boolean().optional(),
+      /** Bytes over the wire; null when unknown (cross-origin without TAO, aborted). 1.2.0 */
+      transferBytes: z.number().int().nonnegative().nullable().optional(),
+      /** Recorded then aborted by the sidecar: beacon host or media body. 1.2.0 */
+      aborted: z.enum(["beacon", "media"]).nullable().optional(),
+      /** Resource Timing `nextHopProtocol` (h2, h3, http/1.1). 1.2.0 */
+      protocol: z.string().nullable().optional(),
     }),
   ),
+  /** Every `<video>` and video `<iframe>` after load (FULL-READ §3.12). 1.2.0 */
+  mediaElements: z
+    .array(
+      z.object({
+        kind: z.enum(["video", "iframe"]),
+        src: z.string().nullable(),
+        firstScreen: z.boolean(),
+        reservedSize: z.boolean(),
+      }),
+    )
+    .optional(),
   /** Visible-text words inside opacity:0 elements after load, before scroll (P2-07). */
   opacityZeroWords: z.number().int().nonnegative(),
   /** Buttons/links intersecting the first viewport (P5-14). */

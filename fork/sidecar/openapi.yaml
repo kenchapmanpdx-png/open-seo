@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Handbook render sidecar (K3)
-  version: 1.1.0
+  version: 1.2.0
   description: >
     Playwright + Chromium + axe-core + Lighthouse CLI, bound to 127.0.0.1
     (ADR-004, ADR-009). Mirrors src/server/features/handbook/contracts/sidecar.ts.
@@ -51,6 +51,10 @@ paths:
                     maximum: 60000,
                     default: 30000,
                   }
+                blockBeacons:
+                  type: boolean
+                  default: true
+                  description: "record then abort analytics / ad / pixel requests (classify.ts host list); since 1.2.0"
       responses:
         "200":
           description: Rendered page
@@ -92,6 +96,28 @@ paths:
                             type: boolean,
                             description: "started before the load event (Resource Timing); since 1.1.0",
                           }
+                        transferBytes:
+                          type: [integer, "null"]
+                          description: "bytes over the wire (Resource Timing transferSize, else headers + body); null when aborted or unknown; since 1.2.0"
+                        aborted:
+                          enum: [beacon, media, null]
+                          description: "recorded then aborted: beacon (blockBeacons) or media body (always); since 1.2.0"
+                        protocol:
+                          type: [string, "null"]
+                          description: "Resource Timing nextHopProtocol (h2, h3, http/1.1); since 1.2.0"
+                  mediaElements:
+                    type: array
+                    description: "every <video> and video iframe (YouTube, Vimeo, Wistia, Loom) after load, before scroll; since 1.2.0"
+                    items:
+                      type: object
+                      required: [kind, src, firstScreen, reservedSize]
+                      properties:
+                        kind: { enum: [video, iframe] }
+                        src: { type: [string, "null"] }
+                        firstScreen: { type: boolean }
+                        reservedSize:
+                          type: boolean
+                          description: width + height attributes or a computed aspect-ratio
                   opacityZeroWords:
                     type: integer
                     description: visible-text words inside elements with computed opacity 0 after load, before any scroll

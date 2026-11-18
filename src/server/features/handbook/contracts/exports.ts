@@ -16,6 +16,55 @@ import {
 
 export const REPORT_JSON_VERSION = "1";
 
+export const HANDBOOK_DEPTHS = ["full", "quick"] as const;
+export const handbookDepthSchema = z.enum(HANDBOOK_DEPTHS);
+export type HandbookDepth = z.infer<typeof handbookDepthSchema>;
+
+/**
+ * One fired escalation (ADR-021, FULL-READ §4): trigger → action, printed in
+ * the report as "Escalated: … because …". 1.5.0
+ */
+export const escalationSchema = z.object({
+  trigger: z.string(),
+  because: z.string(),
+  action: z.string(),
+  urls: z.array(z.string()),
+  /** The escalation hit its cap or a safety stop. */
+  capped: z.boolean(),
+});
+export type Escalation = z.infer<typeof escalationSchema>;
+
+const findingSchema = z.object({
+  code: z.string().regex(/^F\d{2,3}$/),
+  severity: severitySchema,
+  phase: z.string(),
+  sectionRef: z.string(),
+  title: z.string(),
+  detail: z.string(),
+  fix: z.string(),
+  fixability: z.enum(["FIXABLE", "LIMITED"]),
+  limitedReason: z.string().nullable(),
+  effort: z.enum(["S", "M", "L"]),
+  source: z.enum(["deterministic", "llm"]),
+  itemIds: z.array(z.string()),
+  urls: z.array(z.string()),
+  evidence: z.array(
+    z.object({ kind: z.string(), url: z.string(), excerpt: z.string() }),
+  ),
+});
+
+/**
+ * "Answer-engine readiness" (FULL-READ §6, ADR-020): built only from data
+ * already collected, not scored. Each line is a measured share or state. 1.5.0
+ */
+export const answerEngineReadinessSchema = z.array(
+  z.object({
+    label: z.string(),
+    value: z.string(),
+    itemIds: z.array(z.string()),
+  }),
+);
+
 export const reportJsonSchema = z.object({
   reportVersion: z.literal(REPORT_JSON_VERSION),
   contractsVersion: z.string(),
@@ -29,6 +78,15 @@ export const reportJsonSchema = z.object({
     tierEvidence: z.string(),
     startedAt: z.string(),
     finishedAt: z.string().nullable(),
+    /** Absent on reports before 1.5.0 (= quick). Grades compare within one depth. */
+    depth: handbookDepthSchema.optional(),
+    coverage: z
+      .object({
+        discovered: z.number().int().nonnegative(),
+        read: z.number().int().nonnegative(),
+        capped: z.boolean(),
+      })
+      .optional(),
   }),
   score: z
     .object({
@@ -54,26 +112,11 @@ export const reportJsonSchema = z.object({
       confidence: z.enum(["high", "medium", "low"]),
     }),
   ),
-  findings: z.array(
-    z.object({
-      code: z.string().regex(/^F\d{2,3}$/),
-      severity: severitySchema,
-      phase: z.string(),
-      sectionRef: z.string(),
-      title: z.string(),
-      detail: z.string(),
-      fix: z.string(),
-      fixability: z.enum(["FIXABLE", "LIMITED"]),
-      limitedReason: z.string().nullable(),
-      effort: z.enum(["S", "M", "L"]),
-      source: z.enum(["deterministic", "llm"]),
-      itemIds: z.array(z.string()),
-      urls: z.array(z.string()),
-      evidence: z.array(
-        z.object({ kind: z.string(), url: z.string(), excerpt: z.string() }),
-      ),
-    }),
-  ),
+  findings: z.array(findingSchema),
+  /** SUPP-nn findings (ADR-020): "Additional findings", never scored. 1.5.0 */
+  additionalFindings: z.array(findingSchema).optional(),
+  answerEngineReadiness: answerEngineReadinessSchema.optional(),
+  escalations: z.array(escalationSchema).optional(),
   items: z.array(
     z.object({
       itemId: z.string(),
@@ -114,6 +157,9 @@ export const REVIEW_REPORT_SECTIONS = [
   "Limited (platform)",
   "Blocked (owner access)",
   "Outside scope — noted",
+  "Additional findings",
+  "Answer-engine readiness",
+  "Escalations",
   "Checker errors",
   "Residual weaknesses",
 ] as const;

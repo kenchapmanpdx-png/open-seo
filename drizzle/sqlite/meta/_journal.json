@@ -526,6 +526,13 @@
       "when": 1794715133216,
       "tag": "0074_fork_integrations",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "6",
+      "when": 1795033086923,
+      "tag": "0075_fork_full_read",
+      "breakpoints": true
     }
   ]
 }

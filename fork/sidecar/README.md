@@ -31,8 +31,16 @@ curl -s http://127.0.0.1:4777/health
 | GET    | `/v1/web/scrape/html` | Context.dev-compatible shape for upstream `rendered-page.ts`          |
 
 All but `/health` need `Authorization: Bearer $HANDBOOK_SIDECAR_TOKEN`. Non-http(s)
-and private targets → 422 `{ error }`; page timeouts → 504; at most 2 browser
-jobs run at once.
+and private targets → 422 `{ error }`; page timeouts → 504; at most
+`HANDBOOK_SIDECAR_MAX_RENDERS` browser jobs (default 3, 1–8) run at once.
+
+`/render` (K3 1.2.0) records every request with `transferBytes`, `protocol`
+and `aborted`: media bodies are always aborted (never downloaded), and with
+`blockBeacons: true` (default) analytics / ad / pixel requests are aborted too
+(`classify.ts`), so an audit never fires the client's tags. Aborted requests
+stay in the log, so tag detection (P7-04) still sees them. `mediaElements`
+lists every `<video>` and video iframe with first-screen and reserved-size
+flags.
 
 ## Tests
 
