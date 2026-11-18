@@ -10,6 +10,9 @@ import { createResult, normalizeUrl } from "./support";
  * signals. Whether consent is legally required stays with the owner (§30).
  * Either way tags load after load/interaction (§14): a tag or pixel request
  * the sidecar saw start before the load event is a scheduling finding.
+ * The sidecar records then aborts beacon requests (ADR-021); an aborted
+ * beacon still counts as a detected tag request, whatever its host (GA4
+ * `g/collect` on a first-party proxy included).
  * P7-01 (gate hero video): the first <video> has a poster; autoplay needs
  * muted and a pause control. Reduced-motion and per-device encodes → note.
  */
@@ -140,7 +143,9 @@ export const thirdPartyCheck: HandbookCheck = {
           const hits = p.js.requests.filter(
             (q) =>
               q.beforeLoad === true &&
-              (TAG_HOST.test(hostOf(q.url)) || PIXEL_HOST.test(hostOf(q.url))),
+              (q.aborted === "beacon" ||
+                TAG_HOST.test(hostOf(q.url)) ||
+                PIXEL_HOST.test(hostOf(q.url))),
           );
           return hits.length > 0 ? [{ p, hits }] : [];
         })
@@ -168,7 +173,10 @@ export const thirdPartyCheck: HandbookCheck = {
               "renderedDom",
               p.url,
               hits
-                .map((h) => `${h.resourceType} ${h.url} (before load)`)
+                .map(
+                  (h) =>
+                    `${h.resourceType} ${h.url} (before load${h.aborted === "beacon" ? "; aborted by the audit" : ""})`,
+                )
                 .join("\n"),
               p.js.renderedKey,
             ),
@@ -192,7 +200,7 @@ export const thirdPartyCheck: HandbookCheck = {
         [
           `${pagesLive.length} pages: no blocking tag scripts in <head>`,
           pixelPages.length === 0
-            ? `${render.status === "ok" ? render.pages.length : 0} rendered samples: no pixel request at load`
+            ? `${render.status === "ok" ? render.pages.length : 0} rendered pages: no pixel request at load`
             : `pixel requests at load not flagged (SP6 = N, no EU signal)`,
         ].join("; "),
         [ref(pagesLive[0], `${pagesLive[0].markup.scripts.length} scripts`)],

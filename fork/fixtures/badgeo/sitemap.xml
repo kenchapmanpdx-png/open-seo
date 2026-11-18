@@ -29,4 +29,6 @@
   <url><loc>{{ORIGIN}}/fade-in.html</loc></url>
   <url><loc>{{ORIGIN}}/needs-blocked-js.html</loc></url>
   <url><loc>{{ORIGIN}}/low-contrast.html</loc></url>
+  <url><loc>{{ORIGIN}}/heavy.html</loc></url>
+  <url><loc>{{ORIGIN}}/beacon.html</loc></url>
 </urlset>

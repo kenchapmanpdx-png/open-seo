@@ -8,6 +8,7 @@
  *   pnpm exec tsx fork/scripts/badgeo-serve.ts [--port 4455]
  */
 import { createServer } from "node:http";
+import { crc32, deflateSync } from "node:zlib";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import type { AddressInfo } from "node:net";
@@ -47,6 +48,34 @@ function resolveFile(pathname: string): string | null {
     return existsSync(index) ? index : null;
   }
   return existsSync(candidate) ? candidate : null;
+}
+
+const HEAVY_IMAGE = "/img/heavy-photo.png";
+
+/** Valid 1250×1250 RGBA PNG, stored uncompressed (~6.3 MB), so Chrome reads every byte. */
+function heavyPng(): Buffer {
+  const side = 1250;
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type), data]);
+    const out = Buffer.alloc(body.length + 8);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc32(body), body.length + 4);
+    return out;
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(side, 0);
+  header.writeUInt32BE(side, 4);
+  header.set([8, 6, 0, 0, 0], 8);
+  const stride = side * 4 + 1;
+  const rows = Buffer.alloc(side * stride, 0x80);
+  for (let y = 0; y < side; y += 1) rows[y * stride] = 0;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", header),
+    chunk("IDAT", deflateSync(rows, { level: 0 })),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
 }
 
 /** `/calendar/page/N/` (WO-B9-001 infinite-space guard): one clean page per N. */
@@ -115,6 +144,7 @@ export async function startBadgeo(
     JSON.parse(readFileSync(join(BADGEO_ROOT, "_redirects.json"), "utf8")),
   );
   let origin = "";
+  let heavy: Buffer | null = null;
   const server = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", origin).pathname;
     const ua = req.headers["user-agent"] ?? "";
@@ -129,6 +159,16 @@ export async function startBadgeo(
         location: redirect[1].replaceAll("{{ORIGIN}}", origin),
       });
       res.end();
+      return;
+    }
+    // WO-B9-004: 6.3 MB uncompressed PNG (P2-05 page weight); nothing committed.
+    if (pathname === HEAVY_IMAGE) {
+      heavy ??= heavyPng();
+      res.writeHead(200, {
+        "content-type": "image/png",
+        "content-length": String(heavy.length),
+      });
+      res.end(req.method === "HEAD" ? undefined : heavy);
       return;
     }
     const calendarPage = CALENDAR_PAGE.exec(pathname)?.[1];
