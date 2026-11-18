@@ -4,12 +4,14 @@ import type {
   renderRequestSchema,
   RenderResponse,
 } from "../../src/server/features/handbook/contracts/sidecar";
+import { classifyRequest, VIDEO_EMBED, type AbortReason } from "./classify";
 
 /**
  * Playwright render engine for the sidecar: a fresh context per
- * request. Render captures status, HTML, console errors, every request,
- * words inside opacity:0 elements (after load, before scroll) and the
- * actions intersecting the first viewport.
+ * request. Render captures status, HTML, console errors, every request
+ * (bytes, protocol, aborted beacons / media — K3 1.2.0), words inside
+ * opacity:0 elements (after load, before scroll), the actions intersecting
+ * the first viewport and video / video-iframe layout facts.
  */
 type RenderRequest = z.output<typeof renderRequestSchema>;
 
@@ -39,8 +41,8 @@ export async function scrollToEnd(page: Page) {
   });
 }
 
-/** Runs in the page: words under opacity:0 + first-viewport actions. */
-function inspectPage() {
+/** Runs in the page: words under opacity:0, first-viewport actions, media elements. */
+function inspectPage(embedPattern: string) {
   let opacityZeroWords = 0;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -72,7 +74,32 @@ function inspectPage() {
       text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 200),
       href: el.getAttribute("href"),
     }));
-  return { opacityZeroWords, firstScreenActions };
+  const embed = new RegExp(embedPattern, "i");
+  const mediaElements = [...document.querySelectorAll("video, iframe")]
+    .map((el) => {
+      const src =
+        el.getAttribute("src") ??
+        el.querySelector("source")?.getAttribute("src") ??
+        el.getAttribute("data-src");
+      const kind: "video" | "iframe" =
+        el.tagName === "VIDEO" ? "video" : "iframe";
+      const r = el.getBoundingClientRect();
+      const ratio = getComputedStyle(el).aspectRatio;
+      return {
+        kind,
+        src,
+        firstScreen:
+          r.width > 0 &&
+          r.height > 0 &&
+          r.top < window.innerHeight &&
+          r.bottom > 0,
+        reservedSize:
+          (el.hasAttribute("width") && el.hasAttribute("height")) ||
+          (!!ratio && ratio !== "auto"),
+      };
+    })
+    .filter((m) => m.kind === "video" || (!!m.src && embed.test(m.src)));
+  return { opacityZeroWords, firstScreenActions, mediaElements };
 }
 
 export async function render(
@@ -89,6 +116,19 @@ export async function render(
     const consoleErrors: string[] = [];
     const log: Request[] = [];
     const statusOf = new Map<Request, number>();
+    const abortedOf = new Map<Request, AbortReason>();
+    // Record every request; abort beacons (when asked) and media bodies.
+    await page.route("**/*", (route) => {
+      const request = route.request();
+      const reason = classifyRequest(
+        request.url(),
+        request.resourceType(),
+        req.blockBeacons,
+      );
+      if (!reason) return route.continue();
+      abortedOf.set(request, reason);
+      return route.abort("blockedbyclient");
+    });
     page.on("console", (m) => {
       if (m.type() === "error") consoleErrors.push(m.text().slice(0, 500));
     });
@@ -115,8 +155,39 @@ export async function render(
           .map((e) => e.name);
       }),
     );
-    const inspected = await page.evaluate(inspectPage);
+    const inspected = await page.evaluate(inspectPage, VIDEO_EMBED.source);
     if (req.scrollToEnd) await scrollToEnd(page);
+    // Resource Timing after scroll: bytes over the wire (0 when cross-origin
+    // without Timing-Allow-Origin → fall back to Playwright sizes) + protocol.
+    const timing = new Map(
+      await page.evaluate(() =>
+        [
+          ...performance.getEntriesByType("navigation"),
+          ...performance.getEntriesByType("resource"),
+        ]
+          .filter((e) => e instanceof PerformanceResourceTiming)
+          .map(
+            (t) =>
+              [
+                t.name,
+                { bytes: t.transferSize, protocol: t.nextHopProtocol || null },
+              ] as const,
+          ),
+      ),
+    );
+    const sizes = await Promise.all(
+      log.map(async (r) => {
+        if (abortedOf.has(r)) return null;
+        const t = timing.get(r.url());
+        if (t && t.bytes > 0) return t.bytes;
+        try {
+          const s = await r.sizes();
+          return s.responseBodySize + s.responseHeadersSize;
+        } catch {
+          return null;
+        }
+      }),
+    );
     const screenshot =
       req.screenshot === "none"
         ? null
@@ -130,11 +201,14 @@ export async function render(
       html,
       screenshotPng: screenshot,
       consoleErrors,
-      requests: log.map((r) => ({
+      requests: log.map((r, i) => ({
         url: r.url(),
         resourceType: r.resourceType(),
         status: statusOf.get(r) ?? null,
         beforeLoad: beforeLoad.has(r.url()),
+        transferBytes: sizes[i],
+        aborted: abortedOf.get(r) ?? null,
+        protocol: timing.get(r.url())?.protocol ?? null,
       })),
       ...inspected,
       timingMs: Date.now() - started,

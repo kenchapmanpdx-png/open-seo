@@ -325,6 +325,36 @@ export function renderReviewMd(
       ? report.outsideScope.map((o) => `- ${cell(o)}`)
       : ["- none"]),
     "",
+    "## Additional findings (not scored)",
+    "",
+    ...(report.additionalFindings?.length
+      ? [
+          "| ID | Rule | Severity | Finding | Evidence |",
+          "| --- | --- | --- | --- | --- |",
+          ...report.additionalFindings.map(
+            (f) =>
+              `| ${f.code} | ${f.itemIds.join(", ")} | ${f.severity} | ${cell(f.title)}. ${cell(f.detail).slice(0, 500)} | ${cell(evidenceSummary(f))} |`,
+          ),
+        ]
+      : ["- none"]),
+    "",
+    "## Answer-engine readiness (not scored)",
+    "",
+    ...(report.answerEngineReadiness?.length
+      ? report.answerEngineReadiness.map(
+          (r) => `- ${cell(r.label)}: ${cell(r.value)}`,
+        )
+      : ["- not collected"]),
+    "",
+    "## Escalations",
+    "",
+    ...(report.escalations?.length
+      ? report.escalations.map(
+          (e) =>
+            `- Escalated: ${cell(e.action)} because ${cell(e.because)} (${e.urls.length} URLs${e.capped ? ", capped" : ""})`,
+        )
+      : ["- none"]),
+    "",
     "## Checker errors",
     "",
     ...(report.checkerErrors.length

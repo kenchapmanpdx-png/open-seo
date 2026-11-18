@@ -49,3 +49,7 @@
 - Judge eval (K5): recall ≥ 80 %, false fails 0 (why-F19 rebuilt, B8 R3).
 - Cost: why / bluetree / ryan `full` runs logged; unchanged rerun ≤ 10 % of the first run (cache hits).
 - Unit tests: quote verifier on profiles; cache key changes when text / promptVersion / model changes; budget split.
+
+## Build log
+
+- B8 R2 (2026-11-18): `handbook_page_profile` stores the verified K14 document as `profile_json` text with scalar columns for the cache key, page type, scope and cost. The profile is an opaque cached LLM output, validated with `pageProfileSchema` on read and never queried by field; the reduce stage reads whole profiles. Normalizing its ≈ 15 sub-arrays into tables would add joins for no query. Extract-model decision (Haiku vs Sonnet) pending WO-B9-025.

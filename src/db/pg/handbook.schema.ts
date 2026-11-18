@@ -19,6 +19,7 @@ import {
   FIXABILITY,
   EFFORTS,
 } from "@/server/features/handbook/contracts/status";
+import { HANDBOOK_DEPTHS } from "@/server/features/handbook/contracts/exports";
 
 // ============================================================================
 // Handbook audit engine (fork feature; ADR-002). Mirror of ../handbook.schema.ts.
@@ -62,6 +63,11 @@ export const handbookRuns = pgTable(
     grade: text("grade"),
     llmCostUsd: real("llm_cost_usd").notNull().default(0),
     errorCode: text("error_code"),
+    // ADR-018 (contracts 1.5.0): rows before B8 were quick-depth runs.
+    depth: text("depth", { enum: HANDBOOK_DEPTHS }).notNull().default("quick"),
+    coverageDiscovered: integer("coverage_discovered"),
+    coverageRead: integer("coverage_read"),
+    coverageCapped: boolean("coverage_capped").notNull().default(false),
     startedAt: text("started_at").notNull().default(now),
     finishedAt: text("finished_at"),
   },
@@ -276,4 +282,96 @@ export const handbookLlmCalls = pgTable(
     createdAt: text("created_at").notNull().default(now),
   },
   (table) => [index("handbook_llm_call_run_idx").on(table.runId)],
+);
+
+// ADR-018: one row per staged-workflow step (`runId:stage:batch`). A replayed
+// step whose row is `done` returns immediately.
+export const HANDBOOK_RUN_STAGES = [
+  "crawl",
+  "render",
+  "axe",
+  "lighthouse",
+  "map",
+  "reduce",
+  "checks",
+  "report",
+] as const;
+export const HANDBOOK_STAGE_STATUSES = [
+  "pending",
+  "running",
+  "done",
+  "failed",
+  "skipped",
+] as const;
+
+export const handbookRunStages = pgTable(
+  "handbook_run_stage",
+  {
+    runId: runId(),
+    stage: text("stage", { enum: HANDBOOK_RUN_STAGES }).notNull(),
+    batch: integer("batch").notNull().default(0),
+    status: text("status", { enum: HANDBOOK_STAGE_STATUSES })
+      .notNull()
+      .default("pending"),
+    attempt: integer("attempt").notNull().default(0),
+    itemsTotal: integer("items_total").notNull().default(0),
+    itemsDone: integer("items_done").notNull().default(0),
+    error: text("error"),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+  },
+  (table) => [primaryKey({ columns: [table.runId, table.stage, table.batch] })],
+);
+
+// ADR-018: one handbook run per machine. `key` = lease name ("machine");
+// the holder renews `expiresAt` at each stage start; an expired lease is
+// taken over.
+export const handbookRunLeases = pgTable("handbook_run_lease", {
+  key: text("key").primaryKey(),
+  runId: text("run_id")
+    .notNull()
+    .references(() => handbookRuns.id, { onDelete: "cascade" }),
+  expiresAt: text("expires_at").notNull(),
+  renewedAt: text("renewed_at").notNull().default(now),
+});
+
+// ADR-019: map-stage PageProfile cache, project-scoped, keyed by
+// (url, text sha256, prompt version, model). `profileJson` is the verified
+// K14 document, validated with `pageProfileSchema` on read and never queried
+// by field — an opaque cached LLM output, not relational data.
+export const handbookPageProfiles = pgTable(
+  "handbook_page_profile",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    runId: text("run_id").references(() => handbookRuns.id, {
+      onDelete: "set null",
+    }),
+    url: text("url").notNull(),
+    textSha256: text("text_sha256").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    model: text("model").notNull(),
+    scope: text("scope", { enum: ["page", "template"] }).notNull(),
+    templateKey: text("template_key"),
+    pageType: text("page_type").notNull(),
+    profileJson: text("profile_json").notNull(),
+    droppedQuotes: integer("dropped_quotes").notNull().default(0),
+    tokensIn: integer("tokens_in").notNull().default(0),
+    tokensOut: integer("tokens_out").notNull().default(0),
+    costUsd: real("cost_usd").notNull().default(0),
+    createdAt: text("created_at").notNull().default(now),
+    lastUsedAt: text("last_used_at").notNull().default(now),
+  },
+  (table) => [
+    uniqueIndex("handbook_page_profile_key_idx").on(
+      table.projectId,
+      table.url,
+      table.textSha256,
+      table.promptVersion,
+      table.model,
+    ),
+    index("handbook_page_profile_run_idx").on(table.runId),
+  ],
 );

@@ -2,6 +2,10 @@
 -- first. Valid on SQLite and Postgres. Upstream tables are untouched. The
 -- drizzle journal row for 0072 (SQLite) / 0050 (pg) is not removed: to
 -- re-apply, run the migration's SQL directly (or delete that journal row).
+-- B8 R2 tables (fork/scripts/full-read-down.sql) reference handbook_run.
+DROP TABLE IF EXISTS handbook_page_profile;
+DROP TABLE IF EXISTS handbook_run_lease;
+DROP TABLE IF EXISTS handbook_run_stage;
 DROP TABLE IF EXISTS handbook_finding_item;
 DROP TABLE IF EXISTS handbook_finding_url;
 DROP TABLE IF EXISTS handbook_evidence;

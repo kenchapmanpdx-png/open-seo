@@ -5,7 +5,7 @@ WORKDIR /app
 COPY fork/sidecar/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
 COPY src/server/features/handbook/contracts/sidecar.ts src/server/features/handbook/contracts/version.ts ./src/server/features/handbook/contracts/
-COPY fork/sidecar/server.ts fork/sidecar/render.ts fork/sidecar/axe.ts fork/sidecar/lighthouse.ts ./fork/sidecar/
+COPY fork/sidecar/server.ts fork/sidecar/render.ts fork/sidecar/classify.ts fork/sidecar/axe.ts fork/sidecar/lighthouse.ts ./fork/sidecar/
 USER pwuser
 ENV HANDBOOK_SIDECAR_HOST=0.0.0.0
 EXPOSE 4777
