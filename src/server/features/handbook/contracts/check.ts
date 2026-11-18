@@ -14,6 +14,8 @@ import type {
   SiteTier,
 } from "./status";
 import type { Judge } from "./llm";
+import type { PageProfile } from "./page-profile";
+import type { SiteFactMap } from "./site-fact-map";
 
 /**
  * K1 — HandbookCheck (ADR-005).
@@ -59,6 +61,13 @@ export type CheckContext = {
    * optional so fixtures and older runners omit it. Capped by the runner.
    */
   fetchOffsite?: SafeFetch;
+  /**
+   * K14 map-stage output, one per HTML 200 page (ADR-019). Absent when the
+   * map stage did not run (no key, budget, REVIEW-only runs). 1.5.1
+   */
+  pageProfiles?: readonly PageProfile[];
+  /** K15 reduce-stage output built from `pageProfiles`. 1.5.1 */
+  siteFactMap?: SiteFactMap;
 };
 
 /** Local reference from a finding/verdict to an evidence draft in the same result. */

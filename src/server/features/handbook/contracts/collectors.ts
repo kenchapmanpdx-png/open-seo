@@ -22,6 +22,8 @@ export const COLLECTOR_KEYS = [
 ] as const;
 export type CollectorKey = (typeof COLLECTOR_KEYS)[number];
 
+import type { AxeData, LighthouseData, RenderData } from "./render-data";
+
 export type Unavailable = { status: "unavailable"; reason: string };
 export type Collected<T> = ({ status: "ok" } & T) | Unavailable;
 
@@ -126,6 +128,15 @@ export type PageSnapshot = {
   ttfbMs?: number | null;
   /** How the crawl found this URL (render = second pass, JS-only link). 1.5.0 */
   discoveredBy?: DiscoveredBy;
+  /**
+   * Page-unique main-content words: page text minus the template's
+   * boilerplate blocks (FULL-READ §3.11, SUPP-03, P3-12). 1.5.1
+   */
+  mainWords?: number;
+  /** 128 MinHash values over 5-word shingles of the main text (near-duplicate pages). 1.5.1 */
+  minhash?: readonly number[];
+  /** Main-text blocks (≥ 40 words) repeated on this page or across the site, with counts. 1.5.1 */
+  duplicateBlocks?: ReadonlyArray<{ text: string; count: number }>;
 };
 
 export const DISCOVERED_BY = ["raw", "sitemap", "seed", "render"] as const;
@@ -211,6 +222,10 @@ export type PageMarkup = {
   };
   /** Visible text (scripts/styles/templates skipped), collapsed, ≤20,000 chars. */
   text: string;
+  /** Words inside `data-nosnippet` elements (raw HTML). 1.5.1 */
+  nosnippetWords?: number;
+  /** Runs of ≥ 3 lines that read as a list but are not `<ul>`/`<ol>` (e.g. `<br>`-separated "•" lines). 1.5.1 */
+  fakeListRuns?: ReadonlyArray<{ sample: string; lines: number }>;
 };
 
 export type RobotsGroup = {
@@ -290,6 +305,8 @@ export const URL_VARIANT_KINDS = [
   "index-html",
   "unknown-path",
   "uppercase-path",
+  /** `/page/2/` on the home URL (paginated-home duplicates). 1.5.1 */
+  "paginated-home",
 ] as const;
 export type UrlVariantKind = (typeof URL_VARIANT_KINDS)[number];
 
@@ -331,6 +348,18 @@ export type BotFetchData = {
     bytes: number;
     words: number;
     bodySha256: string;
+    blockedReason: string | null;
+    /** Repeat round for ×2 parity fetches; absent = 1. 1.5.1 */
+    round?: 1 | 2;
+  }>;
+  /**
+   * Robots + live-fetch result per AI / search crawler token (≈ 23 tokens,
+   * wider than the fixed `BotName` set fetched above). 1.5.1
+   */
+  policyMap?: ReadonlyArray<{
+    token: string;
+    robotsAllowed: boolean;
+    status: number;
     blockedReason: string | null;
   }>;
 };
@@ -391,91 +420,9 @@ export type Coverage = {
   capped: boolean;
 };
 
-export type RenderData = {
-  pages: ReadonlyArray<{
-    url: string;
-    js: {
-      finalUrl: string;
-      status: number | null;
-      renderedKey: string;
-      words: number;
-      requests: ReadonlyArray<{
-        url: string;
-        resourceType: string;
-        status: number | null;
-        /** Started before the load event (Resource Timing); absent from older sidecars. 1.1.0 */
-        beforeLoad?: boolean;
-        /** Bytes over the wire (Resource Timing `transferSize`, else body size). 1.5.0 */
-        transferBytes?: number | null;
-        /** Recorded then aborted by the sidecar (beacon or media). 1.5.0 */
-        aborted?: "beacon" | "media" | null;
-        /** Resource Timing `nextHopProtocol` (h2, h3, http/1.1). 1.5.0 */
-        protocol?: string | null;
-      }>;
-      /** Σ transferBytes + declared size of media that loads with the page. 1.5.0 */
-      pageWeightBytes?: number | null;
-      /** Rendered `<video>` / video iframe layout facts (FULL-READ §3.12). 1.5.0 */
-      mediaElements?: ReadonlyArray<RenderedMediaElement>;
-      /** Same-host links present only in the rendered DOM (second crawl pass). 1.5.0 */
-      renderOnlyLinks?: readonly string[];
-      opacityZeroWords: number;
-      /** `<form>` count in the rendered DOM (P2-08 JS-only forms). 1.3.0 */
-      forms?: number;
-      firstScreenActions: ReadonlyArray<{
-        tag: string;
-        text: string;
-        href: string | null;
-      }>;
-    };
-    noJs: { status: number | null; nojsKey: string; words: number };
-    firstScreenKey: string | null;
-    consoleErrors: readonly string[];
-  }>;
-};
-
-/** One `<video>` or video `<iframe>` after render. 1.5.0 */
-export type RenderedMediaElement = {
-  kind: "video" | "iframe";
-  src: string | null;
-  /** Intersects the first mobile viewport. */
-  firstScreen: boolean;
-  /** Has width/height attributes or a computed `aspect-ratio` (no layout shift). */
-  reservedSize: boolean;
-};
-
-export type AxeData = {
-  pages: ReadonlyArray<{
-    url: string;
-    violations: ReadonlyArray<{
-      id: string;
-      impact: "minor" | "moderate" | "serious" | "critical" | null;
-      help: string;
-      nodes: number;
-      sampleTargets: readonly string[];
-      /** Visible text of the sample nodes, ≤120 chars each, same order (P8-02). 1.3.0 */
-      sampleTexts?: readonly string[];
-    }>;
-  }>;
-};
-
-export type LighthouseData = {
-  pages: ReadonlyArray<{
-    url: string;
-    formFactor: "mobile" | "desktop";
-    environment: string;
-    performance: number | null;
-    lcpMs: number | null;
-    cls: number | null;
-    tbtMs: number | null;
-    lcpElement: string | null;
-    storageKey: string | null;
-    /** Lighthouse `render-blocking-resources` items (P7-05). 1.3.0 */
-    renderBlocking?: ReadonlyArray<{ url: string; wastedMs: number }>;
-  }>;
-};
-
 export type CollectedData = {
-  pages: Collected<{ snapshots: readonly PageSnapshot[] }>;
+  /** `coverage`: discovered vs read when the page cap applied (ADR-018). 1.5.1 */
+  pages: Collected<{ snapshots: readonly PageSnapshot[]; coverage?: Coverage }>;
   robots: Collected<RobotsData>;
   sitemap: Collected<SitemapData>;
   llms: Collected<LlmsData>;

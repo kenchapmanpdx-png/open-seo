@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AxeData } from "@/server/features/handbook/contracts/collectors";
+import type { AxeData } from "@/server/features/handbook/contracts/render-data";
 import { context, ORIGIN, statusOf } from "./check-test-fixtures";
 import { axeRulesCheck } from "./axe-rules";
 

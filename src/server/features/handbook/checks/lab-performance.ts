@@ -1,9 +1,7 @@
 import { sort } from "remeda";
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import type {
-  LighthouseData,
-  PageSnapshot,
-} from "@/server/features/handbook/contracts/collectors";
+import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import type { LighthouseData } from "@/server/features/handbook/contracts/render-data";
 import { createResult, normalizeUrl } from "./support";
 
 /**

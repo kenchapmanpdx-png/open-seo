@@ -1,6 +1,6 @@
 # B9 — Full-read build · LIGHT (SINGLE: Opus 5.5)
 
-Input: `fork/queue.md` (WO-B9-\*), `fork/FULL-READ.md`, ADR-018…021, contracts 1.5.0, `fork/reports/B8.md`.
+Input: `fork/queue.md` (WO-B9-\*), `fork/FULL-READ.md`, ADR-018…021, contracts 1.5.1, `fork/reports/B8.md`.
 
 ## Executor protocol
 
