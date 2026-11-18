@@ -2,14 +2,14 @@
 
 Spec: `fork/FULL-READ.md` (read fully first). Also read: `fork/FORK.md`, `fork/BLUEPRINT.md` §3, `fork/adr/ADR-001…017`, `fork/MAINTENANCE.md` (M3), `fork/reports/B7.md`, `fork/reports/B2-golden.md`.
 Rules: contracts, DB schema, migrations and upstream registration hooks change only in this batch and B10. [Ken] no external truth/legal verification (FULL-READ §0).
-Secrets: never source or read `.env.local` in the agent shell; never print values. Use scripts that load their own config (`handbook-audit.ts`, `run-local.sh`). The sidecar is already running (Ken starts it before launch; `curl -s http://127.0.0.1:4777/health`). A step that still needs secrets in the shell → BLOCKED-KEN, continue.
+Secrets: never source or read `.env.local` in the agent shell; never print values. Use scripts that load their own config (`handbook-audit.ts`, `run-local.sh`). The sidecar is already running (`fork/scripts/start-build.sh` starts it before launch; `curl -s http://127.0.0.1:4777/health`). To put it back on the current code + the `.env.local` token at any time (e.g. after a BadGEO override run): `bash fork/scripts/start-build.sh --check`. A step that still needs secrets in the shell → BLOCKED-KEN, continue.
 
 ## R1 — Rebase, measure, decide
 
 1. `git fetch upstream`; rebase if new commits (FORK.md "Upstream sync"); refresh `fork/BASELINE.md` if failures changed.
 2. Measure on current code, record in `fork/reports/B8.md`:
    - CLI wall time + peak RSS at `--max-pages` 60 / 200 / 500 (`fork/scripts/perf-500.ts` synthetic + whyracingevents live).
-   - Sidecar throughput: renders/min at concurrency 1/2/3 on whyracingevents (running sidecar; rebuilds in R2 need Ken to restart it → BLOCKED-KEN note if the token is required).
+   - Sidecar throughput: renders/min at concurrency 1/2/3 on whyracingevents (running sidecar).
    - In-app path memory ceiling (vite preview / workerd) at 200 and 500 pages; does the 128 MB Worker limit apply locally? Decides in-app vs local-runner handoff for large sites.
    - LLM: tokens per page (main text) on why/ryan/bluetree; Anthropic prices for `claude-haiku-5-5`, `claude-sonnet-5-5` from Anthropic's pricing docs → fix `llm/model.ts` price table if wrong (B7 run 25 assumed them).
 3. ADRs (template `fork/templates/ADR.md`), each citing FULL-READ § and code paths:
@@ -30,7 +30,7 @@ Checkpoint.
    - Registry: `registry-supp.ts` types (SUPP-nn), report section "Additional findings".
    - Escalation log type in report contract.
 2. Schema both dialects (`src/db/` SQLite + Postgres; parity test must pass): `handbook_page_profile`, `handbook_run_stage`, `handbook_run_lease`, run `depth` + coverage columns. Migrations up + down round-trip; `fork/scripts/supabase-harden.sql` covers new tables; `run-local.sh migrate` on Supabase.
-3. Sidecar: implement K3 additions; `docker compose -f fork/sidecar/compose.yaml build`; sidecar tests (unit, no live container). The running container keeps the old image until Ken restarts it (token needed) — see Exit.
+3. Sidecar: implement K3 additions; `HANDBOOK_SIDECAR_TOKEN=build-only docker compose -f fork/sidecar/compose.yaml build` (Compose needs the variable set even to build); sidecar tests (unit, no live container). The running container keeps the old image until restarted — see Exit.
 4. Session-end checks; commit; push.
 
 Checkpoint.
@@ -90,4 +90,4 @@ WOs (template `fork/templates/WO.md`), one per row, explicit files, acceptance c
 
 - `fork/reports/B8.md`: measurements, ADR list, contracts 1.5.0 summary, goldens/evals, WO count.
 - STATE: B8 done → B9 (`current_batch: B9`, `batch_file`, `next_action: B9 first WO`); commit + push.
-- If the sidecar image changed (R2.3): set `status: needs-ken` (planned checkpoint; overrides protocol rule 8) with `needs_ken: restart sidecar: cd ~/open-seo && grep '^HANDBOOK_SIDECAR_TOKEN=' .env.local > .env.sidecar && docker compose --env-file .env.sidecar -f fork/sidecar/compose.yaml up -d --build; rm -f .env.sidecar; curl -s http://127.0.0.1:4777/health` (token handed to Docker in a throwaway gitignored file; a shell-exported token did not reach Compose on Ken's PC, 2026-11-18). Ken runs it, then relaunches autopilot; next run sets `status: in-progress` and starts B9.
+- If the sidecar image changed (R2.3): run `bash fork/scripts/start-build.sh --check` (rebuilds the image, restarts the container with the `.env.local` token without showing it, restarts the app, verifies `/health` `contractsVersion` + token). Exit 0 → continue into B9. Refused or non-zero → set `status: needs-ken` (planned checkpoint; overrides protocol rule 8) with `needs_ken: restart sidecar: bash fork/scripts/start-build.sh`. Ken runs that one command: it restarts the sidecar, clears this status in STATE.md and resumes the build (`autopilot.sh` alone exits 2 while status is `needs-ken`).
