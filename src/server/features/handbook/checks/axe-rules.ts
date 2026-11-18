@@ -7,7 +7,8 @@ import { createResult, normalizeUrl } from "./support";
  * ran on every template sample. P8-02: color-contrast. P8-06: label,
  * landmark-unique, scrollable-region-focusable, label-content-name-mismatch
  * (link-name / button-name belong to P8-04's raw-HTML check, so they are not
- * reported twice). One finding per rule across pages.
+ * reported twice). One finding per rule across pages, grouped by template
+ * (`full` runs axe on every rendered page).
  */
 const ITEMS = ["P8-03", "P8-02", "P8-06"];
 
@@ -46,6 +47,24 @@ const samples = (v: Page["violations"][number]) =>
     return text ? `${target} — "${text}"` : target;
   });
 
+/** Up to MAX_URLS pages listed per rule and MAX_NODES node excerpts as evidence. */
+const MAX_URLS = 10;
+const MAX_NODES = 10;
+
+type Hit = { page: Page; v: Page["violations"][number] };
+
+/** One evidence row per page, ≤ MAX_NODES node excerpts across the rule. */
+function nodeExcerpts(hits: readonly Hit[]) {
+  let budget = MAX_NODES;
+  return hits.flatMap((h) => {
+    const taken = samples(h.v)
+      .slice(0, budget)
+      .map((s) => s.slice(0, 300));
+    budget -= taken.length;
+    return taken.length > 0 ? [{ ...h, sample: taken.join("\n") }] : [];
+  });
+}
+
 export const axeRulesCheck: HandbookCheck = {
   id: "a11y.axe-rules",
   itemIds: ITEMS,
@@ -70,16 +89,13 @@ export const axeRulesCheck: HandbookCheck = {
     out.pass(
       "P8-03",
       missing.length === 0
-        ? `axe (after full-page scroll) ran on ${pages.length} template samples`
-        : `axe ran on ${pages.length} template samples; not scanned (sample cap): ${missing.map((t) => t.key).join(", ")}`,
+        ? `axe (after full-page scroll) ran on ${pages.length} pages`
+        : `axe ran on ${pages.length} pages; not scanned (sample cap): ${missing.map((t) => t.key).join(", ")}`,
       pages.slice(0, 3).map((p) => ref(p)),
     );
 
     // P8-02 / P8-06 — one finding per axe rule.
-    const byRule = new Map<
-      string,
-      { page: Page; v: Page["violations"][number] }[]
-    >();
+    const byRule = new Map<string, Hit[]>();
     for (const page of pages)
       for (const v of page.violations) {
         if (!RULES[v.id]) continue;
@@ -87,36 +103,49 @@ export const axeRulesCheck: HandbookCheck = {
         list.push({ page, v });
         byRule.set(v.id, list);
       }
-    // Which template each scanned URL samples, so `/events/*` hits read as such.
+    // Which template each scanned URL belongs to; at `full` axe reads every
+    // page, so one finding per rule groups its pages by template.
     const patternOf = new Map<string, string>();
     if (templates.status === "ok")
       for (const t of templates.templates)
         for (const u of t.urls) patternOf.set(normalizeUrl(u), t.urlPattern);
-    const label = (url: string) => {
-      const pattern = patternOf.get(normalizeUrl(url));
-      return pattern ? `${url} [template ${pattern}]` : url;
-    };
+    const patternFor = (url: string) =>
+      patternOf.get(normalizeUrl(url)) ?? "(no template)";
     for (const [id, hits] of byRule) {
       const rule = RULES[id];
+      const perTemplate = new Map<string, number>();
+      for (const { page } of hits)
+        perTemplate.set(
+          patternFor(page.url),
+          (perTemplate.get(patternFor(page.url)) ?? 0) + 1,
+        );
+      const templatesLine = `Templates: ${[...perTemplate]
+        .map(
+          ([pattern, n]) => `${pattern} (${n} ${n === 1 ? "page" : "pages"})`,
+        )
+        .join(", ")}`;
+      const pageLines = hits
+        .slice(0, MAX_URLS)
+        .map(
+          ({ page, v }) =>
+            `${page.url} [template ${patternFor(page.url)}] — ${v.nodes} nodes (${v.impact ?? "?"}): ${v.sampleTargets.join(", ")}`,
+        );
+      const more =
+        hits.length > MAX_URLS
+          ? [`… and ${hits.length - MAX_URLS} more pages`]
+          : [];
       out.finding({
         itemIds: [rule.item],
         severity: rule.severity,
         title: `axe: ${hits[0].v.help}`,
-        detail: hits
-          .map(
-            ({ page, v }) =>
-              `${label(page.url)} — ${v.nodes} nodes (${v.impact ?? "?"}): ${v.sampleTargets.join(", ")}`,
-          )
-          .join("\n"),
+        detail: [templatesLine, ...pageLines, ...more].join("\n"),
         fix: FIX[rule.item],
         fixability: "FIXABLE",
         effort: "S",
         urls: hits.map(({ page }) => page.url),
-        evidenceRefs: hits
-          .slice(0, 5)
-          .map(({ page, v }) =>
-            ref(page, `${v.id}: ${v.help}\n${samples(v).join("\n")}`),
-          ),
+        evidenceRefs: nodeExcerpts(hits).map(({ page, v, sample }) =>
+          ref(page, `${v.id}: ${v.help}\n${sample}`),
+        ),
       });
     }
     const passRefs = pages.slice(0, 3).map((p) => ref(p));

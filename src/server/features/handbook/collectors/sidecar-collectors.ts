@@ -314,9 +314,12 @@ export function createSidecarCollectors(config: SidecarConfig) {
 
   const axe: Collector<"axe"> = {
     key: "axe",
-    dependsOn: ["templates"],
-    collect: (ctx, collected) =>
-      perUrl(ctx, "axe", sampleUrls(collected), async (url) => {
+    dependsOn: full ? ["templates", "pages"] : ["templates"],
+    collect: (ctx, collected) => {
+      // `full`: every live page (same set the render collector reads).
+      const samples = sampleUrls(collected);
+      const urls = full && samples ? livePageUrls(collected) : samples;
+      return perUrl(ctx, "axe", urls, async (url) => {
         const res = await sidecar(
           "/axe",
           { url, viewport: "mobile", scrollToEnd: true },
@@ -336,7 +339,8 @@ export function createSidecarCollectors(config: SidecarConfig) {
           })),
         };
         return { ok: true, value: page };
-      }),
+      });
+    },
   };
 
   const lighthouse: Collector<"lighthouse"> = {
