@@ -2,8 +2,13 @@ import type { WorkflowStep, WorkflowStepConfig } from "cloudflare:workers";
 import { db } from "@/db";
 import { getDatabaseProvider } from "@/db/provider";
 import { pgStep } from "@/server/workflows/pgStep";
+import { HandbookLeaseRepository } from "@/server/features/handbook/repositories/HandbookLeaseRepository";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
-import { planBatches, STAGES } from "@/server/features/handbook/engine/stages";
+import {
+  planBatches,
+  STAGES,
+  type StageName,
+} from "@/server/features/handbook/engine/stages";
 
 /** Per stage unit (ADR-018): 30-min timeout, one retry (attempt + 1 on the stage row). */
 const UNIT_STEP: WorkflowStepConfig = {
@@ -47,6 +52,31 @@ function isEndable(
     "end" in value &&
     typeof value.end === "function"
   );
+}
+
+/** 30-s polls past the 2-h lease expiry, so a dead holder is always taken over. */
+const LEASE_POLLS = 300;
+
+/**
+ * Run queue (ADR-018): wait `queued` until this run holds the machine lease.
+ * Returns the acquire time; the run cap counts from it, not from the queued
+ * start, so waiting never eats the 90-min budget.
+ */
+async function waitForLease(step: WorkflowStep, runId: string) {
+  for (let poll = 0; ; poll++) {
+    const at = await hbStep(
+      step,
+      `${runId}:lease:${poll}`,
+      undefined,
+      async () =>
+        (await HandbookLeaseRepository.acquire(runId))
+          ? new Date().toISOString()
+          : null,
+    );
+    if (at) return at;
+    if (poll >= LEASE_POLLS) throw new Error("handbook: queue wait timed out");
+    await step.sleep(`${runId}:queued:${poll}`, "30 seconds");
+  }
 }
 
 const service = async () =>
@@ -96,21 +126,24 @@ export async function runHandbookPhase(
       return { ...run, startedAt: await (await service()).startRun(run) };
     });
     try {
-      await hbStep(step, `${runId}:crawl:0`, UNIT_STEP, async () =>
-        (await service()).runStage(start, "crawl", 0, planBatches({})),
-      );
+      const leased = { ...start, startedAt: await waitForLease(step, runId) };
+      // Each unit renews the lease first, so a long run keeps the machine.
+      const unit = (
+        stage: StageName,
+        batch: number,
+        batches: Record<StageName, number>,
+      ) =>
+        hbStep(step, `${runId}:${stage}:${batch}`, UNIT_STEP, async () => {
+          await HandbookLeaseRepository.renew(runId);
+          return (await service()).runStage(leased, stage, batch, batches);
+        });
+      await unit("crawl", 0, planBatches({}));
       const batches = await hbStep(step, `${runId}:plan`, undefined, async () =>
-        (await service()).planRun(start, start.startedAt),
+        (await service()).planRun(leased, leased.startedAt),
       );
       for (const stage of STAGES.slice(1)) {
         for (let batch = 0; batch < batches[stage]; batch++) {
-          await hbStep(
-            step,
-            `${runId}:${stage}:${batch}`,
-            UNIT_STEP,
-            async () =>
-              (await service()).runStage(start, stage, batch, batches),
-          );
+          await unit(stage, batch, batches);
         }
       }
     } catch (error) {
@@ -119,6 +152,11 @@ export async function runHandbookPhase(
         return null;
       });
       throw error;
+    } finally {
+      await hbStep(step, `${runId}:release`, undefined, async () => {
+        await HandbookLeaseRepository.release(runId);
+        return null;
+      });
     }
   } catch (error) {
     console.error("handbook.phase.failed", {

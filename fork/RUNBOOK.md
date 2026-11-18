@@ -84,7 +84,7 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 ## Troubleshooting
 
 - **Sidecar unhealthy**: `docker compose -f fork/sidecar/compose.yaml logs --tail 50`; rebuild with `up -d --build`. Wrong token → 401 in the CLI log; rotate.
-- **`EMAXCONNSESSION` (max clients reached in session mode)**: several site audits at once exhaust the Supabase session pooler (15 clients) under `run-local.sh dev`; audits fail or stall at 0 pages. Run one audit at a time; restarting the app (or touching `.env.local`, which restarts vite) frees the connections.
+- **`EMAXCONNSESSION` (max clients reached in session mode)**: several site audits at once exhaust the Supabase session pooler (15 clients) under `run-local.sh dev`; audits fail or stall at 0 pages. Run one audit at a time; restarting the app (or touching `.env.local`, which restarts vite) frees the connections. Handbook runs queue behind one machine lease (`handbook_run_lease`, 2-h expiry), but the upstream crawl phase and every app request open their own session-pooler client, so 2–3 concurrent site audits still exhaust the pool before the handbook starts (run 31). Start audits one at a time until B10 decides the pooler.
 - **Playwright host libraries missing** (in-app UI smoke): the sidecar image has them; the host needs `pnpm exec playwright install-deps` (sudo).
 - **New route 404 / route tree stale**: `pnpm exec vite dev` for ~45 s regenerates `src/routeTree.gen.ts`; commit it and log it in `fork/UPSTREAM-EDITS.md`.
 - **Ticks fail (curl exit 7)**: the app is not up on 3001 — `journalctl --user -u openseo-app.service`.

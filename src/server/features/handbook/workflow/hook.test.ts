@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkflowStep } from "cloudflare:workers";
+import { HandbookLeaseRepository } from "@/server/features/handbook/repositories/HandbookLeaseRepository";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import { HandbookRunService } from "@/server/features/handbook/services/HandbookRunService";
 import { runHandbookPhase } from "./hook";
@@ -16,6 +17,16 @@ vi.mock("@/server/workflows/pgStep", () => ({
 vi.mock("@/server/features/handbook/repositories/HandbookRepository", () => ({
   HandbookRepository: { getProjectSetting: vi.fn(), listCrawledUrls: vi.fn() },
 }));
+vi.mock(
+  "@/server/features/handbook/repositories/HandbookLeaseRepository",
+  () => ({
+    HandbookLeaseRepository: {
+      acquire: vi.fn(),
+      renew: vi.fn(),
+      release: vi.fn(),
+    },
+  }),
+);
 vi.mock("@/server/features/handbook/services/HandbookRunService", () => ({
   HandbookRunService: {
     startRun: vi.fn(),
@@ -25,8 +36,16 @@ vi.mock("@/server/features/handbook/services/HandbookRunService", () => ({
   },
 }));
 
+const sleep = vi.fn();
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- steps run directly through the pgStep mock
-const step = {} as WorkflowStep;
+const step = { sleep } as unknown as WorkflowStep;
+const enabled = {
+  projectId: "p1",
+  enabled: true,
+  mode: "AUDIT" as const,
+  tierOverride: null,
+  updatedAt: "",
+};
 const params = {
   auditId: "a1",
   projectId: "p1",
@@ -42,6 +61,7 @@ describe("runHandbookPhase", () => {
       "2026-11-18T00:00:00Z",
     );
     vi.mocked(HandbookRunService.runStage).mockResolvedValue("done");
+    vi.mocked(HandbookLeaseRepository.acquire).mockResolvedValue(true);
   });
 
   it("does nothing when the project flag is off", async () => {
@@ -51,13 +71,7 @@ describe("runHandbookPhase", () => {
   });
 
   it("runs with a per-audit run id and swallows engine failures", async () => {
-    vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue({
-      projectId: "p1",
-      enabled: true,
-      mode: "AUDIT",
-      tierOverride: null,
-      updatedAt: "",
-    });
+    vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue(enabled);
     vi.mocked(HandbookRunService.runStage).mockRejectedValue(new Error("boom"));
     await expect(runHandbookPhase(step, params)).resolves.toBeUndefined();
     expect(HandbookRunService.runStage).toHaveBeenCalledWith(
@@ -71,5 +85,17 @@ describe("runHandbookPhase", () => {
       expect.anything(),
     );
     expect(HandbookRunService.failRun).toHaveBeenCalled();
+  });
+
+  it("waits queued while another run holds the lease, then runs and releases", async () => {
+    vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue(enabled);
+    vi.mocked(HandbookLeaseRepository.acquire)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+    await runHandbookPhase(step, params);
+    expect(sleep).toHaveBeenCalledTimes(2);
+    expect(HandbookRunService.runStage).toHaveBeenCalled();
+    expect(HandbookLeaseRepository.release).toHaveBeenCalledWith("hb-a1");
   });
 });
