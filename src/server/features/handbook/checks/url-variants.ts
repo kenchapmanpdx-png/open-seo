@@ -9,9 +9,12 @@ import { createResult } from "./support";
  * CRAWL (handbook §2, §10): one URL per page. Host/protocol variants reach
  * the canonical origin in one 301/308 hop (P3-01); the other trailing-slash
  * form 301/308s or 404s (P3-02); `/index.html` is not a live duplicate and no
- * page links to it (P3-03). Input: the variants collector's probes.
+ * page links to it (P3-03); `/page/2/` is not a 200 copy of the homepage
+ * (P3-12). An upper-case path that answers 200 is noted under P3-03: the
+ * probe carries no canonical (contracts 1.5.1), so it is not judged a
+ * duplicate. Input: the variants collector's probes.
  */
-const ITEMS = ["P3-01", "P3-02", "P3-03"];
+const ITEMS = ["P3-01", "P3-02", "P3-03", "P3-12"];
 
 type Probe = VariantsData["probes"][number];
 
@@ -211,14 +214,45 @@ export const urlVariantsCheck: HandbookCheck = {
         ),
       });
     }
+    const upper = variants.probes.find((p) => p.kind === "uppercase-path");
+    const upperNote =
+      upper && upper.status === 200 && upper.redirectChain.length === 0
+        ? `; ${pathOf(upper.url)} answers 200 without redirecting (case variant; canonical not recorded)`
+        : "";
+    if (upper && upperNote) passRefs.push(probe(upper));
     if (passRefs.length > 0) {
       out.pass(
         "P3-03",
-        `/index.html → ${index?.status}; no internal links to index.html; query variants not probed`,
+        `/index.html → ${index?.status ?? "not fetched"}; no internal links to index.html; query variants not probed${upperNote}`,
         passRefs,
       );
     } else if (!index) {
       out.na("P3-03", "index.html probe not fetched");
+    }
+
+    // P3-12 — `/page/2/` serving the homepage again (same title, ±10 % words).
+    const paged = variants.probes.find((p) => p.kind === "paginated-home");
+    if (
+      paged &&
+      home &&
+      paged.status === 200 &&
+      pathOf(paged.finalUrl) !== "/" &&
+      paged.title !== null &&
+      paged.title === home.head.title &&
+      Math.abs(paged.words - home.wordsRaw) <= home.wordsRaw * 0.1
+    ) {
+      out.finding({
+        itemIds: ["P3-12"],
+        severity: "S4",
+        severityReason: "one duplicate URL; reachable only if linked",
+        title: "Paginated home copy: /page/2/ serves the homepage",
+        detail: `${paged.url} → 200 "${paged.title}" (${paged.words} words; home ${home.wordsRaw})`,
+        fix: "Return 404 for /page/N/ beyond the last page of the home listing, or 301 it to /.",
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: [paged.url, home.url],
+        evidenceRefs: [probe(paged)],
+      });
     }
     return out.build();
   },

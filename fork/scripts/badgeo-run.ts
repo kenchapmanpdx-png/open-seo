@@ -7,6 +7,8 @@
  *
  * Expected ids whose item is BLOCKED in the report (e.g. RENDER items when
  * no sidecar ran) are listed as `blocked`, not `missing`, and do not fail.
+ * A page marked `<meta name="badgeo-requires" content="sidecar">` is only
+ * reachable through a rendered link: without a sidecar it expects nothing.
  * `--sidecar http://127.0.0.1:4777` (token from HANDBOOK_SIDECAR_TOKEN) binds
  * the server on 0.0.0.0 so the sidecar container can render it.
  *
@@ -34,6 +36,7 @@ type Row = {
 };
 
 const EXPECT_META = /<meta\s+name="badgeo-expect"\s+content="([^"]*)"/i;
+const NEEDS_SIDECAR = /<meta\s+name="badgeo-requires"\s+content="sidecar"/i;
 
 function listHtml(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -44,11 +47,15 @@ function listHtml(dir: string): string[] {
 }
 
 /** Page path ("/", "/about/", "/x.html") → expected item ids. */
-function loadExpectations(): Map<string, string[]> {
+function loadExpectations(sidecar: boolean): Map<string, string[]> {
   const out = new Map<string, string[]>();
   for (const file of listHtml(BADGEO_ROOT)) {
     const rel = "/" + relative(BADGEO_ROOT, file).replace(/index\.html$/, "");
-    const content = EXPECT_META.exec(readFileSync(file, "utf8"))?.[1] ?? "";
+    const html = readFileSync(file, "utf8");
+    const content =
+      !sidecar && NEEDS_SIDECAR.test(html)
+        ? ""
+        : (EXPECT_META.exec(html)?.[1] ?? "");
     out.set(
       rel,
       content
@@ -148,7 +155,7 @@ async function main() {
       join("fork/runs/badgeo", date),
       ...(values.sidecar ? ["--sidecar", values.sidecar] : []),
     ]);
-    const all = compare(report, loadExpectations());
+    const all = compare(report, loadExpectations(Boolean(values.sidecar)));
     const rows = only ? onlyIds(all, only) : all;
     const list = (ids: string[]) => ids.join(", ") || "—";
     console.log("| page | expected | fired | missing | blocked | unexpected |");

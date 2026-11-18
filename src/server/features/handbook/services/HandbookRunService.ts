@@ -18,6 +18,7 @@ import {
 } from "@/server/features/handbook/contracts/status";
 import { LLM_BUDGET_ENV } from "@/server/features/handbook/contracts/llm";
 import { createDefaultCollectors } from "@/server/features/handbook/collectors";
+import { collectRunStage } from "@/server/features/handbook/engine/render-pass";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import {
   collectorContext,
@@ -26,7 +27,6 @@ import {
   type RunInput,
 } from "@/server/features/handbook/engine/runner";
 import {
-  collectStage,
   createEvidenceStageStore,
   loadCollected,
   planBatches,
@@ -219,8 +219,8 @@ async function runStage(
     batches,
     {
       collect: (s, prior) =>
-        collectStage(
-          runInput.collectors,
+        collectRunStage(
+          runInput,
           collectorContext(runInput, runtime),
           s,
           prior,

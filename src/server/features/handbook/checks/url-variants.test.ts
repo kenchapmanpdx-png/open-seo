@@ -73,4 +73,42 @@ describe("crawl.url-variants", () => {
     expect(statusOf(await run([index]), "P3-03")).toBe("PASS");
     expect(statusOf(await run([index], ["/index.html"]), "P3-03")).toBe("OPEN");
   });
+
+  it("opens P3-12 at S4 when /page/2/ serves the homepage, nothing on 404", async () => {
+    const home = snapshot("/");
+    const pages = {
+      status: "ok" as const,
+      snapshots: [{ ...home, head: { ...home.head, title: "Home" } }],
+    };
+    const paged = (status: number, title: string | null) => ({
+      ...probe("paginated-home", `${ORIGIN}/page/2/`, [], status),
+      finalUrl: `${ORIGIN}/page/2/`,
+      title,
+      words: 98,
+    });
+    const copy = await urlVariantsCheck.run(
+      context({
+        variants: { status: "ok", probes: [paged(200, "Home")] },
+        pages,
+      }),
+    );
+    expect(statusOf(copy, "P3-12")).toBe("OPEN");
+    expect(copy.findings[0]?.severity).toBe("S4");
+    const missing = await urlVariantsCheck.run(
+      context({
+        variants: { status: "ok", probes: [paged(404, null)] },
+        pages,
+      }),
+    );
+    expect(missing.findings).toEqual([]);
+  });
+
+  it("notes an upper-case path that answers 200 under P3-03 without a finding", async () => {
+    const upper = `${ORIGIN}/CONTACT/`;
+    const result = await run([probe("uppercase-path", upper, [], 200, upper)]);
+    expect(result.findings).toEqual([]);
+    expect(result.statuses.find((s) => s.itemId === "P3-03")?.note).toContain(
+      "/CONTACT/ answers 200",
+    );
+  });
 });

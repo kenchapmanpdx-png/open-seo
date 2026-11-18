@@ -21,6 +21,7 @@ import type { HandbookDepth } from "@/server/features/handbook/contracts/exports
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { normalizeUrl } from "@/server/features/handbook/checks/support";
 import { createLimiter } from "./limiter";
+import { renderOnlyLinks } from "./site-crawl";
 
 /**
  * K3 client collectors (ADR-004): `render`, `axe` and `lighthouse` call the
@@ -270,6 +271,10 @@ export function createSidecarCollectors(config: SidecarConfig) {
             : null,
         ]);
         const jsFacts = extractHtmlFacts(js.value.html, js.value.finalUrl);
+        const raw =
+          collected.pages?.status === "ok"
+            ? collected.pages.snapshots.find((s) => s.url === url)
+            : undefined;
         const page: RenderData["pages"][number] = {
           url,
           js: {
@@ -283,6 +288,16 @@ export function createSidecarCollectors(config: SidecarConfig) {
             opacityZeroWords: js.value.opacityZeroWords,
             firstScreenActions: js.value.firstScreenActions,
             forms: jsFacts.markup.counts.forms,
+            // Without the raw snapshot every rendered link would look JS-only.
+            ...(raw
+              ? {
+                  renderOnlyLinks: renderOnlyLinks(
+                    url,
+                    jsFacts.links,
+                    raw.links,
+                  ),
+                }
+              : {}),
           },
           noJs: {
             status: noJs.value.status,
