@@ -1,6 +1,7 @@
 import { sort } from "remeda";
 import { sha256Hex } from "@/server/lib/audit/ids";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
+import { parseBlock } from "./jsonld-parse";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { SafeFetchBlockedError } from "@/server/features/handbook/engine/safe-fetch";
 import {
@@ -14,8 +15,8 @@ import type {
   Coverage,
   Collector,
   CollectorContext,
+  DiscoveredBy,
   JsonLdData,
-  JsonLdNode,
   PageSnapshot,
   TemplatesData,
 } from "@/server/features/handbook/contracts/collectors";
@@ -102,38 +103,24 @@ async function crawl(
   extras: Map<string, PageExtra>,
 ): Promise<{ snapshots: PageSnapshot[]; coverage: Coverage }> {
   const home = new URL("/", ctx.origin).href;
-  const robots = collected.robots?.status === "ok" ? collected.robots : null;
   // Discovery order is kept; the infinite-space guard and the stratified
   // fill pick from it in BFS waves (ADR-018).
   const discovered: string[] = [];
-  const known = new Set<string>();
+  const source = new Map<string, DiscoveredBy>();
   const attempted = new Set<string>();
   const snapshots: PageSnapshot[] = [];
-  const discover = (raw: string) => {
+  const discover = (raw: string, by: DiscoveredBy) => {
     const url = normalize(raw);
-    if (!url || known.has(url)) return;
-    known.add(url);
-    const parsed = new URL(url);
-    const hostRobots = robots?.hosts.find((h) => h.host === parsed.host);
-    if (
-      hostRobots &&
-      !decide(
-        parsed.host,
-        hostRobots.groups,
-        "OpenSEO-Handbook",
-        parsed.pathname,
-      ).allowed
-    ) {
-      return;
-    }
-    discovered.push(url);
+    if (!url || source.has(url)) return;
+    source.set(url, by);
+    if (robotsAllowed(collected, url)) discovered.push(url);
   };
   const pending = () =>
     infiniteSpaceGuard(discovered).filter((u) => !attempted.has(u));
 
-  for (const url of [home, ...(options.seedUrls ?? [])]) discover(url);
+  for (const url of [home, ...(options.seedUrls ?? [])]) discover(url, "seed");
   if (collected.sitemap?.status === "ok") {
-    for (const u of collected.sitemap.urls) discover(u.loc);
+    for (const u of collected.sitemap.urls) discover(u.loc, "sitemap");
   }
 
   for (;;) {
@@ -145,7 +132,7 @@ async function crawl(
     for (const url of wave) {
       if (snapshots.length >= options.maxPages) break;
       attempted.add(url);
-      const page = await fetchPage(ctx, url);
+      const page = await fetchPage(ctx, url, source.get(url) ?? "raw");
       if (!page) continue;
       const finalNorm = normalize(page.snapshot.finalUrl);
       if (finalNorm && finalNorm !== url && attempted.has(finalNorm)) {
@@ -164,7 +151,7 @@ async function crawl(
       snapshots.push(page.snapshot);
       extras.set(url, page.extra);
       if (options.followLinks && page.snapshot.status === 200) {
-        sameHostLinks(page.snapshot).forEach(discover);
+        for (const link of sameHostLinks(page.snapshot)) discover(link, "raw");
       }
     }
   }
@@ -179,6 +166,106 @@ async function crawl(
   };
 }
 
+/**
+ * Second crawl pass (ADR-021): fetches same-host links found only in the
+ * rendered DOM that the first pass did not read, robots-allowed, within the
+ * page budget left. Returns their snapshots (`discoveredBy: render`), their
+ * JSON-LD and the updated coverage; the caller merges them into `pages`.
+ */
+export async function crawlSecondPass(
+  ctx: CollectorContext,
+  collected: Partial<CollectedData>,
+  links: readonly string[],
+  maxPages: number,
+): Promise<{
+  snapshots: PageSnapshot[];
+  jsonld: JsonLdData["pages"][number][];
+  coverage: Coverage;
+}> {
+  const pages = collected.pages?.status === "ok" ? collected.pages : null;
+  const prior = pages?.snapshots ?? [];
+  const seen = new Set(
+    prior.flatMap((s) => [normalize(s.url), normalize(s.finalUrl)]),
+  );
+  const queue: string[] = [];
+  for (const link of links) {
+    const url = normalize(link);
+    if (!url || seen.has(url) || !robotsAllowed(collected, url)) continue;
+    seen.add(url);
+    queue.push(url);
+  }
+  const guarded = infiniteSpaceGuard(queue);
+  const room = Math.max(0, maxPages - prior.length);
+  const wave =
+    guarded.length > room
+      ? stratifiedFill(groupByPattern(guarded), room)
+      : guarded;
+  const snapshots: PageSnapshot[] = [];
+  const jsonld: JsonLdData["pages"][number][] = [];
+  for (const url of wave) {
+    const page = await fetchPage(ctx, url, "render");
+    if (!page) continue;
+    snapshots.push(page.snapshot);
+    const parsed = page.extra.jsonLdBlocks.map((raw, i) => parseBlock(raw, i));
+    jsonld.push({
+      url,
+      blocks: parsed.map((p) => p.block),
+      nodes: parsed.flatMap((p) => p.nodes),
+    });
+  }
+  const before = pages?.coverage ?? {
+    discovered: prior.length,
+    read: prior.length,
+    capped: false,
+  };
+  const unread = guarded.length - snapshots.length;
+  return {
+    snapshots,
+    jsonld,
+    coverage: {
+      ...before,
+      discovered: before.discovered + guarded.length,
+      read: before.read + snapshots.length,
+      capped: before.capped || unread > 0,
+    },
+  };
+}
+
+/** Robots verdict for `OpenSEO-Handbook`; hosts without a robots.txt read allowed. */
+function robotsAllowed(collected: Partial<CollectedData>, url: string) {
+  const robots = collected.robots?.status === "ok" ? collected.robots : null;
+  const parsed = new URL(url);
+  const hostRobots = robots?.hosts.find((h) => h.host === parsed.host);
+  return (
+    !hostRobots ||
+    decide(parsed.host, hostRobots.groups, "OpenSEO-Handbook", parsed.pathname)
+      .allowed
+  );
+}
+
+/** Same-host page links of a rendered DOM that the raw HTML of `url` lacks. */
+export function renderOnlyLinks(
+  url: string,
+  rendered: readonly { href: string }[],
+  raw: readonly { href: string }[],
+): string[] {
+  const host = new URL(url).host;
+  const rawSet = new Set(raw.map((l) => normalize(l.href)));
+  const self = normalize(url);
+  const out = new Set<string>();
+  for (const link of rendered) {
+    const target = normalize(link.href);
+    if (
+      target &&
+      target !== self &&
+      new URL(target).host === host &&
+      !rawSet.has(target)
+    )
+      out.add(target);
+  }
+  return [...out];
+}
+
 function sameHostLinks(snapshot: PageSnapshot): string[] {
   const host = new URL(snapshot.url).host;
   return snapshot.links.flatMap((link) => {
@@ -190,6 +277,7 @@ function sameHostLinks(snapshot: PageSnapshot): string[] {
 async function fetchPage(
   ctx: CollectorContext,
   url: string,
+  discoveredBy: DiscoveredBy,
 ): Promise<{ snapshot: PageSnapshot; extra: PageExtra } | null> {
   let res;
   try {
@@ -224,6 +312,7 @@ async function fetchPage(
       images: facts?.images ?? [],
       xRobotsTag: header("x-robots-tag"),
       markup: facts?.markup ?? emptyMarkup(),
+      discoveredBy,
     },
     extra: {
       jsonLdBlocks: facts?.jsonLdBlocks ?? [],
@@ -278,53 +367,6 @@ function emptyHead(): PageSnapshot["head"] {
     meta: {},
     hreflang: [],
   };
-}
-
-// ---------------------------------------------------------------------------
-// JSON-LD
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  !!value && typeof value === "object" && !Array.isArray(value);
-// ---------------------------------------------------------------------------
-
-function parseBlock(raw: string, index: number) {
-  try {
-    const value: unknown = JSON.parse(raw);
-    return {
-      block: { index, raw, parseError: null },
-      nodes: flattenNodes(value),
-    };
-  } catch (error) {
-    return {
-      block: {
-        index,
-        raw,
-        parseError: error instanceof Error ? error.message : "parse error",
-      },
-      nodes: [],
-    };
-  }
-}
-
-/** Top-level nodes and `@graph` members; nested objects stay as properties. */
-function flattenNodes(value: unknown): JsonLdNode[] {
-  if (Array.isArray(value)) return value.flatMap(flattenNodes);
-  if (!isRecord(value)) return [];
-  const record = value;
-  const graph = record["@graph"];
-  if (Array.isArray(graph)) return graph.flatMap(flattenNodes);
-  const type = record["@type"];
-  const types = Array.isArray(type)
-    ? type.filter((t): t is string => typeof t === "string")
-    : typeof type === "string"
-      ? [type]
-      : [];
-  const id = typeof record["@id"] === "string" ? record["@id"] : null;
-  const properties: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(record)) {
-    if (k !== "@type" && k !== "@id" && k !== "@context") properties[k] = v;
-  }
-  return [{ id, types, properties }];
 }
 
 // ---------------------------------------------------------------------------

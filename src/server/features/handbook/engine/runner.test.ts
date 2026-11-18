@@ -6,6 +6,8 @@ import { LlmBudgetError } from "../llm/judge";
 import { createMemoryEvidenceStore } from "./memory-evidence-store";
 import { buildReportJson } from "./report";
 import { runHandbook } from "./runner";
+import type { CollectedData } from "@/server/features/handbook/contracts/collectors";
+import { snapshot } from "@/server/features/handbook/checks/check-test-fixtures";
 
 // A T1+ item with no gate, so it is applicable on any site (not a process
 // item the runner decides itself).
@@ -244,5 +246,92 @@ describe("runHandbook invariants", () => {
     expect(report.items.find((i) => i.itemId === "RV-02")).toMatchObject({
       status: "PASS",
     });
+  });
+});
+
+const renderedPage = (url: string, renderOnlyLinks: string[]) => ({
+  url,
+  js: {
+    finalUrl: url,
+    status: 200,
+    renderedKey: "k",
+    words: 1,
+    requests: [],
+    renderOnlyLinks,
+    opacityZeroWords: 0,
+    firstScreenActions: [],
+  },
+  noJs: { status: 200, nojsKey: "k", words: 1 },
+  firstScreenKey: null,
+  consoleErrors: [],
+});
+
+describe("render-discovered second pass", () => {
+  it("crawls and renders JS-only links after the render stage", async () => {
+    const origin = "https://example.com";
+    const pages = {
+      key: "pages" as const,
+      dependsOn: [],
+      collect: async () => ({
+        status: "ok" as const,
+        snapshots: [snapshot("/")],
+      }),
+    };
+    const render = {
+      key: "render" as const,
+      dependsOn: [],
+      collect: async (_ctx: unknown, collected: Partial<CollectedData>) => ({
+        status: "ok" as const,
+        pages:
+          collected.pages?.status === "ok"
+            ? collected.pages.snapshots.map((s) =>
+                renderedPage(
+                  s.url,
+                  s.url === `${origin}/` ? [`${origin}/js`] : [],
+                ),
+              )
+            : [],
+      }),
+    };
+    const result = await runHandbook(
+      {
+        runId: "r1",
+        origin,
+        mode: "AUDIT",
+        registry: REGISTRY,
+        collectors: [pages, render],
+        checks: [],
+        maxPages: 10,
+      },
+      {
+        projectId: "p1",
+        fetch: async (url) => ({
+          url,
+          finalUrl: url,
+          status: 200,
+          headers: [["content-type", "text/html"]],
+          body: "<html><body><p>js page</p></body></html>",
+          truncated: false,
+          redirectChain: [],
+          timingMs: 1,
+        }),
+        fetchOffsite: async () => {
+          throw new Error("no network in tests");
+        },
+        store: createMemoryEvidenceStore(),
+        log: () => {},
+      },
+    );
+    const { pages: crawled, render: rendered } = result.collected;
+    expect(
+      crawled.status === "ok" &&
+        crawled.snapshots.map((s) => [s.url, s.discoveredBy ?? null]),
+    ).toEqual([
+      [`${origin}/`, null],
+      [`${origin}/js`, "render"],
+    ]);
+    expect(
+      rendered.status === "ok" && rendered.pages.map((p) => p.url),
+    ).toEqual([`${origin}/`, `${origin}/js`]);
   });
 });

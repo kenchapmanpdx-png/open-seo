@@ -59,12 +59,15 @@ export const crawlCoverageCheck: HandbookCheck = {
       const both = [...locs].filter((l) => crawledSet.has(l));
       const sitemapOnly = [...locs].filter((l) => !crawledSet.has(l));
       const crawledOnly = [...crawledSet].filter((c) => !locs.has(c));
-      const note = `sitemap ${locs.size} · crawled ${crawledSet.size} · both ${both.length} · sitemap-only ${sitemapOnly.length} · crawled-only ${crawledOnly.length}`;
+      const jsOnly = pages.snapshots
+        .filter((s) => s.discoveredBy === "render")
+        .map((s) => s.url);
+      const note = `sitemap ${locs.size} · crawled ${crawledSet.size} · both ${both.length} · sitemap-only ${sitemapOnly.length} · crawled-only ${crawledOnly.length} · JS-only links: ${jsOnly.length}`;
       out.pass("P3-13", note, [
         out.evidence(
           "sitemap",
           sitemap.sources[0]?.url ?? ctx.origin,
-          `${note}\nsitemap-only:\n${sitemapOnly.slice(0, 30).join("\n")}\ncrawled-only:\n${crawledOnly.slice(0, 30).join("\n")}`,
+          `${note}\nsitemap-only:\n${sitemapOnly.slice(0, 30).join("\n")}\ncrawled-only:\n${crawledOnly.slice(0, 30).join("\n")}\nJS-only (render-discovered):\n${jsOnly.slice(0, 20).join("\n")}`,
           sitemap.sources[0]?.storageKey,
         ),
       ]);
