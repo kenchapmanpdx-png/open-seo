@@ -13,6 +13,7 @@ import {
   renderReviewMd,
   renderStatusMd,
 } from "../export/markdown";
+import { collectEscalations } from "./escalations";
 import { scoreItems } from "./scoring";
 
 /**
@@ -97,6 +98,8 @@ export function buildReportJson(input: {
     checkerErrors: result.checkerErrors,
     outsideScope: [],
   };
+  const escalations = collectEscalations(result.collected);
+  if (escalations.length > 0) report.escalations = escalations;
   const scored = { ...report, score: scoreReport(report) };
   const confirmed = confirmExports(scored, input.registry);
   return { ...confirmed, score: scoreReport(confirmed) };

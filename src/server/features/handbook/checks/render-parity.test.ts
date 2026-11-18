@@ -48,9 +48,21 @@ describe("renderParityCheck", () => {
     ).toEqual(["PASS", "PASS", "PASS", "PASS"]);
   });
 
-  it("flags text waiting at opacity:0", async () => {
-    const result = await run(rendered("/x", 100, 60));
-    expect(statusOf(result, "P2-07")).toBe("OPEN");
+  it("lists opacity:0 words per page, S2 when most of the page is hidden", async () => {
+    const result = await renderParityCheck.run(
+      context({
+        pages: { status: "ok", snapshots: [snapshot("/a"), snapshot("/b")] },
+        render: {
+          status: "ok",
+          pages: [rendered("/a", 100, 40), rendered("/b", 100, 60)],
+        },
+      }),
+    );
+    const p207 = result.findings.filter((f) => f.itemIds.includes("P2-07"));
+    expect(p207.map((f) => [f.severity, f.detail])).toEqual([
+      ["S2", expect.stringContaining("/b — 60 of 100 rendered words")],
+      ["S3", expect.stringContaining("/a — 40 of 100 rendered words")],
+    ]);
   });
 
   it("flags a form that exists only in the rendered DOM", async () => {

@@ -16,9 +16,18 @@ const ITEMS = ["P2-01", "P2-08", "P2-09", "P2-07", "P2-02"];
 const DRIFT = 1.2;
 /** Word drift below this is noise on small pages (rule says "~20%"). */
 const DRIFT_MIN_WORDS = 20;
+
+/** Raw vs rendered words more than ~20% apart (P2-09; render-diff escalation). */
+export function isWordDrift(raw: number, rendered: number): boolean {
+  const hi = Math.max(raw, rendered);
+  const lo = Math.min(raw, rendered);
+  return hi >= DRIFT * lo && hi - lo >= DRIFT_MIN_WORDS;
+}
 const JS_ONLY_WORDS = 150;
 const JS_ONLY_SHARE = 0.4;
 const OPACITY_WORDS = 30;
+/** Share of a page's rendered words at opacity:0 that makes P2-07 S2. */
+const MOSTLY_HIDDEN = 0.5;
 const NO_FALLBACK_RAW = 50;
 
 type Pair = {
@@ -39,6 +48,11 @@ const formsOf = (p: Pair) => ({
 
 const numbers = (p: Pair) =>
   `raw (JS off, server HTML) ${p.raw} words · rendered ${p.rendered} words · browser JS off ${p.noJs} words`;
+
+const mostlyHidden = (p: Pair) =>
+  p.opacityZero > MOSTLY_HIDDEN * Math.max(p.rendered, 1);
+const opacityLine = (p: Pair) =>
+  `${p.url} — ${p.opacityZero} of ${p.rendered} rendered words at opacity:0 after load (before scroll) · browser JS off ${p.noJs} words`;
 
 export const renderParityCheck: HandbookCheck = {
   id: "render.parity",
@@ -166,11 +180,7 @@ export const renderParityCheck: HandbookCheck = {
       );
 
     // P2-09 — word counts within ~20% (both directions).
-    const drift = pairs.filter((p) => {
-      const hi = Math.max(p.raw, p.rendered);
-      const lo = Math.min(p.raw, p.rendered);
-      return hi >= DRIFT * lo && hi - lo >= DRIFT_MIN_WORDS;
-    });
+    const drift = pairs.filter((p) => isWordDrift(p.raw, p.rendered));
     if (drift.length > 0)
       out.finding({
         itemIds: ["P2-09"],
@@ -189,44 +199,53 @@ export const renderParityCheck: HandbookCheck = {
         passRefs(),
       );
 
-    // P2-07 — primary content waiting at opacity:0.
+    // P2-07 — primary content waiting at opacity:0, per page (every rendered
+    // page at `full`). A page with more than half its text hidden is S2.
     const hidden = pairs.filter((p) => p.opacityZero >= OPACITY_WORDS);
-    if (hidden.length > 0)
+    for (const [severity, list] of [
+      ["S2", hidden.filter(mostlyHidden)],
+      ["S3", hidden.filter((p) => !mostlyHidden(p))],
+    ] as const) {
+      if (list.length === 0) continue;
       out.finding({
         itemIds: ["P2-07"],
-        severity: "S3",
-        title: "Content waits at opacity:0 for an animation",
-        detail: hidden
-          .map(
-            (p) =>
-              `${p.url} — ${p.opacityZero} words at opacity:0 after load (before scroll)`,
-          )
-          .join("\n"),
+        severity,
+        ...(severity === "S2"
+          ? {
+              severityReason: `more than ${MOSTLY_HIDDEN * 100}% of the page's rendered words wait at opacity:0`,
+            }
+          : {}),
+        title:
+          severity === "S2"
+            ? "Most of the page text waits at opacity:0 for an animation"
+            : "Content waits at opacity:0 for an animation",
+        detail: list.map(opacityLine).join("\n"),
         fix: "Render primary text visible by default; start reveal animations from a visible state or add a <noscript>/prefers-reduced-motion reveal.",
         fixability: "FIXABLE",
         effort: "S",
-        urls: hidden.map((p) => p.url),
-        evidenceRefs: hidden
+        urls: list.map((p) => p.url),
+        evidenceRefs: list
           .slice(0, 5)
           .flatMap((p) => [
             out.evidence(
               p.render.firstScreenKey ? "screenshot" : "renderedDom",
               p.url,
-              `opacity:0 words after load ${p.opacityZero}`,
+              opacityLine(p),
               p.render.firstScreenKey ?? p.render.js.renderedKey,
             ),
             out.evidence(
-              "rawHtml",
+              "renderedDom",
               p.url,
-              p.snap.markup.text.slice(0, 600),
-              p.snap.rawKey,
+              opacityLine(p),
+              p.render.noJs.nojsKey,
             ),
           ]),
       });
-    else
+    }
+    if (hidden.length === 0)
       out.pass(
         "P2-07",
-        `${pairs.length} rendered samples: < ${OPACITY_WORDS} words at opacity:0 after load`,
+        `${pairs.length} rendered pages: < ${OPACITY_WORDS} words at opacity:0 after load`,
         passRefs(),
       );
 
