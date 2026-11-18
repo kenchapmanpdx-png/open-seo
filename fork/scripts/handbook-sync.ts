@@ -1,10 +1,12 @@
 // Diff a handbook file's §41 checklist against the registry.
 // Usage: pnpm tsx fork/scripts/handbook-sync.ts [handbook.md]
 // Exit 0 = no diffs, 1 = diffs (missing · extra · text changed · tags/refs changed,
-// or a golden expectation in fork/fixtures/expected/ naming an unknown registry id).
+// or a golden expectation in fork/fixtures/expected/ naming an unknown registry
+// id in `items` or an unknown SUPP id in `supp`).
 import { readdirSync, readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
 import { REGISTRY } from "../../src/server/features/handbook/registry";
+import { SUPP_REGISTRY } from "../../src/server/features/handbook/registry-supp";
 import {
   parseHandbookVersion,
   parseSection41,
@@ -51,17 +53,20 @@ for (const entry of REGISTRY) {
 }
 
 const EXPECTED_DIR = "fork/fixtures/expected";
+const suppIds = new Set(SUPP_REGISTRY.map((entry) => entry.id));
 for (const name of readdirSync(EXPECTED_DIR).filter((f) =>
   f.endsWith(".yaml"),
 )) {
   const doc = parseYaml(readFileSync(`${EXPECTED_DIR}/${name}`, "utf8")) as {
-    findings?: { id: string; items: string[] }[];
-    passes?: { id: string; items: string[] }[];
+    findings?: { id: string; items: string[]; supp?: string[] }[];
+    passes?: { id: string; items: string[]; supp?: string[] }[];
   };
   for (const row of [...(doc.findings ?? []), ...(doc.passes ?? [])]) {
     for (const item of row.items)
       if (!byId.has(item))
         diffs.push(`${name} ${row.id}: unknown item ${item}`);
+    for (const id of row.supp ?? [])
+      if (!suppIds.has(id)) diffs.push(`${name} ${row.id}: unknown SUPP ${id}`);
   }
 }
 

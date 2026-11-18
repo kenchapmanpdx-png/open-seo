@@ -10,6 +10,11 @@
  * (collected.json next to report.json). Expected passes → caught when every
  * listed item is PASS, partial when some are.
  *
+ * `supp: [SUPP-nn]` (ADR-020) adds supplementary rule ids: they match report
+ * findings and `additionalFindings` like `items` do (a SUPP-only entry has
+ * `items: []`). An entry with `scope` (outside-scope / truth-verification
+ * [Ken], off-site) is listed as `excluded` and left out of the catch rate.
+ *
  * `--md <path>` (or `--report` → fork/reports/B2-golden.md) also writes a
  * per-site section into that markdown file, replacing an earlier section
  * for the same site.
@@ -32,6 +37,10 @@ const entrySchema = z.object({
   id: z.string(),
   title: z.string(),
   items: z.array(z.string()),
+  supp: z.array(z.string()).default([]),
+  scope: z
+    .enum(["outside-scope [Ken]", "truth-verification [Ken]", "off-site"])
+    .optional(),
   urls: z.array(z.string()).default([]),
   detectableBy: z.string().optional(),
   severity: z.string().nullish(),
@@ -54,7 +63,7 @@ const collectedSchema = z.object({
     .catch(null),
 });
 
-type Verdict = "caught" | "partial" | "missed" | "site-changed";
+type Verdict = "caught" | "partial" | "missed" | "site-changed" | "excluded";
 type Scored = { entry: Entry; verdict: Verdict; why: string };
 
 const trimSlash = (path: string) =>
@@ -74,10 +83,15 @@ function reportPaths(report: ReportJson, urls: readonly string[]) {
   return urls.map((u) => new URL(u, report.site.origin).pathname);
 }
 
+const entryIds = (entry: Entry) => [...entry.items, ...entry.supp];
+
 function scoreFinding(report: ReportJson, entry: Entry): Scored {
-  const sharing = report.findings.filter((f) =>
-    f.itemIds.some((id) => entry.items.includes(id)),
-  );
+  if (entry.scope) return { entry, verdict: "excluded", why: entry.scope };
+  const ids = entryIds(entry);
+  const sharing = [
+    ...report.findings,
+    ...(report.additionalFindings ?? []),
+  ].filter((f) => f.itemIds.some((id) => ids.includes(id)));
   const urlHit = sharing.find((f) =>
     reportPaths(report, f.urls).some((path) =>
       entry.urls.some((p) => pathMatches(p, path)),
@@ -119,6 +133,7 @@ function scoreFinding(report: ReportJson, entry: Entry): Scored {
 }
 
 function scorePass(report: ReportJson, entry: Entry): Scored {
+  if (entry.scope) return { entry, verdict: "excluded", why: entry.scope };
   const items = report.items.filter((i) => entry.items.includes(i.itemId));
   const passed = items.filter((i) => i.status === "PASS");
   const why = items.map((i) => `${i.itemId} ${i.status}`).join(", ");
@@ -190,13 +205,13 @@ function table(title: string, rows: Scored[]) {
   return [
     `## ${title}`,
     "",
-    `caught ${count("caught")} · partial ${count("partial")} · missed ${count("missed")} · site-changed ${count("site-changed")} · total ${rows.length}`,
+    `caught ${count("caught")} · partial ${count("partial")} · missed ${count("missed")} · site-changed ${count("site-changed")} · excluded ${count("excluded")} · total ${rows.length}`,
     "",
     "| id | verdict | detectableBy | items | title | why |",
     "| --- | --- | --- | --- | --- | --- |",
     ...rows.map(
       (r) =>
-        `| ${r.entry.id} | ${r.verdict} | ${r.entry.detectableBy ?? ""} | ${r.entry.items.join(", ")} | ${r.entry.title.replace(/\|/g, "\\|")} | ${r.why.replace(/\|/g, "\\|")} |`,
+        `| ${r.entry.id} | ${r.verdict} | ${r.entry.detectableBy ?? ""} | ${entryIds(r.entry).join(", ")} | ${r.entry.title.replace(/\|/g, "\\|")} | ${r.why.replace(/\|/g, "\\|")} |`,
     ),
     "",
   ];
@@ -263,7 +278,7 @@ async function appendSiteSection(
   const count = (rows: Scored[], v: Verdict) =>
     rows.filter((r) => r.verdict === v).length;
   const headline = (rows: Scored[]) =>
-    `caught ${count(rows, "caught")} · partial ${count(rows, "partial")} · missed ${count(rows, "missed")} · site-changed ${count(rows, "site-changed")} · total ${rows.length}`;
+    `caught ${count(rows, "caught")} · partial ${count(rows, "partial")} · missed ${count(rows, "missed")} · site-changed ${count(rows, "site-changed")} · excluded ${count(rows, "excluded")} · total ${rows.length}`;
   const section = [
     SECTION(site),
     `## ${site}`,
@@ -279,7 +294,8 @@ async function appendSiteSection(
     "| finding | items | verdict |",
     "| --- | --- | --- |",
     ...findings.map(
-      (r) => `| ${r.entry.id} | ${r.entry.items.join(", ")} | ${r.verdict} |`,
+      (r) =>
+        `| ${r.entry.id} | ${entryIds(r.entry).join(", ")} | ${r.verdict} |`,
     ),
     "",
     SECTION(site),

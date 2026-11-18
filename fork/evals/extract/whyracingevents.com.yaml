@@ -1,0 +1,67 @@
+site: whyracingevents.com
+origin: https://whyracingevents.com
+cases:
+  # F10 / F19 — event count and charity figures across pages + llms.txt
+  - {
+      golden: F10,
+      url: /pages/about.html,
+      field: stats,
+      quote: "21 Annual Events",
+      expect: { value: "21" },
+    }
+  - { golden: F10, url: /, field: stats, quote: "20+ Premier PNW Events" }
+  - {
+      golden: F10,
+      url: /pages/partners.html,
+      field: stats,
+      quote: "With 14 events",
+    }
+  - { golden: F10, url: /pages/about.html, field: stats, quote: "$3,000,000+" }
+  - {
+      golden: F10,
+      url: /pages/about.html,
+      field: stats,
+      quote: "50,000+ Athletes",
+    }
+  - {
+      golden: F19,
+      url: /llms.txt,
+      field: stats,
+      quote: "Its calendar lists 21 annual running, trail and triathlon events",
+    }
+  - {
+      golden: F19,
+      url: /llms.txt,
+      field: stats,
+      quote: "$3M+ in charitable giving",
+    }
+  # F15 — superlatives, acronyms
+  - { golden: F15, url: /, field: superlatives, quote: "most supportive" }
+  - { golden: F15, url: /, field: superlatives, quote: "fully insured" }
+  - {
+      golden: F15,
+      url: /events/appletree-marathon,
+      field: awards,
+      quote: "Boston Qualifier",
+      expect: { hasSource: false },
+    }
+  - {
+      golden: F15,
+      url: /pages/about.html,
+      field: undefinedAcronyms,
+      quote: "PNW",
+    }
+  # F18 — name variants
+  - {
+      golden: F18,
+      url: /,
+      field: names,
+      quote: "Why Racing",
+      expect: { kind: brand },
+    }
+  - {
+      golden: F18,
+      url: /events/appletree-marathon,
+      field: names,
+      quote: "PeaceHealth",
+    }

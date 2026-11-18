@@ -1,0 +1,100 @@
+{
+  "id": "blue-F13",
+  "site": "blue",
+  "golden": "F13 conflicting / unsourced terms + approval times",
+  "itemId": "P5-02",
+  "expected": "fail",
+  "input": {
+    "itemId": "P5-02",
+    "rubricId": "stats-consistency",
+    "pages": [
+      {
+        "url": "https://bluetreefunding.com/",
+        "text": "Meta description: Think Outside The Bank\nFLEXIBLE TERMS FROM 12-72 MONTHS DEFERRED PAYMENTS UP TO 6 MONTHS 100% TAX DEDUCTIBLE (SECTION 179 – IRS TAX CODE) TRAINING, SHIPPING & TAXES MAY BE FINANCED Find Out More How Easy Is It?\nNo financials required (up to $150k), typically same day approval, and all documents are signed electronically.\nGet Approved Tax-Deductible Financing is 100% tax-deductible for your existing business as part of the Section 179 Tax Code.\nApproval within 24 hours.\n*Section 179 of the IRS Tax Code grants small business the opportunity to deduct the full purchase price of financed or leased equipment for the current year (up to $1,000,000).\nFor more information on Section 179, please visit http://www.section179.org/ Get Approved Think outside the bank."
+      },
+      {
+        "url": "https://bluetreefunding.com/partner/kiwi-med-group/",
+        "text": "Meta description: Finance Arobella Qoustic Wound Therapy equipment through Blue Tree Funding. Up to $350,000 application only, quick decision, zero advance payments.\nUp to $350,000 application only Blue Tree Funding is dedicated to helping you acquire the equipment you need so that you can maintain focus on helping others.\nQuick Application / Quick Decision / Quick Funding Get Approved Minimum Qualifications Application Amount Up to $350k.\nCredit 680 CBR minimum requirement.\nTime Licensed 2+ years."
+      },
+      {
+        "url": "https://bluetreefunding.com/rcm-connect/",
+        "text": "Meta description: Blue Tree Funding consolidates patient records from thousands of sources into clinician-ready summaries delivered to your EHR. Unlock missed CPT revenue with zero upfront cost. See if your practice qualifies.\nYou Keep 94% of Collections The fee applies only after you collect.\nRecords Consolidated 01 Patient records from thousands of sources across the healthcare continuum are retrieved and reconciled into a single working set for clinical review.\nClinician-Ready Summaries 02 Complex histories are turned into a concise, H & P-style summary: objective, source-cited, and built for clinical decision-making.\nBilling Guidance Included 03 A procedural packet outlines applicable coding options and documentation rules so your team can apply them under your own billing policies.\nYour Team Stays Untouched 04 This is additive.\n01 Safer, More Informed Care Providers see the full picture before every encounter: meds, allergies, prior procedures, hospitalizations, and social history in one place.\n02 Reduced Staff Burden Your clinical and admin staff stop spending time on manual record retrieval and reconciliation.\n03 Revenue That Follows the Work The same summaries that improve care also unlock billable CPT codes.\n04 The Financial Model Performance-Based.\nThe program ’ s fee is 6% of the new revenue it captures, billed after your insurance payments have been received.\nThe program requires a minimum of 35,000 patients per practice.\nPractices with 12 or more providers are the ideal fit for maximum revenue impact.\n1-866-332-9223 hello@bluetreefunding.com 515 E."
+      },
+      {
+        "url": "https://bluetreefunding.com/medical-funding/",
+        "text": "Meta description: Stop waiting 30-90 days for insurance reimbursement. Blue Tree Funding prefunds your medical practice claims in 48 hours - no debt, no hard credit pulls, no workflow disruption.\nGet funded in 48 hrs.\nInsurance companies take 30-90 days to reimburse.\n30-90 Day Payment Delays Insurance companies hold your money while you ’ ve already delivered the care.\nGet Funded Your claims are processed and prefunded within 48 hours.\nOnce approved, claims are typically prefunded within 48 hours.\n1-866-332-9223 info@bluetreefunding.com 515 E."
+      },
+      {
+        "url": "https://bluetreefunding.com/pocket-nurse/",
+        "text": "Meta description: Get Approved → • Partner Program Equip Your Simulation Lab Without the burden 100% financing for Pocket Nurse simulation and education supplies. Terms from 24–84 months. Payments starting at just $99. Get Approved → 2-min application · No obligation PN Pocket Nurse® Simulation & Education Supplies Starting from for the…\npocket nurse - Blue Tree Funding Benefits Terms Benefits Terms Get Approved → • Partner Program Equip Your Simulation Lab Without the burden 100% financing for Pocket Nurse simulation and education supplies.\nTerms from 24–84 months.\nPayments starting at just $99.\n◷ Flexible Terms Choose from 24 to 84 month terms tailored to your budget and cash flow.\n↗ Scale Ready Extended terms up to 84 months for purchases exceeding $100,000.\n◈ $99/mo Launch Initial payments as low as $99 per month for the first 6 months."
+      },
+      {
+        "url": "https://bluetreefunding.com/healthcare-revenue-services/",
+        "text": "Meta description: Vendor Financing Program We believe that every customer is important and we pride ourselves in helping our vendors grow. Our financing is flexible and offers flexible terms for all credit profiles to help you offer more approvals. More approvals = more sales. Let's Get Started ...or fill out our quick…\n*Section 179 of the IRS Tax Code grants small business the opportunity to deduct the full purchase price of financed or leased equipment for the current year (up to $1,000,000).\nFor more information on Section 179, please visit http://www.section179.org/ Get Approved Why Blue Tree Funding?"
+      },
+      {
+        "url": "https://bluetreefunding.com/pocket-nurse3/",
+        "text": "Meta description: Blue Tree Funding × Pocket Nurse BLUE TREE FUNDING Benefits Terms Get Approved → Partner Program Equip Your Simulation Lab Without the burden 100% financing for Pocket Nurse simulation and education supplies. Terms from 24–84 months. Payments starting at just $99. Get Approved → 2-min application · No obligation PN…\nTerms from 24–84 months.\nPayments starting at just $99.\n◷ Flexible Terms Choose from 24 to 84 month terms tailored to your budget and cash flow.\n↗ Scale Ready Extended terms up to 84 months for purchases exceeding $100,000.\n◈ $99/mo Launch Initial payments as low as $99 per month for the first 6 months."
+      },
+      {
+        "url": "https://bluetreefunding.com/partner/pocket-nurse/",
+        "text": "Meta description: 100% financing for equipment, service, supplies, and delivery with terms up to 84 months. Start For Just $99/Month With our quick 2 minute no obligation application you can receive prompt credit decisions on 100% financing options. Take advantage of our incredible terms ranging from 24 to 84 months with initial…\nPocket Nurse - Blue Tree Funding Skip to main content Get Approved Flexible Equipment Financing Made Easy 100% financing for equipment, service, supplies, and delivery with terms up to 84 months.\nGet Approved Start For Just $99/Month Get Approved With our quick 2 minute no obligation application you can receive prompt credit decisions on 100% financing options.\nTake advantage of our incredible terms ranging from 24 to 84 months with initial payments as low as $99 for the first 6 months for qualified credit."
+      },
+      {
+        "url": "https://bluetreefunding.com/healthcare-pre-funding-dev/",
+        "text": "Meta description: Blue Tree Funding partners with healthcare providers to deliver quick, adaptable financing that keeps operations running smoothly. Our expertise and forward-thinking approach help medical practices convert their receivables into working capital within 48 hours, ensuring steady cash flow for continued growth. How Blue Tree Funding Helps Get Paid in 48…\nOur expertise and forward-thinking approach help medical practices convert their receivables into working capital within 48 hours, ensuring steady cash flow for continued growth.\nApply for Pre-Funding How Blue Tree Funding Helps Get Paid in 48 Hours Convert outstanding insurance claims to cash immediately instead of waiting weeks or months.\n3 Get funded Your claims are processed and prefunded in 48 hours.\nApply for Pre-Funding Minimum Qualifications Credit Score 600+ credit score is typically required for Blue Tree Funding to extend an offer.\nMonthly Revenue At least $250,000/month with a plan for growth.\nRather than waiting extended periods for payment, Blue Tree Funding provides up to 90% of your claim value within 48 hours, then pays the remaining amount (minus our fee) after the insurance processes your claim.\nBlue Tree Funding delivers funds within 48 hours of verifying your receivables."
+      },
+      {
+        "url": "https://bluetreefunding.com/working-capital/bankroll/",
+        "text": "Meta description: Think outside the bank. Blue Tree Funding is incredibly proud of the latest addition to our product line, BANKROLL, The Ultimate Revolving Line of Credit! Bankroll addresses the #1 concern of business owners everywhere who require the flexibility to access capital at a moment’s notice, while keeping their cash flow…\nWe do this by providing highest approvals (up to $1,000,000), a fixed loan term (up to 36 months), and a fixed weekly payment, PLUS the flexibility to pay down or borrow additional funds on an unlimited basis!\nMax Repayment Terms Bankroll also gives you access to the maximum loan amortization term of up to 36 months, resulting in low, fixed weekly payments.\nUnlimited Draws & Paydowns During your revolving period, you have the freedom to take unlimited draws or make unlimited partial principal paydowns of $5,000 or more.\nA minimum $5,000 loan balance is required at all times to keep the revolving period open.\nDuring the revolving period, you may take unlimited draws or make partial principal paydowns of $5,000 or more.\nBusiness owners with an Equifax Credit Score of 551 or higher can qualify.\nThe business must be open and operating under the same ownership for at least one month (30 days).\nAnnual Sales Your business must generate a minimum of $17,000 per month in sales ($200,000 annually) from both credit card and cash."
+      },
+      {
+        "url": "https://bluetreefunding.com/pool-spa-financing/",
+        "text": "Meta description: At BlueTree Funding, we make financing straightforward and accessible, empowering your clients to bring their pool and spa visions to life. Our software connects your clients to a broad network of lenders, offering competitive financing options tailored to various project sizes and client budgets. This helps your clients start dream…\nSecure pool loans up to $450k, catering to a wide range of project sizes and client budgets."
+      },
+      {
+        "url": "https://bluetreefunding.com/contact/",
+        "text": "Meta description: Think outside the bank. You can contact us by calling, emailing, or by filling out the form below. Phoenix Office 515 E. Grant St Phoenix, AZ 85004 Denver Office 1062 Delaware St Denver, CO 80204 San Fran Office 44 Tehama St San Francisco, CA 94105 Austin Office 119 Nueces St…\n+1-866-332-9223 hello@bluetreefunding.com Phoenix Office 515 E."
+      },
+      {
+        "url": "https://bluetreefunding.com/vendor/",
+        "text": "Meta description: Vendor Financing Program We believe that every customer is important and we pride ourselves in helping our vendors grow. Our financing is flexible and offers flexible terms for all credit profiles to help you offer more approvals. More approvals = more sales. Let's Get Started ...or fill out our quick…\n*Section 179 of the IRS Tax Code grants small business the opportunity to deduct the full purchase price of financed or leased equipment for the current year (up to $1,000,000).\nFor more information on Section 179, please visit http://www.section179.org/ Get Approved Why Blue Tree Funding?"
+      },
+      {
+        "url": "https://bluetreefunding.com/all-others/",
+        "text": "Meta description: Think outside the bank. We offer flexible terms, payment options, asset management, and easy upgrades- unlike any other leasing or financing provider in the industry. All Others Blue Tree offers financing for any and all types of equipment both titled and non-titled. With over 50 sources we have programs in…\nWith over 50 sources we have programs in every facet possible and if we don’t our partners do."
+      },
+      {
+        "url": "https://bluetreefunding.com/ti-new-build/",
+        "text": "Meta description: Think outside the bank. We offer flexible terms, payment options, asset management, and easy upgrades- unlike any other leasing or financing provider in the industry. TI and New Build Whether you’re remodeling or starting from the ground up Blue Tree Funding has you covered. We offer programs up to $35,000,000…\nWe offer programs up to $35,000,000 for new builds and improvements."
+      },
+      {
+        "url": "https://bluetreefunding.com/medical-dental/",
+        "text": "Meta description: Think outside the bank. We offer flexible terms, payment options, asset management, and easy upgrades- unlike any other leasing or financing provider in the industry. Medical and Dental Equipment According to medical industry research, over $3 billion worth of medical and dental equipment is leased each year in the United…\nGet Approved Medical and Dental Equipment According to medical industry research, over $3 billion worth of medical and dental equipment is leased each year in the United States to established and new practices."
+      },
+      {
+        "url": "https://bluetreefunding.com/partner/avenu-wellness-center/",
+        "text": "Meta description: 100% financing options up to $500k with same day approvals. 100% Financing Options Available With our quick 2 minute no obligation application you can receive same day approvals up to $500,000+ 100% Financing Options Available Same Day Approvals Amounts Ranging from $10,000 - $500,000 Flexible Terms from 12-72 months 100%…\nAvenu Wellness Center Financing - Blue Tree Funding Skip to main content Get Approved Quick Easy Financing 100% financing options up to $500k with same day approvals."
+      },
+      {
+        "url": "https://bluetreefunding.com/partner/mining-financing/",
+        "text": "Meta description: 100% financing options up to $500k with same day approvals. 100% Financing Options Available Take advantage of a wide spectrum of financing options all under one application. With our quick 2 minute no obligation application you can receive same day approvals up to $250,000+ 100% Financing Options Available No Prepayment…\nMining Financing - Blue Tree Funding Skip to main content Creative Quick Easy Financing 100% financing options up to $500k with same day approvals.\nGet Approved 100% Financing Options Available Get Approved Take advantage of a wide spectrum of financing options all under one application."
+      },
+      {
+        "url": "https://bluetreefunding.com/privacy-policy/",
+        "text": "Meta description: Privacy Policy Last Updated On 03-Apr-2024Effective Date 03-Apr-2024 This Privacy Policy describes the policies of Blue Tree Partners, LLC dba Blue Tree Funding, 515 E Grant St, Arizona 85004, United States of America (the), email: Info@BlueTreeFunding.com, phone: (866)332-9223 on the collection, use and disclosure of your information that we collect…\nThe revised Policy will be effective 180 days from when the revised Policy is posted in the Service and your continued access or use of the Service after such time will constitute your acceptance of the revised Privacy Policy."
+      },
+      {
+        "url": "https://bluetreefunding.com/financing-hci/",
+        "text": "Meta description: Multi-Lender Platform for Contractors. Multi-Lender Platform for Contractors $1,000 - $100,000 Loan Amounts Up to 180 month terms No Payment + 0% interest for 6-12 months Over 50 Available Programs to choose from Soft Credit Pulls FICOs down to 550 Custom Portal with live tracking Multi-Lender Platform Benefits for Contractors…"
+      },
+      {
+        "url": "https://bluetreefunding.com/llms.txt",
+        "text": "> Last updated: 2026-11-18"
+      }
+    ],
+    "facts": {
+      "local": true
+    }
+  }
+}
