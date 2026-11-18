@@ -7,7 +7,7 @@
  * seo-audit-baseline.md (other modes, EP-5), collected.json (collector
  * summary) and evidence/ (stored bodies). No DB writes.
  *
- *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--max-pages 60] [--out dir] [--llm]
+ *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--depth full|quick] [--max-pages 1000] [--out dir] [--llm]
  *
  * --llm runs the LLM-class checks through the K5 judge (OpenRouter key from
  * the environment or .env.local; model HANDBOOK_LLM_MODEL; cap
@@ -34,6 +34,12 @@ import {
   siblingHosts,
 } from "@/server/features/handbook/engine/safe-fetch";
 import { buildReportJson } from "@/server/features/handbook/engine/report";
+import {
+  DEPTH_ENV,
+  MAX_PAGES_ENV,
+  resolveDepth,
+  resolveMaxPages,
+} from "@/server/features/handbook/engine/depth";
 import {
   renderAuditBaselineMd,
   renderOwnerTodoMd,
@@ -66,7 +72,8 @@ export async function runCliAudit(argv: string[]) {
     options: {
       mode: { type: "string", default: "REVIEW" },
       tier: { type: "string" },
-      "max-pages": { type: "string", default: "60" },
+      "max-pages": { type: "string" },
+      depth: { type: "string" },
       out: { type: "string" },
       "allow-private": { type: "boolean", default: false },
       sidecar: { type: "string" },
@@ -76,12 +83,19 @@ export async function runCliAudit(argv: string[]) {
   const input = positionals[0];
   if (!input) {
     throw new Error(
-      "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--max-pages 60] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm]",
+      "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--depth full|quick] [--max-pages 1000] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm]",
     );
   }
   const mode = handbookModeSchema.parse(values.mode);
   const tierOverride = values.tier ? siteTierSchema.parse(values.tier) : null;
-  const maxPages = Number(values["max-pages"]);
+  // --depth wins over HANDBOOK_DEPTH (default full); quick keeps the pre-B9 60-page cap.
+  const depth = resolveDepth(process.env[DEPTH_ENV], values.depth);
+  const maxPages = resolveMaxPages({
+    depth,
+    env: process.env[MAX_PAGES_ENV],
+    cli: values["max-pages"],
+    quickDefault: 60,
+  });
   // --allow-private: local fixtures only (BadGEO on 127.0.0.1); skips SSRF DNS policy.
   const origin = values["allow-private"]
     ? new URL(input).origin
@@ -191,6 +205,7 @@ export async function runCliAudit(argv: string[]) {
   );
   const totalMs = Math.round(performance.now() - t0);
   const report = buildReportJson({
+    depth,
     result,
     registry: REGISTRY,
     handbookVersion: HANDBOOK_VERSION,

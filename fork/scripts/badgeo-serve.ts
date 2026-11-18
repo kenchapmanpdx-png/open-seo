@@ -49,6 +49,51 @@ function resolveFile(pathname: string): string | null {
   return existsSync(candidate) ? candidate : null;
 }
 
+/** `/calendar/page/N/` (WO-B9-001 infinite-space guard): one clean page per N. */
+const CALENDAR_PAGE = /^\/calendar\/page\/(\d+)\/$/;
+
+function calendarHtml(origin: string, n: number): string {
+  const title = `Race calendar page ${n} · BadGEO`;
+  const description = `Race calendar page ${n} — BadGEO rule fixture page.`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, follow" />
+<meta property="og:title" content="${title}" />
+<meta property="og:description" content="${description}" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="${origin}/calendar/page/${n}/" />
+<meta property="og:image" content="${origin}/img/calendar-share.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<title>${title}</title><meta name="description" content="${description}" />
+<link rel="canonical" href="/calendar/page/${n}/" />
+<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${origin}/` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Race calendar",
+        item: `${origin}/calendar/`,
+      },
+      { "@type": "ListItem", position: 3, name: `Page ${n}` },
+    ],
+  })}</script></head>
+<body><a href="#main">Skip to content</a>
+<header><nav><a href="/">Home</a> <a href="/about/">About</a>
+<a href="/events/">Events</a> <a href="/broken-jsonld.html">Broken</a>
+<a href="/placeholder.html">Placeholder</a>
+<a href="/no-headers.html">Headers</a>
+<a href="/contact.html">Contact us</a></nav></header>
+<main id="main"><h1>Race calendar page ${n}</h1>
+<p>Races listed for calendar page ${n}.</p>
+<p><a href="/calendar/">Back to the race calendar</a></p></main>
+<footer><p>BadGEO fixture site.</p></footer></body></html>`;
+}
+
 /**
  * `originHost` names the origin the site advertises (robots/sitemap URLs).
  * The default `127.0.0.1.nip.io` resolves to 127.0.0.1 via public wildcard
@@ -84,6 +129,15 @@ export async function startBadgeo(
         location: redirect[1].replaceAll("{{ORIGIN}}", origin),
       });
       res.end();
+      return;
+    }
+    const calendarPage = CALENDAR_PAGE.exec(pathname)?.[1];
+    if (calendarPage) {
+      res.writeHead(200, {
+        "content-type": TYPES[".html"],
+        ...headerMap["*"],
+      });
+      res.end(calendarHtml(origin, Number(calendarPage)));
       return;
     }
     const file = resolveFile(pathname);
