@@ -312,6 +312,7 @@ async function fetchPage(
       images: facts?.images ?? [],
       xRobotsTag: header("x-robots-tag"),
       markup: facts?.markup ?? emptyMarkup(),
+      headers: keptHeaders(res.headers),
       discoveredBy,
     },
     extra: {
@@ -320,6 +321,20 @@ async function fetchPage(
       bytes: bytes.byteLength,
     },
   };
+}
+
+const HEADER_VALUE_MAX = 2048;
+
+/** Crawl response headers as stored on the snapshot (ADR-021): no cookies, values ≤ 2 kB. */
+function keptHeaders(
+  headers: ReadonlyArray<readonly [string, string]>,
+): [string, string][] {
+  return headers.flatMap(([name, value]): [string, string][] => {
+    const key = name.toLowerCase();
+    return key === "set-cookie"
+      ? []
+      : [[key, value.slice(0, HEADER_VALUE_MAX)]];
+  });
 }
 
 function normalize(url: string): string | null {
