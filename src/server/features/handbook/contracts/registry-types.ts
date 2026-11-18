@@ -60,6 +60,8 @@ export const EVIDENCE_KINDS = [
   "dataExport",
   "ownerConfirmation",
   "artifact",
+  /** Cites K15 SiteFactMap entries (their verified quotes). 1.5.1 */
+  "factMap",
 ] as const;
 
 export const registryClassSchema = z.enum(REGISTRY_CLASSES);

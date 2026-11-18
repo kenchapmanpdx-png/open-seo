@@ -1,12 +1,14 @@
 import { z } from "zod";
 import type {
-  AxeData,
   CollectedData,
   Collector,
   CollectorContext,
+} from "@/server/features/handbook/contracts/collectors";
+import type {
+  AxeData,
   LighthouseData,
   RenderData,
-} from "@/server/features/handbook/contracts/collectors";
+} from "@/server/features/handbook/contracts/render-data";
 import {
   axeResponseSchema,
   lighthouseResponseSchema,

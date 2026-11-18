@@ -1,8 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import type {
-  PageSnapshot,
-  RenderData,
-} from "@/server/features/handbook/contracts/collectors";
+import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import type { RenderData } from "@/server/features/handbook/contracts/render-data";
 import { createResult, normalizeUrl } from "./support";
 
 /**
