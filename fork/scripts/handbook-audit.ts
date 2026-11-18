@@ -119,7 +119,15 @@ export async function runCliAudit(argv: string[]) {
   const timing: Record<string, number> = {};
   const log = (event: string, fields: Record<string, unknown>) =>
     console.error(event, JSON.stringify(fields));
-  // --sidecar: K3 render sidecar URL; token from HANDBOOK_SIDECAR_TOKEN.
+  // --sidecar: K3 render sidecar URL; token from HANDBOOK_SIDECAR_TOKEN,
+  // else loaded from .env.local (never printed), like cliJudge.
+  if (values.sidecar && !process.env[SIDECAR_TOKEN_ENV]) {
+    try {
+      process.loadEnvFile(".env.local");
+    } catch {
+      // handled below
+    }
+  }
   const sidecarToken = process.env[SIDECAR_TOKEN_ENV];
   if (values.sidecar && !sidecarToken)
     throw new Error(`--sidecar needs ${SIDECAR_TOKEN_ENV} in the environment`);
