@@ -139,8 +139,9 @@ async function main() {
       "--allow-private",
       "--mode",
       "AUDIT",
+      // With a sidecar: full, so every page renders (WO-B9-004 heavy/beacon).
       "--depth",
-      "quick",
+      values.sidecar ? "full" : "quick",
       "--max-pages",
       "80",
       "--out",
@@ -174,6 +175,17 @@ async function main() {
       console.log(
         `WARNING: coverage capped ${report.run.coverage?.capped ?? "?"} · /calendar/page/N/ read ${calendarRead} (want capped false, ≤ 20)`,
       );
+    }
+    // WO-B9-004: the GA4 beacon on /beacon.html must be recorded then aborted.
+    const render = result.collected.render;
+    if (values.sidecar && render.status === "ok") {
+      const beacon = render.pages.find((p) => p.url.endsWith("/beacon.html"));
+      const aborted =
+        beacon?.js.requests.some((q) => q.aborted === "beacon") ?? false;
+      console.log(
+        `beacon: ${beacon ? (aborted ? "aborted by the sidecar" : "NOT aborted") : "page not rendered"}`,
+      );
+      if (beacon && !aborted) process.exitCode = 1;
     }
     if ((missing > 0 || unexpected > 0) && !values["report-only"])
       process.exitCode = 1;

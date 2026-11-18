@@ -12,5 +12,13 @@
   },
   "/assets/app.3f9a1c.js": {
     "cache-control": "max-age=60"
+  },
+  "/beacon.html": {
+    "strict-transport-security": "max-age=31536000",
+    "content-security-policy": "default-src 'self'; img-src 'self' https://region1.google-analytics.com; frame-ancestors 'none'",
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "camera=(), microphone=()",
+    "cache-control": "no-cache"
   }
 }

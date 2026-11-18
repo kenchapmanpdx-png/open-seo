@@ -87,6 +87,38 @@ describe("resourceHintsCheck", () => {
 });
 
 describe("pageWeightCheck", () => {
+  it("flags a rendered page above 5 MB and passes one below", async () => {
+    const run = (pageWeightBytes: number) =>
+      pageWeightCheck.run(
+        context({
+          pages: { status: "ok", snapshots: [snapshot("/")] },
+          render: {
+            status: "ok",
+            pages: [
+              {
+                url,
+                js: {
+                  finalUrl: url,
+                  status: 200,
+                  renderedKey: "k",
+                  words: 100,
+                  requests: [],
+                  pageWeightBytes,
+                  opacityZeroWords: 0,
+                  firstScreenActions: [],
+                },
+                noJs: { status: 200, nojsKey: "n", words: 100 },
+                firstScreenKey: null,
+                consoleErrors: [],
+              },
+            ],
+          },
+        }),
+      );
+    expect(statusOf(await run(6_000_000), "P2-05")).toBe("OPEN");
+    expect(statusOf(await run(4_000_000), "P2-05")).toBe("PASS");
+  });
+
   it("flags more than five render-blocking head scripts", async () => {
     const scripts = Array.from({ length: 6 }, (_, i) => ({
       src: `${ORIGIN}/s${i}.js`,
