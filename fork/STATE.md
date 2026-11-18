@@ -15,6 +15,8 @@ levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
 
 Optional BLOCKED-KEN items (do not block B8–B11):
 
+- PUSH: `ken/main` was rebased onto upstream v0.1.29 in run 26; `git push --force-with-lease origin ken/main` was refused by the permission classifier. Ken runs it once (or allow it); later runs commit locally until then
+
 - WO-B6-012: add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts` (alters traffic_ingest role, creates a billable Vercel drain)
 - BING_WEBMASTER_API_KEY: live Bing sync + a real AI Performance CSV import (WO-B6-021/022)
 - BYOK provider keys (OpenAI/Gemini/Perplexity): live smoke (WO-B6-031; Anthropic passed run 25)
