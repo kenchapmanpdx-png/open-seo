@@ -14,7 +14,9 @@ Upstream `AGENTS.md` still applies in full. This file adds fork rules on top.
 - `fork/` — fork-only: build plan, handbook, fixtures, scripts, baselines, logs. Never sent upstream.
 - `fork/BLUEPRINT.md` — architecture, work packages, batch schedule, model protocol.
 - `fork/STATE.md` — current batch, required model, next action, run log.
-- `fork/batches/` — one file per batch (B1–B7).
+- `fork/batches/` — one file per batch (B1–B11). Specs: `fork/FULL-READ.md` (B8–B10), `fork/SCALED-COPY.md` (B11).
+- `fork/research/` — research excerpts the batches rely on (read-only; replaced only by Ken).
+- `fork/skills/` — fork skills served by the app and usable as Claude Code skills (`copy-rules`).
 - `fork/queue.md`, `fork/work-orders/` — LIGHT work queue written by HEAVY batches.
 - `fork/adr/`, `fork/reports/`, `fork/templates/`, `fork/agents/`, `fork/evals/`, `fork/sidecar/`.
 - `fork/build-plan.md` — phases, borrow map, decisions.
@@ -39,6 +41,8 @@ Upstream `AGENTS.md` still applies in full. This file adds fork rules on top.
 - Edit `knip.jsonc`, `AGENTS.md`, `.github/**`, `docs/maintainers/review-guidelines.md` without asking.
 - Put fork notes in `docs/` (public user docs upstream).
 - Edit or reformat `fork/handbook/` or `fork/fixtures/audits/` (verbatim sources; replaced only by Ken).
+- Change the content of `fork/research/` or the rules in `fork/skills/copy-rules/SKILL.md` (Ken's research; format-only fixes allowed).
+- Use an AI-detector verdict or authorship wording ("AI-written", "human-written") in any check, metric or report (SCALED-COPY §0).
 - Read back, print, log, or commit secrets (`.env.local`, `.dev.vars`, `deploy/standalone/.env`, Supabase keys, `VERCEL_TOKEN`). Write env values only by shell append; never open those files.
 - Change contracts, DB schema, or migrations in a LIGHT batch.
 - Break SQLite + Postgres dual-dialect compatibility (Drizzle schemas in both `src/db/` dialects).
