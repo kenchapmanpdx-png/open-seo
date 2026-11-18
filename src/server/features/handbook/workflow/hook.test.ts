@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkflowStep } from "cloudflare:workers";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
-import { HandbookService } from "@/server/features/handbook/services/HandbookService";
+import { HandbookRunService } from "@/server/features/handbook/services/HandbookRunService";
 import { runHandbookPhase } from "./hook";
 
 vi.mock("cloudflare:workers", () => ({ env: {} }));
@@ -14,10 +14,15 @@ vi.mock("@/server/workflows/pgStep", () => ({
   ) => fn(),
 }));
 vi.mock("@/server/features/handbook/repositories/HandbookRepository", () => ({
-  HandbookRepository: { getProjectSetting: vi.fn() },
+  HandbookRepository: { getProjectSetting: vi.fn(), listCrawledUrls: vi.fn() },
 }));
-vi.mock("@/server/features/handbook/services/HandbookService", () => ({
-  HandbookService: { listCrawledUrls: vi.fn(), executeRun: vi.fn() },
+vi.mock("@/server/features/handbook/services/HandbookRunService", () => ({
+  HandbookRunService: {
+    startRun: vi.fn(),
+    planRun: vi.fn(),
+    runStage: vi.fn(),
+    failRun: vi.fn(),
+  },
 }));
 
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- steps run directly through the pgStep mock
@@ -30,15 +35,19 @@ const params = {
 
 describe("runHandbookPhase", () => {
   beforeEach(() => {
-    vi.mocked(HandbookService.listCrawledUrls).mockResolvedValue([
+    vi.mocked(HandbookRepository.listCrawledUrls).mockResolvedValue([
       "https://example.com/",
     ]);
+    vi.mocked(HandbookRunService.startRun).mockResolvedValue(
+      "2026-11-18T00:00:00Z",
+    );
+    vi.mocked(HandbookRunService.runStage).mockResolvedValue("done");
   });
 
   it("does nothing when the project flag is off", async () => {
     vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue(null);
     await runHandbookPhase(step, params);
-    expect(HandbookService.executeRun).not.toHaveBeenCalled();
+    expect(HandbookRunService.startRun).not.toHaveBeenCalled();
   });
 
   it("runs with a per-audit run id and swallows engine failures", async () => {
@@ -49,14 +58,18 @@ describe("runHandbookPhase", () => {
       tierOverride: null,
       updatedAt: "",
     });
-    vi.mocked(HandbookService.executeRun).mockRejectedValue(new Error("boom"));
+    vi.mocked(HandbookRunService.runStage).mockRejectedValue(new Error("boom"));
     await expect(runHandbookPhase(step, params)).resolves.toBeUndefined();
-    expect(HandbookService.executeRun).toHaveBeenCalledWith(
+    expect(HandbookRunService.runStage).toHaveBeenCalledWith(
       expect.objectContaining({
         runId: "hb-a1",
         origin: "https://example.com",
         seedUrls: ["https://example.com/"],
       }),
+      "crawl",
+      0,
+      expect.anything(),
     );
+    expect(HandbookRunService.failRun).toHaveBeenCalled();
   });
 });

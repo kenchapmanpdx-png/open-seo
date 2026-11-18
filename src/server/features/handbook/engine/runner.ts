@@ -27,10 +27,19 @@ import { LlmBudgetError } from "../llm/judge";
 import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
 import { evidenceKey, materialize } from "./evidence";
+import {
+  collectStage,
+  completeCollected,
+  createMemoryStageStore,
+  createMemoryStageTracker,
+  resolveRunMaxMinutes,
+  runStagedHandbook,
+  type StageContext,
+} from "./stages";
 
 /**
  * Runtime-agnostic handbook run (ADR-001): collectors → intake → checks →
- * reconcile. The workflow adapter and the CLI both call `runHandbook`; it
+ * reconcile, in the stages of `./stages` (ADR-018). The workflow adapter and the CLI both call `runHandbook`; it
  * never touches the DB. Runner-enforced K1 invariants live here so checks
  * cannot record a finding or a PASS without evidence.
  */
@@ -100,11 +109,46 @@ export type RunResult = {
   checkerErrors: string[];
 };
 
+/**
+ * In-process staged run (FULL-READ §7.6): the CLI, outcome reruns and tests
+ * go through the same `(stage, batch)` units as the workflow, with memory
+ * state. `staging` overrides the tracker / store / clock (tests, resume).
+ */
 export async function runHandbook(
   input: RunInput,
   runtime: HandbookRuntime,
+  staging?: Partial<StageContext>,
 ): Promise<RunResult> {
-  const collected = await runCollectors(input, runtime);
+  const out: { result?: RunResult } = {};
+  const ctx = collectorContext(input, runtime);
+  await runStagedHandbook(
+    {
+      collect: (stage, prior) =>
+        collectStage(input.collectors, ctx, stage, prior),
+      evaluate: async (collected) => {
+        out.result = await evaluateRun(input, runtime, collected);
+      },
+      report: async () => {},
+    },
+    {
+      tracker: createMemoryStageTracker(),
+      store: createMemoryStageStore(),
+      startedAt: new Date(),
+      maxMinutes: resolveRunMaxMinutes(undefined),
+      ...staging,
+    },
+  );
+  if (!out.result) throw new Error("handbook run: checks stage did not run");
+  return out.result;
+}
+
+/** Intake → checks → reconcile → evidence over everything collected (stage `checks`). */
+export async function evaluateRun(
+  input: RunInput,
+  runtime: HandbookRuntime,
+  partial: Partial<CollectedData>,
+): Promise<RunResult> {
+  const collected = completeCollected(partial);
   const intake = runIntake({
     collected,
     registry: input.registry,
@@ -255,12 +299,12 @@ function cappedFetch(fetch: SafeFetch, limit: number): SafeFetch {
   };
 }
 
-async function runCollectors(
+/** What collectors get for one run (K2): fetchers, log, body storage. */
+export function collectorContext(
   input: RunInput,
   runtime: HandbookRuntime,
-): Promise<CollectedData> {
-  const collected: Partial<CollectedData> = {};
-  const ctx: CollectorContext = {
+): CollectorContext {
+  return {
     runId: input.runId,
     origin: input.origin,
     fetch: runtime.fetch,
@@ -277,42 +321,6 @@ async function runCollectors(
       });
       return (await runtime.store.put(key, bytes, contentType)).key;
     },
-  };
-  for (const collector of input.collectors) {
-    try {
-      const value = await collector.collect(ctx, collected);
-      Object.assign(collected, { [collector.key]: value });
-    } catch (error) {
-      runtime.log("handbook.collector.error", {
-        key: collector.key,
-        error: String(error),
-      });
-      Object.assign(collected, {
-        [collector.key]: {
-          status: "unavailable",
-          reason: `collector error: ${String(error).slice(0, 200)}`,
-        },
-      });
-    }
-  }
-  const off = {
-    status: "unavailable",
-    reason: "collector not configured",
-  } as const;
-  return {
-    pages: collected.pages ?? off,
-    robots: collected.robots ?? off,
-    sitemap: collected.sitemap ?? off,
-    llms: collected.llms ?? off,
-    headers: collected.headers ?? off,
-    variants: collected.variants ?? off,
-    botFetch: collected.botFetch ?? off,
-    outbound: collected.outbound ?? off,
-    jsonld: collected.jsonld ?? off,
-    templates: collected.templates ?? off,
-    render: collected.render ?? off,
-    axe: collected.axe ?? off,
-    lighthouse: collected.lighthouse ?? off,
   };
 }
 
