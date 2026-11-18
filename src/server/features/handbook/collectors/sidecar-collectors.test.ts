@@ -226,3 +226,128 @@ describe("render depth", () => {
     expect(result.pages).toHaveLength(16);
   });
 });
+
+const lhResponse = (url: string, lcpMs: number) =>
+  Response.json({
+    url,
+    lighthouseVersion: "12",
+    environment: "e",
+    categories: {
+      performance: 0.5,
+      accessibility: null,
+      bestPractices: null,
+      seo: null,
+    },
+    metrics: { lcpMs, cls: 0, tbtMs: 0, fcpMs: 1 },
+    lcpElement: null,
+    report: {},
+  });
+
+describe("full Lighthouse targets", () => {
+  const lhBody = z.object({
+    url: z.string(),
+    formFactor: z.enum(["mobile", "desktop"]),
+  });
+  const [, , fullLighthouse] = createSidecarCollectors({
+    url: "http://sidecar",
+    token: "t",
+    depth: "full",
+  });
+  const href = (p: string) => `${ORIGIN}${p}`;
+  const ids = Array.from({ length: 20 }, (_, i) => `/t${i}`);
+  /** 20 templates × /a (rank 1), /b, /c; `weights` in MB by path, 1 MB otherwise. */
+  const site = (weights: Record<string, number>): Partial<CollectedData> => ({
+    templates: {
+      status: "ok",
+      templates: ids.map((t) => ({
+        key: t,
+        urlPattern: `${t}/*`,
+        skeletonHash: t,
+        urls: ["a", "b", "c"].map((x) => href(`${t}/${x}`)),
+        samples: [{ url: href(`${t}/a`), rank: 1, reason: "first" }],
+      })),
+    },
+    render: {
+      status: "ok",
+      pages: ids.flatMap((t) =>
+        ["a", "b", "c"].map((x) => ({
+          url: href(`${t}/${x}`),
+          js: {
+            finalUrl: href(`${t}/${x}`),
+            status: 200,
+            renderedKey: "k",
+            words: 100,
+            requests: [],
+            pageWeightBytes: (weights[`${t}/${x}`] ?? 1) * 1_000_000,
+            opacityZeroWords: 0,
+            firstScreenActions: [],
+          },
+          noJs: { status: 200, nojsKey: "n", words: 100 },
+          firstScreenKey: null,
+          consoleErrors: [],
+        })),
+      ),
+    },
+  });
+  const runsSent = () =>
+    fetchMock.mock.calls.map(([, init]) =>
+      lhBody.parse(JSON.parse(z.string().parse(init?.body))),
+    );
+  it("runs rank-1 of 15 templates + 3 heaviest on mobile and home on desktop, deduped", async () => {
+    fetchMock.mockImplementation(async (_url, init) =>
+      lhResponse(
+        lhBody.parse(JSON.parse(z.string().parse(init?.body))).url,
+        1000,
+      ),
+    );
+    // Heaviest: /t0/a (already rank-1), /t1/b, /t2/c.
+    const result = await fullLighthouse.collect(
+      ctx,
+      site({ "/t0/a": 4, "/t1/b": 3, "/t2/c": 2 }),
+    );
+    if (result.status !== "ok") throw new Error(result.reason);
+    const sent = runsSent();
+    expect(sent.filter((r) => r.formFactor === "desktop")).toEqual([
+      { url: `${ORIGIN}/`, formFactor: "desktop" },
+    ]);
+    expect(
+      sent.filter((r) => r.formFactor === "mobile").map((r) => r.url),
+    ).toEqual([
+      ...ids.slice(0, 15).map((t) => href(`${t}/a`)),
+      href("/t1/b"),
+      href("/t2/c"),
+    ]);
+    expect(result.pages).toHaveLength(18);
+  });
+
+  it("caps LCP escalations at +10 and page-weight escalations at +5", async () => {
+    fetchMock.mockImplementation(async (_url, init) =>
+      lhResponse(
+        lhBody.parse(JSON.parse(z.string().parse(init?.body))).url,
+        5000,
+      ),
+    );
+    // 7 pages over 5 MB; the 3 heaviest are in the base set.
+    const heavy = ["/t19/b", "/t19/c", "/t18/b", "/t18/c", "/t17/b"];
+    const result = await fullLighthouse.collect(
+      ctx,
+      site({
+        ...Object.fromEntries(heavy.map((p, i) => [p, 12 - i])),
+        "/t17/c": 6.5,
+        "/t16/b": 6,
+      }),
+    );
+    if (result.status !== "ok") throw new Error(result.reason);
+    const mobile = runsSent()
+      .filter((r) => r.formFactor === "mobile")
+      .map((r) => r.url);
+    const extra = mobile.slice(18);
+    // LCP > 4 s everywhere: 2 more pages for the first 5 templates (cap 10).
+    expect(extra.slice(0, 10)).toEqual(
+      ids.slice(0, 5).flatMap((t) => [href(`${t}/b`), href(`${t}/c`)]),
+    );
+    // > 5 MB: the 5 heaviest (cap 5), 3 already measured in the base set.
+    expect(extra.slice(10)).toEqual([href("/t18/c"), href("/t17/b")]);
+    expect(new Set(mobile).size).toBe(mobile.length);
+  });
+});

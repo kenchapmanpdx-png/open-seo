@@ -20,6 +20,10 @@ import {
 import type { HandbookDepth } from "@/server/features/handbook/contracts/exports";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { normalizeUrl } from "@/server/features/handbook/checks/support";
+import {
+  lighthouseEscalations,
+  lighthouseMobileBase,
+} from "@/server/features/handbook/engine/escalations";
 import { createLimiter } from "./limiter";
 import { renderOnlyLinks } from "./site-crawl";
 
@@ -28,8 +32,10 @@ import { renderOnlyLinks } from "./site-crawl";
  * local render sidecar. `quick`: one sample URL per template (rank 1, max
  * 16). `full` (FULL-READ §2/§3.3): `render` covers every 200 HTML page,
  * scrolled to the end, first-screen screenshots only for template rank-1,
- * home, contact and hub pages. Axe: samples; Lighthouse: home + first 2
- * samples, mobile, one at a time. Every sidecar call goes through one limiter
+ * home, contact and hub pages. Axe: samples (`full`: every live page).
+ * Lighthouse, one at a time: `quick` home + first 2 samples, mobile; `full`
+ * rank-1 per template (cap 15) + 3 heaviest pages mobile, home desktop, plus
+ * the LCP / page-weight escalations (`engine/escalations.ts`). Every sidecar call goes through one limiter
  * (`concurrency`, default 3 = the sidecar's default MAX_RENDERS, ADR-018);
  * beacons are always recorded then aborted (ADR-021). The sidecar is
  * operator config (never a site URL), so it is called with plain fetch, not
@@ -50,6 +56,8 @@ const MAX_SAMPLES = 16;
 const CONTACT_PATH = /\/contact/i;
 const RENDER_TIMEOUT_MS = 90_000;
 const LIGHTHOUSE_TIMEOUT_MS = 180_000;
+
+type LighthousePage = LighthouseData["pages"][number];
 
 type Outcome<T> = { ok: true; value: T } | { ok: false; reason: string };
 
@@ -343,34 +351,30 @@ export function createSidecarCollectors(config: SidecarConfig) {
     },
   };
 
-  const lighthouse: Collector<"lighthouse"> = {
-    key: "lighthouse",
-    dependsOn: ["templates"],
-    collect: (ctx, collected) => {
-      const samples = sampleUrls(collected);
-      const home = new URL("/", ctx.origin).href;
-      const urls = samples
-        ? [home, ...samples.filter((u) => u !== home)].slice(0, 3)
-        : null;
-      return perUrl(ctx, "lighthouse", urls, async (url) => {
-        const res = await oneAtATime(() =>
-          sidecar(
-            "/lighthouse",
-            { url, formFactor: "mobile" },
-            lighthouseResponseSchema,
-            LIGHTHOUSE_TIMEOUT_MS,
-          ),
-        );
-        if (!res.ok) return res;
-        const storageKey = await ctx.storeBody(
-          "lighthouse",
+  /** One Lighthouse run (sequential across the whole collector). */
+  const lighthouseRun =
+    (ctx: CollectorContext, formFactor: "mobile" | "desktop") =>
+    async (url: string): Promise<Outcome<LighthousePage>> => {
+      const res = await oneAtATime(() =>
+        sidecar(
+          "/lighthouse",
+          { url, formFactor },
+          lighthouseResponseSchema,
+          LIGHTHOUSE_TIMEOUT_MS,
+        ),
+      );
+      if (!res.ok) return res;
+      const storageKey = await ctx.storeBody(
+        "lighthouse",
+        url,
+        encode(JSON.stringify(res.value.report)),
+        "application/json",
+      );
+      return {
+        ok: true,
+        value: {
           url,
-          encode(JSON.stringify(res.value.report)),
-          "application/json",
-        );
-        const page: LighthouseData["pages"][number] = {
-          url,
-          formFactor: "mobile",
+          formFactor,
           environment: res.value.environment,
           performance: res.value.categories.performance,
           lcpMs: res.value.metrics.lcpMs,
@@ -379,9 +383,56 @@ export function createSidecarCollectors(config: SidecarConfig) {
           lcpElement: res.value.lcpElement,
           storageKey,
           renderBlocking: renderBlocking(res.value.report),
-        };
-        return { ok: true, value: page };
-      });
+        },
+      };
+    };
+
+  const lighthouse: Collector<"lighthouse"> = {
+    key: "lighthouse",
+    dependsOn: full ? ["templates", "render"] : ["templates"],
+    async collect(ctx, collected) {
+      const home = new URL("/", ctx.origin).href;
+      const mobile = lighthouseRun(ctx, "mobile");
+      if (!full) {
+        const samples = sampleUrls(collected);
+        const urls = samples
+          ? [home, ...samples.filter((u) => u !== home)].slice(0, 3)
+          : null;
+        return perUrl(ctx, "lighthouse", urls, mobile);
+      }
+      // `full` (HANDBOOK_LIGHTHOUSE=templates): rank-1 of every template
+      // (cap 15) + 3 heaviest pages on mobile, home on desktop, then the
+      // LCP > 4 s and > 5 MB escalations (FULL-READ §4) on mobile.
+      const baseUrls =
+        collected.templates?.status === "ok"
+          ? lighthouseMobileBase(collected)
+          : null;
+      const base = await perUrl(ctx, "lighthouse", baseUrls, mobile);
+      const desktop = await perUrl(
+        ctx,
+        "lighthouse",
+        [home],
+        lighthouseRun(ctx, "desktop"),
+      );
+      const baseRuns = base.status === "ok" ? base.pages : [];
+      const { slow, heavy } = lighthouseEscalations(collected, baseRuns);
+      const tried = new Set((baseUrls ?? []).map(normalizeUrl));
+      const more = [...slow, ...heavy]
+        .flatMap((f) => f.urls)
+        .filter((u) => {
+          if (tried.has(normalizeUrl(u))) return false;
+          tried.add(normalizeUrl(u));
+          return true;
+        });
+      const escalated =
+        more.length > 0
+          ? await perUrl(ctx, "lighthouse", more, mobile)
+          : ({ status: "unavailable", reason: "none" } as const);
+      const pages = [base, desktop, escalated].flatMap((r) =>
+        r.status === "ok" ? r.pages : [],
+      );
+      if (pages.length > 0) return { status: "ok", pages };
+      return base.status === "ok" ? base : desktop;
     },
   };
 
