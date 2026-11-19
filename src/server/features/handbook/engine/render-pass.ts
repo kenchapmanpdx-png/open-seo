@@ -4,6 +4,7 @@ import type {
   CollectorContext,
   CollectorKey,
 } from "@/server/features/handbook/contracts/collectors";
+import { withCruxField } from "../collectors/crux";
 import { withMediaSizes } from "../collectors/media-sizes";
 import { crawlSecondPass } from "../collectors/site-crawl";
 import type { RunInput } from "./runner";
@@ -14,7 +15,7 @@ import { collectStage, type StageName } from "./stages";
  * DOM get a second crawl pass and those pages are rendered too (ADR-021);
  * the stage then also re-emits `pages` and `jsonld`, which override the
  * crawl stage's output when stages merge in order. Media sizes (HEAD) are
- * added last.
+ * added last; CrUX field data is added to the Lighthouse stage.
  */
 export async function collectRunStage(
   input: RunInput,
@@ -23,6 +24,15 @@ export async function collectRunStage(
   prior: Partial<CollectedData>,
 ): Promise<Partial<CollectedData>> {
   const produced = await collectStage(input.collectors, ctx, stage, prior);
+  // CrUX field data rides on the Lighthouse output (FULL-READ §3.10).
+  if (stage === "lighthouse" && produced.lighthouse?.status === "ok")
+    return {
+      ...produced,
+      lighthouse: {
+        status: "ok",
+        ...(await withCruxField(ctx, prior, produced.lighthouse)),
+      },
+    };
   if (stage !== "render") return produced;
   const out = {
     ...produced,

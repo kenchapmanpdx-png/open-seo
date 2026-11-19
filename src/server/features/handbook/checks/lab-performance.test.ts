@@ -33,7 +33,36 @@ describe("labMetricsCheck", () => {
       }),
     );
     expect(statusOf(result, "P7-09")).toBe("OPEN");
-    expect(statusOf(result, "P7-10")).toBe("PASS");
+    expect(statusOf(result, "P7-10")).toBe("BLOCKED");
+  });
+  it("passes P7-10 with CrUX field data, including a no-data record", async () => {
+    const page = {
+      url,
+      formFactor: "mobile" as const,
+      environment: "test",
+      performance: 0.9,
+      lcpMs: 1000,
+      cls: 0,
+      tbtMs: 0,
+      lcpElement: null,
+      storageKey: null,
+    };
+    const run = (lcpMs: number | null) =>
+      labMetricsCheck.run(
+        context({
+          lighthouse: {
+            status: "ok",
+            pages: [page],
+            field: [
+              { url: null, formFactor: "PHONE", lcpMs, cls: null, inpMs: null },
+            ],
+          },
+        }),
+      );
+    const measured = await run(2100);
+    expect(statusOf(measured, "P7-10")).toBe("PASS");
+    expect(JSON.stringify(measured)).toContain("origin PHONE: LCP 2100 ms");
+    expect(JSON.stringify(await run(null))).toContain("no field data");
   });
   it("names the failing templates in P7-09", async () => {
     const run = (path: string, lcpMs: number) => ({
