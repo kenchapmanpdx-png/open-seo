@@ -34,6 +34,27 @@ describe("HandbookService.getEvidence", () => {
   });
 });
 
+describe("HandbookService.getRunProgress", () => {
+  it("returns progress only to the project that owns the run", async () => {
+    await testDb.client.executeMultiple(`
+      INSERT INTO handbook_run_stage (run_id, stage, batch, status, items_done)
+        VALUES ('run', 'crawl', 0, 'done', 60), ('run', 'render', 0, 'done', 25),
+               ('run', 'render', 1, 'running', 0);
+      INSERT INTO handbook_llm_call (id, run_id, item_id, model, prompt_sha256, cost_usd)
+        VALUES ('c1', 'run', 'P1-01', 'haiku', 'x', 0.25);
+    `);
+    expect(await HandbookService.getRunProgress("other", "run")).toBeNull();
+    expect(
+      await HandbookService.getRunProgress("project", "run"),
+    ).toMatchObject({
+      currentStage: "render",
+      pagesDone: 25,
+      pagesTotal: 60,
+      llmCostUsd: 0.25,
+    });
+  });
+});
+
 describe("HandbookService.publishToReports", () => {
   const publish = (projectId: string) =>
     HandbookService.publishToReports({
