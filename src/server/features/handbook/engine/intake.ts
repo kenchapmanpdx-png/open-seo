@@ -7,6 +7,7 @@ import {
   type SiteTier,
   type SpCode,
 } from "@/server/features/handbook/contracts/status";
+import { withOperatorDisabled } from "./operator-disabled";
 
 /**
  * P0 intake (handbook §0, EP-2/EP-3): infer SP1–SP12 from the live site with
@@ -269,11 +270,11 @@ export function runIntake(input: {
     applicable.set(item.id, item);
   }
 
-  return {
+  return withOperatorDisabled({
     siteProfile: SP_ORDER.map((code) => ({ code, ...(sp[code] ?? UNKNOWN) })),
     tier,
     tierEvidence,
     applicable,
     excluded,
-  };
+  });
 }

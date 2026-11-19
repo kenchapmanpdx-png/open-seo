@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import { REGISTRY } from "@/server/features/handbook/registry";
 import type { Judge } from "@/server/features/handbook/contracts/llm";
@@ -104,6 +104,28 @@ describe("runHandbook invariants", () => {
     ]);
     expect(status).toMatchObject({ status: "BLOCKED" });
     expect(status?.note).toContain("without evidence");
+  });
+
+  it("reports P5-03 N/A (operator) by default and runs its check when HANDBOOK_SOURCE_CHECK=on", async () => {
+    let ran = 0;
+    const source: HandbookCheck = {
+      ...check({ statuses: [], findings: [], evidence: [] }),
+      itemIds: ["P5-03"],
+      class: "CRAWL",
+      run: () => {
+        ran += 1;
+        return { statuses: [], findings: [], evidence: [] };
+      },
+    };
+    expect(await run([source], "P5-03")).toMatchObject({
+      status: "NA",
+      note: "operator: no external verification",
+    });
+    expect(ran).toBe(0);
+    vi.stubEnv("HANDBOOK_SOURCE_CHECK", "on");
+    await run([source], "P5-03");
+    vi.unstubAllEnvs();
+    expect(ran).toBe(1);
   });
 
   it("caps the off-site fetches one check can make", async () => {
