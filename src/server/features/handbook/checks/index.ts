@@ -44,6 +44,7 @@ import { securityHeadersCheck } from "./security-headers";
 import { sitemapLastmodCheck } from "./sitemap-lastmod";
 import { socialMetaCheck } from "./social-meta";
 import { suppAeoCheck } from "./supp-aeo";
+import { suppAiAddressedCheck } from "./supp-ai-addressed";
 import { suppLinksCheck } from "./supp-links";
 import { suppPagesCheck } from "./supp-pages";
 import { suppScaledCheck } from "./supp-scaled";
@@ -82,6 +83,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   suppLinksCheck,
   suppPagesCheck,
   suppScaledCheck,
+  suppAiAddressedCheck,
   suppAeoCheck,
   rawCopyCheck,
   imageMarkupCheck,

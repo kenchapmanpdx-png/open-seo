@@ -26,7 +26,8 @@
  * `PageMarkup.firstAnswerNosnippet`, `EVIDENCE_RETAIN_RUNS` 5 → 2. No K3
  * change;
  * 1.7.0, B11: scaled content + copy quality (ADR-022…024) — PageSnapshot
- * `sentenceHashes` / `aiAddressed`, PageMarkup `prose`, run options, report
+ * `sentenceHashes` / `aiAddressed`, RenderData `js.aiAddressedRemoved`,
+ * PageMarkup `prose`, run options, report
  * `scaledContent` / `copyQuality`, SERP originality record, SUPP-17…19,
  * MCP `handbook_copy_rules_get` + findings `copyRules` hint. No K3 change.
  */
