@@ -1,0 +1,2 @@
+ALTER TABLE "handbook_project_setting" ADD COLUMN "copy_quality" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "handbook_project_setting" ADD COLUMN "serp_originality" boolean DEFAULT false NOT NULL;

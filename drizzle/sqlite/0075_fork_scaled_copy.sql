@@ -1,0 +1,2 @@
+ALTER TABLE `handbook_project_setting` ADD `copy_quality` integer DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE `handbook_project_setting` ADD `serp_originality` integer DEFAULT false NOT NULL;
