@@ -64,6 +64,10 @@ import {
 } from "@/server/features/handbook/llm/model";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import { collectRunUnit } from "@/server/features/handbook/engine/map-stage";
+import {
+  COPY_QUALITY_ENV,
+  copyQualityEnvOn,
+} from "@/server/features/handbook/engine/copy-quality";
 import { HandbookStageRepository } from "@/server/features/handbook/repositories/HandbookStageRepository";
 import { HandbookPageProfileRepository } from "@/server/features/handbook/repositories/HandbookPageProfileRepository";
 import { LLM_EXTRACT_MODEL_ENV } from "@/server/features/handbook/contracts/page-profile";
@@ -174,7 +178,17 @@ function storeVerdictCache(
   };
 }
 
-/** Everything one stage unit needs; rebuilt per workflow step (cheap, no I/O but env). */
+/** Project setting wins when on; env `on` is the operator default (ADR-023). */
+async function runOptions(projectId: string) {
+  const setting = await HandbookRepository.getProjectSetting(projectId);
+  return {
+    copyQuality:
+      (setting?.copyQuality ?? false) ||
+      copyQualityEnvOn(await getOptionalEnvValue(COPY_QUALITY_ENV)),
+  };
+}
+
+/** Everything one stage unit needs; rebuilt per workflow step (cheap, no I/O but env and settings). */
 async function prepareStage(input: HandbookRunParams, startedAt: string) {
   const depth = resolveDepth(await getOptionalEnvValue(DEPTH_ENV));
   const maxPages = resolveMaxPages({
@@ -225,6 +239,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     judge,
     mapper,
     budget,
+    options: await runOptions(input.projectId),
   };
   const runtime: HandbookRuntime = {
     projectId: input.projectId,

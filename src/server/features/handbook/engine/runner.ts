@@ -32,6 +32,8 @@ import { appliesWithSupp, SUPP_BY_ID } from "../registry-supp";
 import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
 import { evidenceKey, factMapEvidence, materialize } from "./evidence";
+import { runCopyQuality } from "./copy-quality";
+import type { CopyQuality, RunOptions } from "../contracts/scaled-copy";
 import {
   completeCollected,
   createMemoryStageStore,
@@ -71,6 +73,8 @@ export type RunInput = {
   mapper?: PageMapper | null;
   /** Run LLM budget; the engine sets its page count before the map stage and the checks. */
   budget?: RunBudget | null;
+  /** Per-run options (SCALED-COPY §6); absent = off. */
+  options?: Partial<RunOptions>;
 };
 
 export type EvidenceRow = {
@@ -117,6 +121,8 @@ export type RunResult = {
   checkerErrors: string[];
   /** Map-stage profiles the checks read; feeds "Answer-engine readiness". */
   pageProfiles?: readonly PageProfile[];
+  /** Copy quality section (ADR-023); only when the option is on. */
+  copyQuality?: CopyQuality;
 };
 
 /**
@@ -299,6 +305,10 @@ export async function evaluateRun(
   );
   if (siteFactMap)
     evidence.push(await factMapEvidence(input, runtime, siteFactMap));
+  const copy = input.options?.copyQuality
+    ? await runCopyQuality(input, runtime, collected, pageProfiles)
+    : null;
+  if (copy) evidence.push(copy.evidence);
   return {
     intake,
     collected,
@@ -307,6 +317,7 @@ export async function evaluateRun(
     evidence,
     checkerErrors,
     ...(pageProfiles ? { pageProfiles } : {}),
+    ...(copy ? { copyQuality: copy.section } : {}),
   };
 }
 

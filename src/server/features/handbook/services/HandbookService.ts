@@ -1,11 +1,22 @@
 import { REGISTRY } from "@/server/features/handbook/registry";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
-import { getReportRows } from "@/server/features/handbook/repositories/HandbookReportRepository";
+import {
+  getReportRows,
+  getRunItemEvidence,
+} from "@/server/features/handbook/repositories/HandbookReportRepository";
 import type {
   HandbookMode,
   SiteTier,
 } from "@/server/features/handbook/contracts/status";
-import { createSupabaseSignedUrl } from "@/server/features/handbook/engine/supabase-evidence-store";
+import {
+  createSupabaseEvidenceStore,
+  createSupabaseSignedUrl,
+} from "@/server/features/handbook/engine/supabase-evidence-store";
+import { COPY_QUALITY_EVIDENCE_ITEM } from "@/server/features/handbook/engine/evidence";
+import {
+  copyQualitySchema,
+  type CopyQuality,
+} from "@/server/features/handbook/contracts/scaled-copy";
 import {
   REPORT_JSON_VERSION,
   reportJsonSchema,
@@ -36,6 +47,8 @@ async function getSettings(projectId: string) {
     enabled: row?.enabled ?? false,
     mode: row?.mode ?? ("AUDIT" as const),
     tierOverride: row?.tierOverride ?? null,
+    copyQuality: row?.copyQuality ?? false,
+    serpOriginality: row?.serpOriginality ?? false,
   };
 }
 
@@ -44,6 +57,8 @@ async function updateSettings(input: {
   enabled: boolean;
   mode: HandbookMode;
   tierOverride: SiteTier | null;
+  copyQuality: boolean;
+  serpOriginality: boolean;
 }) {
   await HandbookRepository.upsertProjectSetting(input);
   return getSettings(input.projectId);
@@ -56,7 +71,42 @@ async function updateSettings(input: {
 async function getRunDetail(projectId: string, runId: string) {
   const rows = await getReportRows(projectId, runId);
   if (!rows) return null;
-  return { run: rows.run, report: buildReport(rows) };
+  return { run: rows.run, report: await withSections(rows) };
+}
+
+/**
+ * Copy quality (ADR-023) is stored as one artifact body in the evidence
+ * store, not in rows; absent when the option was off or no store is set.
+ */
+async function storedCopyQuality(
+  projectId: string,
+  runId: string,
+): Promise<CopyQuality | null> {
+  const row = await getRunItemEvidence(
+    projectId,
+    runId,
+    COPY_QUALITY_EVIDENCE_ITEM,
+  );
+  const config = row?.storageKey ? await supabaseConfig() : null;
+  if (!config || !row?.storageKey) return null;
+  const bytes = await createSupabaseEvidenceStore(config).get(row.storageKey);
+  if (!bytes) return null;
+  try {
+    const parsed = copyQualitySchema.safeParse(
+      JSON.parse(new TextDecoder().decode(bytes)),
+    );
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+async function withSections(
+  rows: NonNullable<Awaited<ReturnType<typeof getReportRows>>>,
+): Promise<ReportJson> {
+  const report = buildReport(rows);
+  const copyQuality = await storedCopyQuality(rows.run.projectId, rows.run.id);
+  return copyQuality ? { ...report, copyQuality } : report;
 }
 
 /**
@@ -69,7 +119,7 @@ async function getRunReport(
   runId: string,
 ): Promise<ReportJson | null> {
   const rows = await getReportRows(projectId, runId);
-  return rows ? buildReport(rows) : null;
+  return rows ? withSections(rows) : null;
 }
 
 function buildReport(

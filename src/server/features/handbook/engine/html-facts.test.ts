@@ -41,4 +41,20 @@ describe("extractHtmlFacts markup", () => {
     });
     expect(facts.markup.text).not.toContain("not text");
   });
+
+  it("collects prose paragraphs with the preceding H2, skipping landmarks, lists and quotes", () => {
+    const facts = extractHtmlFacts(
+      `<body><header><p>Header</p></header><main>
+        <p>Intro <b>bold</b><br>line</p><h2>One</h2><p>First</p>
+        <ul><li><p>Item</p></li></ul><blockquote><p>Quote</p></blockquote>
+        <aside><h2>Related</h2><p>Aside</p></aside><h2>Two</h2><p>Second</p>
+      </main><footer><p>Footer</p></footer></body>`,
+      "https://example.com/",
+    );
+    expect(facts.markup.prose).toEqual([
+      { h2: -1, text: "Intro bold line" },
+      { h2: 0, text: "First" },
+      { h2: 1, text: "Second" },
+    ]);
+  });
 });
