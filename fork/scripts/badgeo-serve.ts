@@ -1,7 +1,8 @@
 /**
  * BadGEO static server (B1 R4): serves fork/fixtures/badgeo on 127.0.0.1,
  * applies per-path headers from `_headers.json`, answers 403 to the user-agent
- * tokens `_bots.json` lists for a path (bot-parity fixtures), answers the
+ * tokens `_bots.json` lists for a path (bot-parity fixtures; `{ challenge200 }`
+ * entries get a 200 openresty-style bot-check page instead), answers the
  * redirects `_redirects.json` lists (path → [status, location]), substitutes
  * `{{ORIGIN}}` in text files, 404 for anything missing.
  *
@@ -18,7 +19,18 @@ import { z } from "zod";
 export const BADGEO_ROOT = resolve("fork/fixtures/badgeo");
 
 const headersSchema = z.record(z.string(), z.record(z.string(), z.string()));
-const botsSchema = z.record(z.string(), z.array(z.string()));
+/** Path → UA tokens answered 403, or `{ challenge200 }` tokens answered with a 200 bot-check page (WO-B9-008). */
+const botsSchema = z.record(
+  z.string(),
+  z.union([
+    z.array(z.string()),
+    z.object({ challenge200: z.array(z.string()) }),
+  ]),
+);
+
+/** openresty-style interstitial (bluetreefunding F01): 200, ~9 words, reload after 5 s, no canonical. */
+const CHALLENGE_PAGE =
+  "<!doctype html><html><head><title>One moment, please...</title></head><body><h1>One moment, please...</h1><p>Please wait while your request is being verified...</p><script>setTimeout(function(){location.reload()},5000)</script></body></html>";
 const redirectsSchema = z.record(
   z.string(),
   z.tuple([z.number().int(), z.string()]),
@@ -148,9 +160,19 @@ export async function startBadgeo(
   const server = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", origin).pathname;
     const ua = req.headers["user-agent"] ?? "";
-    if ((botMap[pathname] ?? []).some((token) => ua.includes(token))) {
-      res.writeHead(403, { "content-type": "text/html; charset=utf-8" });
-      res.end("<!doctype html><title>Forbidden</title><h1>Forbidden</h1>");
+    const botRule = botMap[pathname] ?? [];
+    const challenge = !Array.isArray(botRule);
+    const tokens = Array.isArray(botRule) ? botRule : botRule.challenge200;
+    if (tokens.some((token) => ua.includes(token))) {
+      res.writeHead(challenge ? 200 : 403, {
+        "content-type": "text/html; charset=utf-8",
+        ...(challenge ? { server: "openresty" } : {}),
+      });
+      res.end(
+        challenge
+          ? CHALLENGE_PAGE
+          : "<!doctype html><title>Forbidden</title><h1>Forbidden</h1>",
+      );
       return;
     }
     const redirect = redirectMap[pathname];

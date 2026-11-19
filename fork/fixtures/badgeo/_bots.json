@@ -1,3 +1,4 @@
 {
-  "/partners/acme.html": ["GPTBot"]
+  "/partners/acme.html": ["GPTBot"],
+  "/gate/challenge.html": { "challenge200": ["PerplexityBot"] }
 }

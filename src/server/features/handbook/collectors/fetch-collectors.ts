@@ -4,6 +4,11 @@ import { decide, parseRobots } from "@/server/features/handbook/engine/robots";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import {
+  detectInterstitial,
+  interstitialReason,
+  smallBodyHashTracker,
+} from "@/server/features/handbook/engine/interstitial";
+import {
   BOT_USER_AGENTS,
   type BotFetchData,
   type BotName,
@@ -333,14 +338,6 @@ export const variantsCollector: Collector<"variants"> = {
 
 const isBotName = (key: string): key is BotName => key in BOT_USER_AGENTS;
 
-const CHALLENGE_MARKERS = [
-  /<title>\s*Just a moment/i,
-  /cf-chl-|challenge-platform/i,
-  /Attention Required! \| Cloudflare/i,
-  // Title only: a reCAPTCHA-protected form on a normal page is not a challenge.
-  /<title>[^<]*(captcha|access denied|are you a robot)/i,
-];
-
 export const botFetchCollector: Collector<"botFetch"> = {
   key: "botFetch",
   dependsOn: ["templates"],
@@ -359,12 +356,23 @@ export const botFetchCollector: Collector<"botFetch"> = {
       for (const { bot, userAgent } of agents) {
         const res = await tryFetch(ctx, url, { userAgent });
         if (!res) continue;
-        const blocked =
-          res.status === 403 || res.status === 429 || res.status === 503
+        const statusBlocked = [403, 429, 503].includes(res.status);
+        const hit = statusBlocked
+          ? null
+          : detectInterstitial(res.body, res.headers, res.finalUrl);
+        const blocked = hit
+          ? interstitialReason(hit)
+          : statusBlocked
             ? `HTTP ${res.status}`
-            : CHALLENGE_MARKERS.some((m) => m.test(res.body.slice(0, 20_000)))
-              ? "challenge page"
-              : null;
+            : null;
+        if (hit)
+          ctx.log("handbook.botfetch.interstitial", {
+            url,
+            bot,
+            status: res.status,
+            reason: blocked,
+            excerpt: res.body.slice(0, 400),
+          });
         fetches.push({
           url,
           bot,
@@ -379,6 +387,40 @@ export const botFetchCollector: Collector<"botFetch"> = {
     }
     if (fetches.length === 0)
       return { status: "unavailable", reason: "no response" };
-    return { status: "ok", fetches };
+    return { status: "ok", fetches: markRepeatedSmallBodies(fetches) };
   },
 };
+
+/**
+ * Hash rule (ADR-021): a bot UA that gets the same small body on ≥ 3 URLs is
+ * being served one interstitial — unless the browser gets that same body on
+ * the URL too (a tiny SPA shell is the page itself, not a challenge).
+ */
+function markRepeatedSmallBodies(
+  fetches: BotFetchData["fetches"][number][],
+): BotFetchData["fetches"][number][] {
+  const browserHash = new Map(
+    fetches
+      .filter((f) => f.bot === "browser")
+      .map((f) => [f.url, f.bodySha256]),
+  );
+  const repeatedByBot = new Map<string, Set<string>>();
+  for (const bot of new Set(fetches.map((f) => f.bot))) {
+    if (bot === "browser") continue;
+    const tracker = smallBodyHashTracker();
+    for (const f of fetches)
+      if (f.bot === bot && f.status === 200)
+        tracker.add(f.url, f.bytes, f.bodySha256);
+    repeatedByBot.set(bot, tracker.repeated());
+  }
+  return fetches.map((f) =>
+    !f.blockedReason &&
+    repeatedByBot.get(f.bot)?.has(f.bodySha256) &&
+    browserHash.get(f.url) !== f.bodySha256
+      ? {
+          ...f,
+          blockedReason: interstitialReason({ vendor: null, rule: "hash" }),
+        }
+      : f,
+  );
+}

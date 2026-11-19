@@ -13,7 +13,8 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
   the exact path has its own entry, which replaces `"*"` (an empty object = no
   extra headers).
 
-- `_bots.json`: path → user-agent tokens answered with 403 (bot-parity fixtures).
+- `_bots.json`: path → user-agent tokens answered with 403 (bot-parity fixtures),
+  or `{ "challenge200": [tokens] }` answered with a 200 openresty-style bot-check page.
 - `_redirects.json`: path → `[status, location]` answered before any file
   (`{{ORIGIN}}` substituted in the location).
 
@@ -29,6 +30,7 @@ no HTML page live in `_expect.json` (pseudo-page path → item ids).
 | `/orphan.html`                                         | In the sitemap, no internal link                                                                                                                                                                                          | P3-12                                |
 | `/canonicalised.html`                                  | In the sitemap, canonical → `/about/`                                                                                                                                                                                     | P3-12                                |
 | `/partners/acme.html`                                  | 403 to GPTBot although robots.txt allows it (own template, so the bot probe samples it)                                                                                                                                   | P9-01                                |
+| `/gate/challenge.html`                                 | 200 openresty "One moment, please" page to PerplexityBot (own template, so the bot probe samples it)                                                                                                                      | P9-01, SUPP-07                       |
 | `/robots.txt`                                          | Named AI-bot group carries only `Allow: /`; `/*?sort=` without `&sort=`                                                                                                                                                   | P3-15, P9-05                         |
 | `/canonical-mismatch.html`                             | Canonical carries `utm_source` (not self-canonical, tracking param); not in the sitemap                                                                                                                                   | P3-04                                |
 | `/events/unlinked-run-2026.html`                       | Event detail in the sitemap, linked from nowhere (dynamic slug so it joins `/events/*`)                                                                                                                                   | P2-10, P3-12                         |
