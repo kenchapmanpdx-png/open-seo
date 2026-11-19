@@ -20,6 +20,8 @@ import {
   type CollectorContext,
   type CollectedData,
 } from "@/server/features/handbook/contracts/collectors";
+import { decide } from "@/server/features/handbook/engine/robots";
+import { AI_BOT_TOKENS } from "./ai-bot-tokens";
 import { tryFetch } from "./fetch-collectors";
 
 /**
@@ -145,10 +147,10 @@ async function escalate(
   ctx: CollectorContext,
   collected: Partial<CollectedData>,
   probe: readonly Fetch[],
+  pace: () => Promise<void>,
 ): Promise<Fetch[]> {
   const plan = botParityPlan(collected);
   const done = new Set(probe.map((f) => `${f.bot} ${f.url}`));
-  const pace = createPacer(BOT_PARITY_GAP_MS);
   const streak = new Map<Agent, number>();
   const stopped = new Set<Agent>();
   const out: Fetch[] = [];
@@ -192,6 +194,44 @@ async function escalate(
   return out;
 }
 
+/**
+ * AI-bot policy map (FULL-READ §3.9, WO-B9-028): home fetched once per
+ * crawler token (≥ 300 ms apart) next to robots.txt's verdict for `/`
+ * on the origin host; no robots.txt (HTTP 200) = allowed.
+ */
+async function collectPolicyMap(
+  ctx: CollectorContext,
+  collected: Partial<CollectedData>,
+  pace: () => Promise<void>,
+): Promise<NonNullable<BotFetchData["policyMap"]>> {
+  const home = new URL("/", ctx.origin);
+  const file =
+    collected.robots?.status === "ok"
+      ? collected.robots.hosts.find(
+          (h) => h.host === home.host && h.status === 200,
+        )
+      : undefined;
+  const rows: NonNullable<BotFetchData["policyMap"]>[number][] = [];
+  for (const { token, userAgent } of AI_BOT_TOKENS) {
+    await pace();
+    const res = await tryFetch(ctx, home.href, { userAgent });
+    if (!res) continue;
+    const hit =
+      res.status === 200
+        ? detectInterstitial(res.body, res.headers, res.finalUrl)
+        : null;
+    rows.push({
+      token,
+      robotsAllowed: file
+        ? decide(home.host, file.groups, token, "/").allowed
+        : true,
+      status: res.status,
+      blockedReason: hit ? interstitialReason(hit) : null,
+    });
+  }
+  return rows;
+}
+
 export const botFetchCollector: Collector<"botFetch"> = {
   key: "botFetch",
   dependsOn: ["templates"],
@@ -211,14 +251,18 @@ export const botFetchCollector: Collector<"botFetch"> = {
       const again = await fetchAs(ctx, url, "browser", 2);
       if (again) probe.push(again);
     }
+    // One pacer: policy map + escalation never exceed 1 request / 300 ms.
+    const pace = createPacer(BOT_PARITY_GAP_MS);
+    const policyMap = await collectPolicyMap(ctx, collected, pace);
     const marked = markRepeatedSmallBodies(probe);
     const because = botParityTrigger(marked);
-    if (!because) return { status: "ok", fetches: marked };
+    if (!because) return { status: "ok", fetches: marked, policyMap };
     ctx.log("handbook.botfetch.escalate", { because });
-    const more = await escalate(ctx, collected, marked);
+    const more = await escalate(ctx, collected, marked, pace);
     return {
       status: "ok",
       fetches: markRepeatedSmallBodies([...marked, ...more]),
+      policyMap,
     };
   },
 };
