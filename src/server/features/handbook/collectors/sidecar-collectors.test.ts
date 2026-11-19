@@ -350,4 +350,42 @@ describe("full Lighthouse targets", () => {
     expect(extra.slice(10)).toEqual([href("/t18/c"), href("/t17/b")]);
     expect(new Set(mobile).size).toBe(mobile.length);
   });
+
+  it("all: each batch measures the next 25 live pages and re-emits the earlier ones", async () => {
+    const [, , allLighthouse] = createSidecarCollectors({
+      url: "http://sidecar",
+      token: "t",
+      depth: "full",
+      lighthouse: "all",
+    });
+    fetchMock.mockImplementation(async (_url, init) =>
+      lhResponse(
+        lhBody.parse(JSON.parse(z.string().parse(init?.body))).url,
+        1000,
+      ),
+    );
+    const pages: Partial<CollectedData> = {
+      pages: {
+        status: "ok",
+        snapshots: Array.from({ length: 60 }, (_, i) => snapshot(`/p${i}`)),
+      },
+    };
+    const perBatch: number[] = [];
+    let prior: Partial<CollectedData> = pages;
+    for (let batch = 0; batch < 3; batch++) {
+      fetchMock.mockClear();
+      const result = await allLighthouse.collect(ctx, prior);
+      perBatch.push(runsSent().filter((r) => r.formFactor === "mobile").length);
+      prior = { ...pages, lighthouse: result };
+    }
+    expect(perBatch).toEqual([25, 25, 10]);
+    const last = prior.lighthouse;
+    if (last?.status !== "ok") throw new Error("no lighthouse");
+    expect(last.pages.filter((p) => p.formFactor === "mobile")).toHaveLength(
+      60,
+    );
+    expect(last.pages.filter((p) => p.formFactor === "desktop")).toHaveLength(
+      1,
+    );
+  });
 });

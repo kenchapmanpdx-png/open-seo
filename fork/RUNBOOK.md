@@ -21,7 +21,7 @@ Local production per ADR-011: the app runs on this computer (`vite preview`, 127
 
 - **UI**: project → Handbook tab → enable, pick the mode → run a site audit; the handbook phase runs after the crawl. The run page shows grade, phases, findings, checklist, evidence.
 - **MCP** (after the B5 registration hook): `handbook_audit_run` → poll `handbook_findings_get` → `handbook_status_export` / `handbook_report_publish`. Agent instructions: `fork/skills/handbook-audit/SKILL.md`.
-- **CLI** (no app needed): `pnpm exec tsx fork/scripts/handbook-audit.ts https://example.com --mode REVIEW --out fork/runs/example.com/r1` — add `--sidecar http://127.0.0.1:4777` for render/axe/Lighthouse evidence and `--llm` for the LLM-judged checks.
+- **CLI** (no app needed): `pnpm exec tsx fork/scripts/handbook-audit.ts https://example.com --mode REVIEW --out fork/runs/example.com/r1` — add `--sidecar http://127.0.0.1:4777` for render/axe/Lighthouse evidence and `--llm` for the LLM-judged checks. `--lighthouse all` (or `HANDBOOK_LIGHTHOUSE=all`; needs `--depth full` + `--sidecar`) runs Lighthouse on every live page in batches of 25, prints a time estimate (0.6 min per page + base) before start and the exact page count after the crawl, and raises the run cap by 0.6 min per page. In-app runs have no sidecar, so the scope only affects the CLI.
 - BadGEO regression: `pnpm exec tsx fork/scripts/badgeo-run.ts` (see the script header for `--only` and sidecar use).
 
 ## Publish / unpublish a client report
