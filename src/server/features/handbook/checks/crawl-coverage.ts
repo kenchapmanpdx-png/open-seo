@@ -31,6 +31,14 @@ function slugProblems(url: string): string[] {
   return out;
 }
 
+/** Page URL style: `.html`/`.htm`/`.php`… extension or extensionless. */
+function urlStyle(url: string): string | null {
+  const last = new URL(url).pathname.split("/").filter(Boolean).at(-1);
+  if (!last) return null;
+  const ext = /\.([a-z0-9]+)$/i.exec(last)?.[1]?.toLowerCase();
+  return ext ? `.${ext}` : "extensionless";
+}
+
 /** `/events/*` → `/events/` (only patterns whose last segment is dynamic). */
 function hubPath(pattern: string): string | null {
   const parts = pattern.split("/").filter(Boolean);
@@ -140,6 +148,27 @@ export const crawlCoverageCheck: HandbookCheck = {
       const why = slugProblems(s.url);
       return why.length > 0 ? [{ s, why }] : [];
     });
+    const byStyle = new Map<string, string[]>();
+    for (const s of crawled) {
+      const style = urlStyle(s.url);
+      if (style) byStyle.set(style, [...(byStyle.get(style) ?? []), s.url]);
+    }
+    const styleSummary = [...byStyle]
+      .map(([style, urls]) => `${style}: ${urls.length} (e.g. ${urls[0]})`)
+      .join("\n");
+    if (byStyle.size >= 2) {
+      out.finding({
+        itemIds: ["P2-12"],
+        severity: "S4",
+        title: "Page URLs mix extension styles on one host",
+        detail: styleSummary,
+        fix: "Pick one URL style (extensionless is the default) and 301 the other style to it; update internal links and the sitemap.",
+        fixability: "FIXABLE",
+        effort: "M",
+        urls: [...byStyle.values()].flatMap((urls) => urls.slice(0, 10)),
+        evidenceRefs: [out.evidence("url", ctx.origin, styleSummary)],
+      });
+    }
     if (badSlugs.length > 0) {
       out.finding({
         itemIds: ["P2-12"],
@@ -156,7 +185,7 @@ export const crawlCoverageCheck: HandbookCheck = {
           .slice(0, 20)
           .map(({ s, why }) => pageRef(s, `${s.url} — ${why.join(", ")}`)),
       });
-    } else if (crawled.length > 0) {
+    } else if (crawled.length > 0 && byStyle.size < 2) {
       out.pass(
         "P2-12",
         `${crawled.length} URLs lowercase/hyphenated (readability judgment pending, LLM B3)`,
