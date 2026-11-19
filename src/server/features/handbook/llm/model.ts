@@ -2,7 +2,12 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { wrapLanguageModel, type LanguageModel } from "ai";
 import type { OpenRouterAccess } from "@/server/lib/openrouter";
 import type { Judge } from "@/server/features/handbook/contracts/llm";
-import { createJudge, type LlmCallLog, type ModelPrice } from "./judge";
+import {
+  createJudge,
+  type LlmCallLog,
+  type ModelPrice,
+  type VerdictCache,
+} from "./judge";
 import { LLM_EXTRACT_DEFAULT_MODEL } from "@/server/features/handbook/contracts/page-profile";
 import { createPageMapper, type PageMapper, type ProfileCache } from "./map";
 import { RUBRICS } from "./rubrics";
@@ -100,6 +105,7 @@ export function createHandbookJudge(options: {
   /** Judge share of the run budget (`RunBudget.judgeUsd`). */
   budgetUsd: () => number;
   log: (call: LlmCallLog) => Promise<void>;
+  cache?: VerdictCache;
 }): Judge {
   const modelId = options.modelId || DEFAULT_MODEL;
   return createJudge({
@@ -109,6 +115,7 @@ export function createHandbookJudge(options: {
     budgetUsd: options.budgetUsd,
     rubrics: RUBRICS,
     log: options.log,
+    cache: options.cache,
   });
 }
 
@@ -124,9 +131,14 @@ export function createHandbookMapper(options: {
   const modelId = options.modelId || LLM_EXTRACT_DEFAULT_MODEL;
   return createPageMapper({
     // Extraction needs no thinking; off, a probe page's output fell 1 321 → 577 tokens (B9 run 43).
-    model: createHandbookModel(options.access, modelId, {
-      thinking: { type: "disabled" },
-    }),
+    // Only Haiku accepts `{type: "disabled"}`; Sonnet 5.5 rejects it (WO-B9-025), so other models get their default.
+    model: createHandbookModel(
+      options.access,
+      modelId,
+      modelId.includes("haiku")
+        ? { thinking: { type: "disabled" } }
+        : undefined,
+    ),
     modelId,
     price: modelPrice(modelId),
     budgetUsd: options.budgetUsd,

@@ -229,6 +229,7 @@ async function run(model?: string) {
   const judge = cliJudge(
     calls,
     () => Number(process.env[LLM_BUDGET_ENV]) || LLM_DEFAULT_BUDGET_USD,
+    { cache: false },
   );
   const dir = join(EVALS, "cases");
   const rows: string[] = [];

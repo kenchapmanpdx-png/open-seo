@@ -50,6 +50,16 @@ export type LlmCallLog = {
 /** USD per million tokens. */
 export type ModelPrice = { input: number; output: number };
 
+/**
+ * Final verdicts keyed by model + prompt sha256 (rubric version, page text and
+ * facts are all in the prompt), so an unchanged rerun pays nothing for them.
+ * `unsure` is never stored: it is re-asked next run.
+ */
+export type VerdictCache = {
+  get: (key: string) => Promise<LlmVerdict | null>;
+  put: (key: string, verdict: LlmVerdict) => Promise<void>;
+};
+
 /** Stops the LLM checks; the runner blocks their items with `note`. */
 export class LlmBudgetError extends Error {
   override name = "LlmBudgetError";
@@ -119,6 +129,7 @@ export function createJudge(options: {
   budgetUsd: () => number;
   rubrics: ReadonlyMap<string, Rubric>;
   log: (call: LlmCallLog) => Promise<void>;
+  cache?: VerdictCache;
 }): Judge & { spentUsd: () => number } {
   let spent = 0;
   const cost = (tokensIn: number, tokensOut: number) =>
@@ -217,6 +228,42 @@ export function createJudge(options: {
       prompt: JSON.stringify({ pages, facts: input.facts ?? {} }),
       pages,
     };
+    const promptSha256 = createHash("sha256")
+      .update(`${request.system}\n${request.prompt}`)
+      .digest("hex");
+    const cacheKey = `${options.modelId} ${promptSha256}`;
+    const cached = await options.cache?.get(cacheKey);
+    if (cached) {
+      const call = {
+        model: options.modelId,
+        tokensIn: 0,
+        tokensOut: 0,
+        costUsd: 0,
+        promptSha256,
+      };
+      await options.log({
+        ...call,
+        itemId: input.itemId,
+        verdict: cached.verdict,
+        quotesVerified: true,
+      });
+      return { ...cached, quotesVerified: true, call };
+    }
+    const result = await stable(request);
+    if (result.verdict !== "unsure") {
+      const { verdict, quotes, confidence, rationale } = result;
+      await options.cache?.put(cacheKey, {
+        verdict,
+        quotes,
+        confidence,
+        rationale,
+      });
+    }
+    return result;
+  };
+
+  /** First verdict, re-asked once below STABLE_CONFIDENCE. */
+  const stable = async (request: Prompt): Promise<JudgeResult> => {
     const first = await once(request);
     if (first.verdict === "unsure" || first.confidence >= STABLE_CONFIDENCE)
       return first;
