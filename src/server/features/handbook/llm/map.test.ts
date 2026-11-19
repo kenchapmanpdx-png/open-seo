@@ -2,6 +2,7 @@ import { MockLanguageModelV3 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 import type { CollectedData } from "@/server/features/handbook/contracts/collectors";
 import type { PageProfileExtraction } from "@/server/features/handbook/contracts/page-profile";
+import { snapshot } from "../checks/check-test-fixtures";
 import { createPageMapper, type ProfileCache } from "./map";
 import { buildMapJobs } from "./map-input";
 
@@ -160,5 +161,21 @@ describe("buildMapJobs", () => {
     );
     expect(jobs).toHaveLength(1);
     expect(jobs[0]?.text).toContain("> Why Racing lists 21 annual events.");
+  });
+
+  it("leaves map widget chrome and symbol-only blocks out of the page text", async () => {
+    const html = `<main><p>Book a cut at 7144 E Stetson Dr.</p><p>\u00ad</p>
+      <div class="gm-style"><table><tr><td>Keyboard shortcuts</td></tr></table>
+      <div>Map data ©2026 Google</div></div><p>Open Tuesday to Saturday.</p></main>`;
+    const page = { ...snapshot("/contact"), rawKey: "raw/contact.html" };
+    const jobs = await buildMapJobs(
+      { pages: { status: "ok", snapshots: [page] } },
+      async () => new TextEncoder().encode(html),
+    );
+    const lines = jobs[0]?.text.split("\n").slice(6);
+    expect(lines).toEqual([
+      "Book a cut at 7144 E Stetson Dr.",
+      "Open Tuesday to Saturday.",
+    ]);
   });
 });
