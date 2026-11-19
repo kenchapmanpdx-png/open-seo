@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run OpenSEO locally against Supabase Postgres (ADR-003 / ADR-009 defaults).
-# Usage: bash fork/scripts/run-local.sh {dev|migrate|prod}
+# Usage: bash fork/scripts/run-local.sh {dev|migrate|sql <file.sql>|prod}
 # Sources .env.local into this process only; never prints any variable.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -28,12 +28,20 @@ case "${1:-}" in
     pnpm exec tsx fork/scripts/run-sql.ts fork/scripts/supabase-harden.sql
     pnpm exec tsx fork/scripts/supabase-check.ts
     ;;
+  sql)
+    # Apply one SQL file (e.g. an upstream migration the journal skipped after a
+    # rebase, MAINTENANCE M1), then re-harden and check.
+    : "${2:?usage: $0 sql <file.sql>}"
+    pnpm exec tsx fork/scripts/run-sql.ts "$2"
+    pnpm exec tsx fork/scripts/run-sql.ts fork/scripts/supabase-harden.sql
+    pnpm exec tsx fork/scripts/supabase-check.ts
+    ;;
   prod)
     pnpm build
     exec pnpm exec vite preview --port "${PORT:-3001}"
     ;;
   *)
-    echo "usage: $0 {dev|migrate|prod}" >&2
+    echo "usage: $0 {dev|migrate|sql <file>|prod}" >&2
     exit 2
     ;;
 esac

@@ -14,7 +14,7 @@ Upstream `AGENTS.md` still applies in full. This file adds fork rules on top.
 - `fork/` — fork-only: build plan, handbook, fixtures, scripts, baselines, logs. Never sent upstream.
 - `fork/BLUEPRINT.md` — architecture, work packages, batch schedule, model protocol.
 - `fork/STATE.md` — current batch, required model, next action, run log.
-- `fork/batches/` — one file per batch (B1–B11). Specs: `fork/FULL-READ.md` (B8–B10), `fork/SCALED-COPY.md` (B11).
+- `fork/batches/` — one file per batch (B1–B12). Specs: `fork/FULL-READ.md` (B8–B10), `fork/SCALED-COPY.md` (B11).
 - `fork/research/` — research excerpts the batches rely on (read-only; replaced only by Ken).
 - `fork/skills/` — fork skills served by the app and usable as Claude Code skills (`copy-rules`).
 - `fork/queue.md`, `fork/work-orders/` — LIGHT work queue written by HEAVY batches.
