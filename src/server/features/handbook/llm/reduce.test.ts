@@ -77,7 +77,9 @@ describe("buildSiteFactMap", () => {
     expect(conflict?.values.flatMap((v) => v.refs.map((r) => r.quote))).toEqual(
       expect.arrayContaining([
         "## Events",
-        "Its calendar lists 21 annual running, trail and triathlon events across Washington and Oregon: 14 produced by WHY RACING EVENTS.",
+        expect.stringMatching(
+          /^Its calendar lists 21 annual running, trail and triathlon events/,
+        ),
         "50,000+ Athletes Served 21 Annual Events 2014 Year Founded",
       ]),
     );

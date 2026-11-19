@@ -48,18 +48,28 @@ type Value = { n: number | null; plus: boolean; text: string };
 
 /** "$3M+", "3,000,000+", "21", "twenty" → comparable value. */
 function parseValue(raw: string): Value {
-  const text = raw.trim().toLowerCase();
+  const lower = raw.trim().toLowerCase();
+  const atLeast = /^(over|more than|at least)\s/.test(lower);
+  const text = lower
+    .replace(
+      /^(over|more than|at least|about|around|roughly|approximately|nearly|almost|~)\s*/,
+      "",
+    )
+    .replace(/\s+\+$/, "+");
   const word = NUMBER_WORDS[text.replace(/\+$/, "")];
-  if (word !== undefined)
-    return { n: word, plus: text.endsWith("+"), text: String(word) };
+  if (word !== undefined) {
+    const plus = atLeast || text.endsWith("+");
+    return { n: word, plus, text: `${word}${plus ? "+" : ""}` };
+  }
   const m =
-    /^[$€£]?\s?(\d[\d,]*(?:\.\d+)?)\s*([km]|million|thousand)?\s*(\+)?/.exec(
+    /^[$€£]?\s?(\d[\d,]*(?:\.\d+)?)\s*(k|m|million|thousand)?\b\s*(\+)?/.exec(
       text,
     );
   if (!m?.[1]) return { n: null, plus: false, text };
   const scale = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6 }[m[2] ?? ""];
   const n = Number(m[1].replace(/,/g, "")) * (scale ?? 1);
-  return { n, plus: Boolean(m[3]), text: `${n}${m[3] ? "+" : ""}` };
+  const plus = atLeast || Boolean(m[3]);
+  return { n, plus, text: `${n}${plus ? "+" : ""}` };
 }
 
 /** "20+" agrees with 21; two "at least" claims agree with each other. */
@@ -274,7 +284,10 @@ export function buildSiteFactMap(
         );
     for (const { p, ref } of sourced)
       for (const s of p.stats)
-        if (normalizeSubject(s.subject).split(" ").at(-1) === list.noun)
+        if (
+          normalizeSubject(s.subject).split(" ").at(-1) === list.noun &&
+          !/\d(?:st|nd|rd|th)\b/i.test(s.value) // "30th" is an edition, not a count
+        )
           claims.push({ value: s.value, ref: ref(s.quote) });
     const listed = parseValue(String(list.count));
     const off = claims.filter((c) => !compatible(parseValue(c.value), listed));
