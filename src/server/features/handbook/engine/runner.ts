@@ -22,8 +22,10 @@ import {
   type SiteTier,
 } from "@/server/features/handbook/contracts/status";
 import { ITEM_SCORE } from "@/server/features/handbook/contracts/scoring";
-import { normalizeUrl } from "../checks/support";
 import { LlmBudgetError } from "../llm/judge";
+import type { PageMapper } from "../llm/map";
+import { collectRunUnit, stageProfiles } from "./map-stage";
+import { checkerReproduction } from "./checker-reproduction";
 import { appliesWithSupp, SUPP_BY_ID } from "../registry-supp";
 import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
@@ -36,7 +38,6 @@ import {
   runStagedHandbook,
   type StageContext,
 } from "./stages";
-import { collectRunStage } from "./render-pass";
 
 /**
  * Runtime-agnostic handbook run (ADR-001): collectors → intake → checks →
@@ -64,6 +65,8 @@ export type RunInput = {
   maxPages: number;
   /** K5 judge; absent (no OpenRouter access) → LLM items BLOCKED `no llm key`. */
   judge?: Judge | null;
+  /** Map-stage extractor (ADR-019); absent → no PageProfiles (checks read `pageProfiles` undefined). */
+  mapper?: PageMapper | null;
 };
 
 export type EvidenceRow = {
@@ -124,7 +127,8 @@ export async function runHandbook(
   const ctx = collectorContext(input, runtime);
   await runStagedHandbook(
     {
-      collect: (stage, prior) => collectRunStage(input, ctx, stage, prior),
+      collect: (stage, prior) =>
+        collectRunUnit(input, runtime, ctx, stage, prior),
       evaluate: async (collected) => {
         out.result = await evaluateRun(input, runtime, collected);
       },
@@ -149,6 +153,7 @@ export async function evaluateRun(
   partial: Partial<CollectedData>,
 ): Promise<RunResult> {
   const collected = completeCollected(partial);
+  const pageProfiles = stageProfiles(partial);
   const intake = runIntake({
     collected,
     registry: input.registry,
@@ -209,6 +214,7 @@ export async function evaluateRun(
       siteProfile: intake.siteProfile,
       applicableItems: intake.applicable,
       collected,
+      ...(pageProfiles ? { pageProfiles } : {}),
       ...(check.class === "LLM" && input.judge ? { judge: input.judge } : {}),
       fetchOffsite: cappedFetch(runtime.fetchOffsite, CHECK_OFFSITE_FETCHES),
     };
@@ -356,53 +362,6 @@ function contractViolation(
     }
   }
   return null;
-}
-
-/** Evidence that comes from a third-party checker rather than a direct fetch. */
-const CHECKER_KINDS = new Set<EvidenceDraft["kind"]>([
-  "lighthouse",
-  "axe",
-  "crux",
-]);
-
-/**
- * P1-04 (handbook §0 "Checkers are evidence, not findings"): every finding
- * that rests only on checker output (Lighthouse, axe, CrUX) must cite URLs the
- * crawler fetched directly; collector and check errors are logged in
- * `checkerErrors` and listed in the report.
- */
-function checkerReproduction(
-  collected: CollectedData,
-  pending: readonly PendingResult[],
-  checkerErrors: readonly string[],
-): { status: ItemStatus; note: string } {
-  const pages = collected.pages;
-  if (pages.status !== "ok")
-    return { status: "BLOCKED", note: "pages unavailable: no direct fetches" };
-  const fetched = new Set(pages.snapshots.map((s) => normalizeUrl(s.url)));
-  let checkerOnly = 0;
-  const unreproduced = new Set<string>();
-  for (const { result } of pending) {
-    const kindOf = new Map(result.evidence.map((e) => [e.ref, e.kind]));
-    for (const finding of result.findings) {
-      const kinds = finding.evidenceRefs.map((ref) => kindOf.get(ref));
-      if (kinds.length === 0 || !kinds.every((k) => k && CHECKER_KINDS.has(k)))
-        continue;
-      checkerOnly += 1;
-      for (const url of finding.urls)
-        if (!fetched.has(normalizeUrl(url))) unreproduced.add(url);
-    }
-  }
-  const errors = `${checkerErrors.length} checker error(s) logged`;
-  if (unreproduced.size > 0)
-    return {
-      status: "OPEN",
-      note: `checker-only findings cite URLs never fetched directly: ${[...unreproduced].slice(0, 5).join(", ")}; ${errors}`,
-    };
-  return {
-    status: "PASS",
-    note: `${checkerOnly} checker-only finding(s), every URL also fetched directly; ${errors}`,
-  };
 }
 
 function reconcile(

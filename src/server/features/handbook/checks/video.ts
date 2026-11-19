@@ -251,7 +251,12 @@ function videoText(ctx: CheckContext, content: PageVideos[], out: Out) {
     );
     return;
   }
-  const byUrl = new Map(ctx.pageProfiles.map((p) => [normalizeUrl(p.url), p]));
+  // Template boilerplate profiles share their first page's URL; skip them.
+  const byUrl = new Map(
+    ctx.pageProfiles
+      .filter((p) => p.scope === "page")
+      .map((p) => [normalizeUrl(p.url), p]),
+  );
   const none = content.filter(
     (p) => byUrl.get(normalizeUrl(p.snap.url))?.videoText === "none",
   );

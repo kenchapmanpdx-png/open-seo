@@ -18,7 +18,6 @@ import {
 } from "@/server/features/handbook/contracts/status";
 import { LLM_BUDGET_ENV } from "@/server/features/handbook/contracts/llm";
 import { createDefaultCollectors } from "@/server/features/handbook/collectors";
-import { collectRunStage } from "@/server/features/handbook/engine/render-pass";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import {
   collectorContext,
@@ -52,11 +51,15 @@ import {
 import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
 import {
   createHandbookJudge,
+  createHandbookMapper,
   HANDBOOK_LLM_MODEL_ENV,
   parseBudgetUsd,
 } from "@/server/features/handbook/llm/model";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
+import { collectRunUnit } from "@/server/features/handbook/engine/map-stage";
 import { HandbookStageRepository } from "@/server/features/handbook/repositories/HandbookStageRepository";
+import { HandbookPageProfileRepository } from "@/server/features/handbook/repositories/HandbookPageProfileRepository";
+import { LLM_EXTRACT_MODEL_ENV } from "@/server/features/handbook/contracts/page-profile";
 
 /**
  * Staged handbook run in the app (FULL-READ §7.1, ADR-018): the workflow
@@ -118,6 +121,9 @@ async function startRun(input: HandbookRunParams): Promise<string> {
   return run?.startedAt ?? new Date().toISOString();
 }
 
+const log = (event: string, fields: Record<string, unknown>) =>
+  console.log(event, fields);
+
 /** Bodies and stage outputs; without Supabase, one in-isolate store for the whole run. */
 let fallbackStore: EvidenceStore | null = null;
 async function runStore(): Promise<EvidenceStore> {
@@ -136,14 +142,27 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
   });
   const llmCalls: LlmCallLog[] = [];
   const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
+  const budgetUsd = parseBudgetUsd(await getOptionalEnvValue(LLM_BUDGET_ENV));
   const judge = access
     ? createHandbookJudge({
         access,
         modelId: await getOptionalEnvValue(HANDBOOK_LLM_MODEL_ENV),
-        budgetUsd: parseBudgetUsd(await getOptionalEnvValue(LLM_BUDGET_ENV)),
+        budgetUsd,
         log: async (call) => {
           llmCalls.push(call);
         },
+      })
+    : null;
+  const mapper = access
+    ? createHandbookMapper({
+        access,
+        modelId: await getOptionalEnvValue(LLM_EXTRACT_MODEL_ENV),
+        budgetUsd,
+        cache: HandbookPageProfileRepository.forProject(
+          input.projectId,
+          input.runId,
+        ),
+        log,
       })
     : null;
   const store = await runStore();
@@ -161,6 +180,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     checks: HANDBOOK_CHECKS,
     maxPages,
     judge,
+    mapper,
   };
   const runtime: HandbookRuntime = {
     projectId: input.projectId,
@@ -172,7 +192,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
       maxBytes: 256 * 1024,
     }),
     store,
-    log: (event, fields) => console.log(event, fields),
+    log,
   };
   const stageStore = createEvidenceStageStore(
     store,
@@ -219,8 +239,9 @@ async function runStage(
     batches,
     {
       collect: (s, prior) =>
-        collectRunStage(
+        collectRunUnit(
           runInput,
+          runtime,
           collectorContext(runInput, runtime),
           s,
           prior,
