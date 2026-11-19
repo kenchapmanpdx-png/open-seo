@@ -54,6 +54,7 @@
   <url><loc>{{ORIGIN}}/generic-anchors.html</loc></url>
   <url><loc>{{ORIGIN}}/empty-og.html</loc></url>
   <url><loc>{{ORIGIN}}/nosnippet.html</loc></url>
+  <url><loc>{{ORIGIN}}/nosnippet-answer.html</loc></url>
   <url><loc>{{ORIGIN}}/fake-list.html</loc></url>
   <url><loc>{{ORIGIN}}/guide.html</loc></url>
   <url><loc>{{ORIGIN}}/faq-good.html</loc></url>
