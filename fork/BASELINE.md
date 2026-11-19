@@ -9,6 +9,18 @@
 
 Failing tests on the clean checkout: none.
 
+## Current (B12 run 65, 2026-11-19, `ken/main` on upstream v0.1.30)
+
+| Check                                      | Result                                  |
+| ------------------------------------------ | --------------------------------------- |
+| `pnpm types:check`                         | pass (0 errors)                         |
+| `pnpm lint`                                | pass (0 warnings, 0 errors; 1875 files) |
+| `pnpm test`                                | pass: 411 files, 2553 tests, 0 failures |
+| `pnpm format:check`                        | pass                                    |
+| `pnpm exec vitest run --root fork/sidecar` | pass: 2 files, 10 tests                 |
+
+Compare session-end results with this section; the table above is the B1 clean-checkout record.
+
 Rule: any failure in the checks above after a fork change is a new failure (not done).
 
 ## Knip (not in the session-end list; noted)
