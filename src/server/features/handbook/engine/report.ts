@@ -16,6 +16,8 @@ import {
 import { collectEscalations } from "./escalations";
 import { scoreItems } from "./scoring";
 import { isSuppOnly } from "../registry-supp";
+import { indexablePages, snippetBlockers } from "../checks/supp-aeo";
+import { INFORMATIONAL_PAGE_TYPES } from "@/server/features/handbook/contracts/page-profile";
 
 /**
  * RunResult → K7 ReportJson with the EP-7 score (K6). Markdown exports
@@ -104,11 +106,121 @@ export function buildReportJson(input: {
     checkerErrors: result.checkerErrors,
     outsideScope: [],
   };
+  const readiness = answerEngineReadiness(result);
+  if (readiness.length > 0) report.answerEngineReadiness = readiness;
   const escalations = collectEscalations(result.collected, input.depth);
   if (escalations.length > 0) report.escalations = escalations;
   const scored = { ...report, score: scoreReport(report) };
   const confirmed = confirmExports(scored, input.registry);
   return { ...confirmed, score: scoreReport(confirmed) };
+}
+
+const share = (n: number, of: number) =>
+  of === 0 ? "—" : `${n}/${of} (${Math.round((n / of) * 100)} %)`;
+
+/**
+ * "Answer-engine readiness" (FULL-READ §6, ADR-020): measured shares and
+ * states from data the run already collected; not scored, no new fetches.
+ */
+function answerEngineReadiness(
+  result: RunResult,
+): NonNullable<ReportJson["answerEngineReadiness"]> {
+  const { pages, botFetch, llms } = result.collected;
+  if (pages.status !== "ok") return [];
+  const statusOf = (id: string) => {
+    const row = result.statuses.find((s) => s.itemId === id);
+    return row ? `${row.status}${row.note ? ` — ${row.note}` : ""}` : "not run";
+  };
+  const indexable = indexablePages(pages.snapshots);
+  const blocked = indexable.filter((s) => snippetBlockers(s));
+  const policy = botFetch.status === "ok" ? (botFetch.policyMap ?? []) : [];
+  const crawlersOpen = policy.filter(
+    (r) => r.robotsAllowed && r.status >= 200 && r.status < 300,
+  );
+  const crawlersShut = policy.filter((r) => !crawlersOpen.includes(r));
+  const listed = indexable.filter(
+    (s) => s.markup.counts.lists > 0 || s.markup.counts.tables > 0,
+  );
+  const fake = indexable.filter((s) => (s.markup.fakeListRuns ?? []).length);
+  const profiles = (result.pageProfiles ?? []).filter(
+    (p) => p.scope === "page",
+  );
+  const informational = profiles.filter((p) =>
+    (INFORMATIONAL_PAGE_TYPES as readonly string[]).includes(p.pageType),
+  );
+  const questionSections = informational.flatMap((p) =>
+    p.sections.filter((x) => x.isQuestion),
+  );
+  const faqs = profiles.flatMap((p) => p.faqPairs);
+  const videos = profiles.filter((p) => p.videoText !== null);
+  const llmsFile =
+    llms.status === "ok" ? llms.files.find((f) => f.status === 200) : undefined;
+  const noProfiles = "needs the LLM map stage (--llm)";
+  return [
+    {
+      label: "Snippet-eligible pages",
+      value: `${share(indexable.length - blocked.length, indexable.length)} of indexable pages${
+        blocked.length
+          ? `; blocked: ${blocked
+              .map((s) => s.url)
+              .slice(0, 5)
+              .join(", ")}`
+          : ""
+      }`,
+      itemIds: ["SUPP-13"],
+    },
+    {
+      label: "AI crawlers allowed vs blocked",
+      value:
+        policy.length === 0
+          ? "not collected"
+          : `allowed ${crawlersOpen.map((r) => r.token).join(", ") || "none"}; blocked ${crawlersShut.map((r) => r.token).join(", ") || "none"}`,
+      itemIds: ["P9-01"],
+    },
+    {
+      label: "Key content in server HTML",
+      value: statusOf("P2-01"),
+      itemIds: ["P2-01"],
+    },
+    { label: "Opening sentence", value: statusOf("P5-01"), itemIds: ["P5-01"] },
+    {
+      label: "Question headings, answer-first (informational pages)",
+      value: !result.pageProfiles
+        ? noProfiles
+        : informational.length === 0
+          ? "no informational pages"
+          : `${share(informational.filter((p) => p.sections.some((x) => x.isQuestion)).length, informational.length)} pages with question headings; ${share(questionSections.filter((x) => x.answerFirst).length, questionSections.length)} question sections answer first`,
+      itemIds: ["SUPP-15"],
+    },
+    {
+      label: "List / table markup",
+      value: `${share(listed.length, indexable.length)} pages use list or table markup; ${fake.length} with list-like text outside it`,
+      itemIds: ["SUPP-14"],
+    },
+    {
+      label: "Stand-alone FAQ answers",
+      value: !result.pageProfiles
+        ? noProfiles
+        : faqs.length === 0
+          ? "no FAQ pairs found"
+          : share(faqs.filter((f) => f.standsAlone).length, faqs.length),
+      itemIds: ["P5-05", "SUPP-16"],
+    },
+    {
+      label: "llms.txt",
+      value: `${llmsFile ? `served (${llmsFile.url})` : "not served"}; ${statusOf("P9-02")}`,
+      itemIds: ["P9-02"],
+    },
+    {
+      label: "Video transcripts",
+      value: !result.pageProfiles
+        ? noProfiles
+        : videos.length === 0
+          ? "no content video pages profiled"
+          : `${share(videos.filter((p) => p.videoText !== "none").length, videos.length)} video pages carry a transcript or summary as text`,
+      itemIds: ["SUPP-11"],
+    },
+  ];
 }
 
 /** Platform named by the P0-03 check note ("platform: Squarespace (…) via …"). */

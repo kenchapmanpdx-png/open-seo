@@ -13,6 +13,7 @@ import type {
   HandbookCheck,
 } from "@/server/features/handbook/contracts/check";
 import type { Judge } from "@/server/features/handbook/contracts/llm";
+import type { PageProfile } from "@/server/features/handbook/contracts/page-profile";
 import type { EvidenceStore } from "@/server/features/handbook/contracts/evidence-store";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import {
@@ -111,6 +112,8 @@ export type RunResult = {
   findings: FindingRow[];
   evidence: EvidenceRow[];
   checkerErrors: string[];
+  /** Map-stage profiles the checks read; feeds "Answer-engine readiness". */
+  pageProfiles?: readonly PageProfile[];
 };
 
 /**
@@ -292,7 +295,15 @@ export async function evaluateRun(
   );
   if (siteFactMap)
     evidence.push(await factMapEvidence(input, runtime, siteFactMap));
-  return { intake, collected, statuses, findings, evidence, checkerErrors };
+  return {
+    intake,
+    collected,
+    statuses,
+    findings,
+    evidence,
+    checkerErrors,
+    ...(pageProfiles ? { pageProfiles } : {}),
+  };
 }
 
 /** Off-site fetches one check may make (P5-03 reads a few cited sources). */

@@ -43,6 +43,7 @@ import { schemaVisibilityCheck } from "./schema-visibility";
 import { securityHeadersCheck } from "./security-headers";
 import { sitemapLastmodCheck } from "./sitemap-lastmod";
 import { socialMetaCheck } from "./social-meta";
+import { suppAeoCheck } from "./supp-aeo";
 import { suppLinksCheck } from "./supp-links";
 import { suppPagesCheck } from "./supp-pages";
 import { thirdPartyCheck } from "./third-party";
@@ -79,6 +80,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   outboundLinksCheck,
   suppLinksCheck,
   suppPagesCheck,
+  suppAeoCheck,
   rawCopyCheck,
   imageMarkupCheck,
   cachePolicyCheck,
