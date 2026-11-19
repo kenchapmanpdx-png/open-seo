@@ -6,7 +6,9 @@ import {
   type SerpJudge,
 } from "@/server/features/handbook/contracts/scaled-copy";
 import { AppError } from "@/server/lib/errors";
+import { resolveGotoUrls } from "@/server/lib/dataforseo/appendix";
 import { fetchLiveSerp } from "@/server/lib/dataforseo/serp";
+import { isGoogleRedirect } from "@/shared/google-serp-url";
 import { isCreditError, LLM_MAX_RETRIES, type ModelPrice } from "./judge";
 import { SERP_ORIGINALITY_RUBRIC } from "./rubrics";
 
@@ -108,8 +110,21 @@ export const dataforseoSerpLookup: SerpLookup = async (query, location) => {
         ? [{ rank: item.rank_group ?? item.rank_absolute ?? 0, url: item.url }]
         : [],
     );
+    // Live reads wrap most results in google.com/goto, which a competitor
+    // fetch can't follow; the free converter gives the real page. A link it
+    // can't resolve is dropped.
+    const wrapped = hits.filter((h) => isGoogleRedirect(h.url));
+    const real =
+      wrapped.length > 0
+        ? await resolveGotoUrls(wrapped.map((h) => h.url)).catch(
+            () => new Map<string, string>(),
+          )
+        : new Map<string, string>();
     return {
-      hits: hits.filter((h) => h.rank > 0),
+      hits: hits.flatMap((h) => {
+        const url = isGoogleRedirect(h.url) ? real.get(h.url) : h.url;
+        return h.rank > 0 && url ? [{ rank: h.rank, url }] : [];
+      }),
       costUsd: res.billing.costUsd,
     };
   } catch (error) {
