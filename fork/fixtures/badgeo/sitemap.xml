@@ -13,6 +13,7 @@
   <url><loc>{{ORIGIN}}/orphan.html</loc></url>
   <url><loc>{{ORIGIN}}/canonicalised.html</loc></url>
   <url><loc>{{ORIGIN}}/partners/acme.html</loc></url>
+  <url><loc>{{ORIGIN}}/gate/challenge.html</loc></url>
   <url><loc>{{ORIGIN}}/events/unlinked-run-2026.html</loc></url>
   <url><loc>{{ORIGIN}}/Bad_Slug.html</loc></url>
   <url><loc>{{ORIGIN}}/dup-title-a.html</loc></url>
