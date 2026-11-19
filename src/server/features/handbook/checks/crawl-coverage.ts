@@ -31,9 +31,15 @@ function slugProblems(url: string): string[] {
   return out;
 }
 
-/** Page URL style: `.html`/`.htm`/`.php`… extension or extensionless. */
+/**
+ * Page URL style: `.html`/`.htm`/`.php`… extension or extensionless.
+ * Directory URLs (trailing slash, home) have no style: `/events/` beside
+ * `/events/a.html` is the usual hub + detail layout.
+ */
 function urlStyle(url: string): string | null {
-  const last = new URL(url).pathname.split("/").filter(Boolean).at(-1);
+  const path = new URL(url).pathname;
+  if (path.endsWith("/")) return null;
+  const last = path.split("/").at(-1);
   if (!last) return null;
   const ext = /\.([a-z0-9]+)$/i.exec(last)?.[1]?.toLowerCase();
   return ext ? `.${ext}` : "extensionless";
