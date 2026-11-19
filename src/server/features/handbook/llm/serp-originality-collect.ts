@@ -11,6 +11,7 @@ import type { HandbookMode } from "@/server/features/handbook/contracts/status";
 import type {
   SerpBlockedReason,
   SerpCollection,
+  SerpJudge,
   SerpOriginality,
 } from "@/server/features/handbook/contracts/scaled-copy";
 import { createLimiter } from "../collectors/limiter";
@@ -35,7 +36,7 @@ import {
  * search query per page (one LLM call), read Google's top 10 through
  * DataForSEO (cached 7 days in the evidence store), fetch the competitor
  * pages and profile them with the map model. The verdict is WO-B11-009's
- * check. Never throws: a stop becomes a BLOCKED reason on the records.
+ * check, through `judge` on the result. Never throws: a stop becomes a BLOCKED reason on the records.
  */
 
 /** DataForSEO live organic, depth 10 (one billed page): the per-lookup cap unit. */
@@ -65,6 +66,8 @@ export type SerpDeps = {
   deriveQueries: QueryDeriver | null;
   /** Map model for competitor profiles (own budget); null → no profiles. */
   mapper: PageMapper | null;
+  /** SUPP-18 verdict caller on the same budget (WO-B11-009); null → no verdicts. */
+  judge: SerpJudge | null;
   /** Holds `<projectId>/_serp-cache/<sha256>.json`. */
   cache: EvidenceStore;
   location?: SerpLocation;
@@ -135,6 +138,7 @@ async function collectSerpOriginality(
     status: "ran",
     blocked: reason,
     lookupUsd: 0,
+    judge: null,
     pages: selected.map((p) => ({
       record: { ...base(p), blocked: reason },
       competitors: [],
@@ -144,7 +148,13 @@ async function collectSerpOriginality(
   // No map stage (LLM off or budget) means no page types to select by.
   if (!profiles || !deps.deriveQueries) return stop("llm budget");
   if (selected.length === 0)
-    return { status: "ran", blocked: null, lookupUsd: 0, pages: [] };
+    return {
+      status: "ran",
+      blocked: null,
+      lookupUsd: 0,
+      judge: deps.judge,
+      pages: [],
+    };
   const raw = await deps.deriveQueries(
     selected.map(({ page, profile }) => ({
       title: page.head.title ?? "",
@@ -224,6 +234,7 @@ async function collectSerpOriginality(
         ? "llm budget"
         : null,
     lookupUsd: Number(state.lookupUsd.toFixed(4)),
+    judge: deps.judge,
     pages,
   };
 }

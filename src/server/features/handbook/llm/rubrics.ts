@@ -149,3 +149,22 @@ const list: Rubric[] = [
 export const RUBRICS: ReadonlyMap<string, Rubric> = new Map(
   list.map((r) => [r.id, r]),
 );
+
+/**
+ * SUPP-18 verdict prompt (SCALED-COPY §3.3, ADR-024). Not a K5 pass/fail
+ * rubric: its own caller (`createSerpJudge`) returns the element list. It
+ * judges presence only, never truth, writing quality or who wrote the page.
+ */
+export const SERP_ORIGINALITY_RUBRIC: Rubric = {
+  id: "serp-originality",
+  version: 1,
+  instructions: [
+    "Handbook §6, §33: a page should offer at least one original element that the pages already ranking for its query lack.",
+    "Input: the audited page (url, title, H1, its profile and main text) and profiles of the top search results for the page's query (topic, stats, prices, names, awards, section headings, key facts).",
+    "An original element is one of: first-party data (the business's own numbers, counts, results, prices or measurements), a test (something the business tried or measured itself), a case (a specific client, project or job described with its details), an expert quote (a named person quoted), a worked example (a concrete calculation or step-by-step example with real figures).",
+    "hasOriginalElement is true when the audited page contains at least one such element that none of the competitor profiles contains. Generic explanations, definitions, lists of benefits and advice that the competitors also cover are not original elements.",
+    "For each element give its type and a quote copied character for character from the audited page's text (one sentence or less). List at most 5 elements. When hasOriginalElement is false, elements is empty.",
+    "Judge only whether such an element is present. Do not judge whether a claim is true, how well the page is written, or who or what wrote it.",
+    "confidence is 0 to 1.",
+  ].join("\n"),
+};

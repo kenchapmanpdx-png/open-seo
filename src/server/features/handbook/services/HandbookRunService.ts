@@ -61,6 +61,7 @@ import {
   createHandbookJudge,
   createHandbookMapper,
   createHandbookQueryDeriver,
+  createHandbookSerpJudge,
   HANDBOOK_LLM_MODEL_ENV,
 } from "@/server/features/handbook/llm/model";
 import {
@@ -216,28 +217,28 @@ async function serpDeps(
   input: HandbookRunParams,
 ): Promise<SerpDeps> {
   const budget = createSerpBudget(await getOptionalEnvValue(SERP_BUDGET_ENV));
+  const modelId = await getOptionalEnvValue(HANDBOOK_LLM_MODEL_ENV);
+  const mapper = access
+    ? createHandbookMapper({
+        access,
+        modelId: await getOptionalEnvValue(LLM_EXTRACT_MODEL_ENV),
+        budgetUsd: budget.remainingUsd,
+        cache: HandbookPageProfileRepository.forProject(
+          input.projectId,
+          input.runId,
+        ),
+        log,
+      })
+    : null;
   return {
     lookup: dataforseoSerpLookup,
     cache: store,
     deriveQueries: access
-      ? createHandbookQueryDeriver({
-          access,
-          modelId: await getOptionalEnvValue(HANDBOOK_LLM_MODEL_ENV),
-          budget,
-          log,
-        })
+      ? createHandbookQueryDeriver({ access, modelId, budget, log })
       : null,
-    mapper: access
-      ? createHandbookMapper({
-          access,
-          modelId: await getOptionalEnvValue(LLM_EXTRACT_MODEL_ENV),
-          budgetUsd: budget.remainingUsd,
-          cache: HandbookPageProfileRepository.forProject(
-            input.projectId,
-            input.runId,
-          ),
-          log,
-        })
+    mapper,
+    judge: access
+      ? createHandbookSerpJudge({ access, modelId, budget, mapper, log })
       : null,
   };
 }
