@@ -3,6 +3,7 @@ import { sha256Hex } from "@/server/lib/audit/ids";
 import { pageBlocks, templateBoilerplate } from "../engine/boilerplate";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
+import { scanAiAddressed } from "@/server/features/handbook/engine/ai-addressed";
 import { parseBlock } from "./jsonld-parse";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
@@ -320,6 +321,7 @@ async function fetchPage(
       ttfbMs: res.ttfbMs ?? null,
       discoveredBy,
       ...main,
+      ...(isHtml ? { aiAddressed: scanAiAddressed(res.body) } : {}),
     },
     extra: {
       jsonLdBlocks: facts?.jsonLdBlocks ?? [],

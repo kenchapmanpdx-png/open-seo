@@ -67,4 +67,8 @@
   <url><loc>{{ORIGIN}}/supp17-low-c.html</loc></url>
   <url><loc>{{ORIGIN}}/supp17-pair-a.html</loc></url>
   <url><loc>{{ORIGIN}}/supp17-pair-b.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp19-hidden.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp19-comment.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp19-visible.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp19-ai-tools-article.html</loc></url>
 </urlset>
