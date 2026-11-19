@@ -12,7 +12,8 @@ import { createResult, normalizeUrl } from "./support";
  * the raw-HTML parts run without the render sidecar:
  * - labMetricsCheck (Lighthouse): LCP ≤ 2.5 s / CLS ≤ 0.1 per run, with a
  *   per-template table of the worst mobile run; OPEN names failing templates (P7-09),
- *   CLS measured (P7-08), lab environment recorded (P7-10). CrUX → DATA (B6).
+ *   CLS measured (P7-08), lab environment + CrUX field p75 (P7-10; BLOCKED
+ *   without CRUX_API_KEY).
  * - pageWeightCheck (raw HTML + render when present): HTML weight and total
  *   page weight per rendered page (P2-05, Σ transferBytes; media bodies are
  *   aborted by the sidecar and not sized yet), render-blocking scripts and
@@ -92,6 +93,9 @@ const tplLine = (r: {
 }) =>
   `template ${r.key} — ${r.runs.length} run${r.runs.length === 1 ? "" : "s"}, worst LCP ${r.worst.lcpMs === null ? "?" : Math.round(r.worst.lcpMs)} ms (${r.worst.url})`;
 
+const fieldLine = (f: NonNullable<LighthouseData["field"]>[number]) =>
+  `${f.url ?? "origin"} ${f.formFactor}: LCP ${f.lcpMs ?? "?"} ms · CLS ${f.cls ?? "?"} · INP ${f.inpMs ?? "?"} ms`;
+
 export const labMetricsCheck: HandbookCheck = {
   id: "perf.lab-metrics",
   itemIds: ["P7-09", "P7-08", "P7-10"],
@@ -133,13 +137,25 @@ export const labMetricsCheck: HandbookCheck = {
       templates.status === "ok" ? templates.templates.length : null;
     const coverage = `${runs.length} Lighthouse runs${templateCount === null ? "" : ` over ${tplRows.length} of ${templateCount} templates`}`;
 
-    // P7-10 — environment recorded.
+    // P7-10 — lab environment + CrUX field data (FULL-READ §3.10).
     const envs = [...new Set(runs.map((p) => p.environment))];
-    out.pass(
-      "P7-10",
-      `lab: Lighthouse ${[...new Set(runs.map((p) => p.formFactor))].join(" + ")} in ${envs.join("; ")}; field data (CrUX) not queried yet (DATA, B6)`,
-      runs.slice(0, 1).map(ref),
-    );
+    const lab = `lab: Lighthouse ${[...new Set(runs.map((p) => p.formFactor))].join(" + ")} in ${envs.join("; ")}`;
+    const field = lighthouse.field;
+    if (!field) out.blocked("P7-10", `CRUX_API_KEY not set (${lab})`);
+    else if (field.length === 0)
+      out.blocked("P7-10", `CrUX API failed (${lab})`);
+    else {
+      const withData = field.filter(
+        (f) => f.lcpMs !== null || f.cls !== null || f.inpMs !== null,
+      );
+      out.pass(
+        "P7-10",
+        withData.length === 0
+          ? `${lab}; no field data (CrUX has no record for the origin or sampled pages)`
+          : `${lab}; field p75 (CrUX):\n${withData.map(fieldLine).join("\n")}`,
+        [out.evidence("crux", ctx.origin, JSON.stringify(field))],
+      );
+    }
 
     // P7-09 — LCP / CLS budgets per template; TBT recorded as INP proxy.
     const slow = runs.filter(
