@@ -97,20 +97,27 @@ export const rawCopyCheck: HandbookCheck = {
         .filter((l) => /^tel:/i.test(l.href))
         .map((l) => ({ s, href: l.href, text: l.text.trim() })),
     );
+    // Key on the national number (last 10 digits) so `tel:+14805550100`
+    // and `tel:4805550100` count as one number in two formats.
     const formats = new Map<string, Set<string>>();
     for (const t of tels) {
-      const set = formats.get(digits(t.href)) ?? new Set<string>();
-      set.add(t.text || t.href);
-      formats.set(digits(t.href), set);
+      const key = digits(t.href).slice(-10);
+      const set = formats.get(key) ?? new Set<string>();
+      set.add(`href "${t.href.replace(/^tel:/i, "")}"`);
+      // Link text counts only when it shows the number ("Call now" does not).
+      if (t.text.replace(/\D/g, "").length >= 7) set.add(`text "${t.text}"`);
+      formats.set(key, set);
     }
     const p508: { s: PageSnapshot; why: string }[] = [];
     for (const [num, shown] of formats) {
-      if (shown.size > 1) {
-        const sample = tels.find((t) => digits(t.href) === num);
+      const hrefs = [...shown].filter((x) => x.startsWith("href"));
+      const texts = [...shown].filter((x) => x.startsWith("text"));
+      if (hrefs.length > 1 || texts.length > 1) {
+        const sample = tels.find((t) => digits(t.href).slice(-10) === num);
         if (sample)
           p508.push({
             s: sample.s,
-            why: `${num} shown as ${[...shown].map((x) => `"${x}"`).join(", ")}`,
+            why: `${num} written as ${[...shown].join(", ")}`,
           });
       }
     }

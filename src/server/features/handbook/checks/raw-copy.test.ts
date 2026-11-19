@@ -44,6 +44,16 @@ describe("crawl.raw-copy", () => {
     expect(statusOf(result, "P5-08")).toBe("OPEN");
   });
 
+  it("opens P5-08 on one number in two tel: href formats", async () => {
+    const result = await run([
+      page("/", "Call us", [
+        { href: "tel:+14805550100", text: "Call now" },
+        { href: "tel:4805550100", text: "Call now" },
+      ]),
+    ]);
+    expect(statusOf(result, "P5-08")).toBe("OPEN");
+  });
+
   it("passes P5-16 on a contact page with a mailto link", async () => {
     const result = await run([
       page("/contact", "Write to us", [

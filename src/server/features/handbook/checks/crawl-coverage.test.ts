@@ -66,6 +66,15 @@ describe("crawl.coverage", () => {
     expect(statusOf(result, "P2-12")).toBe("OPEN");
   });
 
+  it("opens P2-12 when .html and extensionless page URLs mix", async () => {
+    const result = await run([
+      snapshot("/"),
+      snapshot("/pages/about.html"),
+      snapshot("/contact"),
+    ]);
+    expect(statusOf(result, "P2-12")).toBe("OPEN");
+  });
+
   it("records coverage counts and JS-only links in the P3-13 note", async () => {
     const jsOnly = { ...snapshot("/a"), discoveredBy: "render" as const };
     const result = await run([snapshot("/"), jsOnly], ["/", "/b"]);
