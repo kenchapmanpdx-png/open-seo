@@ -127,12 +127,15 @@ const SPECS: CaseSpec[] = [
     expected: "fail",
     path: /^\/$/,
   },
+  // WO-B9-017: the golden audit scores P4 "hub title 1" (pass) and the
+  // expected yaml has no P4-07 finding; /events is titled "PNW Race
+  // Calendar: Running, Trail & Triathlon | …". The B4 case said fail.
   {
     id: "why-HUB",
     site: "why",
-    golden: "§2 hub title (/events)",
+    golden: "§2 hub title (/events): golden P4 'hub title 1'",
     itemId: "P4-07",
-    expected: "fail",
+    expected: "pass",
   },
   {
     id: "ryan-F12",

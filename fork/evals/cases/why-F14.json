@@ -53,22 +53,6 @@
         "text": "Title: Corporate Wellness Programs | WHY RACING EVENTS\nMeta description: Boost morale and health at work: sponsor employee race entries, build a corporate team and compete for the Corporate Cup with WHY RACING EVENTS.\nH1: Corporate Wellness."
       },
       {
-        "url": "https://whyracingevents.com/events/ho-ho-5k",
-        "text": "Title: Ho Ho 5K in Portland, OR | WHY RACING EVENTS\nMeta description: Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026. Registration, course details and race day info.\nH1: Ho Ho 5K"
-      },
-      {
-        "url": "https://whyracingevents.com/events/bigfoot-5k-10k",
-        "text": "Title: Bigfoot 5K/10K in Yacolt, WA | WHY RACING EVENTS\nMeta description: Bigfoot 5K/10K (10K • 5K) in Yacolt, WA on Sunday, July 4, 2027. Registration, course details and race day info.\nH1: Bigfoot 5K/10K"
-      },
-      {
-        "url": "https://whyracingevents.com/pages/admin/races.html",
-        "text": "Title: Race Admin | WHY RACING EVENTS\nMeta description: Staff sign-in for WHY RACING EVENTS race management.\nH1: Race Admin Panel"
-      },
-      {
-        "url": "https://whyracingevents.com/events/scary-run",
-        "text": "Title: Scary Run: Not on the Current Race Calendar\nMeta description: Scary Run in Washougal, WA is not on the current WHY RACING EVENTS calendar. See upcoming races in Washington and Oregon.\nH1: Scary Run"
-      },
-      {
         "url": "https://whyracingevents.com/events/couve-clover-run",
         "text": "Title: Couve Clover Run in Vancouver, WA | WHY RACING EVENTS\nMeta description: Couve Clover Run (1 Mile, 3 Mile, 7 Mile, 10 Mile) in Vancouver, WA on Sunday, March 21, 2027. Registration, course details and race day info.\nH1: Couve Clover Run"
       },
@@ -85,8 +69,76 @@
         "text": "Title: Pacific Coast Running Festival in Long Beach, WA\nMeta description: Pacific Coast Running Festival (Half Marathon • 10K • 5K) in Long Beach, WA on Saturday, September 25, 2027.\nH1: Pacific Coast Running Festival"
       },
       {
+        "url": "https://whyracingevents.com/events/bigfoot-5k-10k",
+        "text": "Title: Bigfoot 5K/10K in Yacolt, WA | WHY RACING EVENTS\nMeta description: Bigfoot 5K/10K (10K • 5K) in Yacolt, WA on Sunday, July 4, 2027. Registration, course details and race day info.\nH1: Bigfoot 5K/10K"
+      },
+      {
         "url": "https://whyracingevents.com/events/santa-s-holiday-hustle-5k-dirty-santa-trail-run-10k",
         "text": "Title: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K in Camas\nMeta description: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K (5K, Dirty Santa 10K Trail Run) in Camas, WA on Saturday, December 19, 2026.\nH1: Santa's Holiday Hustle 5K & Dirty Santa Trail Run 10K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/white-river-snow-shoe",
+        "text": "Title: White River Snow Shoe in Government Camp, OR\nMeta description: White River Snow Shoe (4K, 8K) in Government Camp, OR on Sunday, January 31, 2027. Registration, course details and race day info.\nH1: White River Snow Shoe"
+      },
+      {
+        "url": "https://whyracingevents.com/events/spring-classic-duathlon-half-marathon-10k-5k",
+        "text": "Title: Spring Classic Duathlon, Half Marathon, 10K & 5K in Vancouver\nMeta description: Spring Classic Duathlon, Half Marathon, 10K & 5K (5K • 10K • Half Marathon) in Vancouver, WA on Saturday, May 1, 2027.\nH1: Spring Classic Duathlon, Half Marathon, 10K & 5K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/hagg-lake-triathlon-trail-festival",
+        "text": "Title: Hagg Lake Triathlon & Trail Festival in Gaston, OR\nMeta description: Hagg Lake Triathlon & Trail Festival (Sprint Triathlon • Olympic Triathlon • Skullman 70.3) in Gaston, OR on Saturday, August 7, 2027.\nH1: Hagg Lake Triathlon & Trail Festival"
+      },
+      {
+        "url": "https://whyracingevents.com/events/crown-stub-100",
+        "text": "Title: Crown Stub 100 in Buxton, OR | WHY RACING EVENTS\nMeta description: Crown Stub 100 (100 Mile) in Buxton, OR on Saturday, April 24, 2027. Registration, course details and race day info.\nH1: Crown Stub 100"
+      },
+      {
+        "url": "https://whyracingevents.com/events/stub-stewart-trail-challenge",
+        "text": "Title: Stub Stewart Trail Challenge in Buxton, OR\nMeta description: Stub Stewart Trail Challenge (¼ Marathon, ½ Marathon, ¾ Marathon, Marathon, Ultra (5 loops)) in Buxton, OR on Sunday, April 25, 2027.\nH1: Stub Stewart Trail Challenge"
+      },
+      {
+        "url": "https://whyracingevents.com/events/battle-to-the-pacific",
+        "text": "Title: Battle to the Pacific in Hammond, OR | WHY RACING EVENTS\nMeta description: Battle to the Pacific (5K, 15K, 20K, Ruck Challenge (35 lb), Ruck/Vest Light Weight (20 lb+)) in Hammond, OR on Saturday, November 21, 2026.\nH1: Battle to the Pacific"
+      },
+      {
+        "url": "https://whyracingevents.com/events/girlfriends-all-women-s-triathlon-fitness-festival",
+        "text": "Title: Girlfriends Triathlon & Fitness Festival in Vancouver, WA\nMeta description: Girlfriends Triathlon & Fitness Festival (Sprint Triathlon • 5K) in Vancouver, WA on Sunday, July 11, 2027. Registration, course details and race day info.\nH1: Girlfriends Triathlon & Fitness Festival"
+      },
+      {
+        "url": "https://whyracingevents.com/events/hellz-bellz-ultra",
+        "text": "Title: Hellz Bellz Ultra in Yacolt, WA | WHY RACING EVENTS\nMeta description: Hellz Bellz Ultra (50-Mile Ultra, 50K (Hellz Gate — new 2026), Trail Marathon (Purgatory)) in Yacolt, WA on Saturday, July 3, 2027.\nH1: Hellz Bellz Ultra"
+      },
+      {
+        "url": "https://whyracingevents.com/events/ho-ho-5k",
+        "text": "Title: Ho Ho 5K in Portland, OR | WHY RACING EVENTS\nMeta description: Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026. Registration, course details and race day info.\nH1: Ho Ho 5K"
+      },
+      {
+        "url": "https://whyracingevents.com/events/appletree-marathon",
+        "text": "Title: Appletree Marathon in Vancouver, WA | WHY RACING EVENTS\nMeta description: Appletree Marathon (Marathon • Half Marathon • 5K) in Vancouver, WA on Sunday, September 5, 2027. Registration, course details and race day info.\nH1: Appletree Marathon"
+      },
+      {
+        "url": "https://whyracingevents.com/events/columbia-river-triathlon-endurance-sports-festival",
+        "text": "Title: Columbia River Triathlon & Endurance Sports Festival 2027\nMeta description: Columbia River Triathlon & Endurance Sports Festival (Sprint Triathlon • Olympic Triathlon • 5K • 10K) in Vancouver, WA on Saturday, July 10, 2027.\nH1: Columbia River Triathlon & Endurance Sports Festival"
+      },
+      {
+        "url": "https://whyracingevents.com/events/silver-falls-trail-challenge",
+        "text": "Title: Silver Falls Trail Challenge in Sublimity, OR\nMeta description: Silver Falls Trail Challenge (¼ Marathon, ½ Marathon, 12-Mile Ruck) in Sublimity, OR on Saturday, March 6, 2027.\nH1: Silver Falls Trail Challenge"
+      },
+      {
+        "url": "https://whyracingevents.com/events/pdx-triathlon-festival",
+        "text": "Title: PDX Triathlon Festival in Fairview, OR | WHY RACING EVENTS\nMeta description: PDX Triathlon Festival (5K • Sprint Triathlon • Olympic Triathlon) in Fairview, OR on Sunday, June 20, 2027.\nH1: PDX Triathlon Festival"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/admin/races.html",
+        "text": "Title: Race Admin | WHY RACING EVENTS\nMeta description: Staff sign-in for WHY RACING EVENTS race management.\nH1: Race Admin Panel"
+      },
+      {
+        "url": "https://whyracingevents.com/events/scary-run",
+        "text": "Title: Scary Run: Not on the Current Race Calendar\nMeta description: Scary Run in Washougal, WA is not on the current WHY RACING EVENTS calendar. See upcoming races in Washington and Oregon.\nH1: Scary Run"
+      },
+      {
+        "url": "https://whyracingevents.com/events/reflection-run",
+        "text": "Title: Reflection Run: Not on the Current Race Calendar\nMeta description: Reflection Run in Washougal, WA is not on the current WHY RACING EVENTS calendar. See upcoming races in Washington and Oregon.\nH1: Reflection Run"
       }
     ],
     "facts": {
