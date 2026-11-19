@@ -64,4 +64,20 @@ describe("botfetch.parity", () => {
     ]);
     expect(statusOf(result, "P9-01")).toBe("PASS");
   });
+
+  it("reports an intermittent block as S2 with the per-UA rate", async () => {
+    const result = await run([
+      fetchOf("browser"),
+      fetchOf("PerplexityBot", {
+        blockedReason: "interstitial:openresty",
+        words: 9,
+      }),
+      fetchOf("PerplexityBot", { round: 2 }),
+    ]);
+    expect(statusOf(result, "P9-01")).toBe("OPEN");
+    expect(result.findings[0]?.severity).toBe("S2");
+    expect(result.findings[0]?.detail).toContain(
+      "PerplexityBot: 1 of 2 fetches (50 %)",
+    );
+  });
 });

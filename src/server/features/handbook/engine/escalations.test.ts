@@ -135,4 +135,36 @@ describe("collectEscalations", () => {
       ["page-weight-over-5mb", [href("/fade/three")]],
     ]);
   });
+
+  it("reports the bot-parity escalation with its plain-HTTP probes and stopped UAs", () => {
+    const fetch = (bot: "browser" | "ClaudeBot", status: number) => ({
+      url: href("/fade/one"),
+      bot,
+      status,
+      finalUrl: href("/fade/one"),
+      bytes: 100,
+      words: 50,
+      bodySha256: "a",
+      blockedReason: status === 403 ? "HTTP 403" : null,
+    });
+    const data = {
+      ...collected([]),
+      botFetch: {
+        status: "ok" as const,
+        fetches: [fetch("browser", 200), fetch("ClaudeBot", 403)],
+      },
+    };
+    const escalation = collectEscalations(data).find(
+      (e) => e.trigger === "bot-parity",
+    );
+    expect(escalation?.because).toContain("ClaudeBot got HTTP 403");
+    expect(escalation?.urls).toEqual([
+      ...["/fade/one", "/fade/two", "/fade/three"].map(href),
+      "http://example.com/fade/one",
+      "http://example.com/fade/two",
+      "http://example.com/fade/three",
+    ]);
+    // No round-2 fetches recorded → every bot counts as stopped.
+    expect(escalation?.capped).toBe(true);
+  });
 });

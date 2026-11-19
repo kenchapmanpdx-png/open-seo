@@ -194,6 +194,16 @@ async function main() {
       );
       if (beacon && !aborted) process.exitCode = 1;
     }
+    // WO-B9-009: the challenged /gate/challenge.html probe must escalate bot parity.
+    const botParity = report.escalations?.find(
+      (e) => e.trigger === "bot-parity",
+    );
+    console.log(
+      botParity
+        ? `bot-parity escalation: ${botParity.urls.length} URLs because ${botParity.because}`
+        : "bot-parity escalation: NOT fired",
+    );
+    if (!botParity) process.exitCode = 1;
     if ((missing > 0 || unexpected > 0) && !values["report-only"])
       process.exitCode = 1;
   } finally {

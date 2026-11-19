@@ -3,8 +3,8 @@ import type {
   CollectorKey,
 } from "@/server/features/handbook/contracts/collectors";
 import { createCrawlCollectors, type CrawlOptions } from "./site-crawl";
+import { botFetchCollector } from "./bot-fetch";
 import {
-  botFetchCollector,
   llmsCollector,
   robotsCollector,
   sitemapCollector,

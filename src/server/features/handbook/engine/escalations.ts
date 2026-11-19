@@ -1,5 +1,9 @@
 import { sort } from "remeda";
-import type { CollectedData } from "@/server/features/handbook/contracts/collectors";
+import type {
+  BotFetchData,
+  BotName,
+  CollectedData,
+} from "@/server/features/handbook/contracts/collectors";
 import type {
   Escalation,
   HandbookDepth,
@@ -162,6 +166,91 @@ function actedOn(
   return { urls, capped: urls.length < tpl.urls.length };
 }
 
+/** Bot-parity escalation (FULL-READ §4 row 1, ADR-021). */
+export const BOT_PARITY_BOTS = [
+  "Googlebot",
+  "Bingbot",
+  "OAI-SearchBot",
+  "PerplexityBot",
+  "ClaudeBot",
+] as const satisfies readonly BotName[];
+const BOT_PARITY_MAX_PAGES = 200;
+const BOT_PARITY_HTTP_PROBES = 10;
+/** A UA stops after this many blocked fetches in a row. */
+export const BOT_PARITY_STOP_AFTER = 5;
+/** Minimum gap between two escalation requests to the site. */
+export const BOT_PARITY_GAP_MS = 300;
+
+type BotFetch = BotFetchData["fetches"][number];
+
+/**
+ * Why the 8-URL bot probe escalates, or null: a bot UA got a block (HTTP
+ * 403/429/503 or an interstitial), or a 200 body whose sha256 differs from
+ * the browser's. A hash differing is only counted when every browser fetch
+ * of that URL agrees: a page whose own body changes between two browser
+ * fetches (nonces, timestamps) says nothing about bot treatment.
+ */
+export function botParityTrigger(fetches: readonly BotFetch[]): string | null {
+  const browserHashes = new Map<string, Set<string>>();
+  for (const f of fetches) {
+    if (f.bot !== "browser" || f.status !== 200) continue;
+    const set = browserHashes.get(f.url) ?? new Set<string>();
+    set.add(f.bodySha256);
+    browserHashes.set(f.url, set);
+  }
+  for (const f of fetches) {
+    if (f.bot === "browser") continue;
+    if (f.blockedReason) return `${f.bot} got ${f.blockedReason} on ${f.url}`;
+    const hashes = browserHashes.get(f.url);
+    if (f.status === 200 && hashes?.size === 1 && !hashes.has(f.bodySha256))
+      return `${f.bot} body sha256 differs from the browser's on ${f.url}`;
+  }
+  return null;
+}
+
+/**
+ * Pages for the escalated bot-parity pass: every template's pages taken
+ * round-robin (so a cut at 200 keeps each template represented), plus the
+ * first 10 of them over plain HTTP when the site is on HTTPS.
+ */
+export function botParityPlan(collected: Partial<CollectedData>): {
+  urls: string[];
+  httpUrls: string[];
+  truncated: boolean;
+} {
+  const lists = templatesOf(collected).map((t) => t.urls);
+  if (lists.length === 0 && collected.pages?.status === "ok")
+    lists.push(
+      collected.pages.snapshots
+        .filter((s) => s.status === 200)
+        .map((s) => s.url),
+    );
+  const seen = new Set<string>();
+  const all: string[] = [];
+  const longest = Math.max(0, ...lists.map((l) => l.length));
+  for (let i = 0; i < longest; i += 1) {
+    for (const url of lists.flatMap((l) => (i < l.length ? [l[i]] : []))) {
+      if (!url || seen.has(normalizeUrl(url))) continue;
+      seen.add(normalizeUrl(url));
+      all.push(url);
+    }
+  }
+  const urls = all.slice(0, BOT_PARITY_MAX_PAGES);
+  const httpUrls = urls
+    .filter((u) => u.startsWith("https:"))
+    .slice(0, BOT_PARITY_HTTP_PROBES)
+    .map((u) => `http:${u.slice("https:".length)}`);
+  return { urls, httpUrls, truncated: all.length > urls.length };
+}
+
+/** Bots whose round-2 pass did not reach every planned URL (stopped). */
+function stoppedBots(fetches: readonly BotFetch[], planned: number) {
+  return BOT_PARITY_BOTS.filter(
+    (bot) =>
+      fetches.filter((f) => f.bot === bot && f.round === 2).length < planned,
+  );
+}
+
 const ESCALATION_RULES: readonly EscalationRule[] = [
   {
     // RenderData has no JS-off opacity count (contracts 1.5.1), so the rank-1
@@ -232,6 +321,33 @@ const ESCALATION_RULES: readonly EscalationRule[] = [
       depth === "full"
         ? lighthouseEscalations(collected, baseRunsOf(collected)).heavy
         : [],
+  },
+  {
+    // The bot-fetch collector runs the escalation itself (it owns the
+    // fetches); this rule recomputes trigger + plan to report it.
+    trigger: "bot-parity",
+    action:
+      "bot parity on all pages × 5 bots × 2 rounds + plain-HTTP probe on 10 URLs",
+    cap: null,
+    fire(collected) {
+      const botFetch = collected.botFetch;
+      if (botFetch.status !== "ok") return [];
+      const because = botParityTrigger(botFetch.fetches);
+      if (!because) return [];
+      const plan = botParityPlan(collected);
+      const urls = [...plan.urls, ...plan.httpUrls];
+      const stopped = stoppedBots(botFetch.fetches, urls.length);
+      return [
+        {
+          because:
+            stopped.length > 0
+              ? `${because}; stopped early (${BOT_PARITY_STOP_AFTER} blocks in a row or HTTP 429): ${stopped.join(", ")}`
+              : because,
+          urls,
+          capped: plan.truncated || stopped.length > 0,
+        },
+      ];
+    },
   },
 ];
 
