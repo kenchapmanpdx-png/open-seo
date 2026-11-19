@@ -9,7 +9,7 @@
 
 Failing tests on the clean checkout: none.
 
-## Current (B12 run 65, 2026-11-19, `ken/main` on upstream v0.1.30)
+## Current (B12 run 66, 2026-11-19, `ken/main` on upstream v0.1.30)
 
 | Check                                      | Result                                  |
 | ------------------------------------------ | --------------------------------------- |
