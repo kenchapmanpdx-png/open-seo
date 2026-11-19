@@ -28,7 +28,7 @@ import { LlmBudgetError } from "../llm/judge";
 import type { PageMapper } from "../llm/map";
 import { collectRunUnit, stageFactMap, stageProfiles } from "./map-stage";
 import { checkerReproduction } from "./checker-reproduction";
-import { appliesWithSupp, SUPP_BY_ID } from "../registry-supp";
+import { appliesWithSupp } from "../registry-supp";
 import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
 import { evidenceKey, factMapEvidence, materialize } from "./evidence";
@@ -36,6 +36,8 @@ import { runCopyQuality } from "./copy-quality";
 import { scaledContentEvidence } from "./scaled-summary";
 import { applyScaledPrecedence } from "../checks/supp-scaled";
 import type { CopyQuality, RunOptions } from "../contracts/scaled-copy";
+import { serpForRun, type SerpDeps } from "../llm/serp-originality-collect";
+import { contractViolation } from "./contract-violation";
 import {
   completeCollected,
   createMemoryStageStore,
@@ -77,6 +79,8 @@ export type RunInput = {
   budget?: RunBudget | null;
   /** Per-run options (SCALED-COPY §6); absent = off. */
   options?: Partial<RunOptions>;
+  /** SUPP-18 lookups, queries, competitor profiles (ADR-024); absent → BLOCKED `dataforseo credit`. */
+  serp?: SerpDeps | null;
 };
 
 export type EvidenceRow = {
@@ -195,6 +199,8 @@ export async function evaluateRun(
     verdicts.set(itemId, list);
   };
 
+  const serp = await serpForRun(input, runtime, collected, pageProfiles);
+
   const applies = appliesWithSupp(intake.applicable);
   let llmBlocked: string | null = input.judge ? null : "no llm key";
   for (const check of input.checks) {
@@ -232,6 +238,7 @@ export async function evaluateRun(
       collected,
       ...(pageProfiles ? { pageProfiles } : {}),
       ...(siteFactMap ? { siteFactMap } : {}),
+      ...(serp ? { serpOriginality: serp } : {}),
       ...(check.class === "LLM" && input.judge ? { judge: input.judge } : {}),
       fetchOffsite: cappedFetch(runtime.fetchOffsite, CHECK_OFFSITE_FETCHES),
     };
@@ -362,41 +369,6 @@ export function collectorContext(
       return (await runtime.store.put(key, bytes, contentType)).key;
     },
   };
-}
-
-function contractViolation(
-  check: HandbookCheck,
-  result: CheckResult,
-  registry: ReadonlyMap<string, RegistryEntry>,
-): string | null {
-  const refs = new Set(result.evidence.map((e) => e.ref));
-  const owned = new Set(check.itemIds);
-  for (const v of result.statuses) {
-    if (!owned.has(v.itemId)) return `verdict for foreign item ${v.itemId}`;
-    if (v.status === "PASS" && !v.evidenceRefs.some((r) => refs.has(r))) {
-      return `PASS on ${v.itemId} without evidence`;
-    }
-  }
-  for (const f of result.findings) {
-    if (f.itemIds.length === 0 || f.itemIds.some((id) => !owned.has(id))) {
-      return `finding "${f.title}" cites items outside the check`;
-    }
-    if (!f.evidenceRefs.some((r) => refs.has(r)))
-      return `finding "${f.title}" without evidence`;
-    const id = f.itemIds[0] ?? "";
-    const primary = registry.get(id) ?? SUPP_BY_ID.get(id);
-    if (
-      primary &&
-      f.severity !== primary.severityDefault &&
-      !f.severityReason
-    ) {
-      return `finding "${f.title}" changes severity without a reason`;
-    }
-    if (f.fixability === "LIMITED" && !f.limitedReason) {
-      return `LIMITED finding "${f.title}" without limitedReason`;
-    }
-  }
-  return null;
 }
 
 function reconcile(

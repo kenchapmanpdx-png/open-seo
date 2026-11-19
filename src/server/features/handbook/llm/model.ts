@@ -11,6 +11,11 @@ import {
 import { LLM_EXTRACT_DEFAULT_MODEL } from "@/server/features/handbook/contracts/page-profile";
 import { createPageMapper, type PageMapper, type ProfileCache } from "./map";
 import { RUBRICS } from "./rubrics";
+import {
+  createQueryDeriver,
+  type QueryDeriver,
+  type SerpBudget,
+} from "./serp-originality-deps";
 
 /**
  * OpenRouter wiring for the K5 judge (ADR-007). The handbook has its own
@@ -143,6 +148,22 @@ export function createHandbookMapper(options: {
     price: modelPrice(modelId),
     budgetUsd: options.budgetUsd,
     cache: options.cache,
+    log: options.log,
+  });
+}
+
+/** SUPP-18 query deriver on the judge model (`HANDBOOK_LLM_MODEL`), charged to the SUPP-18 budget. */
+export function createHandbookQueryDeriver(options: {
+  access: OpenRouterAccess;
+  modelId?: string;
+  budget: SerpBudget;
+  log?: (event: string, fields: Record<string, unknown>) => void;
+}): QueryDeriver {
+  const modelId = options.modelId || DEFAULT_MODEL;
+  return createQueryDeriver({
+    model: createHandbookModel(options.access, modelId),
+    price: modelPrice(modelId),
+    budget: options.budget,
     log: options.log,
   });
 }
