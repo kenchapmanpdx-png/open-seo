@@ -40,7 +40,7 @@ export function mainText(s: PageSnapshot, chars: number): string {
 }
 
 /** Head-line items (P4-02, P4-07) read every page in one call; cap keeps the prompt bounded. */
-export const MAX_HEAD_LINE_PAGES = 300;
+const MAX_HEAD_LINE_PAGES = 300;
 
 /** Every page's title, meta description and H1 (P4-02 / P4-07 full read). */
 export function headLineViews(pages: readonly PageSnapshot[]): View[] {
@@ -160,7 +160,7 @@ export function awardViews(ctx: CheckContext, map: SiteFactMap): View[] {
   });
 }
 
-export type DetailGroup = {
+type DetailGroup = {
   pattern: string;
   pages: readonly PageSnapshot[];
   ratios: readonly number[];
