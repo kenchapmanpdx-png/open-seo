@@ -115,6 +115,12 @@ function textBlocks(html: string): string[] {
   return [...blocks];
 }
 
+/** A block that is only a countdown: numbers with time units ("1d 12h 23m", "02 days : 11 hrs"). */
+const COUNTDOWN =
+  /^(?:\d+\s*(?:d|days?|h|hrs?|hours?|m|mins?|minutes?|s|secs?|seconds?)\b[\s:,]*)+$/i;
+
+const numberShape = (block: string) => block.replace(/\d[\d,.]*/g, "#");
+
 const fileName = (src: string): string => {
   if (src.startsWith("data:")) return "";
   try {
@@ -137,9 +143,18 @@ function pageText(
 ): string {
   const rawBlocks = rawHtml ? textBlocks(rawHtml) : [page.markup.text];
   const rawSet = new Set(rawBlocks);
+  // A rendered block that differs from a raw block only in its numbers is a
+  // count-up counter caught mid-animation: the raw value stands (numeric
+  // parity reports raw vs rendered numbers). A countdown ("1d 12h 23m")
+  // changes every render. Both are dropped so the input hash stays stable.
+  const rawShapes = new Set(rawBlocks.map(numberShape));
   const renderedOnly = renderedHtml
     ? textBlocks(renderedHtml).filter(
-        (b) => !rawSet.has(b) && !boilerplate.has(b),
+        (b) =>
+          !rawSet.has(b) &&
+          !boilerplate.has(b) &&
+          !rawShapes.has(numberShape(b)) &&
+          !COUNTDOWN.test(b),
       )
     : [];
   const images = new Set<string>();

@@ -178,4 +178,32 @@ describe("buildMapJobs", () => {
       "Open Tuesday to Saturday.",
     ]);
   });
+
+  it("keeps the raw value of a mid-animation counter and drops a countdown", async () => {
+    const page = {
+      ...snapshot("/about"),
+      rawKey: "raw",
+    };
+    const html = (n: string) =>
+      `<div><span>${n}</span> <span>Donated to Charity</span></div><p>New since launch: 4 races.</p>`;
+    const bodies: Record<string, string> = {
+      raw: html("$3,000,000+"),
+      rendered: `${html("$975,000+")}<p>1d 12h 23m</p><p>Join 12 clubs.</p>`,
+    };
+    const jobs = await buildMapJobs(
+      {
+        pages: { status: "ok", snapshots: [page] },
+        render: {
+          status: "ok",
+          pages: [{ url: page.url, js: { renderedKey: "rendered" } }],
+        } as unknown as CollectedData["render"],
+      },
+      async (key) => new TextEncoder().encode(bodies[key] ?? ""),
+    );
+    expect(jobs[0]?.text.split("\n").slice(6)).toEqual([
+      "$3,000,000+ Donated to Charity",
+      "New since launch: 4 races.",
+      "[rendered-only] Join 12 clubs.",
+    ]);
+  });
 });
