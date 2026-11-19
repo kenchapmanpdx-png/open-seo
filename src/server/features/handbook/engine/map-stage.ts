@@ -49,21 +49,25 @@ async function runMapStage(
   if (!mapper) return {};
   input.budget?.setPages(pagesRead(prior));
   const jobs = await buildMapJobs(prior, (key) => runtime.store.get(key));
-  const profiles: PageProfile[] = [];
+  // Indexed by job, not completion order: the judge views are built from
+  // this list, and a stable order keeps their prompts (and cache keys) stable.
+  const byJob: Array<PageProfile | undefined> = [];
   const counts = { cached: 0, budget: 0, credits: 0, schema: 0, error: 0 };
   let next = 0;
   const worker = async () => {
     while (next < jobs.length) {
-      const job = jobs[next++];
+      const index = next++;
+      const job = jobs[index];
       if (!job) continue;
       const outcome = await mapper.profile(job);
       if (outcome.profile) {
-        profiles.push(outcome.profile);
+        byJob[index] = outcome.profile;
         if (outcome.cached) counts.cached += 1;
       } else counts[outcome.reason] += 1;
     }
   };
   await Promise.all(Array.from({ length: MAP_CONCURRENCY }, worker));
+  const profiles = byJob.filter((p): p is PageProfile => p !== undefined);
   runtime.log("handbook.map", {
     model: mapper.modelId,
     jobs: jobs.length,
