@@ -1,6 +1,7 @@
 import { sort } from "remeda";
 import { sha256Hex } from "@/server/lib/audit/ids";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
+import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
 import { parseBlock } from "./jsonld-parse";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
@@ -286,6 +287,8 @@ async function fetchPage(
   const contentType = header("content-type");
   const isHtml = contentType ? HTML_TYPE.test(contentType) : true;
   const facts = isHtml ? extractHtmlFacts(res.body, res.finalUrl) : null;
+  // Main words, MinHash and in-page repeated blocks (FULL-READ §3.5).
+  const main = isHtml ? mainTextFacts(res.body) : null;
   const bytes = new TextEncoder().encode(res.body);
   const rawKey = isHtml
     ? await ctx.storeBody("rawHtml", res.finalUrl, bytes, "text/html")
@@ -307,6 +310,7 @@ async function fetchPage(
       markup: facts?.markup ?? emptyMarkup(),
       headers: keptHeaders(res.headers),
       discoveredBy,
+      ...main,
     },
     extra: {
       jsonLdBlocks: facts?.jsonLdBlocks ?? [],

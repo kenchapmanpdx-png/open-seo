@@ -7,6 +7,7 @@ import { botParityCheck } from "./bot-parity";
 import { cachePolicyCheck } from "./cache-policy";
 import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
+import { duplicatesCheck } from "./duplicates";
 import { headTagsCheck } from "./head-tags";
 import { interstitialCheck } from "./interstitial";
 import { aiBotPolicyCheck } from "./ai-bot-policy";
@@ -53,6 +54,7 @@ import { urlVariantsCheck } from "./url-variants";
 export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   robotsGroupsCheck,
   urlInventoryCheck,
+  duplicatesCheck,
   securityHeadersCheck,
   jsonLdIntegrityCheck,
   botParityCheck,

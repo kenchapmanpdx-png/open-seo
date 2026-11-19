@@ -38,4 +38,9 @@
   <url><loc>{{ORIGIN}}/low-contrast.html</loc></url>
   <url><loc>{{ORIGIN}}/heavy.html</loc></url>
   <url><loc>{{ORIGIN}}/beacon.html</loc></url>
+  <url><loc>{{ORIGIN}}/counter.html</loc></url>
+  <url><loc>{{ORIGIN}}/countdown-ok.html</loc></url>
+  <url><loc>{{ORIGIN}}/twin-a.html</loc></url>
+  <url><loc>{{ORIGIN}}/twin-b.html</loc></url>
+  <url><loc>{{ORIGIN}}/repeat-block.html</loc></url>
 </urlset>
