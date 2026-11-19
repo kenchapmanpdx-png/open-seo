@@ -10,7 +10,7 @@
     "pages": [
       {
         "url": "https://whyracingevents.com/",
-        "text": "Meta description: Join the Pacific Northwest's most supportive racing community. Discover 20+ premier marathons, half marathons, trail runs, and triathlons. What's your WHY?\nFrom your first 5K to your 50th triathlon, join the Pacific Northwest's most supportive triathlon and racing community.\nFilter by Distance All Events 5K 10K Half Marathon Marathon Ultra (25K+) Trail Run Triathlon No Events Found Try selecting different distance filters above."
+        "text": "Meta description: Join the Pacific Northwest's most supportive racing community. Discover 20+ premier marathons, half marathons, trail runs, and triathlons. What's your WHY?\nFrom your first 5K to your 50th triathlon, join the Pacific Northwest's most supportive triathlon and racing community.\nFilter by Distance All Events 5K 10K Half Marathon Marathon Ultra (25K+) Trail Run Triathlon No Events Found Try selecting different distance filters above.\n\nConflicting values found by extraction (verbatim):\n- 20+ Premier PNW Events"
       },
       {
         "url": "https://whyracingevents.com/events",
@@ -18,7 +18,7 @@
       },
       {
         "url": "https://whyracingevents.com/pages/about.html",
-        "text": "Meta description: Meet WHY RACING EVENTS, the premier race production team in the Pacific Northwest. Discover our mission, meet our team, and register for your next event!\nProud Partners $3,000,000+ Donated to Charity 50,000+ Athletes Served 21 Annual Events 2014 Year Founded What's Your WHY?\nRead full story I began trail running in my 30’s and drifted to triathlons when I “grew up.” My love for being in the outdoors in a variety of conditions and sports culminated in beginning to work for WHY RACING EVENTS."
+        "text": "Meta description: Meet WHY RACING EVENTS, the premier race production team in the Pacific Northwest. Discover our mission, meet our team, and register for your next event!\nProud Partners $3,000,000+ Donated to Charity 50,000+ Athletes Served 21 Annual Events 2014 Year Founded What's Your WHY?\nRead full story I began trail running in my 30’s and drifted to triathlons when I “grew up.” My love for being in the outdoors in a variety of conditions and sports culminated in beginning to work for WHY RACING EVENTS.\n\nConflicting values found by extraction (verbatim):\n- Proud Partners $3,000,000+ Donated to Charity 50,000+ Athletes Served 21 Annual Events 2014 Year Founded What's Your WHY? Some of us race to get f\n- 21 Annual Events"
       },
       {
         "url": "https://whyracingevents.com/pages/training.html",
@@ -30,7 +30,7 @@
       },
       {
         "url": "https://whyracingevents.com/pages/partners.html",
-        "text": "Meta description: Reach 50,000+ active PNW consumers through WHY RACING EVENTS sponsorships: marathon, triathlon, 5K and duathlon packages with measurable ROI.\n50k+ Active Participants 14 Regional Events $112k Avg.\nHousehold Income 79% College Educated A High-Value Audience Our athletes aren't just active.\nYear-Round Scale With 14 events, we offer a full-year marketing calendar with a single contract.\nStop negotiating 20 tiny deals."
+        "text": "Meta description: Reach 50,000+ active PNW consumers through WHY RACING EVENTS sponsorships: marathon, triathlon, 5K and duathlon packages with measurable ROI.\n50k+ Active Participants 14 Regional Events $112k Avg.\nHousehold Income 79% College Educated A High-Value Audience Our athletes aren't just active.\nYear-Round Scale With 14 events, we offer a full-year marketing calendar with a single contract.\nStop negotiating 20 tiny deals.\n\nConflicting values found by extraction (verbatim):\n- 50k+ Active Participants 14 Regional Events $112k Avg.\n- Year-Round Scale With 14 events, we offer a full-year marketing calendar with a single cont\n- 14 Regional Events"
       },
       {
         "url": "https://whyracingevents.com/pages/community.html",
@@ -46,11 +46,11 @@
       },
       {
         "url": "https://whyracingevents.com/events/couve-clover-run",
-        "text": "Meta description: Couve Clover Run (1 Mile, 3 Mile, 7 Mile, 10 Mile) in Vancouver, WA on Sunday, March 21, 2027. Registration, course details and race day info.\nRegister Now About Couve Clover Run Join us for the 11th Annual Couve Clover Run and celebrate in your festive green while running or walking 3, 7 or 10 miles along an extremely fast and scenic course to support local charities!\nRace Day Details Date Sunday, March 21, 2027 Location Vancouver Waterfront Park Distances 1 Mile, 3 Mile, 7 Mile, 10 Mile Race Type Running Registration Open Frequently Asked Questions What is the refund policy?\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+        "text": "Meta description: Couve Clover Run (1 Mile, 3 Mile, 7 Mile, 10 Mile) in Vancouver, WA on Sunday, March 21, 2027. Registration, course details and race day info.\nRegister Now About Couve Clover Run Join us for the 11th Annual Couve Clover Run and celebrate in your festive green while running or walking 3, 7 or 10 miles along an extremely fast and scenic course to support local charities!\nRace Day Details Date Sunday, March 21, 2027 Location Vancouver Waterfront Park Distances 1 Mile, 3 Mile, 7 Mile, 10 Mile Race Type Running Registration Open Frequently Asked Questions What is the refund policy?\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- Join us for the 11th Annual Couve Clover Run"
       },
       {
         "url": "https://whyracingevents.com/events/girlfriends-half-marathon-10k-6k",
-        "text": "Meta description: Girlfriends Half Marathon, 10K & 6K (6K • 10K • Half Marathon) in Vancouver, WA on Sunday, October 10, 2027.\nRegister Now About Girlfriends Half Marathon, 10K & 6K The Girlfriends Run is a half marathon, 10K and 6K on the Vancouver Waterfront, starting at 695 Waterfront Way.\nA 6K walk is offered, and virtual 6K, 10K and half marathon options let you take part from anywhere.\nTogether, the Girlfriends and the Pink Brigade have raised over $900,000.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+        "text": "Meta description: Girlfriends Half Marathon, 10K & 6K (6K • 10K • Half Marathon) in Vancouver, WA on Sunday, October 10, 2027.\nRegister Now About Girlfriends Half Marathon, 10K & 6K The Girlfriends Run is a half marathon, 10K and 6K on the Vancouver Waterfront, starting at 695 Waterfront Way.\nA 6K walk is offered, and virtual 6K, 10K and half marathon options let you take part from anywhere.\nTogether, the Girlfriends and the Pink Brigade have raised over $900,000.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- 10K: 6.2 miles"
       },
       {
         "url": "https://whyracingevents.com/events/resolution-run",
@@ -58,7 +58,7 @@
       },
       {
         "url": "https://whyracingevents.com/events/pacific-coast-running-festival",
-        "text": "Meta description: Pacific Coast Running Festival (Half Marathon • 10K • 5K) in Long Beach, WA on Saturday, September 25, 2027.\nRegister Now About Pacific Coast Running Festival The Pacific Coast Running Festival has something for the whole family including Sand Marathon, Half Marathon, 5K, 10K, Kids Dashes, and Tour de Pacific Bike!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+        "text": "Meta description: Pacific Coast Running Festival (Half Marathon • 10K • 5K) in Long Beach, WA on Saturday, September 25, 2027.\nRegister Now About Pacific Coast Running Festival The Pacific Coast Running Festival has something for the whole family including Sand Marathon, Half Marathon, 5K, 10K, Kids Dashes, and Tour de Pacific Bike!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- 10K: 10 km\n- 5K: 5 km"
       },
       {
         "url": "https://whyracingevents.com/events/bigfoot-5k-10k",
@@ -70,19 +70,19 @@
       },
       {
         "url": "https://whyracingevents.com/events/white-river-snow-shoe",
-        "text": "Meta description: White River Snow Shoe (4K, 8K) in Government Camp, OR on Sunday, January 31, 2027. Registration, course details and race day info.\nHood Meadows on Highway 35.\nChoose the 4K, one loop through the upper White River canyon, or the 8K, two loops of the same course."
+        "text": "Meta description: White River Snow Shoe (4K, 8K) in Government Camp, OR on Sunday, January 31, 2027. Registration, course details and race day info.\nHood Meadows on Highway 35.\nChoose the 4K, one loop through the upper White River canyon, or the 8K, two loops of the same course.\n\nConflicting values found by extraction (verbatim):\n- Distances 4K, 8K"
       },
       {
         "url": "https://whyracingevents.com/events/spring-classic-duathlon-half-marathon-10k-5k",
-        "text": "Meta description: Spring Classic Duathlon, Half Marathon, 10K & 5K (5K • 10K • Half Marathon) in Vancouver, WA on Saturday, May 1, 2027.\nRegister Now About Spring Classic Duathlon, Half Marathon, 10K & 5K Dust off the cob-webs and start the multi-sport racing season with the 41st Annual Spring Classic!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+        "text": "Meta description: Spring Classic Duathlon, Half Marathon, 10K & 5K (5K • 10K • Half Marathon) in Vancouver, WA on Saturday, May 1, 2027.\nRegister Now About Spring Classic Duathlon, Half Marathon, 10K & 5K Dust off the cob-webs and start the multi-sport racing season with the 41st Annual Spring Classic!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- with the 41st Annual Spring Classic!\n- 10K: 10 km\n- 5K: 5 km"
       },
       {
         "url": "https://whyracingevents.com/events/hagg-lake-triathlon-trail-festival",
-        "text": "Meta description: Hagg Lake Triathlon & Trail Festival (Sprint Triathlon • Olympic Triathlon • Skullman 70.3) in Gaston, OR on Saturday, August 7, 2027.\nRegister Now About Hagg Lake Triathlon & Trail Festival Come race at the 45th Annual Hagg Lake Triathlon & Trail Festival!\nNow offering Off-Road Triathlon (USAT Cross Triathlon Nationals), Paddle Triathlon, Trail Half Marathon, and Trail 5K.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+        "text": "Meta description: Hagg Lake Triathlon & Trail Festival (Sprint Triathlon • Olympic Triathlon • Skullman 70.3) in Gaston, OR on Saturday, August 7, 2027.\nRegister Now About Hagg Lake Triathlon & Trail Festival Come race at the 45th Annual Hagg Lake Triathlon & Trail Festival!\nNow offering Off-Road Triathlon (USAT Cross Triathlon Nationals), Paddle Triathlon, Trail Half Marathon, and Trail 5K.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- Sprint Triathlon: 27.75 km"
       },
       {
         "url": "https://whyracingevents.com/events/crown-stub-100",
-        "text": "Meta description: Crown Stub 100 (100 Mile) in Buxton, OR on Saturday, April 24, 2027. Registration, course details and race day info.\nRegister Now About Crown Stub 100 Crown Stub 100 is Bivouac Racing ' s 100-mile ultramarathon based at Stub Stewart State Park near Buxton, Oregon, with over 7,000 feet of climbing.\nThe first leg heads north on the Banks-Vernonia State Trail, around Vernonia Lake, then east on the Crown Zellerbach Trail for roughly 20 miles, turning before Scappoose.\nAfter passing back through the park, runners head about 10 miles south on the Banks-Vernonia Trail to Banks and back, then finish with one 6.5-mile loop of the Stub Stewart Trail Challenge course.\nExpect mostly asphalt on the Banks-Vernonia Trail, mostly hard-packed gravel on the Crown Zellerbach Trail, and about 10 percent dirt trail inside the park.\n100-mile finishers earn a buckle.\nThe 100 starts at noon and the relay at 2 PM."
+        "text": "Meta description: Crown Stub 100 (100 Mile) in Buxton, OR on Saturday, April 24, 2027. Registration, course details and race day info.\nRegister Now About Crown Stub 100 Crown Stub 100 is Bivouac Racing ' s 100-mile ultramarathon based at Stub Stewart State Park near Buxton, Oregon, with over 7,000 feet of climbing.\nThe first leg heads north on the Banks-Vernonia State Trail, around Vernonia Lake, then east on the Crown Zellerbach Trail for roughly 20 miles, turning before Scappoose.\nAfter passing back through the park, runners head about 10 miles south on the Banks-Vernonia Trail to Banks and back, then finish with one 6.5-mile loop of the Stub Stewart Trail Challenge course.\nExpect mostly asphalt on the Banks-Vernonia Trail, mostly hard-packed gravel on the Crown Zellerbach Trail, and about 10 percent dirt trail inside the park.\n100-mile finishers earn a buckle.\nThe 100 starts at noon and the relay at 2 PM.\n\nConflicting values found by extraction (verbatim):\n- 100 Mile: 100 miles\n- then east on the Crown Zellerbach Trail for roughly 20 miles\n- runners head about 10 miles south on the Banks-Vernonia Trail"
       },
       {
         "url": "https://whyracingevents.com/events/stub-stewart-trail-challenge",
@@ -94,11 +94,35 @@
       },
       {
         "url": "https://whyracingevents.com/events/girlfriends-all-women-s-triathlon-fitness-festival",
-        "text": "Meta description: Girlfriends Triathlon & Fitness Festival (Sprint Triathlon • 5K) in Vancouver, WA on Sunday, July 11, 2027. Registration, course details and race day info.\nRegister Now About Girlfriends Triathlon & Fitness Festival The 30th Annual Girlfriends All-Women ' s Triathlon & Fitness Festival offers something for everyone - Sprint Triathlon, Duathlon & AquaBike, Relay teams and 5km run.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event."
+        "text": "Meta description: Girlfriends Triathlon & Fitness Festival (Sprint Triathlon • 5K) in Vancouver, WA on Sunday, July 11, 2027. Registration, course details and race day info.\nRegister Now About Girlfriends Triathlon & Fitness Festival The 30th Annual Girlfriends All-Women ' s Triathlon & Fitness Festival offers something for everyone - Sprint Triathlon, Duathlon & AquaBike, Relay teams and 5km run.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- 5K: 3.1 miles\n- Sprint Triathlon: 20 km"
       },
       {
         "url": "https://whyracingevents.com/events/hellz-bellz-ultra",
-        "text": "Meta description: Hellz Bellz Ultra (50-Mile Ultra, 50K (Hellz Gate — new 2026), Trail Marathon (Purgatory)) in Yacolt, WA on Saturday, July 3, 2027."
+        "text": "Meta description: Hellz Bellz Ultra (50-Mile Ultra, 50K (Hellz Gate — new 2026), Trail Marathon (Purgatory)) in Yacolt, WA on Saturday, July 3, 2027.\n\nConflicting values found by extraction (verbatim):\n- 50-Mile Ultra"
+      },
+      {
+        "url": "https://whyracingevents.com/events/ho-ho-5k",
+        "text": "Meta description: Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026. Registration, course details and race day info.\nRegister Now About Ho Ho 5K The Ho Ho 5K is a holiday 5K run and walk hosted by X-Dog Adventures at Cook Park, 17005 SW 92nd Ave, Portland, OR.\n\nConflicting values found by extraction (verbatim):\n- Ho Ho 5K (5k) in Portland, OR on Sunday, December 6, 2026."
+      },
+      {
+        "url": "https://whyracingevents.com/events/appletree-marathon",
+        "text": "Meta description: Appletree Marathon (Marathon • Half Marathon • 5K) in Vancouver, WA on Sunday, September 5, 2027. Registration, course details and race day info.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- 5K: 3.1 miles"
+      },
+      {
+        "url": "https://whyracingevents.com/events/columbia-river-triathlon-endurance-sports-festival",
+        "text": "Meta description: Columbia River Triathlon & Endurance Sports Festival (Sprint Triathlon • Olympic Triathlon • 5K • 10K) in Vancouver, WA on Saturday, July 10, 2027.\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- 10K: 6.2 miles\n- 5K: 3.1 miles\n- Sprint Triathlon: 20 km"
+      },
+      {
+        "url": "https://whyracingevents.com/events/silver-falls-trail-challenge",
+        "text": "Meta description: Silver Falls Trail Challenge (¼ Marathon, ½ Marathon, 12-Mile Ruck) in Sublimity, OR on Saturday, March 6, 2027."
+      },
+      {
+        "url": "https://whyracingevents.com/events/pdx-triathlon-festival",
+        "text": "Meta description: PDX Triathlon Festival (5K • Sprint Triathlon • Olympic Triathlon) in Fairview, OR on Sunday, June 20, 2027.\nRegister Now About PDX Triathlon Festival Join us for the 43rd Annual PDX Triathlon Festival at Blue Lake Regional Park!\nHowever, we do allow transfers to other events or deferrals to the following year if requested at least 14 days before the event.\n\nConflicting values found by extraction (verbatim):\n- Join us for the 43rd Annual PDX Triathlon Festival at Blue Lake Regional Park!\n- 5K: 5 km\n- Sprint Triathlon: 20 km"
+      },
+      {
+        "url": "https://whyracingevents.com/pages/admin/races.html",
+        "text": "Meta description: Staff sign-in for WHY RACING EVENTS race management.\nEach race is removed for good 30 days after it was deleted.\nYou can restore it from Recently deleted for 30 days."
       }
     ],
     "facts": {
