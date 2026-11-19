@@ -35,6 +35,25 @@ Local production per ADR-011: the app runs on this computer (`vite preview`, 127
 - **Escalations** (logged in the report as "Escalated: … because …"): bot block / challenge / different bot body on the 8-URL probe → bot parity on ≤ 200 pages × 5 bots × 2 rounds + 10 plain-HTTP probes (a UA stops after 5 blocks in a row; any 429 stops the pass; ≥ 300 ms between requests); hidden-without-JS text on a template's rank-1 page → JS-off render of the template; raw vs rendered word gap > 20 % → render diff for the template; llms.txt / .md mirror → mirror probes (cap 200); LCP > 4 s → Lighthouse on 2 more pages of the template (cap +10); page weight > 5 MB → Lighthouse on that page (cap +5).
 - **Never**: form submission, logins, vulnerability probing; beacons and media bodies are aborted in the render.
 
+## Scaled content, copy quality and copy rules (B11, SCALED-COPY)
+
+None of these is scored; the grade is unchanged. Findings go under "Additional findings".
+
+| Flag                                   | Default | CLI                          | Handbook tab                                             |
+| -------------------------------------- | ------- | ---------------------------- | -------------------------------------------------------- |
+| `HANDBOOK_COPY_QUALITY`                | `off`   | `--copy-quality`             | checkbox "Copy quality"                                  |
+| `HANDBOOK_SERP_ORIGINALITY`            | `off`   | `--serp-originality`         | checkbox "Compare with top-10 results" (AUDIT mode only) |
+| `HANDBOOK_SERP_ORIGINALITY_MAX_PAGES`  | 10      | `--serp-originality-pages N` | —                                                        |
+| `HANDBOOK_SERP_ORIGINALITY_BUDGET_USD` | 0.50    | —                            | —                                                        |
+
+- The project setting (Handbook tab) wins when on; the env value is the operator default.
+- **Scaled-content summary** (full depth, always on): indexable pages, pages in P3-12 near-duplicate clusters, thin pages (P3-12, P5-15), SUPP-17 sets and pages, median own-text share per template (share of a page's sentences found on no other page), SUPP-18 counts (checked / without an original element / blocked) when it ran, SUPP-19 pages. Zeros are shown.
+- **SUPP-17** (always on at full depth): ≥ 3 pages of one template that share ≥ 60 % of their main-text sentences. `variation` = titles, H1s or slugs differ by one swapped term. S2 at ≥ 10 pages or ≥ 20 % of indexable pages. Skipped when P5-09 already reports the pages or all pages sit in one P3-12 duplicate cluster.
+- **SUPP-18** (flag, AUDIT only; REVIEW → N/A, EP-7): up to 10 service / product / guide / article / category pages; one derived query each; Google top 10 from DataForSEO (US / en, cached 7 days); ≥ 5 competitor pages read and profiled; one verdict per page: does the page have first-party data, a test, a case, an expert quote or a worked example that none of the results has? A finding only for a confident "no"; unsure verdicts are shown, never findings. Costs: lookups ≤ $0.002 per page (≤ $0.02 for 10 pages), LLM ≤ `HANDBOOK_SERP_ORIGINALITY_BUDGET_USD` ($0.50), separate from the run LLM budget. BLOCKED states: `dataforseo credit` (credentials, payment, balance), `llm budget` (no key or budget out), `serp pages unavailable` (< 5 results read). Lookup cache: app evidence bucket `<projectId>/_serp-cache/`, CLI `fork/runs/.serp-cache/`.
+- **SUPP-19** (always on): text addressed to AI assistants ("ignore previous instructions", "note to AI", hidden directives to recommend / rank / cite). S2 when hidden (comment, attribute, meta, JSON-LD, hidden element, removed by JS), S3 when visible. English patterns only; other languages are LIMITED.
+- **Copy quality** (flag): label line `Copy quality — not scored. Ranking effect: SPECULATIVE. …`; site medians, per-template medians and the 20 pages with the most metrics over the guide threshold. Deterministic (no LLM, no fetch). Pages under 200 prose words, non-English pages and contact / legal / listing / form pages are `not measured`. The numbers describe wording patterns only.
+- **Copy rules pack** (`fork/skills/copy-rules/SKILL.md`): rules for drafting or rewriting page copy. In the app: Handbook tab "Copy rules" button, MCP `handbook_copy_rules_get`, and a `copyRules` hint on `handbook_findings_get` when P5 / SUPP-17 / SUPP-18 findings are returned; SAM chat loads it as a skill; Claude Code: `cp -r fork/skills/copy-rules ~/.claude/skills/`. After any edit to the pack run `pnpm exec tsx fork/scripts/copy-rules-sync.ts` (`--check` fails on drift).
+
 ## Publish / unpublish a client report
 
 1. `pnpm exec tsx fork/scripts/publish-report.ts fork/runs/<site>/<run>/report.json` — prints the public URL (`REPORTS_DOMAIN` when set, else the `openseo-reports` project alias) and checks `x-robots-tag: noindex` + root 404.
