@@ -13,7 +13,8 @@
  * `supp: [SUPP-nn]` (ADR-020) adds supplementary rule ids: they match report
  * findings and `additionalFindings` like `items` do (a SUPP-only entry has
  * `items: []`). An entry with `scope` (outside-scope / truth-verification
- * [Ken], off-site) is listed as `excluded` and left out of the catch rate.
+ * [Ken], off-site) is listed as `excluded` and left out of the catch rate,
+ * as is one with `detectableBy` owner or data (FULL-READ §9).
  *
  * `--md <path>` (or `--report` → fork/reports/B2-golden.md) also writes a
  * per-site section into that markdown file, replacing an earlier section
@@ -79,23 +80,41 @@ export function pathMatches(pattern: string, path: string): boolean {
   return new RegExp(`^${escaped}$`).test(trimSlash(path));
 }
 
-function reportPaths(report: ReportJson, urls: readonly string[]) {
-  return urls.map((u) => new URL(u, report.site.origin).pathname);
+/**
+ * Expected URL vs a report URL: a path pattern matches the report URL's path;
+ * an absolute expected URL (host / protocol variants) must also match its
+ * origin.
+ */
+function urlMatches(report: ReportJson, pattern: string, reportUrl: string) {
+  const url = new URL(reportUrl, report.site.origin);
+  if (!/^https?:\/\//.test(pattern)) return pathMatches(pattern, url.pathname);
+  const expected = new URL(pattern);
+  return (
+    expected.origin === url.origin &&
+    pathMatches(expected.pathname, url.pathname)
+  );
 }
 
 const entryIds = (entry: Entry) => [...entry.items, ...entry.supp];
 
+/** FULL-READ §9 rates findings detectable from the site; owner / data ones are listed, not rated. */
+const UNRATED = new Set(["owner", "data"]);
+
 function scoreFinding(report: ReportJson, entry: Entry): Scored {
   if (entry.scope) return { entry, verdict: "excluded", why: entry.scope };
+  if (UNRATED.has(entry.detectableBy ?? ""))
+    return {
+      entry,
+      verdict: "excluded",
+      why: `detectableBy ${entry.detectableBy}`,
+    };
   const ids = entryIds(entry);
   const sharing = [
     ...report.findings,
     ...(report.additionalFindings ?? []),
   ].filter((f) => f.itemIds.some((id) => ids.includes(id)));
   const urlHit = sharing.find((f) =>
-    reportPaths(report, f.urls).some((path) =>
-      entry.urls.some((p) => pathMatches(p, path)),
-    ),
+    f.urls.some((u) => entry.urls.some((p) => urlMatches(report, p, u))),
   );
   if (urlHit)
     return {
