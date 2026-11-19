@@ -184,10 +184,10 @@ describe("buildMapJobs", () => {
     expect(jobs[0]?.text).toContain("> Why Racing lists 21 annual events.");
   });
 
-  it("leaves map widget chrome and symbol-only blocks out of the page text", async () => {
+  it("leaves map widget chrome, the font probe and symbol-only blocks out of the page text", async () => {
     const html = `<main><p>Book a cut at 7144 E Stetson Dr.</p><p>\u00ad</p>
       <div class="gm-style"><table><tr><td>Keyboard shortcuts</td></tr></table>
-      <div>Map data ©2026 Google</div></div><p>Open Tuesday to Saturday.</p></main>`;
+      <div>Map data ©2026 Google</div></div><p>Open Tuesday to Saturday.</p></main><span>BESbswy</span>`;
     const page = { ...snapshot("/contact"), rawKey: "raw/contact.html" };
     const jobs = await buildMapJobs(
       { pages: { status: "ok", snapshots: [page] } },

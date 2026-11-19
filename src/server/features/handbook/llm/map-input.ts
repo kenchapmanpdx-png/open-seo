@@ -62,6 +62,9 @@ const BLOCK = new Set([
   "label",
 ]);
 
+/** Hidden span WebFont Loader / Google Maps add while a font loads. */
+const FONT_PROBE = "BESbswy";
+
 /** Google Maps JS widget root (`div.gm-style`) or its `role=region` map container. */
 const isMapWidget = (attribs: Record<string, string>): boolean =>
   attribs["aria-roledescription"] === "map" ||
@@ -73,8 +76,9 @@ const isMapWidget = (attribs: Record<string, string>): boolean =>
  * template's boilerplate blocks and is removed there; on one-off pages (home,
  * contact) it may carry the only contact or award text.
  *
- * Map widget chrome (Google Maps keyboard help, zoom buttons, "Map data")
- * and blocks with no letter or digit are dropped: they are not page copy,
+ * Map widget chrome (Google Maps keyboard help, zoom buttons, "Map data"),
+ * the web-font loader's probe text and blocks with no letter or digit are
+ * dropped: they are not page copy,
  * and a widget that loads in one render but not the next would change the
  * input hash and force a new map call on an unchanged page.
  */
@@ -86,7 +90,7 @@ function textBlocks(html: string): string[] {
   let widgetDepth: number | null = null;
   const flush = () => {
     const text = buf.join("").replace(/\s+/g, " ").trim();
-    if (/[\p{L}\p{N}]/u.test(text)) blocks.add(text);
+    if (/[\p{L}\p{N}]/u.test(text) && text !== FONT_PROBE) blocks.add(text);
     buf = [];
   };
   const parser = new Parser(
