@@ -13,6 +13,7 @@ import {
   llmCheck,
   only,
 } from "./llm-copy";
+import { headLineViews } from "./llm-views";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -60,13 +61,33 @@ const hubTitlesCheck = llmCheck(
     effort: "S",
   },
   (ctx) => {
-    const hubs = hubPages(ctx);
+    const hubs = hubPages(ctx).map((h) => h.page);
+    const map = ctx.siteFactMap;
+    if (!map)
+      return hubs.length > 0
+        ? hubs.slice(0, SAMPLE_PAGES).map((page) => ({
+            url: page.url,
+            text: headLines(page),
+          }))
+        : "no hub pages (no detail cluster with ≥ 3 URLs)";
+    // Full read: every hub, incl. the fact map's hubs (a page linking ≥ 2
+    // crawled children), in one call (WO-B9-017).
+    // Home links to everything; it is not a hub for this rule.
+    const seen = new Set([
+      normalizeUrl(new URL("/", ctx.origin).href),
+      ...hubs.map((p) => normalizeUrl(p.url)),
+    ]);
+    const byUrl = new Map(htmlPages(ctx).map((p) => [normalizeUrl(p.url), p]));
+    for (const c of map.serviceCoverage) {
+      const page = byUrl.get(normalizeUrl(c.hubUrl));
+      if (page && !seen.has(normalizeUrl(page.url))) {
+        seen.add(normalizeUrl(page.url));
+        hubs.push(page);
+      }
+    }
     return hubs.length > 0
-      ? hubs.slice(0, SAMPLE_PAGES).map(({ page }) => ({
-          url: page.url,
-          text: headLines(page),
-        }))
-      : "no hub pages (no detail cluster with ≥ 3 URLs)";
+      ? headLineViews(hubs)
+      : "no hub pages (no detail cluster with ≥ 3 URLs, no page linking ≥ 2 crawled children)";
   },
 );
 

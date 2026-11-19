@@ -14,6 +14,7 @@ import {
   only,
   samplePages,
 } from "./llm-copy";
+import { AWARD_WORD, awardViews, keyFactsViews } from "./llm-views";
 import { normalizeUrl } from "./support";
 
 /**
@@ -70,8 +71,6 @@ const pageTypeMatrixCheck = llmCheck(
   },
 );
 
-const AWARD_WORD =
-  /award|badge|certif|accredit|winner|best[\s_-]?of|press|featured|as[\s_-]seen|voted|top[\s_-]?\d+/i;
 const AWARD_SENTENCE =
   /\b(?:award(?:ed|s)?|winner|won|certified|certification|accredited|featured (?:in|on)|as seen (?:in|on)|voted|best of)\b/i;
 
@@ -120,6 +119,10 @@ const awardsAsTextCheck = llmCheck(
     effort: "S",
   },
   (ctx) => {
+    if (ctx.siteFactMap) {
+      const views = awardViews(ctx, ctx.siteFactMap);
+      return views.length > 0 ? views : "no awards or badges found";
+    }
     const views = htmlPages(ctx)
       .map(awardView)
       .filter((v): v is View => v !== null);
@@ -147,7 +150,19 @@ export function sharedSentenceRatios(pages: readonly PageSnapshot[]): number[] {
   });
 }
 
-/** P5-15: 3 pages per detail template, numbers in `facts` for the judge. */
+const KEY_FACTS_SPEC = {
+  itemId: "P5-15",
+  rubricId: "detail-key-facts",
+  title: "Detail pages lack a key-facts block or unique facts",
+  fix: "Give every detail page a key-facts list or table with the item's own facts (date, place, price, distance, specs) and write copy specific to it instead of shared template text (§6, §7).",
+  effort: "M",
+} as const;
+
+/**
+ * P5-15. Quick: 3 pages per detail template, numbers in `facts`. Full read
+ * (fact map): every detail page's words + key-facts block in `facts`, the
+ * thinnest pages as views (WO-B9-017).
+ */
 const detailKeyFactsCheck: HandbookCheck = {
   id: "llm.detail-key-facts",
   itemIds: ["P5-15"],
@@ -155,6 +170,7 @@ const detailKeyFactsCheck: HandbookCheck = {
   requires: ["pages"],
   run: async (ctx) => {
     const byUrl = new Map(htmlPages(ctx).map((p) => [normalizeUrl(p.url), p]));
+    const map = ctx.siteFactMap;
     const groups = detailTemplates(ctx)
       .map((t) => ({
         pattern: t.urlPattern,
@@ -162,11 +178,19 @@ const detailKeyFactsCheck: HandbookCheck = {
           .map((u) => byUrl.get(normalizeUrl(u)))
           .filter((p): p is PageSnapshot => p !== undefined)
           .filter((p, i, all) => all.indexOf(p) === i)
-          .slice(0, 3),
+          .slice(0, map ? undefined : 3),
       }))
       .filter((g) => g.pages.length >= 2);
-    if (groups.length === 0)
+    if (groups.length === 0 && (map?.thinPages.length ?? 0) === 0)
       return only("P5-15", "NA", "no detail template with ≥ 3 crawled pages");
+    if (map) {
+      const { views, detailPages } = keyFactsViews(
+        ctx,
+        map,
+        groups.map((g) => ({ ...g, ratios: sharedSentenceRatios(g.pages) })),
+      );
+      return judged(ctx, KEY_FACTS_SPEC, views, { detailPages });
+    }
     const views: View[] = [];
     const stats: Record<string, unknown>[] = [];
     for (const g of groups) {
@@ -187,18 +211,7 @@ const detailKeyFactsCheck: HandbookCheck = {
         });
       });
     }
-    return judged(
-      ctx,
-      {
-        itemId: "P5-15",
-        rubricId: "detail-key-facts",
-        title: "Detail pages lack a key-facts block or unique facts",
-        fix: "Give every detail page a key-facts list or table with the item's own facts (date, place, price, distance, specs) and write copy specific to it instead of shared template text (§6, §7).",
-        effort: "M",
-      },
-      views,
-      { detailPages: stats },
-    );
+    return judged(ctx, KEY_FACTS_SPEC, views, { detailPages: stats });
   },
 };
 

@@ -6,8 +6,19 @@ import type {
 } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import type { Effort } from "@/server/features/handbook/contracts/status";
+import {
+  type View,
+  headLineViews,
+  headLines,
+  htmlPages,
+  inventoryViews,
+  mainText,
+  withFactQuotes,
+} from "./llm-views";
 import { nameMentions } from "./name-mentions";
 import { clip, normalizeUrl } from "./support";
+
+export { type View, headLines, htmlPages, mainText } from "./llm-views";
 
 /**
  * LLM-class K1 checks (B3 R2.2 exemplars, ADR-007). Each builds a short text
@@ -22,8 +33,6 @@ import { clip, normalizeUrl } from "./support";
 const MIN_FAIL_CONFIDENCE = 0.5;
 export const SAMPLE_PAGES = 8;
 
-export type View = { url: string; text: string };
-
 export type Spec = {
   itemId: string;
   rubricId: string;
@@ -31,14 +40,6 @@ export type Spec = {
   fix: string;
   effort: Effort;
 };
-
-export function htmlPages(ctx: CheckContext): PageSnapshot[] {
-  const pages = ctx.collected.pages;
-  if (pages.status !== "ok") return [];
-  return pages.snapshots.filter(
-    (s) => s.status === 200 && (s.contentType ?? "").includes("html"),
-  );
-}
 
 /** Home first, then one rank-1 sample per template, then crawl order. */
 export function samplePages(ctx: CheckContext, max: number): PageSnapshot[] {
@@ -56,21 +57,6 @@ export function samplePages(ctx: CheckContext, max: number): PageSnapshot[] {
       for (const s of t.samples) if (s.rank === 1) add(s.url);
   for (const p of pages) add(p.url);
   return [...picked.values()];
-}
-
-export function headLines(s: PageSnapshot): string {
-  return [
-    `Title: ${s.head.title ?? "(none)"}`,
-    `Meta description: ${s.head.metaDescription ?? "(none)"}`,
-    `H1: ${s.h1.length > 0 ? s.h1.join(" | ") : "(none)"}`,
-  ].join("\n");
-}
-
-/** Visible text from the first H1 on (skips header navigation). */
-export function mainText(s: PageSnapshot, chars: number): string {
-  const h1 = s.h1[0];
-  const at = h1 ? s.markup.text.indexOf(h1) : -1;
-  return s.markup.text.slice(Math.max(at, 0), Math.max(at, 0) + chars);
 }
 
 const isLocal = (ctx: CheckContext) =>
@@ -224,10 +210,12 @@ const superlativesCheck = llmCheck(
     effort: "S",
   },
   (ctx) =>
-    samplePages(ctx, SAMPLE_PAGES).map((s) => ({
-      url: s.url,
-      text: s.markup.text.slice(0, 6_000),
-    })),
+    ctx.siteFactMap
+      ? inventoryViews(ctx, ctx.siteFactMap)
+      : samplePages(ctx, SAMPLE_PAGES).map((s) => ({
+          url: s.url,
+          text: s.markup.text.slice(0, 6_000),
+        })),
 );
 
 const FAQ_HEADING = /\bfaqs?\b|frequently asked|common questions/i;
@@ -255,9 +243,8 @@ const pageFaqCheck = llmCheck(
         },
       ];
     });
-    return views.length > 0
-      ? views.slice(0, SAMPLE_PAGES)
-      : "no FAQ block on crawled pages";
+    if (views.length === 0) return "no FAQ block on crawled pages";
+    return ctx.siteFactMap ? views : views.slice(0, SAMPLE_PAGES);
   },
 );
 
@@ -271,7 +258,9 @@ const titlesH1Check = llmCheck(
     effort: "S",
   },
   (ctx) =>
-    samplePages(ctx, 20).map((s) => ({ url: s.url, text: headLines(s) })),
+    ctx.siteFactMap
+      ? headLineViews(htmlPages(ctx))
+      : samplePages(ctx, 20).map((s) => ({ url: s.url, text: headLines(s) })),
 );
 
 const entityTestCheck = llmCheck(
@@ -300,9 +289,19 @@ const entityTestCheck = llmCheck(
     for (const [url, lines] of mentions)
       if (!sampled.has(normalizeUrl(url)))
         views.push({ url, text: `Name mentions:\n${lines.join("\n")}` });
-    return views;
+    const map = ctx.siteFactMap;
+    return map
+      ? withFactQuotes(
+          views,
+          map.nameVariants.flatMap((n) => n.variants.flatMap((v) => v.refs)),
+          "Name variants found by extraction (verbatim)",
+        )
+      : views;
   },
 );
+
+/** Full read: every page's stat sentences, up to this many pages. */
+const MAX_FACT_TABLE_PAGES = 60;
 
 /** A number worth comparing: 2+ digits, or with $ / % / + / k. */
 const STAT = /[$€£]\s?\d|\d\s?(?:%|\+|[kK]\b)|\b\d{2,}/;
@@ -333,8 +332,9 @@ const factTableCheck: HandbookCheck = {
   class: "LLM",
   requires: ["pages"],
   run: async (ctx) => {
+    const map = ctx.siteFactMap;
     const views: View[] = htmlPages(ctx)
-      .slice(0, 25)
+      .slice(0, map ? MAX_FACT_TABLE_PAGES : 25)
       .map((s) => ({
         url: s.url,
         text: [
@@ -353,7 +353,15 @@ const factTableCheck: HandbookCheck = {
             text: statSentences(f.text, 40).join("\n"),
           });
         }
-    const withStats = views.filter((v) => STAT.test(v.text));
+    const withStats = (
+      map
+        ? withFactQuotes(
+            views,
+            map.statConflicts.flatMap((c) => c.values.flatMap((v) => v.refs)),
+            "Conflicting values found by extraction (verbatim)",
+          )
+        : views
+    ).filter((v) => STAT.test(v.text));
     if (withStats.length < 2)
       return {
         statuses: [
