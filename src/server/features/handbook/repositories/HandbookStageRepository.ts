@@ -1,6 +1,10 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, sql, sum } from "drizzle-orm";
 import { db } from "@/db";
-import { handbookRunStages } from "@/db/handbook-tables";
+import {
+  handbookBotFetches,
+  handbookLlmCalls,
+  handbookRunStages,
+} from "@/db/handbook-tables";
 import type {
   StageName,
   StageRow,
@@ -110,4 +114,36 @@ function forRun(runId: string): StageTracker {
   };
 }
 
-export const HandbookStageRepository = { forRun } as const;
+/**
+ * Live progress inputs for one run (FULL-READ §7.5): its stage rows, LLM
+ * spend so far, and bot-parity escalation probes. Callers pass a run id
+ * already checked against the project.
+ */
+async function progressRows(runId: string) {
+  const stages = await db
+    .select({
+      stage: handbookRunStages.stage,
+      batch: handbookRunStages.batch,
+      status: handbookRunStages.status,
+      itemsDone: handbookRunStages.itemsDone,
+      error: handbookRunStages.error,
+    })
+    .from(handbookRunStages)
+    .where(eq(handbookRunStages.runId, runId))
+    .orderBy(asc(handbookRunStages.batch));
+  const [llm] = await db
+    .select({ costUsd: sum(handbookLlmCalls.costUsd).mapWith(Number) })
+    .from(handbookLlmCalls)
+    .where(eq(handbookLlmCalls.runId, runId));
+  const [bot] = await db
+    .select({ n: count() })
+    .from(handbookBotFetches)
+    .where(eq(handbookBotFetches.runId, runId));
+  return {
+    stages,
+    llmCostUsd: llm?.costUsd ?? 0,
+    botProbes: bot?.n ?? 0,
+  };
+}
+
+export const HandbookStageRepository = { forRun, progressRows } as const;
