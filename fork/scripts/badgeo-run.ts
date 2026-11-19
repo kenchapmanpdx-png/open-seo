@@ -73,7 +73,10 @@ function loadExpectations(sidecar: boolean): Map<string, string[]> {
 
 function firedByPage(report: ReportJson): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>();
-  for (const finding of report.findings) {
+  for (const finding of [
+    ...report.findings,
+    ...(report.additionalFindings ?? []),
+  ]) {
     for (const url of finding.urls) {
       const path = new URL(url, report.site.origin).pathname;
       const set = out.get(path) ?? new Set<string>();
@@ -169,7 +172,7 @@ async function main() {
     const unexpected = rows.reduce((n, r) => n + r.unexpected.length, 0);
     const blocked = rows.reduce((n, r) => n + r.blocked.length, 0);
     console.log(
-      `\npages ${rows.length} · missing ${missing} · blocked ${blocked} · unexpected ${unexpected} · findings ${report.findings.length} · ${timing.totalMs}ms`,
+      `\npages ${rows.length} · missing ${missing} · blocked ${blocked} · unexpected ${unexpected} · findings ${report.findings.length} + ${report.additionalFindings?.length ?? 0} additional · ${timing.totalMs}ms`,
     );
     // WO-B9-001: infinite-space guard (warning only, not a failure).
     const calendarRead =

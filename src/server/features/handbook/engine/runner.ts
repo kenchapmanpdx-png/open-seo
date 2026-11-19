@@ -24,6 +24,7 @@ import {
 import { ITEM_SCORE } from "@/server/features/handbook/contracts/scoring";
 import { normalizeUrl } from "../checks/support";
 import { LlmBudgetError } from "../llm/judge";
+import { appliesWithSupp, SUPP_BY_ID } from "../registry-supp";
 import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
 import { evidenceKey, materialize } from "./evidence";
@@ -141,7 +142,7 @@ export async function runHandbook(
   return out.result;
 }
 
-/** Intake → checks → reconcile → evidence over everything collected (stage `checks`). */
+/** Intake → checks → reconcile → evidence over everything collected (stage `checks`). SUPP rules (ADR-020) apply on every site and get no status row. */
 export async function evaluateRun(
   input: RunInput,
   runtime: HandbookRuntime,
@@ -173,9 +174,10 @@ export async function evaluateRun(
     verdicts.set(itemId, list);
   };
 
+  const applies = appliesWithSupp(intake.applicable);
   let llmBlocked: string | null = input.judge ? null : "no llm key";
   for (const check of input.checks) {
-    const items = check.itemIds.filter((id) => intake.applicable.has(id));
+    const items = check.itemIds.filter(applies);
     if (items.length === 0) continue;
     if (check.class === "LLM" && llmBlocked) {
       for (const id of items) addVerdict(id, "BLOCKED", llmBlocked, check.id);
@@ -245,7 +247,7 @@ export async function evaluateRun(
       continue;
     }
     for (const v of result.statuses) {
-      if (intake.applicable.has(v.itemId))
+      if (applies(v.itemId))
         addVerdict(v.itemId, v.status, v.note ?? null, check.id);
     }
     // Findings on an item the site does not need (NA at intake) are dropped.
@@ -254,9 +256,7 @@ export async function evaluateRun(
       checkClass: check.class,
       result: {
         ...result,
-        findings: result.findings.filter((f) =>
-          f.itemIds.some((id) => intake.applicable.has(id)),
-        ),
+        findings: result.findings.filter((f) => f.itemIds.some(applies)),
       },
     });
   }
@@ -342,7 +342,8 @@ function contractViolation(
     }
     if (!f.evidenceRefs.some((r) => refs.has(r)))
       return `finding "${f.title}" without evidence`;
-    const primary = registry.get(f.itemIds[0] ?? "");
+    const id = f.itemIds[0] ?? "";
+    const primary = registry.get(id) ?? SUPP_BY_ID.get(id);
     if (
       primary &&
       f.severity !== primary.severityDefault &&
