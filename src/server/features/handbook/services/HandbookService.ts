@@ -19,6 +19,7 @@ import { OutcomeService } from "@/server/features/agency/outcomeService";
 import { ReportService } from "@/server/features/reports/services/ReportService";
 import { AppError } from "@/server/lib/errors";
 import { supabaseConfig } from "./HandbookRunService";
+import { isSuppOnly } from "../registry-supp";
 
 const SIGNED_URL_SECONDS = 300;
 
@@ -76,7 +77,7 @@ function buildReport(
     if (code)
       codesByItem.set(fi.itemId, [...(codesByItem.get(fi.itemId) ?? []), code]);
   }
-  const findings = rows.findings.map((f) => ({
+  const all = rows.findings.map((f) => ({
     code: f.code,
     severity: f.severity,
     phase: f.phase,
@@ -98,6 +99,9 @@ function buildReport(
       .filter((e) => e.findingId === f.id)
       .map((e) => ({ kind: e.kind, url: e.url, excerpt: e.excerpt })),
   }));
+  // ADR-020: SUPP-only findings are reported apart and never scored or blocking.
+  const findings = all.filter((f) => !isSuppOnly(f.itemIds));
+  const additionalFindings = all.filter((f) => isSuppOnly(f.itemIds));
   const s1 = findings.filter((f) => f.severity === "S1" && f.source !== "llm");
   const report = reportJsonSchema.parse({
     reportVersion: REPORT_JSON_VERSION,
@@ -137,6 +141,7 @@ function buildReport(
       confidence: sp.confidence,
     })),
     findings,
+    ...(additionalFindings.length ? { additionalFindings } : {}),
     items: rows.items.map((i) => ({
       itemId: i.itemId,
       phase: phaseOf.get(i.itemId) ?? "",
