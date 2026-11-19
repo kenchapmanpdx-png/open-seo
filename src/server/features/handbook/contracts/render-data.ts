@@ -51,7 +51,13 @@ export type RenderData = {
         href: string | null;
       }>;
     };
-    noJs: { status: number | null; nojsKey: string; words: number };
+    noJs: {
+      status: number | null;
+      nojsKey: string;
+      words: number;
+      /** Words at opacity:0 with JavaScript off (K3 field of the no-JS render). 1.6.0 */
+      opacityZeroWords?: number;
+    };
     firstScreenKey: string | null;
     consoleErrors: readonly string[];
   }>;

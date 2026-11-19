@@ -279,9 +279,10 @@ export function mdMirrorTrigger(
 
 const ESCALATION_RULES: readonly EscalationRule[] = [
   {
-    // RenderData has no JS-off opacity count (contracts 1.5.1), so the rank-1
-    // page's opacity:0 words after load stand in for "hidden without JS":
-    // a reveal that needs JavaScript leaves that text hidden when JS is off.
+    // "Hidden without JS": the rank-1 page's opacity:0 words in the JS-off
+    // render. Renders stored before contracts 1.6.0 have no JS-off count;
+    // their JS-on count after load stands in (a reveal that needs
+    // JavaScript leaves that text hidden when JS is off).
     trigger: "template-hidden-text",
     action: "JS-off render all pages of that template",
     cap: null,
@@ -289,11 +290,14 @@ const ESCALATION_RULES: readonly EscalationRule[] = [
       const rendered = renderedOf(collected);
       return templatesOf(collected).flatMap((tpl) => {
         const page = tpl.rank1 ? rendered.get(normalizeUrl(tpl.rank1)) : null;
-        if (!page || page.js.opacityZeroWords === 0 || tpl.urls.length < 2)
-          return [];
+        if (!page || tpl.urls.length < 2) return [];
+        const noJs = page.noJs.opacityZeroWords;
+        const hidden = noJs ?? page.js.opacityZeroWords;
+        if (hidden === 0) return [];
+        const how = noJs === undefined ? "after load" : "with JavaScript off";
         return [
           {
-            because: `template ${tpl.key} rank-1 page ${page.url} has ${page.js.opacityZeroWords} words at opacity:0 after load`,
+            because: `template ${tpl.key} rank-1 page ${page.url} has ${hidden} words at opacity:0 ${how}`,
             ...actedOn(tpl, rendered),
           },
         ];

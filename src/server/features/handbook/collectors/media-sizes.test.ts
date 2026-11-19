@@ -2,13 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import type { CollectorContext } from "@/server/features/handbook/contracts/collectors";
 import { probeMediaSizes } from "./media-sizes";
 
-function ctx(status: number, length: string | null) {
+type Reply = { status: number; headers: [string, string][] };
+
+/** `head` answers HEAD requests; `get` answers the ranged GET fallback. */
+function ctx(head: Reply, get: Reply = { status: 405, headers: [] }) {
   const fetchOffsite = vi.fn(
-    async (url: string, _init?: { method?: string }) => ({
+    async (url: string, init?: { method?: string }) => ({
       url,
       finalUrl: url,
-      status,
-      headers: length ? [["content-length", length] as const] : [],
+      ...(init?.method === "HEAD" ? head : get),
       body: "",
       truncated: false,
       redirectChain: [],
@@ -28,22 +30,44 @@ function ctx(status: number, length: string | null) {
 
 describe("probeMediaSizes", () => {
   it("reads Content-Length from a HEAD", async () => {
-    const { ctx: c, fetchOffsite } = ctx(200, "12000000");
+    const { ctx: c, fetchOffsite } = ctx({
+      status: 200,
+      headers: [["content-length", "12000000"]],
+    });
     expect(await probeMediaSizes(c, ["https://cdn.example/v.mp4"])).toEqual([
       { url: "https://cdn.example/v.mp4", bytes: 12_000_000, method: "head" },
     ]);
     expect(fetchOffsite.mock.calls[0][1]).toMatchObject({ method: "HEAD" });
   });
 
-  it("records HEAD 405 as unknown (no body download)", async () => {
-    const { ctx: c } = ctx(405, null);
+  it("falls back to a Range request when HEAD is refused", async () => {
+    const { ctx: c, fetchOffsite } = ctx(
+      { status: 405, headers: [] },
+      { status: 206, headers: [["content-range", "bytes 0-0/7340032"]] },
+    );
+    expect(await probeMediaSizes(c, ["https://cdn.example/v.mp4"])).toEqual([
+      { url: "https://cdn.example/v.mp4", bytes: 7_340_032, method: "range" },
+    ]);
+    expect(fetchOffsite.mock.calls[1][1]).toMatchObject({
+      headers: { range: "bytes=0-0" },
+    });
+  });
+
+  it("records unknown when the server ignores Range (200, no total)", async () => {
+    const { ctx: c } = ctx(
+      { status: 405, headers: [] },
+      { status: 200, headers: [["content-length", "7340032"]] },
+    );
     expect(await probeMediaSizes(c, ["https://cdn.example/v.mp4"])).toEqual([
       { url: "https://cdn.example/v.mp4", bytes: null, method: "unknown" },
     ]);
   });
 
   it("probes at most 200 unique URLs", async () => {
-    const { ctx: c, fetchOffsite } = ctx(200, "1");
+    const { ctx: c, fetchOffsite } = ctx({
+      status: 200,
+      headers: [["content-length", "1"]],
+    });
     const urls = Array.from(
       { length: 250 },
       (_, i) => `https://cdn.example/${i}.mp4`,

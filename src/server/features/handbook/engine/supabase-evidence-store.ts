@@ -150,8 +150,8 @@ export function createSupabaseEvidenceStore(config: {
 /**
  * Short-lived signed GET URL for one private evidence object, so the browser
  * downloads the body from storage instead of through the worker (ADR-003).
- * Not part of K4: only the Supabase store can sign. A gzip'd body is offered
- * as a `.gz` download, since Storage does not decompress it for the browser.
+ * Not part of K4: only the Supabase store can sign. Storage serves gzip'd
+ * bodies as stored; the evidence viewer gunzips them in the browser.
  */
 export async function createSupabaseSignedUrl(
   config: { url: string; serviceRoleKey: string },
@@ -178,20 +178,7 @@ export async function createSupabaseSignedUrl(
     typeof body.signedURL !== "string"
   )
     return null;
-  const signed = `${base}${body.signedURL}`;
-  const head = await fetch(`${base}/object/${path}`, {
-    headers: { ...auth, range: "bytes=0-1" },
-  });
-  const start = head.ok ? new Uint8Array(await head.arrayBuffer()) : null;
-  if (
-    !start ||
-    head.headers.get("content-type") === GZIP_TYPE ||
-    start[0] !== 0x1f ||
-    start[1] !== 0x8b
-  )
-    return signed;
-  const file = `${key.split("/").at(-1) ?? "evidence"}.gz`;
-  return `${signed}${signed.includes("?") ? "&" : "?"}download=${encodeURIComponent(file)}`;
+  return `${base}${body.signedURL}`;
 }
 
 const storageEntries = z.array(

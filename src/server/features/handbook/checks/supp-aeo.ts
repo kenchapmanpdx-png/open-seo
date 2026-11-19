@@ -15,7 +15,8 @@ import { createResult, normalizeUrl } from "./support";
  * SUPP-13: snippet blockers on an indexable page — `nosnippet` or
  *   `max-snippet` 0–159 (robots meta, a UA-specific meta such as
  *   `googlebot`, or `X-Robots-Tag` with or without a UA prefix), or
- *   `data-nosnippet` over 20 % of the page's words. Asked as "intended?";
+ *   `data-nosnippet` over 20 % of the page's words or around the first
+ *   answer paragraph (`markup.firstAnswerNosnippet`). Asked as "intended?";
  *   S2 on home / service / product pages, S3 elsewhere.
  * SUPP-14: ≥ 3 consecutive lines that read as a list ("•", "1.", "Step 2")
  *   outside `<ul>` / `<ol>` (raw-HTML parse, `markup.fakeListRuns`).
@@ -73,6 +74,10 @@ export function snippetBlockers(s: PageSnapshot): string[] | null {
   if (s.wordsRaw > 0 && hidden / s.wordsRaw > MAX_NOSNIPPET_SHARE)
     reasons.push(
       `data-nosnippet covers ${hidden} of ${s.wordsRaw} words (${Math.round((hidden / s.wordsRaw) * 100)} %)`,
+    );
+  else if (s.markup.firstAnswerNosnippet)
+    reasons.push(
+      `data-nosnippet covers the first answer paragraph: "${s.markup.firstAnswerNosnippet}"`,
     );
   return reasons.length > 0 ? reasons : null;
 }

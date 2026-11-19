@@ -6,9 +6,10 @@ import type { RenderData } from "@/server/features/handbook/contracts/render-dat
  * unique media URL seen on rendered pages (video / audio the sidecar
  * aborted first, then images with no transfer size), cap 200, through
  * `ctx.fetchOffsite` (SSRF policy; media often sits on a CDN host). Size =
- * `Content-Length` of a 2xx HEAD; anything else is `unknown` and noted.
- * The `Range: bytes=0-0` fallback needs request headers SafeFetch does not
- * take (contracts 1.5.1) → ESCALATE, fork/queue.md WO-B9-032.
+ * `Content-Length` of a 2xx HEAD, else the total of a `GET` with
+ * `Range: bytes=0-0` (206 `Content-Range: bytes 0-0/<total>`; SafeFetch does
+ * not read a body the server sends whole); anything else is `unknown` and
+ * noted.
  * Each page's `pageWeightBytes` then adds the declared size of media that
  * loads with it (contract: Σ transferBytes + loading media).
  */
@@ -36,17 +37,37 @@ function targets(render: RenderData): string[] {
   return [...media, ...[...images].filter((u) => !media.has(u))];
 }
 
+const header = (
+  headers: ReadonlyArray<readonly [string, string]>,
+  name: string,
+) => headers.find(([k]) => k === name)?.[1];
+
 async function probe(ctx: CollectorContext, url: string): Promise<MediaSize> {
   try {
-    const res = await ctx.fetchOffsite(url, {
+    const head = await ctx.fetchOffsite(url, {
       method: "HEAD",
       userAgent: BROWSER_UA,
     });
-    const length = res.headers.find(([k]) => k === "content-length")?.[1];
-    const bytes = length ? Number.parseInt(length, 10) : Number.NaN;
-    if (res.status >= 200 && res.status < 300 && bytes >= 0)
-      return { url, bytes, method: "head" };
-    ctx.log("handbook.media_size.unknown", { url, status: res.status });
+    const length = Number.parseInt(
+      header(head.headers, "content-length") ?? "",
+      10,
+    );
+    if (head.status >= 200 && head.status < 300 && length >= 0)
+      return { url, bytes: length, method: "head" };
+    const ranged = await ctx.fetchOffsite(url, {
+      userAgent: BROWSER_UA,
+      headers: { range: "bytes=0-0" },
+    });
+    const total = /\/(\d+)\s*$/.exec(
+      header(ranged.headers, "content-range") ?? "",
+    )?.[1];
+    if (ranged.status === 206 && total)
+      return { url, bytes: Number(total), method: "range" };
+    ctx.log("handbook.media_size.unknown", {
+      url,
+      status: head.status,
+      rangeStatus: ranged.status,
+    });
   } catch (error) {
     ctx.log("handbook.media_size.unknown", { url, error: String(error) });
   }

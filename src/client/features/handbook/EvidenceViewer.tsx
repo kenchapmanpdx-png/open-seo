@@ -17,7 +17,26 @@ import { getHandbookEvidence } from "@/server/features/handbook/functions";
 import { handbookEvidenceQuery } from "./queries";
 
 /**
- * Evidence excerpts for one run (ADR-003). The full body opens through a
+ * Full evidence body as plain text: fetched from the short-lived signed
+ * storage URL, gunzipped when stored gzip'd (WO-B9-023). Plain text so a
+ * stored page's HTML never runs on this origin.
+ */
+async function openBodyAsText(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const gzipped = bytes[0] === 0x1f && bytes[1] === 0x8b;
+  const blob = gzipped
+    ? await new Response(
+        new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")),
+      ).blob()
+    : new Blob([bytes]);
+  const text = new Blob([blob], { type: "text/plain;charset=utf-8" });
+  window.open(URL.createObjectURL(text), "_blank", "noopener,noreferrer");
+}
+
+/**
+ * Evidence excerpts for one run (ADR-003). The full body comes from a
  * short-lived signed storage URL; it never streams through the worker.
  */
 export function EvidenceViewer({
@@ -29,12 +48,17 @@ export function EvidenceViewer({
 }) {
   const evidenceQuery = useQuery(handbookEvidenceQuery(projectId, runId));
   const openBody = useMutation({
-    mutationFn: (evidenceId: string) =>
-      getHandbookEvidence({ data: { projectId, evidenceId } }),
-    onSuccess: (evidence) => {
-      if (evidence?.bodyUrl)
-        window.open(evidence.bodyUrl, "_blank", "noopener,noreferrer");
-      else toast.error("The full body is not available for this evidence.");
+    mutationFn: async (evidenceId: string) => {
+      const evidence = await getHandbookEvidence({
+        data: { projectId, evidenceId },
+      });
+      if (!evidence?.bodyUrl) return false;
+      await openBodyAsText(evidence.bodyUrl);
+      return true;
+    },
+    onSuccess: (opened) => {
+      if (!opened)
+        toast.error("The full body is not available for this evidence.");
     },
     onError: () => toast.error("Failed to open the evidence body"),
   });

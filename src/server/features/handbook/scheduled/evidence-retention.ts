@@ -1,7 +1,10 @@
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { handbookEvidence, handbookRuns } from "@/db/handbook-tables";
-import type { EvidenceStore } from "@/server/features/handbook/contracts/evidence-store";
+import {
+  EVIDENCE_RETAIN_RUNS,
+  type EvidenceStore,
+} from "@/server/features/handbook/contracts/evidence-store";
 import {
   createSupabaseEvidenceStore,
   readSupabaseStorageBytes,
@@ -11,10 +14,7 @@ import { supabaseConfig } from "@/server/features/handbook/services/HandbookRunS
 // Evidence retention (FULL-READ §7.4), daily in forkScheduledJobs.ts: full
 // bodies stay for the newest 2 runs per project; older finished runs keep
 // their findings and inline excerpts, and lose stored bodies + stage blobs.
-// FULL-READ §7.4 sets 2; contracts 1.5.1 still carries EVIDENCE_RETAIN_RUNS=5
-// (escalated to B10 to align).
 
-const RETAIN_RUNS = 2;
 /** Runs pruned per tick, so one tick stays well under the subrequest cap. */
 const MAX_RUNS_PER_TICK = 25;
 const QUOTA_BYTES = 1024 ** 3; // Supabase free-tier Storage (1 GB).
@@ -47,7 +47,7 @@ export function createEvidenceRetentionJob(
       const d = await deps();
       if (!d) return { skipped: "no Supabase Storage configured" };
       const runs = await d.listRuns();
-      const keep = newestPerProject(runs, RETAIN_RUNS);
+      const keep = newestPerProject(runs, EVIDENCE_RETAIN_RUNS);
       const prune = runs
         .filter((r) => r.hasBodies && r.finishedAt !== null && !keep.has(r.id))
         .slice(0, MAX_RUNS_PER_TICK);
@@ -60,7 +60,7 @@ export function createEvidenceRetentionJob(
       const ratio = usedBytes === null ? null : usedBytes / QUOTA_BYTES;
       const warn = ratio !== null && ratio >= WARN_RATIO;
       const message = warn
-        ? `Evidence storage is at ${Math.round((ratio ?? 0) * 100)} % of the 1 GB Supabase quota. Older runs keep findings and excerpts; full bodies are kept for the last ${RETAIN_RUNS} runs per project.`
+        ? `Evidence storage is at ${Math.round((ratio ?? 0) * 100)} % of the 1 GB Supabase quota. Older runs keep findings and excerpts; full bodies are kept for the last ${EVIDENCE_RETAIN_RUNS} runs per project.`
         : null;
       if (warn) console.warn(`[handbook] ${message}`);
       if (usedBytes === null)

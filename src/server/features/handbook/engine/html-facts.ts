@@ -35,35 +35,15 @@ const MAX_TEXT = 20_000;
  * or "Step N" at its start. Lines end at `<br>` and block tags.
  */
 const LIST_MARKER = /^(?:[•▪✓–]|\d{1,2}[.)](?=\s)|step\s+\d+\b)/i;
-const LINE_BREAKS = new Set([
-  "br",
-  "p",
-  "div",
-  "li",
-  "ul",
-  "ol",
-  "dl",
-  "table",
-  "tr",
-  "td",
-  "th",
-  "section",
-  "article",
-  "main",
-  "header",
-  "footer",
-  "nav",
-  "aside",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "blockquote",
-]);
+const LINE_BREAKS = new Set(
+  "br p div li ul ol dl table tr td th section article main header footer nav aside h1 h2 h3 h4 h5 h6 blockquote".split(
+    " ",
+  ),
+);
 const REAL_LIST = new Set(["ul", "ol", "dl", "table"]);
 const MIN_FAKE_LIST_LINES = 3;
+/** A `<p>` this long is the page's first answer block (SUPP-13). */
+const FIRST_ANSWER_MIN_WORDS = 15;
 type Landmark = PageMarkup["headings"][number]["landmark"];
 const STRUCTURAL = new Set([
   "header",
@@ -126,6 +106,10 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   /** Stack depth of the open `data-nosnippet` element (0 = none). */
   let nosnippetAt = 0;
   let nosnippetWords = 0;
+  /** The first answer paragraph being read (SUPP-13); done once one qualifies. */
+  let para: { at: number; nosnippet: boolean; text: string[] } | null = null;
+  // Set inside parser callbacks, which TypeScript's narrowing does not see.
+  let firstAnswer = null as { nosnippet: boolean; text: string } | null;
   let line: string[] = [];
   let run: string[] = [];
   const fakeListRuns: { sample: string; lines: number }[] = [];
@@ -260,6 +244,8 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         stack.push(name);
         if (nosnippetAt === 0 && "data-nosnippet" in attrs)
           nosnippetAt = stack.length;
+        if (name === "p" && !para && !firstAnswer && !stack.some(isLandmark))
+          para = { at: stack.length, nosnippet: nosnippetAt > 0, text: [] };
         if (STRUCTURAL.has(name) && stack.length <= 8) {
           skeletonParts.add(stack.filter((t) => STRUCTURAL.has(t)).join("/"));
         }
@@ -313,6 +299,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         const n = countWords(text);
         words += n;
         if (nosnippetAt > 0) nosnippetWords += n;
+        if (para) para.text.push(text);
         line.push(text);
       },
       onclosetag(name) {
@@ -321,6 +308,12 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         const at = stack.lastIndexOf(name);
         if (at >= 0) stack.length = at;
         if (nosnippetAt > stack.length) nosnippetAt = 0;
+        if (para && para.at > stack.length) {
+          const text = collapse(para.text.join(" "));
+          if (countWords(text) >= FIRST_ANSWER_MIN_WORDS)
+            firstAnswer = { nosnippet: para.nosnippet, text };
+          para = null;
+        }
         if (name === "title" && titleBuf) {
           head.title = collapse(titleBuf.join(""));
           titleBuf = null;
@@ -375,6 +368,9 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
       counts,
       text: collapse(textParts.join(" ")).slice(0, MAX_TEXT),
       ...(nosnippetWords ? { nosnippetWords } : {}),
+      ...(firstAnswer?.nosnippet
+        ? { firstAnswerNosnippet: firstAnswer.text.slice(0, 200) }
+        : {}),
       ...(fakeListRuns.length ? { fakeListRuns } : {}),
     },
     jsonLdBlocks,

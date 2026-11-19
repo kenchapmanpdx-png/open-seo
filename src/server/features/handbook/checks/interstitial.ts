@@ -49,7 +49,7 @@ export const interstitialCheck: HandbookCheck = {
         out.evidence(
           "botFetch",
           f.url,
-          `UA ${f.bot}: HTTP ${f.status}, ${f.blockedReason}, ${f.words} words, ${f.bytes} B, sha256 ${f.bodySha256.slice(0, 12)}`,
+          `UA ${f.bot}: HTTP ${f.status}, ${f.blockedReason}, ${f.words} words, ${f.bytes} B, sha256 ${f.bodySha256.slice(0, 12)}${f.excerpt ? `\nbody: ${f.excerpt}` : ""}`,
         ),
       );
     const summary = rows
