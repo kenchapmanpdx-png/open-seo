@@ -15,7 +15,11 @@
  * `--only P3-01,P3-02` keeps rows whose expected ∪ fired ids intersect the
  * filter and ignores ids outside it (exit code counts filtered rows only).
  *
- *   pnpm exec tsx fork/scripts/badgeo-run.ts [--report-only] [--only <ids>] [--sidecar <url>]
+ * `--llm` passes through to the CLI (judge + map stage). SUPP rules have no
+ * status row, so SUPP ids of class `llm` without `--llm` and of class
+ * `render` without `--sidecar` count as `blocked`, not `missing`.
+ *
+ *   pnpm exec tsx fork/scripts/badgeo-run.ts [--report-only] [--only <ids>] [--sidecar <url>] [--llm]
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -23,6 +27,7 @@ import { parseArgs } from "node:util";
 import { sort } from "remeda";
 import { z } from "zod";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
+import { SUPP_REGISTRY } from "@/server/features/handbook/registry-supp";
 import { runCliAudit } from "./handbook-audit";
 import { BADGEO_ROOT, startBadgeo } from "./badgeo-serve";
 
@@ -90,11 +95,17 @@ function firedByPage(report: ReportJson): Map<string, Set<string>> {
 export function compare(
   report: ReportJson,
   expectations: Map<string, string[]>,
+  opts: { llm?: boolean; sidecar?: boolean } = {},
 ): Row[] {
   const fired = firedByPage(report);
-  const blockedItems = new Set(
-    report.items.filter((i) => i.status === "BLOCKED").map((i) => i.itemId),
-  );
+  const blockedItems = new Set([
+    ...report.items.filter((i) => i.status === "BLOCKED").map((i) => i.itemId),
+    ...SUPP_REGISTRY.filter(
+      (e) =>
+        (e.class === "llm" && !opts.llm) ||
+        (e.class === "render" && !opts.sidecar),
+    ).map((e) => e.id),
+  ]);
   const pages = sort(
     [...new Set([...expectations.keys(), ...fired.keys()])],
     (a, b) => a.localeCompare(b),
@@ -135,6 +146,7 @@ async function main() {
       "report-only": { type: "boolean", default: false },
       only: { type: "string" },
       sidecar: { type: "string" },
+      llm: { type: "boolean", default: false },
     },
   });
   const only = values.only
@@ -153,12 +165,16 @@ async function main() {
       "--depth",
       values.sidecar ? "full" : "quick",
       "--max-pages",
-      "80",
+      "100",
       "--out",
       join("fork/runs/badgeo", date),
       ...(values.sidecar ? ["--sidecar", values.sidecar] : []),
+      ...(values.llm ? ["--llm"] : []),
     ]);
-    const all = compare(report, loadExpectations(Boolean(values.sidecar)));
+    const all = compare(report, loadExpectations(Boolean(values.sidecar)), {
+      llm: values.llm,
+      sidecar: Boolean(values.sidecar),
+    });
     const rows = only ? onlyIds(all, only) : all;
     const list = (ids: string[]) => ids.join(", ") || "—";
     console.log("| page | expected | fired | missing | blocked | unexpected |");
