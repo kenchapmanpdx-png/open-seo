@@ -47,6 +47,41 @@ describe("crawl.url-variants", () => {
     expect(temporary.findings[0]?.severity).toBe("S1");
   });
 
+  it("opens P3-01 when plain HTTP serves a bot an interstitial despite the redirect", async () => {
+    const url = "http://example.com/about";
+    const result = await urlVariantsCheck.run(
+      context({
+        variants: {
+          status: "ok",
+          probes: [
+            probe("http-apex", "http://example.com/", [
+              ["http://example.com/", 301],
+            ]),
+          ],
+        },
+        pages: { status: "ok", snapshots: [snapshot("/")] },
+        botFetch: {
+          status: "ok",
+          fetches: [
+            {
+              url,
+              bot: "PerplexityBot",
+              status: 200,
+              finalUrl: url,
+              bytes: 300,
+              words: 9,
+              bodySha256: "c",
+              blockedReason: "interstitial:openresty",
+            },
+          ],
+        },
+      }),
+    );
+    expect(statusOf(result, "P3-01")).toBe("OPEN");
+    expect(result.findings[0]?.severity).toBe("S1");
+    expect(result.findings[0]?.urls).toEqual([url]);
+  });
+
   it("passes P3-01 on one 301 hop to the canonical origin", async () => {
     const result = await run([
       probe("http-apex", "http://example.com/", [["http://example.com/", 301]]),

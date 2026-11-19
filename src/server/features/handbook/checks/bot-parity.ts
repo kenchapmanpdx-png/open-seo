@@ -27,6 +27,11 @@ function mismatch(bot: Fetch, browser: Fetch): string | null {
   return null;
 }
 
+/** URLs listed in the finding detail and evidence. */
+const MAX_LISTED = 20;
+
+const pct = (n: number, d: number) => `${Math.round((n / d) * 100)} %`;
+
 export const botParityCheck: HandbookCheck = {
   id: "botfetch.parity",
   itemIds: ITEMS,
@@ -44,47 +49,101 @@ export const botParityCheck: HandbookCheck = {
       );
       return file ? decide(host, file.groups, bot, pathname).allowed : true;
     };
-    const urls = [...new Set(botFetch.fetches.map((f) => f.url))];
-    const rows: string[] = [];
-    for (const url of urls) {
-      const all = botFetch.fetches.filter((f) => f.url === url);
-      const browser = all.find((f) => f.bot === "browser");
-      if (!browser || browser.status !== 200) continue;
-      const table = all
-        .map(
-          (f) =>
-            `${f.bot}: HTTP ${f.status}, ${f.words} words, ${f.bytes} B, sha256 ${f.bodySha256.slice(0, 12)}${f.blockedReason ? `, ${f.blockedReason}` : ""}`,
-        )
-        .join("\n");
-      const ref = out.evidence("botFetch", url, table);
-      rows.push(ref);
-      const failing = all.flatMap((f) => {
-        if (f.bot === "browser") return [];
-        const why = mismatch(f, browser);
-        return why && robotsAllows(f.bot, url) ? [`${f.bot}: ${why}`] : [];
-      });
-      if (failing.length === 0) continue;
-      out.finding({
-        itemIds: ITEMS,
-        severity: "S1",
-        title: "Bots allowed by robots.txt do not get the browser response",
-        detail: `${url}\n${failing.join("\n")}`,
-        fix: "Allow these user agents in the CDN/firewall/bot-protection rules (or block them deliberately in robots.txt and record the decision); re-test each bot UA for 200 + full HTML.",
-        fixability: "FIXABLE",
-        effort: "S",
-        urls: [url],
-        evidenceRefs: [ref],
-      });
-    }
-    if (rows.length === 0) {
+    // The first browser fetch of a URL is the reference; a URL the browser
+    // does not get as 200 (plain-HTTP redirect probes) is not compared.
+    const browserOf = new Map<string, Fetch>();
+    for (const f of botFetch.fetches)
+      if (f.bot === "browser" && !browserOf.has(f.url)) browserOf.set(f.url, f);
+    const urls = [...browserOf.values()]
+      .filter((b) => b.status === 200)
+      .map((b) => b.url);
+    if (urls.length === 0) {
       out.na("P9-01", "no URL returned 200 to the browser UA");
       return out.build();
     }
-    out.pass(
-      "P9-01",
-      `${urls.length} URLs: every robots-allowed bot UA gets 200 + comparable HTML (CDN dashboard + verified-bot logs manual)`,
-      rows,
+    // A browser 429 means the site throttled the audit itself: bot 429s
+    // are then rate limiting, not bot treatment.
+    const throttled = botFetch.fetches.some(
+      (f) => f.bot === "browser" && f.status === 429,
     );
+    const compared = botFetch.fetches.flatMap((f) => {
+      const browser = browserOf.get(f.url);
+      if (f.bot === "browser" || browser?.status !== 200) return [];
+      if (throttled && f.status === 429) return [];
+      if (!robotsAllows(f.bot, f.url)) return [];
+      return [{ f, why: mismatch(f, browser) }];
+    });
+    const ref = (url: string) =>
+      out.evidence(
+        "botFetch",
+        url,
+        botFetch.fetches
+          .filter((f) => f.url === url)
+          .map(
+            (f) =>
+              `${f.bot} round ${f.round ?? 1}: HTTP ${f.status}, ${f.words} words, ${f.bytes} B, sha256 ${f.bodySha256.slice(0, 12)}${f.blockedReason ? `, ${f.blockedReason}` : ""}`,
+          )
+          .join("\n"),
+      );
+    const failing = compared.filter((c) => c.why !== null);
+    if (failing.length === 0) {
+      out.pass(
+        "P9-01",
+        `${urls.length} URLs, ${compared.length} bot fetches: every robots-allowed bot UA gets 200 + comparable HTML (CDN dashboard + verified-bot logs manual)`,
+        urls.slice(0, MAX_LISTED).map(ref),
+      );
+      return out.build();
+    }
+    // Per UA: blocked share of its fetches. A (bot, URL) pair that fails on
+    // one round and passes on the other is intermittent.
+    const rates = [...new Set(failing.map((c) => c.f.bot))].map((bot) => {
+      const all = compared.filter((c) => c.f.bot === bot);
+      const bad = all.filter((c) => c.why !== null).length;
+      return `${bot}: ${bad} of ${all.length} fetches (${pct(bad, all.length)})`;
+    });
+    const pairs = [...new Set(failing.map((c) => `${c.f.bot} ${c.f.url}`))].map(
+      (key) => {
+        const all = compared.filter((c) => `${c.f.bot} ${c.f.url}` === key);
+        return all.every((c) => c.why !== null);
+      },
+    );
+    const intermittent = pairs.every((always) => !always);
+    const failingUrls = [...new Set(failing.map((c) => c.f.url))];
+    const lines = failingUrls.slice(0, MAX_LISTED).map((url) => {
+      const reasons = [
+        ...new Set(
+          failing
+            .filter((c) => c.f.url === url)
+            .map((c) => `${c.f.bot}: ${c.why}`),
+        ),
+      ];
+      return `${url}\n  ${reasons.join("\n  ")}`;
+    });
+    const more =
+      failingUrls.length > MAX_LISTED
+        ? [`… ${failingUrls.length - MAX_LISTED} more URLs`]
+        : [];
+    out.finding({
+      itemIds: ITEMS,
+      ...(intermittent
+        ? {
+            severity: "S2" as const,
+            severityReason: `intermittent: every failing bot got the full page on another fetch of the same URL (${failing.length} of ${compared.length} bot fetches, ${pct(failing.length, compared.length)})`,
+          }
+        : { severity: "S1" as const }),
+      title: "Bots allowed by robots.txt do not get the browser response",
+      detail: [
+        `${failing.length} of ${compared.length} bot fetches blocked (${pct(failing.length, compared.length)})`,
+        ...rates,
+        ...lines,
+        ...more,
+      ].join("\n"),
+      fix: "Allow these user agents in the CDN/firewall/bot-protection rules (or block them deliberately in robots.txt and record the decision); re-test each bot UA for 200 + full HTML.",
+      fixability: "FIXABLE",
+      effort: "S",
+      urls: failingUrls,
+      evidenceRefs: failingUrls.slice(0, MAX_LISTED).map(ref),
+    });
     return out.build();
   },
 };

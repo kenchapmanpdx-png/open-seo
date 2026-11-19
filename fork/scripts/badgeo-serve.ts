@@ -2,7 +2,8 @@
  * BadGEO static server (B1 R4): serves fork/fixtures/badgeo on 127.0.0.1,
  * applies per-path headers from `_headers.json`, answers 403 to the user-agent
  * tokens `_bots.json` lists for a path (bot-parity fixtures; `{ challenge200 }`
- * entries get a 200 openresty-style bot-check page instead), answers the
+ * entries get a 200 openresty-style bot-check page instead; with `every: N`
+ * only the 1st, N+1th, … matching request is challenged), answers the
  * redirects `_redirects.json` lists (path → [status, location]), substitutes
  * `{{ORIGIN}}` in text files, 404 for anything missing.
  *
@@ -24,7 +25,11 @@ const botsSchema = z.record(
   z.string(),
   z.union([
     z.array(z.string()),
-    z.object({ challenge200: z.array(z.string()) }),
+    z.object({
+      challenge200: z.array(z.string()),
+      /** Challenge only every Nth matching request (1st, N+1th, …): intermittent (WO-B9-009). */
+      every: z.number().int().min(1).optional(),
+    }),
   ]),
 );
 
@@ -157,13 +162,18 @@ export async function startBadgeo(
   );
   let origin = "";
   let heavy: Buffer | null = null;
+  const challengeCount = new Map<string, number>();
   const server = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", origin).pathname;
     const ua = req.headers["user-agent"] ?? "";
     const botRule = botMap[pathname] ?? [];
     const challenge = !Array.isArray(botRule);
     const tokens = Array.isArray(botRule) ? botRule : botRule.challenge200;
-    if (tokens.some((token) => ua.includes(token))) {
+    const matched = tokens.some((token) => ua.includes(token));
+    const seen = matched ? (challengeCount.get(pathname) ?? 0) : 0;
+    if (matched) challengeCount.set(pathname, seen + 1);
+    const every = Array.isArray(botRule) ? 1 : (botRule.every ?? 1);
+    if (matched && seen % every === 0) {
       res.writeHead(challenge ? 200 : 403, {
         "content-type": "text/html; charset=utf-8",
         ...(challenge ? { server: "openresty" } : {}),

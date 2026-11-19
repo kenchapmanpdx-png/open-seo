@@ -1,20 +1,11 @@
 import { XMLParser } from "fast-xml-parser";
-import { sha256Hex } from "@/server/lib/audit/ids";
 import { decide, parseRobots } from "@/server/features/handbook/engine/robots";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import {
-  detectInterstitial,
-  interstitialReason,
-  smallBodyHashTracker,
-} from "@/server/features/handbook/engine/interstitial";
-import {
   BOT_USER_AGENTS,
-  type BotFetchData,
-  type BotName,
   type Collector,
   type CollectorContext,
-  type CollectedData,
   type LlmsData,
   type RobotsDecision,
   type RobotsHost,
@@ -260,22 +251,6 @@ export const llmsCollector: Collector<"llms"> = {
   },
 };
 
-/** Home, then the first sample of every template — capped at `max`. */
-function probeUrls(
-  ctx: CollectorContext,
-  collected: Partial<CollectedData>,
-  max: number,
-) {
-  const urls = new Set([new URL("/", ctx.origin).href]);
-  const templates =
-    collected.templates?.status === "ok" ? collected.templates.templates : [];
-  for (const t of templates) {
-    const first = t.samples[0]?.url;
-    if (first) urls.add(first);
-  }
-  return [...urls].slice(0, max);
-}
-
 export const variantsCollector: Collector<"variants"> = {
   key: "variants",
   dependsOn: ["pages"],
@@ -335,92 +310,3 @@ export const variantsCollector: Collector<"variants"> = {
     return { status: "ok", probes: out };
   },
 };
-
-const isBotName = (key: string): key is BotName => key in BOT_USER_AGENTS;
-
-export const botFetchCollector: Collector<"botFetch"> = {
-  key: "botFetch",
-  dependsOn: ["templates"],
-  async collect(ctx, collected) {
-    const fetches: BotFetchData["fetches"][number][] = [];
-    const agents: {
-      bot: BotFetchData["fetches"][number]["bot"];
-      userAgent?: string;
-    }[] = [
-      { bot: "browser" },
-      ...Object.keys(BOT_USER_AGENTS)
-        .filter(isBotName)
-        .map((bot) => ({ bot, userAgent: BOT_USER_AGENTS[bot] })),
-    ];
-    for (const url of probeUrls(ctx, collected, 8)) {
-      for (const { bot, userAgent } of agents) {
-        const res = await tryFetch(ctx, url, { userAgent });
-        if (!res) continue;
-        const statusBlocked = [403, 429, 503].includes(res.status);
-        const hit = statusBlocked
-          ? null
-          : detectInterstitial(res.body, res.headers, res.finalUrl);
-        const blocked = hit
-          ? interstitialReason(hit)
-          : statusBlocked
-            ? `HTTP ${res.status}`
-            : null;
-        if (hit)
-          ctx.log("handbook.botfetch.interstitial", {
-            url,
-            bot,
-            status: res.status,
-            reason: blocked,
-            excerpt: res.body.slice(0, 400),
-          });
-        fetches.push({
-          url,
-          bot,
-          status: res.status,
-          finalUrl: res.finalUrl,
-          bytes: bytesOf(res.body).byteLength,
-          words: extractHtmlFacts(res.body, res.finalUrl).words,
-          bodySha256: await sha256Hex(res.body),
-          blockedReason: blocked,
-        });
-      }
-    }
-    if (fetches.length === 0)
-      return { status: "unavailable", reason: "no response" };
-    return { status: "ok", fetches: markRepeatedSmallBodies(fetches) };
-  },
-};
-
-/**
- * Hash rule (ADR-021): a bot UA that gets the same small body on ≥ 3 URLs is
- * being served one interstitial — unless the browser gets that same body on
- * the URL too (a tiny SPA shell is the page itself, not a challenge).
- */
-function markRepeatedSmallBodies(
-  fetches: BotFetchData["fetches"][number][],
-): BotFetchData["fetches"][number][] {
-  const browserHash = new Map(
-    fetches
-      .filter((f) => f.bot === "browser")
-      .map((f) => [f.url, f.bodySha256]),
-  );
-  const repeatedByBot = new Map<string, Set<string>>();
-  for (const bot of new Set(fetches.map((f) => f.bot))) {
-    if (bot === "browser") continue;
-    const tracker = smallBodyHashTracker();
-    for (const f of fetches)
-      if (f.bot === bot && f.status === 200)
-        tracker.add(f.url, f.bytes, f.bodySha256);
-    repeatedByBot.set(bot, tracker.repeated());
-  }
-  return fetches.map((f) =>
-    !f.blockedReason &&
-    repeatedByBot.get(f.bot)?.has(f.bodySha256) &&
-    browserHash.get(f.url) !== f.bodySha256
-      ? {
-          ...f,
-          blockedReason: interstitialReason({ vendor: null, rule: "hash" }),
-        }
-      : f,
-  );
-}
