@@ -1,16 +1,17 @@
 # Maintenance (after B7)
 
-Three loops keep the fork current (BLUEPRINT §9). Each loop is a runnable checklist. Start a loop with:
+Four loops keep the fork current (BLUEPRINT §9). Each loop is a runnable checklist. Start a loop with:
 
 `Read fork/MAINTENANCE.md and run loop M<n>.`
 
 Rules from `fork/FORK.md` still apply: never ask Ken, record decisions, never open `.env*`, log upstream edits in `fork/UPSTREAM-EDITS.md`. In SINGLE mode every loop runs on Opus 5.5. In SPLIT mode use the Model column; a loop that needs both models switches once, at the marked step.
 
-| Loop                | Trigger                 | Model                    | Output                                                |
-| ------------------- | ----------------------- | ------------------------ | ----------------------------------------------------- |
-| M1 Upstream rebase  | weekly                  | LIGHT                    | `ken/main` on top of `upstream/main`, checks green    |
-| M2 Handbook update  | new handbook version    | HEAVY → LIGHT (1 switch) | registry, checks, fixtures on the new version         |
-| M3 New golden audit | each manual field audit | HEAVY                    | `fork/fixtures/expected/<site>.expected.yaml`, triage |
+| Loop                | Trigger                                      | Model                    | Output                                                        |
+| ------------------- | -------------------------------------------- | ------------------------ | ------------------------------------------------------------- |
+| M1 Upstream rebase  | weekly                                       | LIGHT                    | `ken/main` on top of `upstream/main`, checks green            |
+| M2 Handbook update  | new handbook version                         | HEAVY → LIGHT (1 switch) | registry, checks, fixtures on the new version                 |
+| M3 New golden audit | each manual field audit                      | HEAVY                    | `fork/fixtures/expected/<site>.expected.yaml`, triage         |
+| M4 Guide refresh    | by 2027-05-18 or a new writing-guide version | HEAVY                    | excerpts, copy-quality thresholds, copy-rules pack re-checked |
 
 Log every loop run as one row in the table at the end of this file.
 
@@ -63,6 +64,17 @@ Ken adds a manual audit to `fork/fixtures/audits/` (verbatim).
 5. Triage every `missed` and `partial`: site changed since the field audit (`note: site-changed`) · check defect (WO for LIGHT, or fix now) · rule gap in a §41 item (M2-style registry/check change) · not a §41 item but affects rankings / SEO / GEO → **SUPP candidate** (new `SUPP-nn` in `registry-supp.ts`, reported unscored; FULL-READ §6) · truth verification or owner-only (note why, `[Ken]`).
 6. Every new check, SUPP rule or escalation gets a BadGEO page (`fork/fixtures/badgeo/`, `badgeo-expect` meta, linked from `/about/`, listed in `sitemap.xml`); `pnpm exec tsx fork/scripts/badgeo-run.ts` must end `missing 0 · unexpected 0`.
 7. Write the triage into `fork/reports/` and the WOs into `fork/queue.md`; commit and push.
+
+## M4 — Guide refresh (by 2027-05-18 or a new guide version, HEAVY)
+
+Source: the writing guide excerpts in `fork/research/` (Ken replaces them; never edit their content) and `fork/SCALED-COPY.md` §2 verdicts.
+
+1. Diff the new excerpts against the ones `fork/SCALED-COPY.md` cites (rule ids W / X / E / C / Q). List added, removed and changed rules.
+2. Copy quality thresholds (`engine/copy-metrics.ts`, SCALED-COPY §4.3) change only here, and only to the guide's new value; record old → new in `fork/reports/`. Never add an authorship label or a classifier verdict on who wrote a page (SCALED-COPY §0).
+3. Copy rules pack: Ken's session owns the rules in `fork/skills/copy-rules/SKILL.md`. Note rule changes the guide implies in the report for Ken; format-only fixes are allowed here.
+4. After any pack edit: `pnpm exec tsx fork/scripts/copy-rules-sync.ts`, then `--check`; commit the regenerated `copy-rules.json`.
+5. Re-run the copy-quality fixtures (`fork/fixtures/copy-quality/`) and BadGEO SUPP-17 / SUPP-19 pages (`badgeo-run.ts --only SUPP-17,SUPP-19`); session-end checks green.
+6. Set the next due date (+6 months) in the table above and log the run below.
 
 ## Drill results (B7 R2, 2026-11-14)
 

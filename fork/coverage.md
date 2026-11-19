@@ -132,3 +132,13 @@ Headline: 64 upstream misses/partials. 61 map to ≥1 registry item; 1 has no §
 - Item coverage on a `quick` run (whyracingevents.com, run 53): 129 items · PASS 30 · OPEN 22 · BLOCKED 39 (no sidecar / no LLM key in that run, owner decisions) · NA 20 · DEFERRED 18. The 18 with no automated check: P1-01, P1-05, P2-13, P3-06, P3-09, P3-18, P4-05, P5-18, P10-01…P10-07 (minus P10-05), P11-01…P11-04 (owner / off-site / data items).
 - Supplementary rules (FULL-READ §6, ADR-020; reported under "Additional findings", never scored): SUPP-01…SUPP-16, each with a BadGEO page. The earlier sensitive-data-forms rule was dropped as outside scope [Ken 2026-11-16]; SUPP-05 is now test / dev / numbered-slug pages.
 - Full-depth golden results (catch rates per site, FULL-READ §9) are in `fork/reports/B10.md`.
+
+## Scaled content and copy (B11, contracts 1.7.0)
+
+| Rule    | What                                                                 | Runs                          | Evidence            | BadGEO / fixtures                         |
+| ------- | -------------------------------------------------------------------- | ----------------------------- | ------------------- | ----------------------------------------- |
+| SUPP-17 | templated / variation page sets (≥ 3 pages, ≥ 60 % shared sentences) | full depth, always            | rawHtml, url        | BadGEO variation / low-share / pair pages |
+| SUPP-18 | nothing original vs the top-10 results for the page's query          | flag, AUDIT only (REVIEW N/A) | artifact, textQuote | `fork/fixtures/serp-originality/` (stubs) |
+| SUPP-19 | text addressed to AI assistants (hidden S2 / visible S3)             | always                        | rawHtml             | BadGEO 4 pages                            |
+
+- Not scored: the scaled-content summary block and the copy quality section (flag) are report sections; no item ids.
