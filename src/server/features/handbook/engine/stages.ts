@@ -5,6 +5,14 @@ import type {
   CollectorKey,
 } from "@/server/features/handbook/contracts/collectors";
 import type { EvidenceStore } from "@/server/features/handbook/contracts/evidence-store";
+import {
+  LIGHTHOUSE_BATCH_SIZE,
+  livePageUrls,
+} from "@/server/features/handbook/collectors/sidecar-targets";
+import {
+  lighthouseCapMinutes,
+  type LighthouseScope,
+} from "@/server/features/handbook/engine/depth";
 
 /**
  * Staged handbook run (FULL-READ §7.1, ADR-018). One unit of work is a
@@ -116,19 +124,32 @@ const CAPPABLE = new Set<StageName>([
   "reduce",
 ]);
 
+/** Pages Lighthouse measures in `all` mode: every live 200 HTML page. */
+function lighthouseAllPages(crawl: Partial<CollectedData>): number {
+  return livePageUrls(crawl)?.length ?? 0;
+}
+
 /**
  * Batch count per stage after the crawl (ADR-018: render and Lighthouse
- * 25 pages per batch, map 20). Render, Lighthouse and map are one batch until their collectors take page batches (WO-B9-004 / 031 / 015);
- * the step ids already carry the batch so that change needs no new wiring.
+ * 25 pages per batch, map 20). Lighthouse `all` takes ⌈live pages / 25⌉
+ * batches (each measures the next 25 pages not yet measured); render and
+ * map stay one batch until their collectors take page batches (WO-B9-015).
  */
 export function planBatches(
-  _crawl: Partial<CollectedData>,
+  crawl: Partial<CollectedData>,
+  lighthouse: LighthouseScope = "templates",
 ): Record<StageName, number> {
   return {
     crawl: 1,
     render: 1,
     axe: 1,
-    lighthouse: 1,
+    lighthouse:
+      lighthouse === "all"
+        ? Math.max(
+            1,
+            Math.ceil(lighthouseAllPages(crawl) / LIGHTHOUSE_BATCH_SIZE),
+          )
+        : 1,
     map: 1,
     reduce: 1,
     checks: 1,
@@ -278,6 +299,8 @@ export type StageContext = {
   /** Run start; the cap is measured from here. */
   startedAt: Date;
   maxMinutes: number;
+  /** `HANDBOOK_LIGHTHOUSE`; `all` adds Lighthouse batches and raises the cap. */
+  lighthouse?: LighthouseScope;
   now?: () => Date;
 };
 
@@ -321,7 +344,9 @@ export async function runStageUnit(
   const elapsedMin =
     ((ctx.now?.() ?? new Date()).getTime() - ctx.startedAt.getTime()) / 60_000;
   if (CAPPABLE.has(stage) && elapsedMin >= ctx.maxMinutes) {
-    await ctx.store.save(stage, batch, capped(stage));
+    // A later batch re-emits the earlier ones' pages, so a capped later
+    // batch saves nothing and the measured pages stand.
+    await ctx.store.save(stage, batch, batch > 0 ? {} : capped(stage));
     await ctx.tracker.skip(stage, batch, RUN_TIME_CAP_REASON);
     return "skipped";
   }
@@ -375,10 +400,18 @@ export async function runStagedHandbook(
 ): Promise<void> {
   const one = planBatches({});
   await runStageUnit("crawl", 0, one, engine, ctx);
-  const batches = planBatches(await loadCollected(ctx.store, one));
+  const crawl = await loadCollected(ctx.store, one);
+  const scope = ctx.lighthouse ?? "templates";
+  const batches = planBatches(crawl, scope);
+  // `all`: run cap + 0.6 min per Lighthouse page (FULL-READ §2).
+  const runCtx = {
+    ...ctx,
+    maxMinutes:
+      ctx.maxMinutes + lighthouseCapMinutes(scope, lighthouseAllPages(crawl)),
+  };
   for (const stage of STAGES.slice(1)) {
     for (let batch = 0; batch < batches[stage]; batch++) {
-      await runStageUnit(stage, batch, batches, engine, ctx);
+      await runStageUnit(stage, batch, batches, engine, runCtx);
     }
   }
 }

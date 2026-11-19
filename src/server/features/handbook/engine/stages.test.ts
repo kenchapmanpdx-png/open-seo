@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CollectedData } from "@/server/features/handbook/contracts/collectors";
+import { snapshot } from "@/server/features/handbook/checks/check-test-fixtures";
 import { createMemoryEvidenceStore } from "./memory-evidence-store";
 import {
   createEvidenceStageStore,
@@ -87,5 +88,31 @@ describe("staged run", () => {
       status: "unavailable",
       reason: "run time cap",
     });
+  });
+
+  it("Lighthouse all: 60 live pages → 3 batches and the cap rises 0.6 min per page", async () => {
+    const pages = {
+      status: "ok",
+      snapshots: Array.from({ length: 60 }, (_, i) => snapshot(`/p${i}`)),
+    } satisfies CollectedData["pages"];
+    const tracker = createMemoryStageTracker();
+    const run = engine();
+    vi.mocked(run.collect).mockImplementation(async (stage) =>
+      stage === "crawl" ? { pages } : {},
+    );
+    // Minute 100: past the 90-min base cap, inside 90 + 60 × 0.6 = 126.
+    await runStagedHandbook(
+      run,
+      context({
+        tracker,
+        lighthouse: "all",
+        now: () => new Date("2026-11-18T01:40:00Z"),
+      }),
+    );
+    expect(planBatches({ pages }, "all").lighthouse).toBe(3);
+    expect(planBatches({ pages }).lighthouse).toBe(1);
+    expect(
+      [0, 1, 2].map((b) => tracker.rows.get(`lighthouse:${b}`)?.status),
+    ).toEqual(["done", "done", "done"]);
   });
 });

@@ -18,6 +18,7 @@ import {
   type RenderRequest,
 } from "@/server/features/handbook/contracts/sidecar";
 import type { HandbookDepth } from "@/server/features/handbook/contracts/exports";
+import type { LighthouseScope } from "@/server/features/handbook/engine/depth";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { normalizeUrl } from "@/server/features/handbook/checks/support";
 import {
@@ -25,6 +26,12 @@ import {
   lighthouseMobileBase,
 } from "@/server/features/handbook/engine/escalations";
 import { createLimiter } from "./limiter";
+import {
+  LIGHTHOUSE_BATCH_SIZE,
+  livePageUrls,
+  sampleUrls,
+  screenshotTargets,
+} from "./sidecar-targets";
 import { renderOnlyLinks } from "./site-crawl";
 
 /**
@@ -49,11 +56,11 @@ export type SidecarConfig = {
   depth?: HandbookDepth;
   /** `HANDBOOK_RENDER_CONCURRENCY`; clamped to 1…8, default 3. */
   concurrency?: number;
+  /** `HANDBOOK_LIGHTHOUSE` at `full`; default `templates`. */
+  lighthouse?: LighthouseScope;
 };
 
 const DEFAULT_CONCURRENCY = 3;
-const MAX_SAMPLES = 16;
-const CONTACT_PATH = /\/contact/i;
 const RENDER_TIMEOUT_MS = 90_000;
 const LIGHTHOUSE_TIMEOUT_MS = 180_000;
 
@@ -93,54 +100,6 @@ async function call<T extends z.ZodTypeAny>(
       reason: `sidecar ${path} unreachable: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
-}
-
-function sampleUrls(collected: Partial<CollectedData>): string[] | null {
-  const templates = collected.templates;
-  if (!templates || templates.status !== "ok") return null;
-  return templates.templates
-    .flatMap((t) => t.samples.filter((s) => s.rank === 1).map((s) => s.url))
-    .slice(0, MAX_SAMPLES);
-}
-
-const HTML_TYPE = /html/i;
-
-/** `full`: every live 200 HTML page (not a redirect), first-seen order. */
-function livePageUrls(collected: Partial<CollectedData>): string[] | null {
-  const pages = collected.pages;
-  if (!pages || pages.status !== "ok") return null;
-  const seen = new Set<string>();
-  return pages.snapshots.flatMap((s) => {
-    const url = normalizeUrl(s.url);
-    const live =
-      s.status === 200 &&
-      normalizeUrl(s.finalUrl) === url &&
-      HTML_TYPE.test(s.contentType ?? "html");
-    if (!live || seen.has(url)) return [];
-    seen.add(url);
-    return [s.url];
-  });
-}
-
-/**
- * First-screen screenshot targets (FULL-READ §3.3): template rank-1
- * samples, home, contact pages and hubs (a directory URL with ≥ 2 rendered
- * pages below it).
- */
-function screenshotTargets(
-  urls: readonly string[],
-  samples: readonly string[],
-): Set<string> {
-  const paths = urls.map((u) => new URL(u).pathname);
-  const out = new Set(samples.map(normalizeUrl));
-  urls.forEach((url, i) => {
-    const path = paths[i];
-    const dir = path.endsWith("/") ? path : `${path}/`;
-    const children = paths.filter((p) => p !== path && p.startsWith(dir));
-    if (path === "/" || CONTACT_PATH.test(path) || children.length >= 2)
-      out.add(normalizeUrl(url));
-  });
-  return out;
 }
 
 /** Σ transferBytes, unknown sizes (aborted, opaque) skipped. */
@@ -224,6 +183,9 @@ export function createSidecarCollectors(config: SidecarConfig) {
   ) => limit(() => call(config, path, body, schema, timeoutMs));
   // Lighthouse cannot run two audits at once in one sidecar process.
   const oneAtATime = createLimiter(1);
+  // `all`: URLs already tried by an earlier batch of this process, so a
+  // failing page is not retried by every later batch.
+  const lighthouseTried = new Set<string>();
 
   const render: Collector<"render"> = {
     key: "render",
@@ -400,6 +362,8 @@ export function createSidecarCollectors(config: SidecarConfig) {
           : null;
         return perUrl(ctx, "lighthouse", urls, mobile);
       }
+      if (config.lighthouse === "all")
+        return lighthouseAllBatch(ctx, collected);
       // `full` (HANDBOOK_LIGHTHOUSE=templates): rank-1 of every template
       // (cap 15) + 3 heaviest pages on mobile, home on desktop, then the
       // LCP > 4 s and > 5 MB escalations (FULL-READ §4) on mobile.
@@ -435,6 +399,52 @@ export function createSidecarCollectors(config: SidecarConfig) {
       return base.status === "ok" ? base : desktop;
     },
   };
+
+  /**
+   * `all` (FULL-READ §2): one batch = the next 25 live pages not yet
+   * measured, mobile only; the first batch also runs home on desktop. The
+   * batch re-emits the earlier batches' pages, so the last batch holds them
+   * all (stage outputs merge last-wins).
+   */
+  async function lighthouseAllBatch(
+    ctx: CollectorContext,
+    collected: Partial<CollectedData>,
+  ): Promise<CollectedData["lighthouse"]> {
+    const prior =
+      collected.lighthouse?.status === "ok" ? collected.lighthouse.pages : [];
+    const done = new Set([
+      ...lighthouseTried,
+      ...prior
+        .filter((p) => p.formFactor === "mobile")
+        .map((p) => normalizeUrl(p.url)),
+    ]);
+    const live = livePageUrls(collected);
+    const next = live
+      ?.filter((u) => !done.has(normalizeUrl(u)))
+      .slice(0, LIGHTHOUSE_BATCH_SIZE);
+    for (const u of next ?? []) lighthouseTried.add(normalizeUrl(u));
+    const mobile = await perUrl(
+      ctx,
+      "lighthouse",
+      next ?? null,
+      lighthouseRun(ctx, "mobile"),
+    );
+    const desktop =
+      collected.lighthouse === undefined
+        ? await perUrl(
+            ctx,
+            "lighthouse",
+            [new URL("/", ctx.origin).href],
+            lighthouseRun(ctx, "desktop"),
+          )
+        : null;
+    const pages = [
+      ...prior,
+      ...[mobile, desktop].flatMap((r) => (r?.status === "ok" ? r.pages : [])),
+    ];
+    if (pages.length > 0) return { status: "ok", pages };
+    return collected.lighthouse ?? mobile;
+  }
 
   return [render, axe, lighthouse] as const;
 }

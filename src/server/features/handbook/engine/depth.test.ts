@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   depthLine,
+  estimateRunMinutes,
   infiniteSpaceGuard,
   resolveDepth,
+  resolveLighthouseScope,
   resolveMaxPages,
   stratifiedFill,
 } from "./depth";
@@ -70,5 +72,13 @@ describe("depth + caps", () => {
     expect(depthLine("full", { discovered: 100, read: 90, capped: true })).toBe(
       "Depth: full · read 90 of 100 discovered",
     );
+  });
+
+  it("Lighthouse all adds 0.6 min per page to the estimate; default templates", () => {
+    expect(estimateRunMinutes(100, "all")).toBe(
+      estimateRunMinutes(100, "templates") + 60,
+    );
+    expect(resolveLighthouseScope(undefined)).toBe("templates");
+    expect(resolveLighthouseScope("templates", "all")).toBe("all");
   });
 });
