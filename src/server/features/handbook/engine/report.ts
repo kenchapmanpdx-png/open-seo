@@ -15,6 +15,7 @@ import {
 } from "../export/markdown";
 import { collectEscalations } from "./escalations";
 import { scoreItems } from "./scoring";
+import { isSuppOnly } from "../registry-supp";
 
 /**
  * RunResult → K7 ReportJson with the EP-7 score (K6). Markdown exports
@@ -39,7 +40,28 @@ export function buildReportJson(input: {
     for (const id of f.itemIds)
       codesByItem.set(id, [...(codesByItem.get(id) ?? []), f.code]);
   }
-  const s1Open = result.findings.filter((f) => f.severity === "S1");
+  const all = result.findings.map((f) => ({
+    code: f.code,
+    severity: f.severity,
+    phase: f.phase,
+    sectionRef: f.sectionRef,
+    title: f.title,
+    detail: f.detail,
+    fix: f.fix,
+    fixability: f.fixability,
+    limitedReason: f.limitedReason ?? null,
+    effort: f.effort,
+    source: f.source,
+    itemIds: [...f.itemIds],
+    urls: [...f.urls],
+    evidence: result.evidence
+      .filter((e) => e.findingCode === f.code)
+      .map((e) => ({ kind: e.kind, url: e.url, excerpt: e.excerpt })),
+  }));
+  // ADR-020: SUPP-only findings are reported apart and never scored or blocking.
+  const findings = all.filter((f) => !isSuppOnly(f.itemIds));
+  const additionalFindings = all.filter((f) => isSuppOnly(f.itemIds));
+  const s1Open = findings.filter((f) => f.severity === "S1");
   const report: ReportJson = {
     reportVersion: REPORT_JSON_VERSION,
     contractsVersion: CONTRACTS_VERSION,
@@ -61,24 +83,8 @@ export function buildReportJson(input: {
     },
     score: null,
     siteProfile: result.intake.siteProfile,
-    findings: result.findings.map((f) => ({
-      code: f.code,
-      severity: f.severity,
-      phase: f.phase,
-      sectionRef: f.sectionRef,
-      title: f.title,
-      detail: f.detail,
-      fix: f.fix,
-      fixability: f.fixability,
-      limitedReason: f.limitedReason ?? null,
-      effort: f.effort,
-      source: f.source,
-      itemIds: [...f.itemIds],
-      urls: [...f.urls],
-      evidence: result.evidence
-        .filter((e) => e.findingCode === f.code)
-        .map((e) => ({ kind: e.kind, url: e.url, excerpt: e.excerpt })),
-    })),
+    findings,
+    ...(additionalFindings.length ? { additionalFindings } : {}),
     items: result.statuses.map((s) => ({
       itemId: s.itemId,
       phase: phaseOf.get(s.itemId) ?? "",

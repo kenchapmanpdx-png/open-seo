@@ -3,6 +3,7 @@ import { truncateToBytes } from "@/server/lib/audit/html-response";
 import type { EvidenceDraft } from "@/server/features/handbook/contracts/check";
 import { EVIDENCE_EXCERPT_MAX_BYTES } from "@/server/features/handbook/contracts/evidence-store";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
+import { SUPP_BY_ID } from "../registry-supp";
 import type {
   EvidenceRow,
   FindingRow,
@@ -50,6 +51,8 @@ export async function materialize(
   ] of drafts.entries()) {
     const code = `F${String(index + 1).padStart(2, "0")}`;
     const primary = registry.get(finding.itemIds[0] ?? "");
+    const refs =
+      primary?.refs ?? SUPP_BY_ID.get(finding.itemIds[0] ?? "")?.refs ?? [];
     const { evidenceRefs, ...rest } = finding;
     findings.push({
       ...rest,
@@ -57,7 +60,7 @@ export async function materialize(
       checkId,
       class: checkClass,
       phase: primary?.phase ?? "P1",
-      sectionRef: primary ? primary.refs.map((r) => `§${r}`).join(", ") : "",
+      sectionRef: refs.map((r) => `§${r}`).join(", "),
     });
     for (const ref of evidenceRefs) {
       const draft = result.evidence.find((e) => e.ref === ref);

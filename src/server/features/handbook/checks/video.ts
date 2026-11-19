@@ -112,6 +112,12 @@ function sizeSpeed(ctx: CheckContext, pages: PageVideos[], out: Out) {
     out.finding({
       itemIds: [itemId],
       severity: "S2",
+      ...(itemId === "P7-01"
+        ? {
+            severityReason:
+              "over the size cap: the download competes with LCP on every visit",
+          }
+        : {}),
       title:
         itemId === "P7-01"
           ? "Hero video that loads with the page is over the size cap"

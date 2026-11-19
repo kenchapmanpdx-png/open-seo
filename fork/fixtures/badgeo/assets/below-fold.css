@@ -1,0 +1,4 @@
+/* Pushes media below the first screen (inline styles are blocked by the fixture CSP). */
+.below-fold {
+  margin-top: 1400px;
+}

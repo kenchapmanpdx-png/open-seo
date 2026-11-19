@@ -288,6 +288,63 @@ const renderedPage = (url: string, renderOnlyLinks: string[]) => ({
   consoleErrors: [],
 });
 
+const noNetwork = async (): Promise<never> => {
+  throw new Error("no network in tests");
+};
+const offline = { projectId: "p1", fetch: noNetwork, fetchOffsite: noNetwork };
+
+describe("SUPP findings (ADR-020)", () => {
+  it("reports SUPP-only findings apart, never scored or release-blocking", async () => {
+    const supp: HandbookCheck = {
+      id: "test.supp",
+      itemIds: ["SUPP-07"],
+      class: "BOTFETCH",
+      requires: ["pages"],
+      run: () => ({
+        statuses: [],
+        findings: [
+          {
+            ...finding,
+            itemIds: ["SUPP-07"],
+            severity: "S1",
+            evidenceRefs: ["e"],
+          },
+        ],
+        evidence: [{ ref: "e", kind: "botFetch", url: "u", excerpt: "x" }],
+      }),
+    };
+    const report = async (checks: HandbookCheck[]) =>
+      buildReportJson({
+        result: await runHandbook(
+          {
+            runId: "r1",
+            origin: "https://example.com",
+            mode: "AUDIT",
+            registry: REGISTRY,
+            collectors: [pagesOk],
+            checks,
+            maxPages: 10,
+          },
+          { ...offline, store: createMemoryEvidenceStore(), log: () => {} },
+        ),
+        registry: REGISTRY,
+        handbookVersion: "4.6",
+        runId: "r1",
+        origin: "https://example.com",
+        mode: "AUDIT",
+        startedAt: "2026-11-14T00:00:00.000Z",
+        finishedAt: null,
+      });
+    const withSupp = await report([supp]);
+    expect(withSupp.findings).toEqual([]);
+    expect(withSupp.additionalFindings).toMatchObject([
+      { itemIds: ["SUPP-07"], severity: "S1", sectionRef: "§18" },
+    ]);
+    expect(withSupp.release.status).toBe("CLEAR");
+    expect(withSupp.score).toEqual((await report([])).score);
+  });
+});
+
 describe("render-discovered second pass", () => {
   it("crawls and renders JS-only links after the render stage", async () => {
     const origin = "https://example.com";

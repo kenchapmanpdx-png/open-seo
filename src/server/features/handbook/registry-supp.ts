@@ -156,3 +156,15 @@ export const SUPP_REGISTRY = z.array(suppEntrySchema).parse([
     evidence: ["textQuote", "rawHtml"],
   },
 ]);
+
+export const SUPP_BY_ID: ReadonlyMap<string, (typeof SUPP_REGISTRY)[number]> =
+  new Map(SUPP_REGISTRY.map((e) => [e.id, e]));
+
+/** A finding that cites only SUPP ids goes to "Additional findings" (ADR-020). */
+export const isSuppOnly = (itemIds: readonly string[]) =>
+  itemIds.length > 0 && itemIds.every((id) => SUPP_BY_ID.has(id));
+
+/** Item filter for one run: intake-applicable registry items plus every SUPP rule. */
+export const appliesWithSupp =
+  (applicable: ReadonlyMap<string, unknown>) => (id: string) =>
+    applicable.has(id) || SUPP_BY_ID.has(id);
