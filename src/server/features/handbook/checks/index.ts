@@ -24,6 +24,7 @@ import { sourceCheck } from "./llm-sources";
 import { LLM_TEMPLATE_CHECKS } from "./llm-templates";
 import { llmsMirrorsCheck } from "./llms-mirrors";
 import { notFoundCheck } from "./not-found";
+import { numericParityCheck } from "./numeric-parity";
 import { outboundLinksCheck } from "./outbound-links";
 import { pageStructureCheck } from "./page-structure";
 import { platformCheck } from "./platform";
@@ -82,6 +83,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   schemaVisibilityCheck,
   a11yMarkupCheck,
   renderParityCheck,
+  numericParityCheck,
   firstScreenActionCheck,
   consentLcpCheck,
   renderResourcesCheck,
