@@ -1,4 +1,5 @@
 import { APICallError } from "ai";
+import type { LlmVerdict } from "@/server/features/handbook/contracts/llm";
 import { MockLanguageModelV3 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -6,6 +7,7 @@ import {
   LlmBudgetError,
   LlmCreditsError,
   verifyQuote,
+  type VerdictCache,
 } from "./judge";
 
 const url = "https://example.com/";
@@ -44,7 +46,11 @@ const httpError = (statusCode: number, headers: Record<string, string> = {}) =>
     isRetryable: statusCode === 429 || statusCode >= 500,
   });
 
-function judgeWith(model: MockLanguageModelV3, budgetUsd = 1) {
+function judgeWith(
+  model: MockLanguageModelV3,
+  budgetUsd = 1,
+  cache?: VerdictCache,
+) {
   const log = vi.fn(async () => {});
   const judge = createJudge({
     model,
@@ -53,6 +59,7 @@ function judgeWith(model: MockLanguageModelV3, budgetUsd = 1) {
     budgetUsd: () => budgetUsd,
     rubrics: new Map([[rubric.id, rubric]]),
     log,
+    cache,
   });
   return { judge, log };
 }
@@ -127,6 +134,29 @@ describe("createJudge", () => {
     const { judge, log } = judgeWith(model);
     await expect(judge(input)).resolves.toMatchObject({ verdict: "unsure" });
     expect(log).toHaveBeenCalledTimes(2);
+  });
+
+  it("answers an unchanged prompt from the cache at no cost and never caches unsure", async () => {
+    const store = new Map<string, LlmVerdict>();
+    const cache: VerdictCache = {
+      get: async (key) => store.get(key) ?? null,
+      put: async (key, verdict) => void store.set(key, verdict),
+    };
+    const model = modelReturning(fail("the best race team"));
+    const { judge } = judgeWith(model, 1, cache);
+    await judge(input);
+    const rerun = await judge(input);
+    expect(model.doGenerateCalls).toHaveLength(1);
+    expect(rerun).toMatchObject({ verdict: "fail", call: { costUsd: 0 } });
+
+    store.clear();
+    const { judge: unsure } = judgeWith(
+      modelReturning(fail("invented quote")),
+      1,
+      cache,
+    );
+    await expect(unsure(input)).resolves.toMatchObject({ verdict: "unsure" });
+    expect(store.size).toBe(0);
   });
 
   it("stops the LLM checks with llm credits on a 402", async () => {

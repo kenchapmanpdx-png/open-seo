@@ -62,10 +62,14 @@ import {
 } from "@/server/features/handbook/contracts/status";
 import {
   LLM_BUDGET_ENV,
+  llmVerdictSchema,
   type Judge,
   type JudgeInput,
 } from "@/server/features/handbook/contracts/llm";
-import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
+import type {
+  LlmCallLog,
+  VerdictCache,
+} from "@/server/features/handbook/llm/judge";
 import {
   createHandbookJudge,
   createHandbookMapper,
@@ -373,7 +377,12 @@ function cliBudget(): RunBudget {
   return createRunBudget(process.env[LLM_BUDGET_ENV]);
 }
 
-export function cliJudge(calls: LlmCallLog[], budgetUsd: () => number) {
+/** `cache: false` for evals, which must ask the model every time. */
+export function cliJudge(
+  calls: LlmCallLog[],
+  budgetUsd: () => number,
+  { cache = true }: { cache?: boolean } = {},
+) {
   loadCliEnv();
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("--llm needs OPENROUTER_API_KEY");
@@ -384,7 +393,33 @@ export function cliJudge(calls: LlmCallLog[], budgetUsd: () => number) {
     log: async (call) => {
       calls.push(call);
     },
+    cache: cache ? fsVerdictCache() : undefined,
   });
+}
+
+/** Judge verdict cache as JSON files (unchanged reruns skip the judge calls). */
+const VERDICT_CACHE_DIR = "fork/runs/.judge-cache";
+
+function fsVerdictCache(): VerdictCache {
+  mkdirSync(VERDICT_CACHE_DIR, { recursive: true });
+  const path = (key: string) =>
+    join(
+      VERDICT_CACHE_DIR,
+      `${createHash("sha256").update(key).digest("hex")}.json`,
+    );
+  return {
+    async get(key) {
+      const file = path(key);
+      if (!existsSync(file)) return null;
+      const parsed = llmVerdictSchema.safeParse(
+        JSON.parse(readFileSync(file, "utf8")),
+      );
+      return parsed.success ? parsed.data : null;
+    },
+    async put(key, verdict) {
+      await writeFormatted(path(key), JSON.stringify(verdict));
+    },
+  };
 }
 
 /** Profile cache as JSON files (CLI runs have no DB). */

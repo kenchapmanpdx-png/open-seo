@@ -60,13 +60,14 @@ const list: Rubric[] = [
   },
   {
     id: "stats-consistency",
-    version: 1,
+    version: 2,
     instructions: [
-      "Handbook §6, §20: each statistic (counts of events, customers, years in business, money raised, people served, ratings, prices) is stated with one value everywhere: page copy, meta descriptions, llms.txt and About must match.",
+      "Handbook §6, §20: each statistic (counts of events, customers, years in business, money raised, people served, ratings, prices) is stated with one value everywhere: page copy, meta descriptions, llms.txt and About must match. Every stat is also sourced and dated.",
       "Each page's text is a fact table: its meta description and the sentences on that page that contain numbers. A url ending in llms.txt or llms-full.txt is the site's llms file.",
       'fail when the same quantity is given different values in different places or within one source ("21 events" vs "18 events"; "$40K raised" vs "$45,000 raised"), unless the wording makes clear they measure different things or different dates. Quote both conflicting statements, each from its own url.',
       'Different quantities that merely share a number are not a conflict. Rounded forms of one value ("over 1,000" vs "1,050") are not a conflict.',
-      "pass when no quantity conflicts.",
+      'Also fail when a percentage, rate or market-size figure ("96% approval", "$3 billion funded", "tens of thousands of clients") is stated with neither a named source nor a year or date in its sentence; quote it. The business\'s own plain counts ("14 events") and prices need no source.',
+      "pass when no quantity conflicts and every percentage, rate or market-size figure carries a source or a date.",
     ].join("\n"),
   },
   {
@@ -82,11 +83,12 @@ const list: Rubric[] = [
   },
   {
     id: "awards-as-text",
-    version: 1,
+    version: 2,
     instructions: [
       "Handbook §6: every award, press mention and certification is stated as HTML text naming the awarding body (or publication), the year, and a link to the source. A badge image may decorate it but must not be the only statement.",
       "Each page's text lists the award-like images (alt and src), award-like sentences and award-like links found on that page.",
       "An award-like image counts as stated in text only when an award-like sentence on the same page names the same award with its body and year.",
+      'Compliance and trust badges are certifications: "HIPAA compliant", "SOC 2", "PCI DSS", "BBB accredited", "verified" or "secure" seals each claim that a body certified the business, so each needs text naming that body (and the year). Payment-card and partner logos are not certifications.',
       "fail when an award, press mention or certification is shown only as an image, or as text missing the awarding body, the year, or a source link; quote the text or the image line (alt/src) exactly as given.",
       "pass when every one is complete text, or when nothing listed is actually an award, press mention or certification (e.g. 'press' as a verb, a 'featured events' heading).",
     ].join("\n"),
