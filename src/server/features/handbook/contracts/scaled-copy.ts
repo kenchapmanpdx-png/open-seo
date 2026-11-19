@@ -55,7 +55,7 @@ export function scaledContentRows(s: ScaledContent) {
     { label: "Thin pages (P3-12, P5-15)", value: String(s.thinPages) },
     {
       label: "Templated / variation page sets (SUPP-17)",
-      value: `${s.supp17Sets} sets, ${s.supp17Pages} pages`,
+      value: `${s.supp17Sets} sets, ${s.supp17Pages} pages not already in a P3-12 cluster`,
     },
     ...s.ownTextShare.map((t) => ({
       label: `Median own-text share, ${t.template} (${t.pages} pages)`,

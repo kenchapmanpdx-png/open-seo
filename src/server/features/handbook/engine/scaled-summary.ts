@@ -59,12 +59,18 @@ export function buildScaledContent(
   });
 
   const supp17 = findings.filter((f) => f.itemIds.includes("SUPP-17"));
+  const clusterUrls = new Set(duplicateClusters(live, SIMILAR).flat());
+  // §3.1 rule 4: a URL in a P3-12 cluster and a SUPP-17 set counts once,
+  // under P3-12 (P5-09 URLs already left the sets, rule 1).
+  const supp17Urls = new Set(
+    supp17.flatMap((f) => f.urls).filter((u) => !clusterUrls.has(u)),
+  );
   return {
     indexablePages: live.length,
-    duplicateClusterPages: duplicateClusters(live, SIMILAR).flat().length,
+    duplicateClusterPages: clusterUrls.size,
     thinPages: thin.size,
     supp17Sets: supp17.length,
-    supp17Pages: new Set(supp17.flatMap((f) => f.urls)).size,
+    supp17Pages: supp17Urls.size,
     ownTextShare,
     ...(supp18 ? { supp18 } : {}),
     supp19Pages: new Set(urlsOf(findings, "SUPP-19")).size,

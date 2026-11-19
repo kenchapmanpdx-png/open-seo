@@ -15,7 +15,8 @@ import { createResult } from "./support";
  * SUPP-17 templated / variation page sets (SCALED-COPY §3.2, ADR-022):
  * ≥ 3 indexable pages of one template whose own sentences (site chrome
  * removed) are ≥ 60 % shared pairwise. Precedence §3.1: a set wholly inside
- * one P3-12 duplicate cluster (J ≥ 0.8) is skipped here; URLs a P5-09
+ * one P3-12 duplicate cluster (J ≥ 0.8) is skipped here; a set page in a
+ * cluster stays and its evidence says `alsoIn: P3-12` (rule 4); URLs a P5-09
  * finding reports are removed after all checks (`applyScaledPrecedence`).
  * A crawl that sampled pages (cap reached, quick depth) → N/A: sets would
  * be partial. Not scored (ADR-020).
@@ -73,20 +74,23 @@ export const suppScaledCheck: HandbookCheck = {
       (set) =>
         !clusters.some((c) => set.pages.every((p) => c.has(p.snapshot.url))),
     );
+    // §3.1 rule 4: a set page also in a P3-12 cluster stays; evidence names the cluster.
+    const clusterOf = (url: string) =>
+      [...(clusters.find((c) => c.has(url)) ?? [])][0];
     for (const set of sets) {
       const n = set.pages.length;
       const big = n >= S2_PAGES || n >= S2_SHARE * live.length;
       const summary = scaledSetSummary(set);
-      const refs = set.pages
-        .slice(0, MAX_EVIDENCE)
-        .map((p) =>
-          out.evidence(
-            "rawHtml",
-            p.snapshot.url,
-            `${p.snapshot.url} · ${summary} · this page ${pct(p.shared)} % shared · ≈ ${p.ownWords} own-text words`,
-            p.snapshot.rawKey,
-          ),
+      const alsoIn = set.pages.filter((p) => clusterOf(p.snapshot.url));
+      const refs = set.pages.slice(0, MAX_EVIDENCE).map((p) => {
+        const cluster = clusterOf(p.snapshot.url);
+        return out.evidence(
+          "rawHtml",
+          p.snapshot.url,
+          `${p.snapshot.url} · ${summary} · this page ${pct(p.shared)} % shared · ≈ ${p.ownWords} own-text words${cluster ? ` · alsoIn: P3-12 (cluster ${cluster})` : ""}`,
+          p.snapshot.rawKey,
         );
+      });
       const urls = set.pages.map((p) => p.snapshot.url);
       refs.push(
         out.evidence("url", urls[0], `${set.templateKey}\n${urls.join("\n")}`),
@@ -103,6 +107,11 @@ export const suppScaledCheck: HandbookCheck = {
         detail: [
           summary,
           ...(set.limited ? [`LIMITED: ${set.limited}`] : []),
+          ...(alsoIn.length > 0
+            ? [
+                `${alsoIn.length} of these pages are also near-duplicates (P3-12).`,
+              ]
+            : []),
           ...set.pages.map(
             (p) =>
               `${p.snapshot.url} — ${pct(p.shared)} % shared, ≈ ${p.ownWords} own-text words`,

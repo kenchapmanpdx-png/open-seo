@@ -102,6 +102,8 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [value];
 }
 
+const SITEMAP_RETRY_MS = 2000;
+
 export const sitemapCollector: Collector<"sitemap"> = {
   key: "sitemap",
   dependsOn: ["robots"],
@@ -121,7 +123,13 @@ export const sitemapCollector: Collector<"sitemap"> = {
       const url = queue.shift() ?? "";
       if (seen.has(url)) continue;
       seen.add(url);
-      const res = await tryFetch(ctx, url);
+      let res = await tryFetch(ctx, url);
+      // One retry on 5xx: a transient 503 on the sitemap drops every
+      // sitemap-only URL from the crawl (WO-B11-091).
+      if (res && res.status >= 500 && res.status <= 599) {
+        await new Promise((r) => setTimeout(r, SITEMAP_RETRY_MS));
+        res = await tryFetch(ctx, url);
+      }
       if (!res || res.status !== 200) {
         const error = res
           ? `HTTP ${res.status}`

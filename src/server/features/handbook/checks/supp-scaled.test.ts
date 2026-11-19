@@ -9,6 +9,8 @@ import {
   variationPages,
 } from "./check-test-fixtures";
 import { applyScaledPrecedence, suppScaledCheck } from "./supp-scaled";
+import { buildScaledContent } from "../engine/scaled-summary";
+import { completeCollected } from "../engine/stages";
 
 const run = async (pages: PageSnapshot[], capped = false) =>
   suppScaledCheck.run(
@@ -38,6 +40,37 @@ describe("crawl.supp-scaled (SUPP-17)", () => {
       setPage(`/twin-${x}`, `Twin page ${x} here`, many("same", 30)),
     );
     expect(statusOf(await run(same), "SUPP-17")).toBe("PASS");
+  });
+
+  it("keeps a set page that is also in a P3-12 cluster and counts its URL once", async () => {
+    const pages = variationPages();
+    const url = "https://example.com/plumber-copy";
+    const twin = {
+      ...pages[0],
+      url,
+      finalUrl: url,
+      head: { ...pages[0].head, canonical: url },
+    };
+    const all = [...pages, twin];
+    const result = await run(all);
+    expect(result.findings).toHaveLength(1);
+    const [set] = result.findings;
+    expect(set.urls).toHaveLength(5);
+    expect(set.detail).toContain(
+      "2 of these pages are also near-duplicates (P3-12).",
+    );
+    const alsoIn = result.evidence.filter((e) =>
+      e.excerpt.includes("alsoIn: P3-12"),
+    );
+    expect(alsoIn.map((e) => e.url)).toEqual([pages[0].url, twin.url]);
+    const summary = buildScaledContent(
+      completeCollected({
+        pages: { status: "ok", snapshots: all },
+        templates: { status: "ok", templates: [template("/*", all)] },
+      }),
+      result.findings,
+    );
+    expect(summary.duplicateClusterPages + summary.supp17Pages).toBe(5);
   });
 
   it("is N/A when the crawl sampled pages", async () => {

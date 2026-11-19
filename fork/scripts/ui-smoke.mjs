@@ -60,6 +60,8 @@ const paths = [
   "handbook/ai-visibility-byok",
   "handbook/backlinks-cc",
   "handbook/agency",
+  // Upstream page with the embed settings (project_embeds, WO-B12-001).
+  "settings/integrations",
 ];
 let failed = 0;
 async function visit(path) {
