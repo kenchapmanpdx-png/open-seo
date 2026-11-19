@@ -146,6 +146,25 @@ export type PageSnapshot = {
   minhash?: readonly number[];
   /** Main-text blocks (≥ 40 words) repeated on this page or across the site, with counts. 1.5.1 */
   duplicateBlocks?: ReadonlyArray<{ text: string; count: number }>;
+  /**
+   * FNV-1a hashes of the page's block sentences (≥ 20 chars, lower-cased),
+   * ≤ 400, document order (SUPP-17 shared-sentence sets, ADR-022). 1.7.0
+   */
+  sentenceHashes?: readonly number[];
+  /**
+   * Raw-HTML texts addressed to AI assistants (SUPP-19 Pattern A / B,
+   * ADR-022): location, hidden flag, matched text ≤ 200 chars. 1.7.0
+   */
+  aiAddressed?: ReadonlyArray<AiAddressedText>;
+};
+
+/** Where a SUPP-19 text sits in the raw HTML (ADR-022). 1.7.0 */
+export type AiAddressedText = {
+  location: "text" | "comment" | "attribute" | "meta" | "jsonld";
+  /** Comment / attribute / meta / JSON-LD, or an element hidden by attribute or inline style. */
+  hidden: boolean;
+  pattern: "A" | "B";
+  text: string;
 };
 
 export const DISCOVERED_BY = ["raw", "sitemap", "seed", "render"] as const;
@@ -241,6 +260,13 @@ export type PageMarkup = {
   firstAnswerNosnippet?: string;
   /** Runs of ≥ 3 lines that read as a list but are not `<ul>`/`<ol>` (e.g. `<br>`-separated "•" lines). 1.5.1 */
   fakeListRuns?: ReadonlyArray<{ sample: string; lines: number }>;
+  /**
+   * Prose paragraphs: text of each `<p>` outside header / nav / footer /
+   * aside / form / li / td / th / blockquote, with the index of the
+   * preceding H2 (−1 before the first); ≤ 20,000 chars in total (copy
+   * quality, ADR-023). 1.7.0
+   */
+  prose?: ReadonlyArray<{ h2: number; text: string }>;
 };
 
 export type RobotsGroup = {

@@ -44,6 +44,8 @@ const enabled = {
   enabled: true,
   mode: "AUDIT" as const,
   tierOverride: null,
+  copyQuality: false,
+  serpOriginality: false,
   updatedAt: "",
 };
 const params = {
