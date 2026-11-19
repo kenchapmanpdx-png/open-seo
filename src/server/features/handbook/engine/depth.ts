@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { Coverage } from "@/server/features/handbook/contracts/collectors";
 import {
   handbookDepthSchema,
@@ -41,6 +42,41 @@ export function resolveMaxPages(input: {
     return n;
   }
   return input.depth === "full" ? FULL_MAX_PAGES : input.quickDefault;
+}
+
+export const LIGHTHOUSE_ENV = "HANDBOOK_LIGHTHOUSE";
+const lighthouseScopeSchema = z.enum(["templates", "all"]);
+export type LighthouseScope = z.infer<typeof lighthouseScopeSchema>;
+
+/** CLI flag wins over `HANDBOOK_LIGHTHOUSE`; default `templates` (ADR-018). */
+export function resolveLighthouseScope(
+  env: string | undefined,
+  cli?: string,
+): LighthouseScope {
+  return lighthouseScopeSchema.parse(cli || env || "templates");
+}
+
+/** `all` mode: one Lighthouse run ≈ 30 s plus overhead (FULL-READ §2). */
+const LIGHTHOUSE_MINUTES_PER_PAGE = 0.6;
+/** Everything but Lighthouse, per page (ADR-018 100-page budget ≈ 15 min). */
+const BASE_MINUTES_PER_PAGE = 0.15;
+
+/** Minutes the run cap rises by: 0.6 per Lighthouse page in `all`, else 0. */
+export function lighthouseCapMinutes(
+  scope: LighthouseScope,
+  lighthousePages: number,
+): number {
+  return scope === "all" ? lighthousePages * LIGHTHOUSE_MINUTES_PER_PAGE : 0;
+}
+
+/** Whole-run estimate shown before start: base + 0.6 min per Lighthouse page in `all`. */
+export function estimateRunMinutes(
+  pages: number,
+  scope: LighthouseScope,
+): number {
+  return Math.ceil(
+    pages * BASE_MINUTES_PER_PAGE + lighthouseCapMinutes(scope, pages),
+  );
 }
 
 /**

@@ -7,7 +7,7 @@
  * seo-audit-baseline.md (other modes, EP-5), collected.json (collector
  * summary) and evidence/ (stored bodies). No DB writes.
  *
- *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--depth full|quick] [--max-pages 1000] [--out dir] [--llm]
+ *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--llm]
  *
  * --llm runs the LLM-class checks through the K5 judge (OpenRouter key from
  * the environment or .env.local; model HANDBOOK_LLM_MODEL; cap
@@ -29,6 +29,8 @@ import { createDefaultCollectors } from "@/server/features/handbook/collectors";
 import { SIDECAR_TOKEN_ENV } from "@/server/features/handbook/contracts/sidecar";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import { runHandbook } from "@/server/features/handbook/engine/runner";
+import { planBatches } from "@/server/features/handbook/engine/stages";
+import { livePageUrls } from "@/server/features/handbook/collectors/sidecar-targets";
 import {
   createSafeFetch,
   siblingHosts,
@@ -36,8 +38,12 @@ import {
 import { buildReportJson } from "@/server/features/handbook/engine/report";
 import {
   DEPTH_ENV,
+  estimateRunMinutes,
+  lighthouseCapMinutes,
+  LIGHTHOUSE_ENV,
   MAX_PAGES_ENV,
   resolveDepth,
+  resolveLighthouseScope,
   resolveMaxPages,
 } from "@/server/features/handbook/engine/depth";
 import {
@@ -74,6 +80,7 @@ export async function runCliAudit(argv: string[]) {
       tier: { type: "string" },
       "max-pages": { type: "string" },
       depth: { type: "string" },
+      lighthouse: { type: "string" },
       out: { type: "string" },
       "allow-private": { type: "boolean", default: false },
       sidecar: { type: "string" },
@@ -96,6 +103,18 @@ export async function runCliAudit(argv: string[]) {
     cli: values["max-pages"],
     quickDefault: 60,
   });
+  // --lighthouse wins over HANDBOOK_LIGHTHOUSE (default templates; `all` needs --depth full + --sidecar).
+  const lighthouse = resolveLighthouseScope(
+    process.env[LIGHTHOUSE_ENV],
+    values.lighthouse,
+  );
+  const lighthouseAll =
+    lighthouse === "all" && depth === "full" && Boolean(values.sidecar);
+  if (lighthouseAll) {
+    console.log(
+      `Lighthouse all: estimate ≤ ${estimateRunMinutes(maxPages, "all")} min for up to ${maxPages} pages (0.6 min per page + base); exact after the crawl`,
+    );
+  }
   // --allow-private: local fixtures only (BadGEO on 127.0.0.1); skips SSRF DNS policy.
   const origin = values["allow-private"]
     ? new URL(input).origin
@@ -151,6 +170,7 @@ export async function runCliAudit(argv: string[]) {
           url: values.sidecar,
           token: sidecarToken,
           depth,
+          lighthouse,
           concurrency:
             Number(process.env.HANDBOOK_RENDER_CONCURRENCY) || undefined,
         }
@@ -166,10 +186,22 @@ export async function runCliAudit(argv: string[]) {
     collect: async (...args: Parameters<typeof collector.collect>) => {
       const t0 = performance.now();
       log("handbook.collector.start", { key: collector.key });
+      if (
+        lighthouseAll &&
+        collector.key === "lighthouse" &&
+        timing.lighthouse === undefined
+      ) {
+        const pages = livePageUrls(args[1])?.length ?? 0;
+        console.log(
+          `Lighthouse all: ${pages} pages in ${planBatches(args[1], "all").lighthouse} batches, estimate ${Math.ceil(lighthouseCapMinutes("all", pages))} min`,
+        );
+      }
       try {
         return await collector.collect(...args);
       } finally {
-        timing[collector.key] = Math.round(performance.now() - t0);
+        // Lighthouse `all` runs one collect per batch: sum them.
+        timing[collector.key] =
+          (timing[collector.key] ?? 0) + Math.round(performance.now() - t0);
         log("handbook.collector.end", {
           key: collector.key,
           ms: timing[collector.key],
@@ -208,6 +240,7 @@ export async function runCliAudit(argv: string[]) {
       store: createFsEvidenceStore(join(outDir, "evidence")),
       log,
     },
+    { lighthouse: lighthouseAll ? "all" : "templates" },
   );
   const totalMs = Math.round(performance.now() - t0);
   const report = buildReportJson({
