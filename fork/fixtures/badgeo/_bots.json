@@ -1,4 +1,8 @@
 {
+  "/": ["Bytespider"],
   "/partners/acme.html": ["GPTBot"],
-  "/gate/challenge.html": { "challenge200": ["PerplexityBot"], "every": 2 }
+  "/gate/challenge.html": {
+    "challenge200": ["PerplexityBot"],
+    "every": 2
+  }
 }

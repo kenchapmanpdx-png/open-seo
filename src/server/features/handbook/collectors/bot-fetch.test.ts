@@ -5,6 +5,7 @@ import {
   type CollectedData,
   type CollectorContext,
 } from "@/server/features/handbook/contracts/collectors";
+import { AI_BOT_TOKENS } from "./ai-bot-tokens";
 import { botFetchCollector } from "./bot-fetch";
 
 const ORIGIN = "http://example.test";
@@ -95,7 +96,9 @@ describe("botFetch escalation", () => {
   it("does not escalate when every bot gets the browser page", async () => {
     const { ctx, calls } = site(() => false);
     await collect(ctx, templates(["/", "/a", "/b"]));
-    expect(calls).toHaveLength(Object.keys(BOT_USER_AGENTS).length + 1);
+    expect(calls).toHaveLength(
+      Object.keys(BOT_USER_AGENTS).length + 1 + AI_BOT_TOKENS.length,
+    );
   });
 
   it("fetches every page twice per bot once a probe is blocked", async () => {
@@ -129,6 +132,7 @@ describe("botFetch escalation", () => {
       "handbook.botfetch.ua_stopped",
       expect.objectContaining({ bot: "ClaudeBot", capped: true }),
     );
+    // Policy map + escalation share the pacer.
     const escalated = calls.slice(Object.keys(BOT_USER_AGENTS).length + 1);
     const gaps = escalated
       .slice(1)

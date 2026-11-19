@@ -61,15 +61,12 @@ export const botParityCheck: HandbookCheck = {
       out.na("P9-01", "no URL returned 200 to the browser UA");
       return out.build();
     }
-    // A browser 429 means the site throttled the audit itself: bot 429s
-    // are then rate limiting, not bot treatment.
-    const throttled = botFetch.fetches.some(
-      (f) => f.bot === "browser" && f.status === 429,
-    );
     const compared = botFetch.fetches.flatMap((f) => {
       const browser = browserOf.get(f.url);
       if (f.bot === "browser" || browser?.status !== 200) return [];
-      if (throttled && f.status === 429) return [];
+      // 429 = the audit's own request rate was throttled (the escalation
+      // stops on it); a deliberate bot block shows as 403 or a challenge.
+      if (f.status === 429) return [];
       if (!robotsAllows(f.bot, f.url)) return [];
       return [{ f, why: mismatch(f, browser) }];
     });
