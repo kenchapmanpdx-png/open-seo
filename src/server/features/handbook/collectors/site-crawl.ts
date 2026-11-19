@@ -1,5 +1,6 @@
 import { sort } from "remeda";
 import { sha256Hex } from "@/server/lib/audit/ids";
+import { pageBlocks, templateBoilerplate } from "../engine/boilerplate";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
 import { parseBlock } from "./jsonld-parse";
@@ -35,7 +36,13 @@ export type CrawlOptions = {
   maxPages: number;
 };
 
-type PageExtra = { jsonLdBlocks: string[]; skeleton: string; bytes: number };
+type PageExtra = {
+  jsonLdBlocks: string[];
+  skeleton: string;
+  bytes: number;
+  /** Block texts for the template boilerplate split (FULL-READ §3.11). */
+  blocks: string[];
+};
 
 const HTML_TYPE = /text\/html|application\/xhtml/i;
 
@@ -316,6 +323,7 @@ async function fetchPage(
       jsonLdBlocks: facts?.jsonLdBlocks ?? [],
       skeleton: facts?.skeleton ?? "",
       bytes: bytes.byteLength,
+      blocks: isHtml ? pageBlocks(res.body) : [],
     },
   };
 }
@@ -412,6 +420,9 @@ async function clusterTemplates(
     skeletonHash: g.hash,
     urls: g.urls,
     samples: pickSamples(g.urls, (u) => extras.get(u)?.bytes ?? 0),
+    boilerplate: templateBoilerplate(
+      g.urls.map((u) => extras.get(u)?.blocks ?? []),
+    ),
   }));
 }
 
