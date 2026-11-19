@@ -1,0 +1,15 @@
+{
+  "query": "equipment financing for small business",
+  "location": "United States",
+  "language": "en",
+  "hits": [
+    { "rank": 1, "url": "https://lender-a.test/equipment-financing" },
+    { "rank": 2, "url": "https://www.example.com/equipment-financing" },
+    { "rank": 3, "url": "https://lender-b.test/guides/equipment-loans" },
+    { "rank": 4, "url": "https://bank-c.test/business/equipment" },
+    { "rank": 5, "url": "https://agency-d.test/equipment-financing-guide.pdf" },
+    { "rank": 6, "url": "https://news-e.test/how-equipment-financing-works" },
+    { "rank": 7, "url": "https://lender-f.test/equipment" },
+    { "rank": 8, "url": "https://review-g.test/best-equipment-lenders" }
+  ]
+}

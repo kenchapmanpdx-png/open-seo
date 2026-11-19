@@ -263,3 +263,16 @@ export async function buildMapJobs(
   }
   return jobs;
 }
+
+/**
+ * Map job for an off-site page (SUPP-18 competitors, ADR-024): its text
+ * blocks as for a site page; no template, so no boilerplate split.
+ */
+export function offsiteMapJob(url: string, html: string): MapJob {
+  return {
+    url,
+    scope: "page",
+    templateKey: null,
+    text: textBlocks(html).join("\n"),
+  };
+}

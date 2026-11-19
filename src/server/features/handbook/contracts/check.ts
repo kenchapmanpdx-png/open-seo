@@ -5,6 +5,7 @@ import type {
   Severity,
 } from "./registry-types";
 import type { CollectedData, CollectorKey, SafeFetch } from "./collectors";
+import type { SerpCollection } from "./scaled-copy";
 import type {
   Effort,
   Fixability,
@@ -68,6 +69,8 @@ export type CheckContext = {
   pageProfiles?: readonly PageProfile[];
   /** K15 reduce-stage output built from `pageProfiles`. 1.5.1 */
   siteFactMap?: SiteFactMap;
+  /** SUPP-18 collection (ADR-024); present only when the option is on. 1.7.0 */
+  serpOriginality?: SerpCollection;
 };
 
 /** Local reference from a finding/verdict to an evidence draft in the same result. */

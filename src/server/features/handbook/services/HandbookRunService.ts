@@ -60,8 +60,20 @@ import { createRunBudget } from "@/server/features/handbook/llm/budget";
 import {
   createHandbookJudge,
   createHandbookMapper,
+  createHandbookQueryDeriver,
   HANDBOOK_LLM_MODEL_ENV,
 } from "@/server/features/handbook/llm/model";
+import {
+  createSerpBudget,
+  dataforseoSerpLookup,
+  SERP_BUDGET_ENV,
+  SERP_ORIGINALITY_ENV,
+  SERP_ORIGINALITY_PAGES_ENV,
+  serpEnvOn,
+  serpPagesFromEnv,
+} from "@/server/features/handbook/llm/serp-originality-deps";
+import type { SerpDeps } from "@/server/features/handbook/llm/serp-originality-collect";
+import type { OpenRouterAccess } from "@/server/lib/openrouter";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import { collectRunUnit } from "@/server/features/handbook/engine/map-stage";
 import {
@@ -185,6 +197,48 @@ async function runOptions(projectId: string) {
     copyQuality:
       (setting?.copyQuality ?? false) ||
       copyQualityEnvOn(await getOptionalEnvValue(COPY_QUALITY_ENV)),
+    serpOriginality:
+      (setting?.serpOriginality ?? false) ||
+      serpEnvOn(await getOptionalEnvValue(SERP_ORIGINALITY_ENV)),
+    serpOriginalityPages: serpPagesFromEnv(
+      await getOptionalEnvValue(SERP_ORIGINALITY_PAGES_ENV),
+    ),
+  };
+}
+
+/**
+ * SUPP-18 dependencies (ADR-024): DataForSEO live SERP, SERP cache in the
+ * evidence store, query deriver and competitor map model on their own budget.
+ */
+async function serpDeps(
+  access: OpenRouterAccess | null,
+  store: EvidenceStore,
+  input: HandbookRunParams,
+): Promise<SerpDeps> {
+  const budget = createSerpBudget(await getOptionalEnvValue(SERP_BUDGET_ENV));
+  return {
+    lookup: dataforseoSerpLookup,
+    cache: store,
+    deriveQueries: access
+      ? createHandbookQueryDeriver({
+          access,
+          modelId: await getOptionalEnvValue(HANDBOOK_LLM_MODEL_ENV),
+          budget,
+          log,
+        })
+      : null,
+    mapper: access
+      ? createHandbookMapper({
+          access,
+          modelId: await getOptionalEnvValue(LLM_EXTRACT_MODEL_ENV),
+          budgetUsd: budget.remainingUsd,
+          cache: HandbookPageProfileRepository.forProject(
+            input.projectId,
+            input.runId,
+          ),
+          log,
+        })
+      : null,
   };
 }
 
@@ -223,6 +277,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
         log,
       })
     : null;
+  const options = await runOptions(input.projectId);
   const runInput: RunInput = {
     runId: input.runId,
     origin: input.origin,
@@ -239,7 +294,8 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     judge,
     mapper,
     budget,
-    options: await runOptions(input.projectId),
+    options,
+    serp: options.serpOriginality ? await serpDeps(access, store, input) : null,
   };
   const runtime: HandbookRuntime = {
     projectId: input.projectId,

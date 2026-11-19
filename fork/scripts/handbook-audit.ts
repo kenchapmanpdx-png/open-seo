@@ -7,10 +7,16 @@
  * seo-audit-baseline.md (other modes, EP-5), collected.json (collector
  * summary) and evidence/ (stored bodies). No DB writes.
  *
- *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--llm] [--copy-quality]
+ *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--llm] [--copy-quality] [--serp-originality] [--serp-originality-pages N]
  *
  * --copy-quality (or HANDBOOK_COPY_QUALITY=on) adds the not-scored copy
  * quality section (SCALED-COPY §4, ADR-023): deterministic, no LLM, no fetch.
+ *
+ * --serp-originality (or HANDBOOK_SERP_ORIGINALITY=on) runs SUPP-18 in AUDIT
+ * mode (ADR-024): DataForSEO live SERP per selected page (cached 7 days under
+ * fork/runs/.serp-cache/), competitor pages profiled with the map model;
+ * needs --llm. --serp-originality-pages N (default 10). Budget
+ * HANDBOOK_SERP_ORIGINALITY_BUDGET_USD (default 0.50).
  *
  * --llm runs the LLM-class checks through the K5 judge (OpenRouter key from
  * the environment or .env.local; model HANDBOOK_LLM_MODEL; cap
@@ -80,6 +86,7 @@ import type {
 import {
   createHandbookJudge,
   createHandbookMapper,
+  createHandbookQueryDeriver,
   HANDBOOK_LLM_MODEL_ENV,
 } from "@/server/features/handbook/llm/model";
 import {
@@ -97,12 +104,22 @@ import type {
   ProfileCache,
   ProfileCacheKey,
 } from "@/server/features/handbook/llm/map";
+import {
+  createSerpBudget,
+  dataforseoSerpLookup,
+  SERP_BUDGET_ENV,
+  SERP_ORIGINALITY_ENV,
+  SERP_ORIGINALITY_PAGES_ENV,
+  serpEnvOn,
+  serpPagesFromEnv,
+} from "@/server/features/handbook/llm/serp-originality-deps";
+import type { SerpDeps } from "@/server/features/handbook/llm/serp-originality-collect";
 import { createFsEvidenceStore } from "./lib/fs-evidence-store";
 import { writeFormatted } from "./lib/write-formatted";
 import { summarizeCollected } from "./lib/summarize-collected";
 
 const USAGE =
-  "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm] [--copy-quality]";
+  "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm] [--copy-quality] [--serp-originality] [--serp-originality-pages 10]";
 
 export async function runCliAudit(argv: string[]) {
   const { values, positionals } = parseArgs({
@@ -119,6 +136,8 @@ export async function runCliAudit(argv: string[]) {
       sidecar: { type: "string" },
       llm: { type: "boolean", default: false },
       "copy-quality": { type: "boolean", default: false },
+      "serp-originality": { type: "boolean", default: false },
+      "serp-originality-pages": { type: "string" },
     },
   });
   const input = positionals[0];
@@ -263,6 +282,8 @@ export async function runCliAudit(argv: string[]) {
     : null;
   const mapOutcomes: MapOutcome[] = [];
   const mapper = budget ? cliMapper(mapOutcomes, log, budget.mapUsd) : null;
+  const serpOriginality =
+    values["serp-originality"] || serpEnvOn(process.env[SERP_ORIGINALITY_ENV]);
   const t0 = performance.now();
   const result = await runHandbook(
     {
@@ -281,7 +302,13 @@ export async function runCliAudit(argv: string[]) {
         copyQuality:
           values["copy-quality"] ||
           copyQualityEnvOn(process.env[COPY_QUALITY_ENV]),
+        serpOriginality,
+        serpOriginalityPages: serpPagesFromEnv(
+          values["serp-originality-pages"] ??
+            process.env[SERP_ORIGINALITY_PAGES_ENV],
+        ),
       },
+      serp: serpOriginality ? cliSerpDeps(values.llm ?? false, log) : null,
     },
     {
       projectId: "cli",
@@ -383,6 +410,46 @@ function loadCliEnv() {
   } catch {
     // a missing key is reported by the caller
   }
+}
+
+/** SERP lookups cached as files across CLI runs (same key as the app's evidence store). */
+const SERP_CACHE_DIR = "fork/runs/.serp-cache";
+
+/** SUPP-18 deps: DataForSEO from .env.local; LLM parts only with --llm. */
+function cliSerpDeps(
+  llm: boolean,
+  log: (event: string, fields: Record<string, unknown>) => void,
+): SerpDeps {
+  try {
+    process.loadEnvFile(".env.local");
+  } catch {
+    // missing credentials → SUPP-18 BLOCKED `dataforseo credit`
+  }
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const access =
+    llm && apiKey ? { apiKey, baseURL: process.env.OPENROUTER_BASE_URL } : null;
+  const budget = createSerpBudget(process.env[SERP_BUDGET_ENV]);
+  return {
+    lookup: dataforseoSerpLookup,
+    cache: createFsEvidenceStore(SERP_CACHE_DIR),
+    deriveQueries: access
+      ? createHandbookQueryDeriver({
+          access,
+          modelId: process.env[HANDBOOK_LLM_MODEL_ENV],
+          budget,
+          log,
+        })
+      : null,
+    mapper: access
+      ? createHandbookMapper({
+          access,
+          modelId: process.env[LLM_EXTRACT_MODEL_ENV],
+          budgetUsd: budget.remainingUsd,
+          cache: fsProfileCache(),
+          log,
+        })
+      : null,
+  };
 }
 
 /** Run budget from HANDBOOK_LLM_BUDGET_USD or the page-count formula. */
