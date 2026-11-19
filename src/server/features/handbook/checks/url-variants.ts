@@ -1,5 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type {
+  CollectedData,
   UrlVariantKind,
   VariantsData,
 } from "@/server/features/handbook/contracts/collectors";
@@ -12,7 +13,9 @@ import { createResult } from "./support";
  * page links to it (P3-03); `/page/2/` is not a 200 copy of the homepage
  * (P3-12). An upper-case path that answers 200 is noted under P3-03: the
  * probe carries no canonical (contracts 1.5.1), so it is not judged a
- * duplicate. Input: the variants collector's probes.
+ * duplicate. A plain-HTTP URL that answers a bot UA with an interstitial
+ * instead of redirecting also opens P3-01 (bot-fetch escalation probes).
+ * Input: the variants collector's probes + bot fetches.
  */
 const ITEMS = ["P3-01", "P3-02", "P3-03", "P3-12"];
 
@@ -43,6 +46,33 @@ function hopProblem(p: Probe, target: (url: string) => boolean) {
 }
 
 const pathOf = (url: string) => new URL(url).pathname;
+
+/** Plain-HTTP URLs that answered a bot with an interstitial, not a redirect. */
+function plainHttpChallenges(botFetch: CollectedData["botFetch"]) {
+  if (botFetch.status !== "ok") return [];
+  const hits = botFetch.fetches.filter(
+    (f) =>
+      f.bot !== "browser" &&
+      f.url.startsWith("http:") &&
+      f.finalUrl.startsWith("http:") &&
+      f.status === 200 &&
+      (f.blockedReason?.startsWith("interstitial:") ?? false),
+  );
+  return [...new Set(hits.map((f) => f.url))].map((url) => {
+    const rows = hits.filter((f) => f.url === url);
+    const bots = [...new Set(rows.map((f) => f.bot))];
+    return {
+      url,
+      why: `serves ${rows[0]?.blockedReason} to ${bots.join(", ")} over plain HTTP instead of redirecting`,
+      evidence: rows
+        .map(
+          (f) =>
+            `${f.bot} round ${f.round ?? 1}: HTTP ${f.status}, ${f.blockedReason}, ${f.words} words, sha256 ${f.bodySha256.slice(0, 12)}`,
+        )
+        .join("\n"),
+    };
+  });
+}
 
 export const urlVariantsCheck: HandbookCheck = {
   id: "crawl.url-variants",
@@ -80,12 +110,18 @@ export const urlVariantsCheck: HandbookCheck = {
       );
       return why ? [{ p, why }] : [];
     });
-    if (hostIssues.length > 0) {
+    // A plain-HTTP URL that serves a bot an interstitial (200) instead of
+    // redirecting is a host-variant failure even when the browser gets the
+    // HTTPS redirect (bot-parity escalation, WO-B9-009).
+    const httpChallenges = canonicalOrigin.startsWith("https:")
+      ? plainHttpChallenges(ctx.collected.botFetch)
+      : [];
+    if (hostIssues.length > 0 || httpChallenges.length > 0) {
       // Permanent chains that still land on the canonical origin only waste a
       // hop; duplicates, temporary or wrong-target redirects stay S1.
-      const chainsOnly = hostIssues.every(({ why }) =>
-        why.endsWith(" hops (want 1)"),
-      );
+      const chainsOnly =
+        httpChallenges.length === 0 &&
+        hostIssues.every(({ why }) => why.endsWith(" hops (want 1)"));
       out.finding({
         itemIds: ["P3-01"],
         ...(chainsOnly
@@ -98,12 +134,23 @@ export const urlVariantsCheck: HandbookCheck = {
         title: chainsOnly
           ? "Host/protocol variants reach the canonical origin in more than one hop"
           : "Host/protocol variants do not 301/308 to the canonical origin",
-        detail: hostIssues.map(({ p, why }) => `${p.url} — ${why}`).join("\n"),
-        fix: `Redirect every http:// and apex/www variant to ${canonicalOrigin}/ in one 301 or 308 hop (no 302/307, no chains).`,
+        detail: [
+          ...hostIssues.map(({ p, why }) => `${p.url} — ${why}`),
+          ...httpChallenges.map((c) => `${c.url} — ${c.why}`),
+        ].join("\n"),
+        fix: `Redirect every http:// and apex/www variant to ${canonicalOrigin}/ in one 301 or 308 hop (no 302/307, no chains), for every user agent: the bot check must not answer plain HTTP before the redirect.`,
         fixability: "FIXABLE",
         effort: "S",
-        urls: hostIssues.map(({ p }) => p.url),
-        evidenceRefs: hostIssues.map(({ p }) => probe(p)),
+        urls: [
+          ...hostIssues.map(({ p }) => p.url),
+          ...httpChallenges.map((c) => c.url),
+        ],
+        evidenceRefs: [
+          ...hostIssues.map(({ p }) => probe(p)),
+          ...httpChallenges.map((c) =>
+            out.evidence("botFetch", c.url, c.evidence),
+          ),
+        ],
       });
     } else if (hostProbes.length > 0) {
       out.pass(
