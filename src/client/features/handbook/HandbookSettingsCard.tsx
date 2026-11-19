@@ -56,6 +56,7 @@ export function HandbookSettingsCard({
       enabled: boolean;
       mode: ProjectMode;
       tier: TierValue;
+      copyQuality: boolean;
     }) =>
       updateHandbookSettings({
         data: {
@@ -63,6 +64,8 @@ export function HandbookSettingsCard({
           enabled: value.enabled,
           mode: value.mode,
           tierOverride: value.tier === "auto" ? null : value.tier,
+          copyQuality: value.copyQuality,
+          serpOriginality: settings.serpOriginality,
         },
       }),
     onSuccess: async () => {
@@ -78,10 +81,12 @@ export function HandbookSettingsCard({
     enabled: boolean;
     mode: ProjectMode;
     tier: TierValue;
+    copyQuality: boolean;
   } = {
     enabled: settings.enabled,
     mode: settings.mode === "REVIEW" ? "AUDIT" : settings.mode,
     tier: settings.tierOverride ?? "auto",
+    copyQuality: settings.copyQuality,
   };
   const form = useForm({
     defaultValues,
@@ -164,6 +169,20 @@ export function HandbookSettingsCard({
                     ))}
                   </SelectContent>
                 </Select>
+              </Field>
+            )}
+          </form.Field>
+          <form.Field name="copyQuality">
+            {(field) => (
+              <Field orientation="horizontal" className="sm:col-span-3">
+                <Switch
+                  id="handbook-copy-quality"
+                  checked={field.state.value}
+                  onCheckedChange={(checked) => field.handleChange(checked)}
+                />
+                <FieldLabel htmlFor="handbook-copy-quality">
+                  Copy quality (wording patterns, not scored)
+                </FieldLabel>
               </Field>
             )}
           </form.Field>

@@ -1,6 +1,7 @@
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { ItemStatus } from "@/server/features/handbook/contracts/status";
+import { copyQualityMd } from "./copy-quality-md";
 import { depthLine } from "../engine/depth";
 
 /**
@@ -349,6 +350,7 @@ export function renderReviewMd(
         )
       : ["- not collected"]),
     "",
+    ...(report.copyQuality ? copyQualityMd(report.copyQuality) : []),
     "## Escalations",
     "",
     ...(report.escalations?.length

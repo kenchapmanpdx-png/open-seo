@@ -110,6 +110,7 @@ export function buildReportJson(input: {
   if (readiness.length > 0) report.answerEngineReadiness = readiness;
   const escalations = collectEscalations(result.collected, input.depth);
   if (escalations.length > 0) report.escalations = escalations;
+  if (result.copyQuality) report.copyQuality = result.copyQuality;
   const scored = { ...report, score: scoreReport(report) };
   const confirmed = confirmExports(scored, input.registry);
   return { ...confirmed, score: scoreReport(confirmed) };

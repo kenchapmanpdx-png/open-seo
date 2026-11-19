@@ -1,6 +1,7 @@
 import { and, eq, getTableColumns } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  handbookEvidence,
   handbookFindingItems,
   handbookFindings,
   handbookFindingUrls,
@@ -69,4 +70,25 @@ export async function getReportRows(projectId: string, runId: string) {
     findingUrls,
     evidence,
   };
+}
+
+/** A run's evidence row for one item id (run artifacts such as copy quality). */
+export async function getRunItemEvidence(
+  projectId: string,
+  runId: string,
+  itemId: string,
+) {
+  const rows = await db
+    .select(getTableColumns(handbookEvidence))
+    .from(handbookEvidence)
+    .innerJoin(handbookRuns, eq(handbookRuns.id, handbookEvidence.runId))
+    .where(
+      and(
+        eq(handbookEvidence.runId, runId),
+        eq(handbookEvidence.itemId, itemId),
+        eq(handbookRuns.projectId, projectId),
+      ),
+    )
+    .limit(1);
+  return rows[0] ?? null;
 }

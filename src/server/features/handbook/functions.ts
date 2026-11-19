@@ -31,6 +31,8 @@ export const updateHandbookSettings = createServerFn({ method: "POST" })
       // REVIEW is an external read-only assessment, not a project setting.
       mode: handbookModeSchema.exclude(["REVIEW"]),
       tierOverride: siteTierSchema.nullable(),
+      copyQuality: z.boolean(),
+      serpOriginality: z.boolean(),
     }),
   )
   .handler(async ({ data, context }) =>
@@ -39,6 +41,8 @@ export const updateHandbookSettings = createServerFn({ method: "POST" })
       enabled: data.enabled,
       mode: data.mode,
       tierOverride: data.tierOverride,
+      copyQuality: data.copyQuality,
+      serpOriginality: data.serpOriginality,
     }),
   );
 

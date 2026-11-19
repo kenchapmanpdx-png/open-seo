@@ -28,6 +28,7 @@ import {
 } from "@/client/components/ui/tabs";
 import { ITEM_STATUSES } from "@/server/features/handbook/contracts/status";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
+import { CopyQualityPanel } from "./CopyQualityPanel";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { FindingsTable } from "./FindingsTable";
 import { RunActions } from "./RunActions";
@@ -76,6 +77,9 @@ export function HandbookRunPage({
                       Checklist ({detail.report.items.length})
                     </TabsTrigger>
                     <TabsTrigger value="evidence">Evidence</TabsTrigger>
+                    {detail.report.copyQuality ? (
+                      <TabsTrigger value="copy">Copy quality</TabsTrigger>
+                    ) : null}
                   </TabsList>
                   <TabsContent value="findings">
                     <FindingsTable findings={detail.report.findings} />
@@ -86,6 +90,11 @@ export function HandbookRunPage({
                   <TabsContent value="evidence">
                     <EvidenceViewer projectId={projectId} runId={runId} />
                   </TabsContent>
+                  {detail.report.copyQuality ? (
+                    <TabsContent value="copy">
+                      <CopyQualityPanel section={detail.report.copyQuality} />
+                    </TabsContent>
+                  ) : null}
                 </Tabs>
               </>
             ) : (
