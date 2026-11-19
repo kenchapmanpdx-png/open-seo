@@ -58,4 +58,13 @@
   <url><loc>{{ORIGIN}}/fake-list.html</loc></url>
   <url><loc>{{ORIGIN}}/guide.html</loc></url>
   <url><loc>{{ORIGIN}}/faq-good.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-variation-a.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-variation-b.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-variation-c.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-variation-d.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-low-a.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-low-b.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-low-c.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-pair-a.html</loc></url>
+  <url><loc>{{ORIGIN}}/supp17-pair-b.html</loc></url>
 </urlset>

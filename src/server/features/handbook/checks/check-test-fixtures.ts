@@ -12,6 +12,8 @@ import type {
   JudgeResult,
 } from "@/server/features/handbook/contracts/llm";
 import { REGISTRY } from "@/server/features/handbook/registry";
+import { pageBlocks } from "@/server/features/handbook/engine/boilerplate";
+import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
 
 export const ORIGIN = "https://example.com";
 
@@ -155,3 +157,47 @@ export function textPage(
     markup: { ...s.markup, text: head.h1 ? `${head.h1} ${text}` : text },
   };
 }
+
+// SUPP-17 page sets (scaled-sets / supp-scaled tests).
+const WORDS =
+  "harbour tide pier lantern grain ferry signal anchor rope chart buoy cabin deck quay mast hull keel sail".split(
+    " ",
+  );
+/** Distinct ≥ 20-char sentence number `i` of a family. */
+const sentence = (family: string, i: number) =>
+  `The ${family} ${WORDS[i % WORDS.length]} ${WORDS[(i * 7 + 3) % WORDS.length]} note ${i} stays on the page.`;
+export const many = (family: string, n: number) =>
+  Array.from({ length: n }, (_, i) => sentence(family, i));
+
+export function setPage(
+  path: string,
+  title: string,
+  sentences: readonly string[],
+): PageSnapshot {
+  const html = `<main><h1>${title}</h1>${sentences.map((s) => `<p>${s}</p>`).join("")}</main>`;
+  const base = snapshot(path);
+  return {
+    ...base,
+    head: { ...base.head, title },
+    h1: [title],
+    ...mainTextFacts(html, pageBlocks(html)),
+  };
+}
+
+export const template = (key: string, pages: readonly PageSnapshot[]) => ({
+  key,
+  urlPattern: key,
+  skeletonHash: "x",
+  urls: pages.map((p) => p.url),
+  samples: [],
+});
+
+export const CITIES = ["portland", "seattle", "denver", "boise"];
+/** H1 + 8 shared + 2 own sentences per page: pair ratio 8 / 11. */
+export const variationPages = () =>
+  CITIES.map((city) =>
+    setPage(`/plumber-${city}`, `Emergency plumber in ${city}`, [
+      ...many("shared", 8),
+      ...many(city, 2),
+    ]),
+  );
