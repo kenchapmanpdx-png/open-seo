@@ -18,7 +18,7 @@ const withRobots = (path: string, robotsMeta: string) =>
 function fromHtml(path: string, body: string): PageSnapshot {
   const base = snapshot(path);
   const facts = extractHtmlFacts(`<html><body>${body}</body></html>`, base.url);
-  return { ...base, markup: facts.markup };
+  return { ...base, wordsRaw: facts.words, markup: facts.markup };
 }
 
 describe("crawl.supp-aeo", () => {
@@ -35,6 +35,23 @@ describe("crawl.supp-aeo", () => {
   it("flags a UA-specific nosnippet in X-Robots-Tag", async () => {
     const page = { ...snapshot("/x"), xRobotsTag: "googlebot: nosnippet" };
     expect(await flagged("SUPP-13", [page])).toEqual([`${ORIGIN}/x`]);
+  });
+
+  it("flags data-nosnippet around the first answer paragraph, not a later one", async () => {
+    const answer = `<p>${"Entry closes on Friday at noon for every race. ".repeat(2)}</p>`;
+    const filler = `<p>${"More detail about the course and the rules. ".repeat(12)}</p>`;
+    const nav = "<nav><p>Home · Events · Results · Contact</p></nav>";
+    const first = fromHtml(
+      "/first",
+      `${nav}<div data-nosnippet>${answer}</div>${filler}`,
+    );
+    const later = fromHtml(
+      "/later",
+      `${nav}${answer}<div data-nosnippet>${filler.slice(0, 120)}</p></div>${filler}`,
+    );
+    expect(await flagged("SUPP-13", [first, later])).toEqual([
+      `${ORIGIN}/first`,
+    ]);
   });
 
   it("flags three list-like lines outside list markup, not two", async () => {

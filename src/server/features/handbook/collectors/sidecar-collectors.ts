@@ -266,6 +266,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
             status: noJs.value.status,
             nojsKey,
             words: extractHtmlFacts(noJs.value.html, noJs.value.finalUrl).words,
+            opacityZeroWords: noJs.value.opacityZeroWords,
           },
           firstScreenKey,
           consoleErrors: js.value.consoleErrors,

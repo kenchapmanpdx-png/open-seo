@@ -78,7 +78,7 @@ export const botParityCheck: HandbookCheck = {
           .filter((f) => f.url === url)
           .map(
             (f) =>
-              `${f.bot} round ${f.round ?? 1}: HTTP ${f.status}, ${f.words} words, ${f.bytes} B, sha256 ${f.bodySha256.slice(0, 12)}${f.blockedReason ? `, ${f.blockedReason}` : ""}`,
+              `${f.bot} round ${f.round ?? 1}: HTTP ${f.status}, ${f.words} words, ${f.bytes} B, sha256 ${f.bodySha256.slice(0, 12)}${f.blockedReason ? `, ${f.blockedReason}` : ""}${f.excerpt ? `\n  body: ${f.excerpt.replace(/\s+/g, " ")}` : ""}`,
           )
           .join("\n"),
       );

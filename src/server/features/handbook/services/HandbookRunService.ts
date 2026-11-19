@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
+import { sha256Hex } from "@/server/lib/audit/ids";
 import { getOpenRouterAccess } from "@/server/lib/openrouter";
 import { getOptionalEnvValue, getWorkersEnv } from "@/server/lib/runtime-env";
 import {
@@ -16,7 +17,10 @@ import {
   type HandbookMode,
   type SiteTier,
 } from "@/server/features/handbook/contracts/status";
-import { LLM_BUDGET_ENV } from "@/server/features/handbook/contracts/llm";
+import {
+  LLM_BUDGET_ENV,
+  llmVerdictSchema,
+} from "@/server/features/handbook/contracts/llm";
 import { createDefaultCollectors } from "@/server/features/handbook/collectors";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import {
@@ -48,7 +52,10 @@ import {
   resolveDepth,
   resolveMaxPages,
 } from "@/server/features/handbook/engine/depth";
-import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
+import type {
+  LlmCallLog,
+  VerdictCache,
+} from "@/server/features/handbook/llm/judge";
 import { createRunBudget } from "@/server/features/handbook/llm/budget";
 import {
   createHandbookJudge,
@@ -132,6 +139,41 @@ async function runStore(): Promise<EvidenceStore> {
   return fallbackStore;
 }
 
+/**
+ * Judge verdicts kept in the evidence store under
+ * `<projectId>/_judge-cache/`, so an unchanged rerun of the project skips
+ * its judge calls (FULL-READ §9 rerun cost). Outside any run folder, so
+ * evidence retention keeps it; one small JSON object per verdict.
+ */
+function storeVerdictCache(
+  store: EvidenceStore,
+  projectId: string,
+): VerdictCache {
+  const key = async (k: string) =>
+    `${projectId}/_judge-cache/${await sha256Hex(k)}.json`;
+  return {
+    async get(k) {
+      const bytes = await store.get(await key(k));
+      if (!bytes) return null;
+      try {
+        const parsed = llmVerdictSchema.safeParse(
+          JSON.parse(new TextDecoder().decode(bytes)),
+        );
+        return parsed.success ? parsed.data : null;
+      } catch {
+        return null;
+      }
+    },
+    async put(k, verdict) {
+      await store.put(
+        await key(k),
+        new TextEncoder().encode(JSON.stringify(verdict)),
+        "application/json",
+      );
+    },
+  };
+}
+
 /** Everything one stage unit needs; rebuilt per workflow step (cheap, no I/O but env). */
 async function prepareStage(input: HandbookRunParams, startedAt: string) {
   const depth = resolveDepth(await getOptionalEnvValue(DEPTH_ENV));
@@ -143,6 +185,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
   const llmCalls: LlmCallLog[] = [];
   const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
   const budget = createRunBudget(await getOptionalEnvValue(LLM_BUDGET_ENV));
+  const store = await runStore();
   const judge = access
     ? createHandbookJudge({
         access,
@@ -151,6 +194,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
         log: async (call) => {
           llmCalls.push(call);
         },
+        cache: storeVerdictCache(store, input.projectId),
       })
     : null;
   const mapper = access
@@ -165,7 +209,6 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
         log,
       })
     : null;
-  const store = await runStore();
   const runInput: RunInput = {
     runId: input.runId,
     origin: input.origin,

@@ -316,6 +316,7 @@ async function fetchPage(
       xRobotsTag: header("x-robots-tag"),
       markup: facts?.markup ?? emptyMarkup(),
       headers: keptHeaders(res.headers),
+      ttfbMs: res.ttfbMs ?? null,
       discoveredBy,
       ...main,
     },
@@ -347,14 +348,9 @@ function normalize(url: string): string | null {
     const u = new URL(url);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
     u.hash = "";
-    if (
-      /\.(?:jpe?g|png|gif|webp|avif|svg|pdf|zip|mp4|mp3|css|js|ico|xml|txt)$/i.test(
-        u.pathname,
-      )
-    ) {
-      return null;
-    }
-    return u.href;
+    const asset =
+      /\.(?:jpe?g|png|gif|webp|avif|svg|pdf|zip|mp4|mp3|css|js|ico|xml|txt)$/i;
+    return asset.test(u.pathname) ? null : u.href;
   } catch {
     return null;
   }

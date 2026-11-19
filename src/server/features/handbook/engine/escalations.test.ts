@@ -14,6 +14,7 @@ function rendered(
   path: string,
   words: number,
   opacityZeroWords: number,
+  noJsOpacityZeroWords?: number,
 ): RenderData["pages"][number] {
   return {
     url: href(path),
@@ -26,7 +27,14 @@ function rendered(
       opacityZeroWords,
       firstScreenActions: [],
     },
-    noJs: { status: 200, nojsKey: "n", words: 100 },
+    noJs: {
+      status: 200,
+      nojsKey: "n",
+      words: 100,
+      ...(noJsOpacityZeroWords === undefined
+        ? {}
+        : { opacityZeroWords: noJsOpacityZeroWords }),
+    },
     firstScreenKey: null,
     consoleErrors: [],
   };
@@ -73,6 +81,17 @@ describe("collectEscalations", () => {
       urls: ["/fade/one", "/fade/two", "/fade/three"].map(href),
       capped: false,
     });
+  });
+
+  it("decides on the JS-off count when the render has one", () => {
+    const hiddenOnlyAfterLoad = collected([rendered("/fade/one", 100, 5, 0)]);
+    expect(collectEscalations(hiddenOnlyAfterLoad)).toEqual([]);
+    const [escalation] = collectEscalations(
+      collected([rendered("/fade/one", 100, 0, 40)]),
+    );
+    expect(escalation.because).toContain(
+      "40 words at opacity:0 with JavaScript off",
+    );
   });
 
   it("marks the escalation capped when some template pages were not rendered", () => {
