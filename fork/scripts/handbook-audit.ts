@@ -70,8 +70,11 @@ import {
   createHandbookJudge,
   createHandbookMapper,
   HANDBOOK_LLM_MODEL_ENV,
-  parseBudgetUsd,
 } from "@/server/features/handbook/llm/model";
+import {
+  createRunBudget,
+  type RunBudget,
+} from "@/server/features/handbook/llm/budget";
 import {
   LLM_EXTRACT_MODEL_ENV,
   pageProfileSchema,
@@ -237,7 +240,8 @@ export async function runCliAudit(argv: string[]) {
   // Judge inputs are kept even when a call fails: fork/scripts/llm-eval.ts
   // builds its eval cases from them.
   const llmInputs: JudgeInput[] = [];
-  const realJudge = values.llm ? cliJudge(llmCalls) : null;
+  const budget = values.llm ? cliBudget() : null;
+  const realJudge = budget ? cliJudge(llmCalls, budget.judgeUsd) : null;
   const judge: Judge | null = realJudge
     ? (judgeInput) => {
         llmInputs.push(judgeInput);
@@ -245,7 +249,7 @@ export async function runCliAudit(argv: string[]) {
       }
     : null;
   const mapOutcomes: MapOutcome[] = [];
-  const mapper = values.llm ? cliMapper(mapOutcomes, log) : null;
+  const mapper = budget ? cliMapper(mapOutcomes, log, budget.mapUsd) : null;
   const t0 = performance.now();
   const result = await runHandbook(
     {
@@ -259,6 +263,7 @@ export async function runCliAudit(argv: string[]) {
       maxPages,
       judge,
       mapper,
+      budget,
     },
     {
       projectId: "cli",
@@ -352,21 +357,30 @@ export async function runCliAudit(argv: string[]) {
   return { outDir, report, result, timing: { collectorsMs: timing, totalMs } };
 }
 
-export function cliJudge(calls: LlmCallLog[]) {
-  if (!process.env.OPENROUTER_API_KEY) {
-    // Loads keys into the environment without printing them.
-    try {
-      process.loadEnvFile(".env.local");
-    } catch {
-      // handled below
-    }
+/** Loads keys from .env.local into the environment (never printed) unless already set. */
+function loadCliEnv() {
+  if (process.env.OPENROUTER_API_KEY) return;
+  try {
+    process.loadEnvFile(".env.local");
+  } catch {
+    // a missing key is reported by the caller
   }
+}
+
+/** Run budget from HANDBOOK_LLM_BUDGET_USD or the page-count formula. */
+function cliBudget(): RunBudget {
+  loadCliEnv();
+  return createRunBudget(process.env[LLM_BUDGET_ENV]);
+}
+
+export function cliJudge(calls: LlmCallLog[], budgetUsd: () => number) {
+  loadCliEnv();
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("--llm needs OPENROUTER_API_KEY");
   return createHandbookJudge({
     access: { apiKey, baseURL: process.env.OPENROUTER_BASE_URL },
     modelId: process.env[HANDBOOK_LLM_MODEL_ENV],
-    budgetUsd: parseBudgetUsd(process.env[LLM_BUDGET_ENV]),
+    budgetUsd,
     log: async (call) => {
       calls.push(call);
     },
@@ -403,6 +417,7 @@ function fsProfileCache(): ProfileCache {
 function cliMapper(
   outcomes: MapOutcome[],
   log: (event: string, fields: Record<string, unknown>) => void,
+  budgetUsd: () => number,
 ): PageMapper {
   // cliJudge already loaded .env.local when --llm is set.
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -410,7 +425,7 @@ function cliMapper(
   const mapper = createHandbookMapper({
     access: { apiKey, baseURL: process.env.OPENROUTER_BASE_URL },
     modelId: process.env[LLM_EXTRACT_MODEL_ENV],
-    budgetUsd: parseBudgetUsd(process.env[LLM_BUDGET_ENV]),
+    budgetUsd,
     cache: fsProfileCache(),
     log,
   });

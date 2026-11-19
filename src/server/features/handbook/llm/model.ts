@@ -1,10 +1,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { wrapLanguageModel, type LanguageModel } from "ai";
 import type { OpenRouterAccess } from "@/server/lib/openrouter";
-import {
-  LLM_DEFAULT_BUDGET_USD,
-  type Judge,
-} from "@/server/features/handbook/contracts/llm";
+import type { Judge } from "@/server/features/handbook/contracts/llm";
 import { createJudge, type LlmCallLog, type ModelPrice } from "./judge";
 import { LLM_EXTRACT_DEFAULT_MODEL } from "@/server/features/handbook/contracts/page-profile";
 import { createPageMapper, type PageMapper, type ProfileCache } from "./map";
@@ -58,13 +55,6 @@ function stripUnsupportedKeywords(schema: unknown): unknown {
   );
 }
 
-export function parseBudgetUsd(raw: string | undefined): number {
-  const value = Number(raw);
-  return raw && Number.isFinite(value) && value > 0
-    ? value
-    : LLM_DEFAULT_BUDGET_USD;
-}
-
 /** USD per million tokens for `modelId` (unknown ids budget high). */
 function modelPrice(modelId: string): ModelPrice {
   return PRICES[modelId] ?? FALLBACK_PRICE;
@@ -107,7 +97,8 @@ function createHandbookModel(
 export function createHandbookJudge(options: {
   access: OpenRouterAccess;
   modelId?: string;
-  budgetUsd: number;
+  /** Judge share of the run budget (`RunBudget.judgeUsd`). */
+  budgetUsd: () => number;
   log: (call: LlmCallLog) => Promise<void>;
 }): Judge {
   const modelId = options.modelId || DEFAULT_MODEL;
@@ -121,15 +112,12 @@ export function createHandbookJudge(options: {
   });
 }
 
-/** Map share of the run's LLM budget (ADR-019: map ≤ 60 %, judge ≥ 40 %). */
-const MAP_BUDGET_SHARE = 0.6;
-
 /** Map-stage extractor; model `HANDBOOK_LLM_EXTRACT_MODEL` (default Haiku). */
 export function createHandbookMapper(options: {
   access: OpenRouterAccess;
   modelId?: string;
-  /** The run's whole LLM budget; the mapper takes its share. */
-  budgetUsd: number;
+  /** Map share of the run budget (`RunBudget.mapUsd`). */
+  budgetUsd: () => number;
   cache: ProfileCache;
   log?: (event: string, fields: Record<string, unknown>) => void;
 }): PageMapper {
@@ -141,7 +129,7 @@ export function createHandbookMapper(options: {
     }),
     modelId,
     price: modelPrice(modelId),
-    budgetUsd: options.budgetUsd * MAP_BUDGET_SHARE,
+    budgetUsd: options.budgetUsd,
     cache: options.cache,
     log: options.log,
   });

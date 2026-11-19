@@ -4,6 +4,7 @@ import {
   pageProfileSchema,
   type PageProfile,
 } from "@/server/features/handbook/contracts/page-profile";
+import { pagesRead } from "../llm/budget";
 import { buildMapJobs } from "../llm/map-input";
 import { buildSiteFactMap, type MapCounts } from "../llm/reduce";
 import type { SiteFactMap } from "@/server/features/handbook/contracts/site-fact-map";
@@ -46,9 +47,10 @@ async function runMapStage(
 ): Promise<{ pageProfiles?: PageProfile[]; mapCounts?: MapCounts }> {
   const mapper = input.mapper;
   if (!mapper) return {};
+  input.budget?.setPages(pagesRead(prior));
   const jobs = await buildMapJobs(prior, (key) => runtime.store.get(key));
   const profiles: PageProfile[] = [];
-  const counts = { cached: 0, budget: 0, schema: 0, error: 0 };
+  const counts = { cached: 0, budget: 0, credits: 0, schema: 0, error: 0 };
   let next = 0;
   const worker = async () => {
     while (next < jobs.length) {
