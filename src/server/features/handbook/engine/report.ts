@@ -116,6 +116,7 @@ export function buildReportJson(input: {
     report.scaledContent = buildScaledContent(
       result.collected,
       result.findings,
+      result.supp18,
     );
   const scored = { ...report, score: scoreReport(report) };
   const confirmed = confirmExports(scored, input.registry);

@@ -35,7 +35,15 @@ import { evidenceKey, factMapEvidence, materialize } from "./evidence";
 import { runCopyQuality } from "./copy-quality";
 import { scaledContentEvidence } from "./scaled-summary";
 import { applyScaledPrecedence } from "../checks/supp-scaled";
-import type { CopyQuality, RunOptions } from "../contracts/scaled-copy";
+import {
+  SERP_ORIGINALITY_CHECK_ID,
+  supp18Summary,
+} from "../checks/supp-serp-originality";
+import type {
+  CopyQuality,
+  RunOptions,
+  ScaledContent,
+} from "../contracts/scaled-copy";
 import { serpForRun, type SerpDeps } from "../llm/serp-originality-collect";
 import { contractViolation } from "./contract-violation";
 import {
@@ -129,6 +137,8 @@ export type RunResult = {
   pageProfiles?: readonly PageProfile[];
   /** Copy quality section (ADR-023); only when the option is on. */
   copyQuality?: CopyQuality;
+  /** SUPP-18 counts for the scaled-content summary; only when the option is on. */
+  supp18?: ScaledContent["supp18"];
 };
 
 /**
@@ -318,8 +328,11 @@ export async function evaluateRun(
     ? await runCopyQuality(input, runtime, collected, pageProfiles)
     : null;
   if (copy) evidence.push(copy.evidence);
+  const supp18 = supp18Summary(
+    pending.find((p) => p.checkId === SERP_ORIGINALITY_CHECK_ID)?.result,
+  );
   evidence.push(
-    await scaledContentEvidence(input, runtime, collected, findings),
+    await scaledContentEvidence(input, runtime, collected, findings, supp18),
   );
   return {
     intake,
@@ -330,6 +343,7 @@ export async function evaluateRun(
     checkerErrors,
     ...(pageProfiles ? { pageProfiles } : {}),
     ...(copy ? { copyQuality: copy.section } : {}),
+    ...(supp18 ? { supp18 } : {}),
   };
 }
 

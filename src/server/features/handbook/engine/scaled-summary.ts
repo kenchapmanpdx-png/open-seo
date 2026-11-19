@@ -8,7 +8,7 @@ import { duplicateClusters, indexable, median } from "../checks/scaled-sets";
 /**
  * "Scaled content" summary block (fork/SCALED-COPY.md §3.5, ADR-022): counts
  * from the crawl snapshots and the run's findings, nothing new fetched, not
- * scored. Zeros stay 0. SUPP-18 is absent until it runs (WO-B11-008/009).
+ * scored. Zeros stay 0. SUPP-18 is absent when its option is off.
  */
 const MIN_TEMPLATE_PAGES = 3;
 
@@ -20,6 +20,7 @@ const urlsOf = (findings: readonly FindingLike[], itemId: string) =>
 export function buildScaledContent(
   collected: CollectedData,
   findings: readonly FindingLike[],
+  supp18?: ScaledContent["supp18"],
 ): ScaledContent {
   const snapshots =
     collected.pages.status === "ok" ? collected.pages.snapshots : [];
@@ -65,6 +66,7 @@ export function buildScaledContent(
     supp17Sets: supp17.length,
     supp17Pages: new Set(supp17.flatMap((f) => f.urls)).size,
     ownTextShare,
+    ...(supp18 ? { supp18 } : {}),
     supp19Pages: new Set(urlsOf(findings, "SUPP-19")).size,
   };
 }
@@ -75,9 +77,10 @@ export const scaledContentEvidence = (
   runtime: HandbookRuntime,
   collected: CollectedData,
   findings: readonly FindingLike[],
+  supp18: ScaledContent["supp18"],
 ) =>
   scaledContentArtifact(
     input,
     runtime,
-    buildScaledContent(collected, findings),
+    buildScaledContent(collected, findings, supp18),
   );

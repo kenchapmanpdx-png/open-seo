@@ -11,8 +11,10 @@ import {
 import { LLM_EXTRACT_DEFAULT_MODEL } from "@/server/features/handbook/contracts/page-profile";
 import { createPageMapper, type PageMapper, type ProfileCache } from "./map";
 import { RUBRICS } from "./rubrics";
+import type { SerpJudge } from "@/server/features/handbook/contracts/scaled-copy";
 import {
   createQueryDeriver,
+  createSerpJudge,
   type QueryDeriver,
   type SerpBudget,
 } from "./serp-originality-deps";
@@ -164,6 +166,28 @@ export function createHandbookQueryDeriver(options: {
     model: createHandbookModel(options.access, modelId),
     price: modelPrice(modelId),
     budget: options.budget,
+    log: options.log,
+  });
+}
+
+/**
+ * SUPP-18 verdicts on the judge model, charged to the SUPP-18 budget; what
+ * the competitor map calls spent (`mapper`) is not available to verdicts.
+ */
+export function createHandbookSerpJudge(options: {
+  access: OpenRouterAccess;
+  modelId?: string;
+  budget: SerpBudget;
+  mapper: PageMapper | null;
+  log?: (event: string, fields: Record<string, unknown>) => void;
+}): SerpJudge {
+  const modelId = options.modelId || DEFAULT_MODEL;
+  return createSerpJudge({
+    model: createHandbookModel(options.access, modelId),
+    price: modelPrice(modelId),
+    budgetUsd: () =>
+      options.budget.remainingUsd() - (options.mapper?.spentUsd() ?? 0),
+    charge: options.budget.charge,
     log: options.log,
   });
 }
