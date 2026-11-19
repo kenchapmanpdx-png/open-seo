@@ -5,7 +5,8 @@
  * entries get a 200 openresty-style bot-check page instead; with `every: N`
  * only the 1st, N+1th, … matching request is challenged), answers the
  * redirects `_redirects.json` lists (path → [status, location]), substitutes
- * `{{ORIGIN}}` in text files, 404 for anything missing.
+ * `{{ORIGIN}}` in text files, 404 for anything missing. `{{OFFSITE}}` names
+ * a second stub host (WO-B9-012): `/gone/*` → 404, anything else → 200.
  *
  *   pnpm exec tsx fork/scripts/badgeo-serve.ts [--port 4455]
  */
@@ -161,6 +162,17 @@ export async function startBadgeo(
     JSON.parse(readFileSync(join(BADGEO_ROOT, "_redirects.json"), "utf8")),
   );
   let origin = "";
+  // Off-site stub (P5-13 outbound links): another host name on its own port.
+  const offsite = createServer((req, res) => {
+    const gone = (req.url ?? "/").startsWith("/gone/");
+    res.writeHead(gone ? 404 : 200, { "content-type": "text/plain" });
+    res.end(req.method === "HEAD" ? undefined : gone ? "gone" : "ok");
+  });
+  await new Promise<void>((done) => offsite.listen(0, "127.0.0.1", done));
+  const offsiteAddress = offsite.address();
+  if (!offsiteAddress || typeof offsiteAddress === "string")
+    throw new Error("no offsite address");
+  const offsiteOrigin = `http://offsite.127.0.0.1.nip.io:${offsiteAddress.port}`;
   let heavy: Buffer | null = null;
   const challengeCount = new Map<string, number>();
   const server = createServer((req, res) => {
@@ -223,7 +235,10 @@ export async function startBadgeo(
     const raw = readFileSync(file);
     const body =
       ext in TYPES
-        ? raw.toString("utf8").replaceAll("{{ORIGIN}}", origin)
+        ? raw
+            .toString("utf8")
+            .replaceAll("{{ORIGIN}}", origin)
+            .replaceAll("{{OFFSITE}}", offsiteOrigin)
         : raw;
     res.writeHead(200, {
       "content-type": TYPES[ext] ?? "application/octet-stream",
@@ -239,7 +254,12 @@ export async function startBadgeo(
   origin = `http://${options.originHost ?? "127.0.0.1.nip.io"}:${address.port}`;
   return {
     origin,
-    close: () => new Promise<void>((done) => server.close(() => done())),
+    close: () =>
+      Promise.all(
+        [server, offsite].map(
+          (s) => new Promise<void>((done) => s.close(() => done())),
+        ),
+      ).then(() => {}),
   };
 }
 

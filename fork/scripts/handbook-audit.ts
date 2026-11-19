@@ -144,9 +144,17 @@ export async function runCliAudit(argv: string[]) {
       : {}),
     minIntervalMs: values["allow-private"] ? 0 : 300,
   });
+  // --allow-private also lets off-site probes reach the BadGEO off-site stub (WO-B9-012).
   const fetchOffsite = createSafeFetch({
     allowedHosts: "any",
     maxBytes: 256 * 1024,
+    ...(values["allow-private"]
+      ? {
+          checkHost: async () => {},
+          fetchImpl: (url: string, init: RequestInit) =>
+            globalThis.fetch(url, init),
+        }
+      : {}),
   });
   // Per-collector timing (WO-B2-001): wrap collect() here; the runner stays unchanged.
   const timing: Record<string, number> = {};
