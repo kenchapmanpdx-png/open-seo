@@ -11,11 +11,14 @@ import type { SkillSource } from "agents/skills";
 // above): the `agents/skills` runtime module drags in the skill-*script*
 // executor graph (@cloudflare/codemode, just-bash), which a static in-memory
 // manifest doesn't need.
-const skillFiles = import.meta.glob<string>("/.agents/skills/*/SKILL.md", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-});
+const skillFiles = import.meta.glob<string>(
+  ["/.agents/skills/*/SKILL.md", "/fork/skills/*/SKILL.md"],
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  },
+);
 
 // The skill bodies are written for external MCP clients (Claude Code); this
 // note reframes the surface so SAM skips the steps that don't apply in-app.
