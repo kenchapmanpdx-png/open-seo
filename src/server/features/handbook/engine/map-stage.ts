@@ -9,6 +9,7 @@ import { buildMapJobs } from "../llm/map-input";
 import { buildSiteFactMap, type MapCounts } from "../llm/reduce";
 import type { SiteFactMap } from "@/server/features/handbook/contracts/site-fact-map";
 import type { CollectorContext } from "@/server/features/handbook/contracts/collectors";
+import { createLimiter } from "../collectors/limiter";
 import { collectRunStage } from "./render-pass";
 import type { HandbookRuntime, RunInput } from "./runner";
 import type { StageName } from "./stages";
@@ -49,25 +50,20 @@ async function runMapStage(
   if (!mapper) return {};
   input.budget?.setPages(pagesRead(prior));
   const jobs = await buildMapJobs(prior, (key) => runtime.store.get(key));
-  // Indexed by job, not completion order: the judge views are built from
-  // this list, and a stable order keeps their prompts (and cache keys) stable.
-  const byJob: Array<PageProfile | undefined> = [];
+  // Promise.all keeps job order (not completion order): the judge views are
+  // built from this list, and a stable order keeps their prompts cached.
+  const limit = createLimiter(MAP_CONCURRENCY);
+  const outcomes = await Promise.all(
+    jobs.map((job) => limit(() => mapper.profile(job))),
+  );
+  const profiles: PageProfile[] = [];
   const counts = { cached: 0, budget: 0, credits: 0, schema: 0, error: 0 };
-  let next = 0;
-  const worker = async () => {
-    while (next < jobs.length) {
-      const index = next++;
-      const job = jobs[index];
-      if (!job) continue;
-      const outcome = await mapper.profile(job);
-      if (outcome.profile) {
-        byJob[index] = outcome.profile;
-        if (outcome.cached) counts.cached += 1;
-      } else counts[outcome.reason] += 1;
-    }
-  };
-  await Promise.all(Array.from({ length: MAP_CONCURRENCY }, worker));
-  const profiles = byJob.filter((p): p is PageProfile => p !== undefined);
+  for (const outcome of outcomes) {
+    if (outcome.profile) {
+      profiles.push(outcome.profile);
+      if (outcome.cached) counts.cached += 1;
+    } else counts[outcome.reason] += 1;
+  }
   runtime.log("handbook.map", {
     model: mapper.modelId,
     jobs: jobs.length,
