@@ -4,6 +4,7 @@ import type { EvidenceDraft } from "@/server/features/handbook/contracts/check";
 import { EVIDENCE_EXCERPT_MAX_BYTES } from "@/server/features/handbook/contracts/evidence-store";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { SiteFactMap } from "@/server/features/handbook/contracts/site-fact-map";
+import type { CopyQuality } from "@/server/features/handbook/contracts/scaled-copy";
 import { SUPP_BY_ID } from "../registry-supp";
 import type {
   EvidenceRow,
@@ -126,6 +127,33 @@ export function factMapEvidence(
       },
     },
     "P5-02",
+    null,
+  );
+}
+
+/** Item id of the copy-quality artifact row (ADR-023; not a registry item). */
+export const COPY_QUALITY_EVIDENCE_ITEM = "copy-quality";
+
+/** The copy-quality section as one artifact (JSON body); the app's run page reads it back. */
+export function copyQualityEvidence(
+  input: RunInput,
+  runtime: HandbookRuntime,
+  section: CopyQuality,
+): Promise<EvidenceRow> {
+  const measured = section.pages.filter((p) => p.measured).length;
+  return evidenceRow(
+    { input, runtime, checkId: "runner.copy-quality" },
+    {
+      ref: "copy-quality",
+      kind: "artifact",
+      url: input.origin,
+      excerpt: `${section.label}\ncopy quality: ${measured}/${section.pages.length} pages measured`,
+      body: {
+        bytes: new TextEncoder().encode(JSON.stringify(section)),
+        contentType: "application/json",
+      },
+    },
+    COPY_QUALITY_EVIDENCE_ITEM,
     null,
   );
 }

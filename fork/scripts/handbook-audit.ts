@@ -7,7 +7,10 @@
  * seo-audit-baseline.md (other modes, EP-5), collected.json (collector
  * summary) and evidence/ (stored bodies). No DB writes.
  *
- *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--llm]
+ *   pnpm exec tsx fork/scripts/handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T1..T4] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--llm] [--copy-quality]
+ *
+ * --copy-quality (or HANDBOOK_COPY_QUALITY=on) adds the not-scored copy
+ * quality section (SCALED-COPY §4, ADR-023): deterministic, no LLM, no fetch.
  *
  * --llm runs the LLM-class checks through the K5 judge (OpenRouter key from
  * the environment or .env.local; model HANDBOOK_LLM_MODEL; cap
@@ -40,6 +43,10 @@ import {
   siblingHosts,
 } from "@/server/features/handbook/engine/safe-fetch";
 import { buildReportJson } from "@/server/features/handbook/engine/report";
+import {
+  COPY_QUALITY_ENV,
+  copyQualityEnvOn,
+} from "@/server/features/handbook/engine/copy-quality";
 import {
   DEPTH_ENV,
   estimateRunMinutes,
@@ -94,6 +101,9 @@ import { createFsEvidenceStore } from "./lib/fs-evidence-store";
 import { writeFormatted } from "./lib/write-formatted";
 import { summarizeCollected } from "./lib/summarize-collected";
 
+const USAGE =
+  "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm] [--copy-quality]";
+
 export async function runCliAudit(argv: string[]) {
   const { values, positionals } = parseArgs({
     args: argv,
@@ -108,13 +118,12 @@ export async function runCliAudit(argv: string[]) {
       "allow-private": { type: "boolean", default: false },
       sidecar: { type: "string" },
       llm: { type: "boolean", default: false },
+      "copy-quality": { type: "boolean", default: false },
     },
   });
   const input = positionals[0];
   if (!input) {
-    throw new Error(
-      "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--depth full|quick] [--max-pages 1000] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm]",
-    );
+    throw new Error(USAGE);
   }
   const mode = handbookModeSchema.parse(values.mode);
   const tierOverride = values.tier ? siteTierSchema.parse(values.tier) : null;
@@ -268,6 +277,11 @@ export async function runCliAudit(argv: string[]) {
       judge,
       mapper,
       budget,
+      options: {
+        copyQuality:
+          values["copy-quality"] ||
+          copyQualityEnvOn(process.env[COPY_QUALITY_ENV]),
+      },
     },
     {
       projectId: "cli",
@@ -474,7 +488,12 @@ function cliMapper(
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (
+  import.meta.url === `file://${process.argv[1]}` &&
+  process.argv.includes("--help")
+) {
+  console.log(USAGE);
+} else if (import.meta.url === `file://${process.argv[1]}`) {
   runCliAudit(process.argv.slice(2))
     .then(({ outDir, report, timing }) => {
       const counts = new Map<string, number>();

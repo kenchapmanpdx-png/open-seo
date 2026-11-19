@@ -59,6 +59,8 @@ async function upsertProjectSetting(input: {
   enabled: boolean;
   mode: HandbookMode;
   tierOverride: SiteTier | null;
+  copyQuality: boolean;
+  serpOriginality: boolean;
 }) {
   const updatedAt = new Date().toISOString();
   await db
@@ -70,6 +72,8 @@ async function upsertProjectSetting(input: {
         enabled: input.enabled,
         mode: input.mode,
         tierOverride: input.tierOverride,
+        copyQuality: input.copyQuality,
+        serpOriginality: input.serpOriginality,
         updatedAt,
       },
     });

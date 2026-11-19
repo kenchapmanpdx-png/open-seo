@@ -100,6 +100,19 @@ const medianRowSchema = z.object({
   value: z.number().nullable(),
 });
 
+/** Pages the run page and markdown list, highest `overCount` first (§4.4); JSON keeps all. */
+export const COPY_QUALITY_TOP = 20;
+
+/** Threshold text per metric, from the measured pages (all pages carry the same §4.3 text). */
+export function copyThresholds(
+  section: CopyQuality,
+): Map<string, string | null> {
+  const first = section.pages.find((p) => p.measured);
+  return new Map(
+    first?.measured ? first.metrics.map((m) => [m.id, m.threshold]) : [],
+  );
+}
+
 /** Copy quality section (§4.4); absent when the gate is off. */
 export const copyQualitySchema = z.object({
   label: z.string(),

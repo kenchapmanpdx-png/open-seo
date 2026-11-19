@@ -7,6 +7,7 @@ import type {
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
 import { aspectRatio, embedOf } from "./video-embeds";
+import { createProseReader } from "./prose-reader";
 
 /**
  * One streaming pass over raw HTML → the parsed facts every raw-HTML check
@@ -110,6 +111,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   let para: { at: number; nosnippet: boolean; text: string[] } | null = null;
   // Set inside parser callbacks, which TypeScript's narrowing does not see.
   let firstAnswer = null as { nosnippet: boolean; text: string } | null;
+  const prose = createProseReader(MAX_TEXT);
   let line: string[] = [];
   let run: string[] = [];
   const fakeListRuns: { sample: string; lines: number }[] = [];
@@ -246,6 +248,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
           nosnippetAt = stack.length;
         if (name === "p" && !para && !firstAnswer && !stack.some(isLandmark))
           para = { at: stack.length, nosnippet: nosnippetAt > 0, text: [] };
+        prose.open(name, stack);
         if (STRUCTURAL.has(name) && stack.length <= 8) {
           skeletonParts.add(stack.filter((t) => STRUCTURAL.has(t)).join("/"));
         }
@@ -300,6 +303,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         words += n;
         if (nosnippetAt > 0) nosnippetWords += n;
         if (para) para.text.push(text);
+        prose.text(text);
         line.push(text);
       },
       onclosetag(name) {
@@ -314,6 +318,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
             firstAnswer = { nosnippet: para.nosnippet, text };
           para = null;
         }
+        prose.close(stack);
         if (name === "title" && titleBuf) {
           head.title = collapse(titleBuf.join(""));
           titleBuf = null;
@@ -372,6 +377,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         ? { firstAnswerNosnippet: firstAnswer.text.slice(0, 200) }
         : {}),
       ...(fakeListRuns.length ? { fakeListRuns } : {}),
+      ...(prose.result().length ? { prose: prose.result() } : {}),
     },
     jsonLdBlocks,
     words,
