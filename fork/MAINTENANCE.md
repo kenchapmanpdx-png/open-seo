@@ -24,12 +24,18 @@ Log every loop run as one row in the table at the end of this file.
    - File outside fork paths (not `fork/`, not a fork feature folder) and not in `fork/UPSTREAM-EDITS.md` → take upstream's side with `git checkout --ours <file>` (during a rebase `--ours` is upstream and `--theirs` is the fork commit being replayed), `git add`, `git rebase --continue`.
    - File listed in `fork/UPSTREAM-EDITS.md` (registration hooks, `wrangler*.jsonc`, `.prettierignore`, `.claude/CLAUDE.md`, routes) → re-apply the fork's one-line edit on top of upstream's version. A hook whose surrounding upstream code changed shape → **ESCALATE**: `git rebase --abort`, add a row to `fork/queue.md` (`ESCALATE`, file, upstream commit), stop. The next HEAVY run resolves it.
    - `src/routeTree.gen.ts` → take upstream's, then regenerate (see "Route tree" below).
-   - Drizzle migrations / `meta/_journal.json` → **ESCALATE** (fork migrations must be renumbered after upstream's; HEAVY only).
+   - Drizzle migrations / `meta/_journal.json` (upstream added a migration with a number the fork uses) → `node fork/scripts/migration-renumber.mjs "$(git rev-parse REBASE_HEAD)"`, resolve any other file, `git rebase --continue`; the stop repeats once per fork migration. Done 2026-11-19 for upstream #1336 (see "Migration collisions" below).
 5. Session-end checks: `pnpm types:check`, `pnpm lint`, `pnpm test`, `pnpm format:check`. Compare with `fork/BASELINE.md`. A failure caused by upstream alone (it also fails on a clean `upstream/main` checkout) → refresh `fork/BASELINE.md` with the new count and the upstream commit. A failure in fork code → fix it if the fix is local to fork files; otherwise ESCALATE.
 6. Fork regression: `pnpm exec tsx fork/scripts/badgeo-run.ts` (exit 0) and `pnpm exec tsx fork/scripts/handbook-sync.ts` (0 diffs).
 7. `git diff upstream/main --stat -- . ':!fork' ':!src/server/features/handbook' ':!src/client/features/handbook'` lists only files in `fork/UPSTREAM-EDITS.md` or fork feature folders.
 8. Push: `git push --force-with-lease origin ken/main` (the rebase rewrote history; `--force-with-lease` refuses if `origin` moved unexpectedly).
 9. Log the run below.
+
+Migration collisions: fork migrations always sit after upstream's. The script moves each fork migration one number up, keeps its journal `when` (databases that applied it do not apply it again), chains its snapshot to the one before it and copies in tables upstream added. After the rebase:
+
+1. `pnpm exec drizzle-kit generate --config drizzle/sqlite.config.ts` and `--config drizzle/pg.config.ts` both print "No schema changes". Anything else (upstream changed an existing table) → **ESCALATE**.
+2. Supabase: an upstream migration whose journal `when` is older than the newest applied fork migration is skipped by `pnpm db:migrate:pg`. Apply each one once: `bash fork/scripts/run-local.sh sql drizzle/pg/<file>.sql` (also re-hardens and checks). Newer ones: `bash fork/scripts/run-local.sh migrate`.
+3. Local D1 (`wrangler dev` only; the fork app runs on Supabase) tracks migrations by file name: reset it (`.wrangler/state`) if it was used.
 
 Route tree: `vite dev` regenerates `src/routeTree.gen.ts`. Without a dev server, run `@tanstack/router-generator` (version in `node_modules/.pnpm`) with `routesDirectory: ./src/routes`, then check that the `declare module '@tanstack/react-start'` Register block is still at the end of the file. Re-append it from upstream's version if the generator dropped it, then `pnpm types:check`.
 
