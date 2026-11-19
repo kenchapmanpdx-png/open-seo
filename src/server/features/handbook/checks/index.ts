@@ -8,6 +8,7 @@ import { cachePolicyCheck } from "./cache-policy";
 import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
 import { headTagsCheck } from "./head-tags";
+import { interstitialCheck } from "./interstitial";
 import { consentLcpCheck, firstScreenActionCheck } from "./first-screen";
 import { hiddenPagesCheck } from "./hidden-pages";
 import { imageMarkupCheck } from "./image-markup";
@@ -53,6 +54,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   securityHeadersCheck,
   jsonLdIntegrityCheck,
   botParityCheck,
+  interstitialCheck,
   urlVariantsCheck,
   canonicalFormCheck,
   notFoundCheck,

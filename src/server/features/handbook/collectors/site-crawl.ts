@@ -3,7 +3,7 @@ import { sha256Hex } from "@/server/lib/audit/ids";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { parseBlock } from "./jsonld-parse";
 import { decide } from "@/server/features/handbook/engine/robots";
-import { SafeFetchBlockedError } from "@/server/features/handbook/engine/safe-fetch";
+import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
 import {
   groupByPattern,
   infiniteSpaceGuard,
@@ -279,15 +279,8 @@ async function fetchPage(
   url: string,
   discoveredBy: DiscoveredBy,
 ): Promise<{ snapshot: PageSnapshot; extra: PageExtra } | null> {
-  let res;
-  try {
-    res = await ctx.fetch(url);
-  } catch (error) {
-    if (!(error instanceof SafeFetchBlockedError)) {
-      ctx.log("handbook.crawl.fetch_failed", { url, error: String(error) });
-    }
-    return null;
-  }
+  const res = await crawlFetch(ctx, url);
+  if (!res) return null;
   const header = (name: string) =>
     res.headers.find(([k]) => k === name)?.[1] ?? null;
   const contentType = header("content-type");
