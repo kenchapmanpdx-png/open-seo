@@ -148,6 +148,9 @@ export function hubs(pages: readonly PageSnapshot[]): Lists[] {
 /** A preposition between number and noun: "14 produced by X Events" is not a count of events. */
 const LINKING = /\b(by|from|with|for|of|to|at|per|in|on|than)\b/i;
 
+/** A day of the month ("Apr 24 …") is not a count. */
+const MONTH = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\.?\s$/i;
+
 /** "21 annual events", "20+ events", "View all 18 races", "lists six events". */
 export function countClaims(
   text: string,
@@ -158,22 +161,38 @@ export function countClaims(
     ? `${noun.slice(0, -1)}(?:y|ies)`
     : `${noun}s?`;
   const re = new RegExp(
-    `\\b(\\d{1,4}|${NUMBER_WORD})(\\+)?\\s+((?:[a-z'-]+,?\\s+){0,5})${plural}\\b`,
+    `\\b(\\d{1,4}|${NUMBER_WORD})(\\s?\\+)?\\s+((?:[a-z'-]+,?\\s+){0,5})(${plural})\\b`,
     "gi",
   );
   const out: Claim[] = [];
   for (const line of text.split(/\n+/)) {
     if (/^\s*[-*]\s+\[/.test(line)) continue; // the list's own entries
     for (const m of line.matchAll(re)) {
-      const [, num = "", plus = "", words = ""] = m;
-      if (/^(19|20)\d{2}$/.test(num) || /\d/.test(words) || LINKING.test(words))
+      const [, num = "", plus = "", words = "", word = ""] = m;
+      const n = /\d/.test(num)
+        ? Number(num)
+        : (NUMBER_WORDS[num.toLowerCase()] ?? 0);
+      if (
+        /^0|^(19|20)\d{2}$/.test(num) ||
+        /\d/.test(words) ||
+        LINKING.test(words) ||
+        // "WHY RACING EVENTS" is a name, "3 Event Companies" counts companies.
+        /\b[A-Z]{2,}\b/.test(`${words}${word}`) ||
+        (n > 1 && !/s$/i.test(word)) ||
+        MONTH.test(line.slice(Math.max(0, (m.index ?? 0) - 4), m.index))
+      )
         continue;
       const at = m.index ?? 0;
-      const start = Math.max(0, line.lastIndexOf(". ", at) + 1);
-      const stop = line.indexOf(". ", at + m[0].length);
-      const sentence = line.slice(start, stop < 0 ? undefined : stop + 1);
-      const quote = clipQuote(sentence.replace(/^\s*[>#*-]+\s*/, ""));
-      out.push({ value: `${num}${plus}`, ref: { ...ref, quote } });
+      const start = Math.max(line.lastIndexOf(". ", at) + 1, at - 80, 0);
+      const end = line.indexOf(". ", at + m[0].length);
+      const stop = Math.min(
+        end < 0 ? line.length : end + 1,
+        at + m[0].length + 60,
+      );
+      const quote = clipQuote(
+        line.slice(start, stop).replace(/^\s*[>#*-]+\s*/, ""),
+      );
+      out.push({ value: `${num}${plus.trim()}`, ref: { ...ref, quote } });
     }
   }
   return out;
