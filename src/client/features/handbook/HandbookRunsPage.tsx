@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/client/components/ui/table";
 import { formatRelativeTime } from "@/client/lib/relative-time";
+import { CopyRulesDialog } from "./CopyRulesDialog";
 import { HandbookSettingsCard } from "./HandbookSettingsCard";
 import { handbookRunsQuery, handbookSettingsQuery } from "./queries";
 
@@ -114,6 +115,7 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
               >
                 Agency
               </Button>
+              <CopyRulesDialog />
             </>
           }
         />
