@@ -14,6 +14,7 @@ describe("buildSamSkillSource", () => {
       "ai-visibility-audit",
       "competitive-landscape",
       "competitor-analysis",
+      "copy-rules",
       "keyword-clustering",
       "keyword-research",
       "link-prospecting",
