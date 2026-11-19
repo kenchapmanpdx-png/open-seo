@@ -46,6 +46,7 @@ import { socialMetaCheck } from "./social-meta";
 import { thirdPartyCheck } from "./third-party";
 import { urlInventoryCheck } from "./url-inventory";
 import { urlVariantsCheck } from "./url-variants";
+import { videoCheck } from "./video";
 
 /**
  * Every K1 check the runner executes. B1 R5 exemplars (one per class); the
@@ -95,6 +96,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   imageWeightCheck,
   resourceHintsCheck,
   thirdPartyCheck,
+  videoCheck,
   axeRulesCheck,
   auditProcessCheck,
   platformCheck,

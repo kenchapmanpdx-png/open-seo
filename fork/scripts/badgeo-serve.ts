@@ -69,6 +69,14 @@ function resolveFile(pathname: string): string | null {
 }
 
 const HEAVY_IMAGE = "/img/heavy-photo.png";
+// WO-B9-032: media answered by headers only (sizes come from HEAD; bodies are never read).
+const FAKE_VIDEO = "/media/big-loop.mp4";
+const FAKE_VIDEO_BYTES = 12_000_000;
+const VIDEO_THUMB = "/img/video-thumb.png";
+const ONE_PIXEL_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
 
 /** Valid 1250×1250 RGBA PNG, stored uncompressed (~6.3 MB), so Chrome reads every byte. */
 function heavyPng(): Buffer {
@@ -213,6 +221,25 @@ export async function startBadgeo(
         "content-length": String(heavy.length),
       });
       res.end(req.method === "HEAD" ? undefined : heavy);
+      return;
+    }
+    if (pathname === FAKE_VIDEO) {
+      // HEAD declares 12 MB; GET sends no body (the sidecar aborts media).
+      res.writeHead(200, {
+        "content-type": "video/mp4",
+        ...(req.method === "HEAD"
+          ? { "content-length": String(FAKE_VIDEO_BYTES) }
+          : {}),
+      });
+      res.end();
+      return;
+    }
+    if (pathname === VIDEO_THUMB) {
+      res.writeHead(200, {
+        "content-type": "image/png",
+        "content-length": String(ONE_PIXEL_PNG.length),
+      });
+      res.end(req.method === "HEAD" ? undefined : ONE_PIXEL_PNG);
       return;
     }
     const calendarPage = CALENDAR_PAGE.exec(pathname)?.[1];
