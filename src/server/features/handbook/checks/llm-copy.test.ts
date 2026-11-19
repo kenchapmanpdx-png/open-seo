@@ -62,9 +62,9 @@ describe("LLM copy checks", () => {
     ]);
   });
 
-  it("blocks a low-confidence fail instead of opening the item", async () => {
+  it("blocks an unsure verdict instead of opening the item", async () => {
     const result = await titlesCheck.run(
-      ctxWith({ confidence: 0.3, quotes: [{ url: home.url, text: "x" }] }),
+      ctxWith({ verdict: "unsure", quotes: [{ url: home.url, text: "x" }] }),
     );
     expect(statusOf(result, "P4-02")).toBe("BLOCKED");
     expect(result.findings).toHaveLength(0);

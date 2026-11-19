@@ -49,11 +49,11 @@ import {
   resolveMaxPages,
 } from "@/server/features/handbook/engine/depth";
 import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
+import { createRunBudget } from "@/server/features/handbook/llm/budget";
 import {
   createHandbookJudge,
   createHandbookMapper,
   HANDBOOK_LLM_MODEL_ENV,
-  parseBudgetUsd,
 } from "@/server/features/handbook/llm/model";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import { collectRunUnit } from "@/server/features/handbook/engine/map-stage";
@@ -142,12 +142,12 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
   });
   const llmCalls: LlmCallLog[] = [];
   const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
-  const budgetUsd = parseBudgetUsd(await getOptionalEnvValue(LLM_BUDGET_ENV));
+  const budget = createRunBudget(await getOptionalEnvValue(LLM_BUDGET_ENV));
   const judge = access
     ? createHandbookJudge({
         access,
         modelId: await getOptionalEnvValue(HANDBOOK_LLM_MODEL_ENV),
-        budgetUsd,
+        budgetUsd: budget.judgeUsd,
         log: async (call) => {
           llmCalls.push(call);
         },
@@ -157,7 +157,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     ? createHandbookMapper({
         access,
         modelId: await getOptionalEnvValue(LLM_EXTRACT_MODEL_ENV),
-        budgetUsd,
+        budgetUsd: budget.mapUsd,
         cache: HandbookPageProfileRepository.forProject(
           input.projectId,
           input.runId,
@@ -181,6 +181,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     maxPages,
     judge,
     mapper,
+    budget,
   };
   const runtime: HandbookRuntime = {
     projectId: input.projectId,

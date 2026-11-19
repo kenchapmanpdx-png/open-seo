@@ -1,10 +1,12 @@
 import { createHash } from "node:crypto";
 import {
+  APICallError,
   generateText,
   JSONParseError,
   NoObjectGeneratedError,
   NoOutputGeneratedError,
   Output,
+  RetryError,
   TypeValidationError,
   type LanguageModel,
 } from "ai";
@@ -18,11 +20,13 @@ import {
 } from "@/server/features/handbook/contracts/llm";
 
 /**
- * K5 LLM judge (ADR-007). Page text is untrusted data: a fixed rubric system
- * prompt, the text as delimited JSON, no tools, Zod-validated output with one
- * retry. Quotes must be exact substrings of the cited page (whitespace
- * normalized only); an unverified quote, or a `fail` without quotes, becomes
- * `unsure`, which the runner maps to BLOCKED, never OPEN.
+ * K5 LLM judge (ADR-007, ADR-019). Page text is untrusted data: a fixed
+ * rubric system prompt, the text as delimited JSON, no tools, Zod-validated
+ * output with one retry. Quotes must be exact substrings of the cited page
+ * (whitespace normalized only); an unverified quote, or a `fail` without
+ * quotes, becomes `unsure`, which the runner maps to BLOCKED, never OPEN.
+ * Stability: a verdict below 0.7 confidence is asked a second time; if the
+ * second verdict differs, the result is `unsure`.
  */
 
 export type Rubric = {
@@ -46,8 +50,10 @@ export type LlmCallLog = {
 /** USD per million tokens. */
 export type ModelPrice = { input: number; output: number };
 
+/** Stops the LLM checks; the runner blocks their items with `note`. */
 export class LlmBudgetError extends Error {
   override name = "LlmBudgetError";
+  readonly note: "llm budget" | "llm credits" = "llm budget";
   constructor(spentUsd: number, budgetUsd: number) {
     super(
       `llm budget: $${spentUsd.toFixed(4)} spent of $${budgetUsd.toFixed(2)}`,
@@ -55,6 +61,26 @@ export class LlmBudgetError extends Error {
   }
 }
 
+/** The provider refused for lack of credits (HTTP 402). */
+export class LlmCreditsError extends LlmBudgetError {
+  override name = "LlmCreditsError";
+  override readonly note = "llm credits";
+}
+
+/** HTTP 402 from the provider, bare or as the last error of the SDK's retries. */
+export function isCreditError(error: unknown): boolean {
+  const last = RetryError.isInstance(error) ? error.lastError : error;
+  return APICallError.isInstance(last) && last.statusCode === 402;
+}
+
+/**
+ * Retries per call on 429 / 5xx (529 included): the AI SDK's backoff, 2 s
+ * base doubling, honoring `retry-after` (ADR-019).
+ */
+export const LLM_MAX_RETRIES = 3;
+
+/** Below this confidence a verdict is asked a second time (ADR-019). */
+const STABLE_CONFIDENCE = 0.7;
 const MAX_OUTPUT_TOKENS = 1_500;
 /** Per page; long pages are cut, and quotes past the cut cannot verify. */
 const MAX_PAGE_CHARS = 12_000;
@@ -68,6 +94,7 @@ const SYSTEM = [
 ].join("\n");
 
 const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
+const clip = (s: string) => s.slice(0, 1_000);
 
 export const verifyQuote: QuoteVerifier = (quote, pages) => {
   const needle = normalize(quote.text);
@@ -77,11 +104,19 @@ export const verifyQuote: QuoteVerifier = (quote, pages) => {
   );
 };
 
+type Prompt = {
+  itemId: string;
+  system: string;
+  prompt: string;
+  pages: { url: string; text: string }[];
+};
+
 export function createJudge(options: {
   model: LanguageModel;
   modelId: string;
   price: ModelPrice;
-  budgetUsd: number;
+  /** The judge's share of the run budget, read before every call. */
+  budgetUsd: () => number;
   rubrics: ReadonlyMap<string, Rubric>;
   log: (call: LlmCallLog) => Promise<void>;
 }): Judge & { spentUsd: () => number } {
@@ -89,23 +124,21 @@ export function createJudge(options: {
   const cost = (tokensIn: number, tokensOut: number) =>
     (tokensIn * options.price.input + tokensOut * options.price.output) / 1e6;
 
-  const judge = async (input: JudgeInput): Promise<JudgeResult> => {
-    const rubric = options.rubrics.get(input.rubricId);
-    if (!rubric) throw new Error(`unknown rubric ${input.rubricId}`);
-    const pages = input.pages.map((p) => ({
-      url: p.url,
-      text: p.text.slice(0, MAX_PAGE_CHARS),
-    }));
-    const system = `${SYSTEM}\n\nRubric ${rubric.id} v${rubric.version} (item ${input.itemId}):\n${rubric.instructions}`;
-    const prompt = JSON.stringify({ pages, facts: input.facts ?? {} });
+  /** One verdict: model call (one schema retry), quote verification, log row. */
+  const once = async ({
+    itemId,
+    system,
+    prompt,
+    pages,
+  }: Prompt): Promise<JudgeResult> => {
     // ~4 characters per token; checked before the call so a run never
     // overshoots its cap by more than one call's estimate error.
     const estimate = cost(
       Math.ceil((system.length + prompt.length) / 4),
       MAX_OUTPUT_TOKENS,
     );
-    if (spent + estimate > options.budgetUsd)
-      throw new LlmBudgetError(spent, options.budgetUsd);
+    const budget = options.budgetUsd();
+    if (spent + estimate > budget) throw new LlmBudgetError(spent, budget);
 
     const promptSha256 = createHash("sha256")
       .update(`${system}\n${prompt}`)
@@ -121,11 +154,13 @@ export function createJudge(options: {
           prompt,
           output: Output.object({ schema: llmVerdictSchema }),
           maxOutputTokens: MAX_OUTPUT_TOKENS,
+          maxRetries: LLM_MAX_RETRIES,
         });
         tokensIn += result.usage.inputTokens ?? 0;
         tokensOut += result.usage.outputTokens ?? 0;
         parsed = result.output;
       } catch (error) {
+        if (isCreditError(error)) throw new LlmCreditsError(spent, budget);
         // Schema failure: retry once, then unsure. Anything else is a
         // provider/network failure the caller reports as a checker error.
         if (!isOutputError(error)) throw error;
@@ -148,11 +183,9 @@ export function createJudge(options: {
       ? {
           ...verdict,
           verdict: "unsure" as const,
-          rationale:
-            `unverified: ${verdict.quotes.length === 0 ? "fail without quotes" : "quote not found in fetched text"}. ${verdict.rationale}`.slice(
-              0,
-              1_000,
-            ),
+          rationale: clip(
+            `unverified: ${verdict.quotes.length === 0 ? "fail without quotes" : "quote not found in fetched text"}. ${verdict.rationale}`,
+          ),
         }
       : verdict;
     const call = {
@@ -164,11 +197,49 @@ export function createJudge(options: {
     };
     await options.log({
       ...call,
-      itemId: input.itemId,
+      itemId,
       verdict: final.verdict,
       quotesVerified,
     });
     return { ...final, quotesVerified, call };
+  };
+
+  const judge = async (input: JudgeInput): Promise<JudgeResult> => {
+    const rubric = options.rubrics.get(input.rubricId);
+    if (!rubric) throw new Error(`unknown rubric ${input.rubricId}`);
+    const pages = input.pages.map((p) => ({
+      url: p.url,
+      text: p.text.slice(0, MAX_PAGE_CHARS),
+    }));
+    const request: Prompt = {
+      itemId: input.itemId,
+      system: `${SYSTEM}\n\nRubric ${rubric.id} v${rubric.version} (item ${input.itemId}):\n${rubric.instructions}`,
+      prompt: JSON.stringify({ pages, facts: input.facts ?? {} }),
+      pages,
+    };
+    const first = await once(request);
+    if (first.verdict === "unsure" || first.confidence >= STABLE_CONFIDENCE)
+      return first;
+
+    const second = await once(request);
+    const call = {
+      ...first.call,
+      tokensIn: first.call.tokensIn + second.call.tokensIn,
+      tokensOut: first.call.tokensOut + second.call.tokensOut,
+      costUsd: first.call.costUsd + second.call.costUsd,
+    };
+    if (second.verdict !== first.verdict) {
+      return {
+        ...first,
+        verdict: "unsure",
+        rationale: clip(
+          `unstable: ${first.verdict} at ${first.confidence.toFixed(2)}, then ${second.verdict} at ${second.confidence.toFixed(2)}. ${first.rationale}`,
+        ),
+        call,
+      };
+    }
+    const kept = second.confidence > first.confidence ? second : first;
+    return { ...kept, call };
   };
   return Object.assign(judge, { spentUsd: () => spent });
 }

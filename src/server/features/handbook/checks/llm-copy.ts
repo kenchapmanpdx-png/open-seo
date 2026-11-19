@@ -25,12 +25,10 @@ export { type View, headLines, htmlPages, mainText } from "./llm-views";
  * "view" per sampled page from collected facts, asks the K5 judge with a
  * fixed rubric (llm/rubrics.ts), and maps the verdict:
  * pass → PASS (judged views as evidence); fail with verified quotes → one
- * `source: "llm"` finding citing each quote; unsure or low confidence →
- * BLOCKED `llm unsure`. LLM findings never block a release (FORK.md).
+ * `source: "llm"` finding citing each quote; unsure (including an unstable
+ * low-confidence verdict) → BLOCKED `llm unsure`. LLM findings never block a release (FORK.md).
  */
 
-/** A fail below this confidence is reported as unsure, not OPEN. */
-const MIN_FAIL_CONFIDENCE = 0.5;
 export const SAMPLE_PAGES = 8;
 
 export type Spec = {
@@ -76,10 +74,8 @@ export async function judged(
     facts: { local: isLocal(ctx), ...facts },
   });
   const tag = `${result.call.model}, confidence ${result.confidence.toFixed(2)}`;
-  const unsure =
-    result.verdict === "unsure" ||
-    (result.verdict === "fail" && result.confidence < MIN_FAIL_CONFIDENCE);
-  if (unsure) {
+  // Low confidence is settled in the judge (ADR-019 stability rule).
+  if (result.verdict === "unsure") {
     return {
       statuses: [
         {

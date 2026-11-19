@@ -23,6 +23,7 @@ import {
   type SiteTier,
 } from "@/server/features/handbook/contracts/status";
 import { ITEM_SCORE } from "@/server/features/handbook/contracts/scoring";
+import { pagesRead, type RunBudget } from "../llm/budget";
 import { LlmBudgetError } from "../llm/judge";
 import type { PageMapper } from "../llm/map";
 import { collectRunUnit, stageFactMap, stageProfiles } from "./map-stage";
@@ -68,6 +69,8 @@ export type RunInput = {
   judge?: Judge | null;
   /** Map-stage extractor (ADR-019); absent → no PageProfiles (checks read `pageProfiles` undefined). */
   mapper?: PageMapper | null;
+  /** Run LLM budget; the engine sets its page count before the map stage and the checks. */
+  budget?: RunBudget | null;
 };
 
 export type EvidenceRow = {
@@ -156,6 +159,7 @@ export async function evaluateRun(
   partial: Partial<CollectedData>,
 ): Promise<RunResult> {
   const collected = completeCollected(partial);
+  input.budget?.setPages(pagesRead(collected));
   const pageProfiles = stageProfiles(partial);
   const siteFactMap = stageFactMap(partial, collected, pageProfiles);
   const intake = runIntake({
@@ -233,8 +237,8 @@ export async function evaluateRun(
       result = await check.run(ctx);
     } catch (error) {
       if (error instanceof LlmBudgetError) {
-        // ADR-007: stop LLM checks at the cap; the rest are BLOCKED too.
-        llmBlocked = "llm budget";
+        // ADR-019: stop LLM checks at the cap or a 402; the rest are BLOCKED too.
+        llmBlocked = error.note;
         for (const id of items) addVerdict(id, "BLOCKED", llmBlocked, check.id);
         continue;
       }

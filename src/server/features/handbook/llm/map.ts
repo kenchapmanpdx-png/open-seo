@@ -9,7 +9,7 @@ import {
   type PageProfileExtraction,
 } from "@/server/features/handbook/contracts/page-profile";
 import { normalizeUrl } from "../checks/support";
-import type { ModelPrice } from "./judge";
+import { isCreditError, LLM_MAX_RETRIES, type ModelPrice } from "./judge";
 import type { MapJob } from "./map-input";
 import { MAP_SYSTEM_PROMPT } from "./map-prompt";
 
@@ -38,7 +38,7 @@ export type ProfileCache = {
 
 export type MapOutcome =
   | { profile: PageProfile; cached: boolean }
-  | { profile: null; reason: "budget" | "schema" | "error" };
+  | { profile: null; reason: "budget" | "credits" | "schema" | "error" };
 
 export type PageMapper = {
   modelId: string;
@@ -261,16 +261,17 @@ export function createPageMapper(options: {
   model: LanguageModel;
   modelId: string;
   price: ModelPrice;
-  /** Map share of the run's LLM budget (ADR-019: ≤ 60 %). */
-  budgetUsd: number;
+  /** Map share of the run's LLM budget (ADR-019: ≤ 60 %), read before every page. */
+  budgetUsd: () => number;
   cache: ProfileCache;
   log?: (event: string, fields: Record<string, unknown>) => void;
 }): PageMapper {
   let spent = 0;
+  /** Set by the first 402; later pages are not sent. */
+  let noCredits = false;
   const cost = (tokensIn: number, tokensOut: number) =>
     (tokensIn * options.price.input + tokensOut * options.price.output) / 1e6;
 
-  /** One chunk → extraction (one schema retry, salvaging the raw output). */
   /**
    * One chunk → extraction. JSON as plain text (the full schema is too large
    * for Anthropic's structured-output grammar), repaired locally; one retry.
@@ -283,6 +284,7 @@ export function createPageMapper(options: {
         system: MAP_SYSTEM_PROMPT,
         prompt: chunk,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
+        maxRetries: LLM_MAX_RETRIES,
       });
       usage.in += result.usage.inputTokens ?? 0;
       usage.out += result.usage.outputTokens ?? 0;
@@ -311,7 +313,8 @@ export function createPageMapper(options: {
       ),
       MAX_OUTPUT_TOKENS * chunks.length,
     );
-    if (spent + estimate > options.budgetUsd)
+    if (noCredits) return { profile: null, reason: "credits" };
+    if (spent + estimate > options.budgetUsd())
       return { profile: null, reason: "budget" };
 
     const usage = { in: 0, out: 0 };
@@ -327,7 +330,8 @@ export function createPageMapper(options: {
         url: job.url,
         error: String(error).slice(0, 300),
       });
-      return { profile: null, reason: "error" };
+      noCredits ||= isCreditError(error);
+      return { profile: null, reason: noCredits ? "credits" : "error" };
     }
     const costUsd = cost(usage.in, usage.out);
     spent += costUsd;
