@@ -9,6 +9,7 @@ import { canonicalFormCheck } from "./canonical-form";
 import { crawlCoverageCheck } from "./crawl-coverage";
 import { headTagsCheck } from "./head-tags";
 import { interstitialCheck } from "./interstitial";
+import { aiBotPolicyCheck } from "./ai-bot-policy";
 import { consentLcpCheck, firstScreenActionCheck } from "./first-screen";
 import { hiddenPagesCheck } from "./hidden-pages";
 import { imageMarkupCheck } from "./image-markup";
@@ -55,6 +56,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   jsonLdIntegrityCheck,
   botParityCheck,
   interstitialCheck,
+  aiBotPolicyCheck,
   urlVariantsCheck,
   canonicalFormCheck,
   notFoundCheck,
