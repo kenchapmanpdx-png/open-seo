@@ -12,9 +12,13 @@
  * --llm runs the LLM-class checks through the K5 judge (OpenRouter key from
  * the environment or .env.local; model HANDBOOK_LLM_MODEL; cap
  * HANDBOOK_LLM_BUDGET_USD) and writes llm-calls.json. Without it those items
- * are BLOCKED `no llm key`.
+ * are BLOCKED `no llm key`. --llm also runs the map stage (ADR-019; model
+ * HANDBOOK_LLM_EXTRACT_MODEL, default Haiku) and writes page-profiles.json;
+ * profiles are cached as files under fork/runs/.profile-cache/ so an
+ * unchanged rerun makes no map calls.
  */
-import { mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import {
@@ -64,9 +68,21 @@ import {
 import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
 import {
   createHandbookJudge,
+  createHandbookMapper,
   HANDBOOK_LLM_MODEL_ENV,
   parseBudgetUsd,
 } from "@/server/features/handbook/llm/model";
+import {
+  LLM_EXTRACT_MODEL_ENV,
+  pageProfileSchema,
+  type PageProfile,
+} from "@/server/features/handbook/contracts/page-profile";
+import type {
+  MapOutcome,
+  PageMapper,
+  ProfileCache,
+  ProfileCacheKey,
+} from "@/server/features/handbook/llm/map";
 import { createFsEvidenceStore } from "./lib/fs-evidence-store";
 import { writeFormatted } from "./lib/write-formatted";
 import { summarizeCollected } from "./lib/summarize-collected";
@@ -228,6 +244,8 @@ export async function runCliAudit(argv: string[]) {
         return realJudge(judgeInput);
       }
     : null;
+  const mapOutcomes: MapOutcome[] = [];
+  const mapper = values.llm ? cliMapper(mapOutcomes, log) : null;
   const t0 = performance.now();
   const result = await runHandbook(
     {
@@ -240,6 +258,7 @@ export async function runCliAudit(argv: string[]) {
       checks: HANDBOOK_CHECKS,
       maxPages,
       judge,
+      mapper,
     },
     {
       projectId: "cli",
@@ -311,6 +330,25 @@ export async function runCliAudit(argv: string[]) {
         2,
       ),
     );
+  if (mapper) {
+    const profiles = mapOutcomes.flatMap((o) => (o.profile ? [o.profile] : []));
+    const map = {
+      model: mapper.modelId,
+      jobs: mapOutcomes.length,
+      profiled: profiles.length,
+      cached: mapOutcomes.filter((o) => o.profile && o.cached).length,
+      unprofiled: mapOutcomes.filter((o) => !o.profile).length,
+      droppedQuotes: profiles.reduce((n, p) => n + p.droppedQuotes, 0),
+      costUsd: mapper.spentUsd(),
+    };
+    console.log(
+      `map: ${map.profiled}/${map.jobs} profiles (${map.cached} cached, ${map.unprofiled} unprofiled, ${map.droppedQuotes} quotes dropped) · ${map.model} · $${map.costUsd.toFixed(4)}`,
+    );
+    await writeFormatted(
+      join(outDir, "page-profiles.json"),
+      JSON.stringify({ ...map, profiles }, null, 2),
+    );
+  }
   return { outDir, report, result, timing: { collectorsMs: timing, totalMs } };
 }
 
@@ -333,6 +371,57 @@ export function cliJudge(calls: LlmCallLog[]) {
       calls.push(call);
     },
   });
+}
+
+/** Profile cache as JSON files (CLI runs have no DB). */
+const PROFILE_CACHE_DIR = "fork/runs/.profile-cache";
+
+function fsProfileCache(): ProfileCache {
+  mkdirSync(PROFILE_CACHE_DIR, { recursive: true });
+  const path = (key: ProfileCacheKey) => {
+    const id = [key.url, key.textSha256, key.promptVersion, key.model].join(
+      " ",
+    );
+    const name = createHash("sha256").update(id).digest("hex");
+    return join(PROFILE_CACHE_DIR, `${name}.json`);
+  };
+  return {
+    async get(key) {
+      const file = path(key);
+      if (!existsSync(file)) return null;
+      const parsed = pageProfileSchema.safeParse(
+        JSON.parse(readFileSync(file, "utf8")),
+      );
+      return parsed.success ? parsed.data : null;
+    },
+    async put(profile: PageProfile) {
+      writeFileSync(path(profile), JSON.stringify(profile));
+    },
+  };
+}
+
+function cliMapper(
+  outcomes: MapOutcome[],
+  log: (event: string, fields: Record<string, unknown>) => void,
+): PageMapper {
+  // cliJudge already loaded .env.local when --llm is set.
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("--llm needs OPENROUTER_API_KEY");
+  const mapper = createHandbookMapper({
+    access: { apiKey, baseURL: process.env.OPENROUTER_BASE_URL },
+    modelId: process.env[LLM_EXTRACT_MODEL_ENV],
+    budgetUsd: parseBudgetUsd(process.env[LLM_BUDGET_ENV]),
+    cache: fsProfileCache(),
+    log,
+  });
+  return {
+    ...mapper,
+    profile: async (job) => {
+      const outcome = await mapper.profile(job);
+      outcomes.push(outcome);
+      return outcome;
+    },
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
