@@ -171,6 +171,7 @@ findings:
     class: RENDER
     detectableBy: render
     severity: S4
+    note: "site-changed on 2026-11-19 (www /contact serves the <form> in raw HTML)"
   - id: F22
     title: "target=_blank without noopener"
     items: [P4-12]
