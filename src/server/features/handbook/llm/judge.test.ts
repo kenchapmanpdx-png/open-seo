@@ -1,29 +1,48 @@
+import { APICallError } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
-import { createJudge, LlmBudgetError, verifyQuote } from "./judge";
+import {
+  createJudge,
+  LlmBudgetError,
+  LlmCreditsError,
+  verifyQuote,
+} from "./judge";
 
 const url = "https://example.com/";
 const pages = [{ url, text: "We are the  best\nrace team in the PNW." }];
 const rubric = { id: "r1", version: 1, instructions: "Flag superlatives." };
 
-function modelReturning(output: object) {
+const generated = (output: object) => ({
+  content: [{ type: "text" as const, text: JSON.stringify(output) }],
+  finishReason: { unified: "stop" as const, raw: "stop" },
+  usage: {
+    inputTokens: { total: 1000, noCache: 1000, cacheRead: 0, cacheWrite: 0 },
+    outputTokens: { total: 100, text: 100, reasoning: 0 },
+  },
+  warnings: [],
+});
+
+/** A model answering `outputs` in turn; an Error entry is thrown instead. */
+function modelReturning(...outputs: (object | Error)[]) {
+  let call = 0;
   return new MockLanguageModelV3({
-    doGenerate: async () => ({
-      content: [{ type: "text", text: JSON.stringify(output) }],
-      finishReason: { unified: "stop", raw: "stop" },
-      usage: {
-        inputTokens: {
-          total: 1000,
-          noCache: 1000,
-          cacheRead: 0,
-          cacheWrite: 0,
-        },
-        outputTokens: { total: 100, text: 100, reasoning: 0 },
-      },
-      warnings: [],
-    }),
+    doGenerate: async () => {
+      const next = outputs[Math.min(call++, outputs.length - 1)];
+      if (next instanceof Error) throw next;
+      return generated(next ?? {});
+    },
   });
 }
+
+const httpError = (statusCode: number, headers: Record<string, string> = {}) =>
+  new APICallError({
+    message: `HTTP ${statusCode}`,
+    url: "https://openrouter.test",
+    requestBodyValues: {},
+    statusCode,
+    responseHeaders: headers,
+    isRetryable: statusCode === 429 || statusCode >= 500,
+  });
 
 function judgeWith(model: MockLanguageModelV3, budgetUsd = 1) {
   const log = vi.fn(async () => {});
@@ -31,19 +50,21 @@ function judgeWith(model: MockLanguageModelV3, budgetUsd = 1) {
     model,
     modelId: "mock",
     price: { input: 3, output: 15 },
-    budgetUsd,
+    budgetUsd: () => budgetUsd,
     rubrics: new Map([[rubric.id, rubric]]),
     log,
   });
   return { judge, log };
 }
 
-const fail = (quote: string) => ({
+const fail = (quote: string, confidence = 0.9) => ({
   verdict: "fail",
   quotes: [{ url, text: quote }],
-  confidence: 0.9,
+  confidence,
   rationale: "superlative",
 });
+const pass = { verdict: "pass", quotes: [], confidence: 0.8, rationale: "ok" };
+const input = { itemId: "P5-04", rubricId: "r1", pages };
 
 describe("verifyQuote", () => {
   it("matches across whitespace only, on the cited URL only", () => {
@@ -89,5 +110,29 @@ describe("createJudge", () => {
       judge({ itemId: "P5-04", rubricId: "r1", pages }),
     ).rejects.toBeInstanceOf(LlmBudgetError);
     expect(model.doGenerateCalls).toHaveLength(0);
+  });
+
+  it("retries a 429 after its retry-after delay", async () => {
+    const model = modelReturning(
+      httpError(429, { "retry-after": "1" }),
+      fail("the best race team"),
+    );
+    const { judge } = judgeWith(model);
+    await expect(judge(input)).resolves.toMatchObject({ verdict: "fail" });
+    expect(model.doGenerateCalls).toHaveLength(2);
+  });
+
+  it("asks again below 0.7 confidence and is unsure when the verdicts differ", async () => {
+    const model = modelReturning(fail("the best race team", 0.6), pass);
+    const { judge, log } = judgeWith(model);
+    await expect(judge(input)).resolves.toMatchObject({ verdict: "unsure" });
+    expect(log).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops the LLM checks with llm credits on a 402", async () => {
+    const { judge } = judgeWith(modelReturning(httpError(402)));
+    const error = await judge(input).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(LlmCreditsError);
+    expect(error).toMatchObject({ note: "llm credits" });
   });
 });

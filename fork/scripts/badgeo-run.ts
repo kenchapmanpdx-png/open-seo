@@ -16,8 +16,9 @@
  * filter and ignores ids outside it (exit code counts filtered rows only).
  *
  * `--llm` passes through to the CLI (judge + map stage). SUPP rules have no
- * status row, so SUPP ids of class `llm` without `--llm` and of class
- * `render` without `--sidecar` count as `blocked`, not `missing`.
+ * status row, so SUPP ids of class `llm` without `--llm` (or, with it, on a
+ * page the map budget left without a PageProfile) and of class `render`
+ * without `--sidecar` count as `blocked`, not `missing`.
  *
  *   pnpm exec tsx fork/scripts/badgeo-run.ts [--report-only] [--only <ids>] [--sidecar <url>] [--llm]
  */
@@ -95,7 +96,12 @@ function firedByPage(report: ReportJson): Map<string, Set<string>> {
 export function compare(
   report: ReportJson,
   expectations: Map<string, string[]>,
-  opts: { llm?: boolean; sidecar?: boolean } = {},
+  opts: {
+    llm?: boolean;
+    sidecar?: boolean;
+    /** Paths with a page PageProfile; llm-class SUPP ids elsewhere are blocked (map budget). */
+    profiledPages?: ReadonlySet<string>;
+  } = {},
 ): Row[] {
   const fired = firedByPage(report);
   const blockedItems = new Set([
@@ -106,6 +112,12 @@ export function compare(
         (e.class === "render" && !opts.sidecar),
     ).map((e) => e.id),
   ]);
+  const llmSupp = new Set(
+    SUPP_REGISTRY.filter((e) => e.class === "llm").map((e) => e.id),
+  );
+  const isBlocked = (page: string, id: string) =>
+    blockedItems.has(id) ||
+    (llmSupp.has(id) && opts.profiledPages?.has(page) === false);
   const pages = sort(
     [...new Set([...expectations.keys(), ...fired.keys()])],
     (a, b) => a.localeCompare(b),
@@ -118,8 +130,8 @@ export function compare(
       page,
       expected,
       fired: got,
-      missing: notFired.filter((id) => !blockedItems.has(id)),
-      blocked: notFired.filter((id) => blockedItems.has(id)),
+      missing: notFired.filter((id) => !isBlocked(page, id)),
+      blocked: notFired.filter((id) => isBlocked(page, id)),
       unexpected: got.filter((id) => !expected.includes(id)),
     };
   });
@@ -174,6 +186,11 @@ async function main() {
     const all = compare(report, loadExpectations(Boolean(values.sidecar)), {
       llm: values.llm,
       sidecar: Boolean(values.sidecar),
+      profiledPages: new Set(
+        (result.pageProfiles ?? [])
+          .filter((p) => p.scope === "page")
+          .map((p) => new URL(p.url).pathname),
+      ),
     });
     const rows = only ? onlyIds(all, only) : all;
     const list = (ids: string[]) => ids.join(", ") || "—";

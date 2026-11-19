@@ -69,7 +69,7 @@ function mapperWith(model: MockLanguageModelV3, cache = memoryCache()) {
     model,
     modelId: "mock",
     price: { input: 0.1, output: 0.5 },
-    budgetUsd: 1,
+    budgetUsd: () => 1,
     cache,
   });
 }

@@ -13,10 +13,15 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import type { JudgeInput } from "@/server/features/handbook/contracts/llm";
+import {
+  LLM_BUDGET_ENV,
+  LLM_DEFAULT_BUDGET_USD,
+  type JudgeInput,
+} from "@/server/features/handbook/contracts/llm";
 import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
 import { RUBRICS } from "@/server/features/handbook/llm/rubrics";
 import { cliJudge } from "./handbook-audit";
+
 import { writeFormatted } from "./lib/write-formatted";
 
 const EVALS = "fork/evals";
@@ -219,7 +224,12 @@ function build(site: string, runDir: string) {
 async function run(model?: string) {
   if (model) process.env.HANDBOOK_LLM_MODEL = model;
   const calls: LlmCallLog[] = [];
-  const judge = cliJudge(calls);
+  // No crawl here: the override, else ADR-007's flat $1.
+  // Read per call: cliJudge loads .env.local first.
+  const judge = cliJudge(
+    calls,
+    () => Number(process.env[LLM_BUDGET_ENV]) || LLM_DEFAULT_BUDGET_USD,
+  );
   const dir = join(EVALS, "cases");
   const rows: string[] = [];
   let failCorrect = 0;
