@@ -2,6 +2,7 @@ import { MockLanguageModelV3 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 import type { CollectedData } from "@/server/features/handbook/contracts/collectors";
 import type { PageProfileExtraction } from "@/server/features/handbook/contracts/page-profile";
+import type { RenderData } from "@/server/features/handbook/contracts/render-data";
 import { snapshot } from "../checks/check-test-fixtures";
 import { createPageMapper, type ProfileCache } from "./map";
 import { buildMapJobs } from "./map-input";
@@ -135,6 +136,26 @@ describe("createPageMapper", () => {
   });
 });
 
+const stat = (n: string) =>
+  `<div><span>${n}</span> <span>Donated to Charity</span></div><p>New since launch: 4 races.</p>`;
+
+const renderedPage = (pageUrl: string): RenderData["pages"][number] => ({
+  url: pageUrl,
+  js: {
+    finalUrl: pageUrl,
+    status: 200,
+    renderedKey: "rendered",
+    words: 0,
+    requests: [],
+    mediaElements: [],
+    opacityZeroWords: 0,
+    firstScreenActions: [],
+  },
+  noJs: { status: 200, nojsKey: "nojs", words: 0 },
+  firstScreenKey: null,
+  consoleErrors: [],
+});
+
 describe("buildMapJobs", () => {
   it("maps llms.txt in full, intro blockquote included", async () => {
     const text =
@@ -180,23 +201,15 @@ describe("buildMapJobs", () => {
   });
 
   it("keeps the raw value of a mid-animation counter and drops a countdown", async () => {
-    const page = {
-      ...snapshot("/about"),
-      rawKey: "raw",
-    };
-    const html = (n: string) =>
-      `<div><span>${n}</span> <span>Donated to Charity</span></div><p>New since launch: 4 races.</p>`;
+    const page = { ...snapshot("/about"), rawKey: "raw" };
     const bodies: Record<string, string> = {
-      raw: html("$3,000,000+"),
-      rendered: `${html("$975,000+")}<p>1d 12h 23m</p><p>Join 12 clubs.</p>`,
+      raw: stat("$3,000,000+"),
+      rendered: `${stat("$975,000+")}<p>1d 12h 23m</p><p>Join 12 clubs.</p>`,
     };
     const jobs = await buildMapJobs(
       {
         pages: { status: "ok", snapshots: [page] },
-        render: {
-          status: "ok",
-          pages: [{ url: page.url, js: { renderedKey: "rendered" } }],
-        } as unknown as CollectedData["render"],
+        render: { status: "ok", pages: [renderedPage(page.url)] },
       },
       async (key) => new TextEncoder().encode(bodies[key] ?? ""),
     );
