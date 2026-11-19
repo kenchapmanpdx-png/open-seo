@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: (none blocking B12; optional items below; Supabase session pool size or transaction pooler for concurrent in-app audits)
-current_batch: B12
-batch_file: fork/batches/B12-light-rebase-reliability.md
+status: done (not-started | in-progress | needs-ken | done)
+needs_ken: (optional, nothing blocks maintenance) WO-B6-012 AI traffic receiver + drain; BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; live MCP run with an OAuth client; CRUX_API_KEY (P7-10); Supabase session pool size or transaction pooler for concurrent in-app audits
+current_batch: MAINT
+batch_file: fork/MAINTENANCE.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 65
-next_action: B12 (run 66): WO-B12-090 only — why + ryan goldens `--depth full --sidecar http://127.0.0.1:4777` (no LLM; compare deterministic verdicts + grade with B11 R4), then bluetree `--depth full --sidecar … --llm` (the one paid run; like-for-like with B11 r63c), upstream diff check, tag handbook-v3.1.1, push tags, STATE exit per the batch file. WO-B11-091 and WO-B12-001…004 done run 65 (fork/reports/B12.md).
+current_run: 66
+next_action: Build sequence B1–B12 done (B12 exit run 66, fork/reports/B12.md; tag handbook-v3.1.1). Maintenance: `Read fork/MAINTENANCE.md and run loop M<n>.` — M1 upstream rebase weekly (next due 2026-11-26).
 contracts_version: 1.7.0 (B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -48,7 +48,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | done   |
 | B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done   |
 | B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | done   |
-| B12   | fork/batches/B12-light-rebase-reliability.md  | LIGHT         | todo   |
+| B12   | fork/batches/B12-light-rebase-reliability.md  | LIGHT         | done   |
 
 ## Run log
 
@@ -119,6 +119,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 63  | 2026-11-19 | Opus 5.5        | B11 R4 (AUTOPILOT run 23): WO-B11-090 integration pass. SUPP-18 live bug fixed (DataForSEO goto links resolved via free converter; 5681f3f2) → bluetree 3/3 checked, lookups $0.006, LLM $0.044. Goldens flags off: why / ryan / bluetree grade Δ 0, deterministic verdicts identical (bluetree r63c; r63b discarded: sitemap 503). F23 re-mapped to SUPP-17. Copy-quality medians / p90 filled. Speed ≈ 0.23 s / 100 pages. Sidecar stall → restart. WO-B11-091 queued. Checks green. B11 done, tag handbook-v3.1.0                                                                                                                                                                                                                                                                                                                                                                     | MAINT                         |
 | 64  | 2026-11-19 | Opus 5.5 (chat) | Upstream rebase onto v0.1.30 (`672a66ce`, 11 commits), Ken approved B10 R1.1: fork migrations moved +1 (sqlite 0073–0076, pg 0051–0054; journal `when` kept; snapshots chained + `project_embeds`) with new `fork/scripts/migration-renumber.mjs`; conflicts also in `src/db/{d1,pg}/schema.ts` (both exports kept) and `src/server/mcp/server.ts` (upstream `MCP_WIDGET_TOOLS` + fork hook). Checks: types 0, lint 0, tests 411 / 2550, format clean, both drizzle-kit configs no changes, vite build OK. `run-local.sh sql`, MAINTENANCE M1 migration procedure, SCALED-COPY §3.1 rule 4 [Ken], B12 batch + WO-B12-001…004, 090. Pushed with --force-with-lease.                                                                                                                                                                                                                       |
 | 65  | 2026-11-19 | Opus 5.5        | B12 (AUTOPILOT run 1): WO-B12-001 `project_embeds` applied to Supabase (109 tables, RLS all, 0 anon grants), migrate no-op, ui-smoke 8/8 incl. upstream /settings/integrations, BadGEO quick 0/0. WO-B11-091 sitemap 5xx retry once. WO-B12-002 SUPP-17 `alsoIn: P3-12` evidence + summary counts URLs once (96d7a180). WO-B12-003 sidecar 1.2.1 deadlines → 504, stall self-exit, browser recycle; engine timeouts + 3-timeout health gate. WO-B12-004 `sidecar-badgeo` on 127.0.0.1:4778 (real sidecar ALLOW_PRIVATE=0), BadGEO --sidecar 83 pages 0/0 (661758b0). Live bluetree full + sidecar no LLM 630 s, grade 39 Δ 0, misses all LLM-only, alsoIn on 2 set pages. Checks: types 0, lint 0, tests 411 / 2553, format clean, sidecar 10; BASELINE refreshed.                                                                                                                       | WO-B12-090                    |
+| 66  | 2026-11-19 | Opus 5.5        | B12 exit (WO-B12-090): goldens full + sidecar Δ 0 (why / ryan no LLM: deterministic verdicts identical; bluetree --llm identical to B11 r63c), BadGEO quick 0 / 0, upstream diff check (4 unlisted B7 overview files logged), checks green, tag handbook-v3.1.1, STATE → MAINT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | MAINT M1 (2026-11-26)         |
 
 ## Batch history
 
