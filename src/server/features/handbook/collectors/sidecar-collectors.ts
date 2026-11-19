@@ -33,6 +33,7 @@ import {
   sampleUrls,
   screenshotTargets,
 } from "./sidecar-targets";
+import { createRenderThrottle, perUrl, type Outcome } from "./sidecar-per-url";
 import { renderOnlyLinks } from "./site-crawl";
 
 /**
@@ -64,10 +65,11 @@ export type SidecarConfig = {
 const DEFAULT_CONCURRENCY = 3;
 const RENDER_TIMEOUT_MS = 90_000;
 const LIGHTHOUSE_TIMEOUT_MS = 180_000;
+/** A known non-2xx status (null = sidecar saw no main response). */
+const non2xx = (status: number | null) =>
+  status !== null && (status < 200 || status >= 300);
 
 type LighthousePage = LighthouseData["pages"][number];
-
-type Outcome<T> = { ok: true; value: T } | { ok: false; reason: string };
 
 async function call<T extends z.ZodTypeAny>(
   config: SidecarConfig,
@@ -108,35 +110,6 @@ function pageWeight(
   requests: ReadonlyArray<{ transferBytes?: number | null }>,
 ): number {
   return requests.reduce((sum, r) => sum + (r.transferBytes ?? 0), 0);
-}
-
-/** Runs `each` per URL; unavailable only when every URL failed. */
-async function perUrl<T>(
-  ctx: CollectorContext,
-  key: string,
-  urls: readonly string[] | null,
-  each: (url: string) => Promise<Outcome<T>>,
-): Promise<
-  { status: "ok"; pages: T[] } | { status: "unavailable"; reason: string }
-> {
-  if (!urls) return { status: "unavailable", reason: "templates unavailable" };
-  if (urls.length === 0)
-    return { status: "unavailable", reason: "no template samples" };
-  const pages: T[] = [];
-  let firstError: string | null = null;
-  // All URLs start at once; the shared limiter caps sidecar calls in flight.
-  const outcomes = await Promise.all(urls.map((url) => each(url)));
-  for (const [i, outcome] of outcomes.entries()) {
-    const url = urls[i];
-    if (outcome.ok) pages.push(outcome.value);
-    else {
-      firstError ??= outcome.reason;
-      ctx.log("handbook.sidecar.skip", { key, url, reason: outcome.reason });
-    }
-  }
-  return pages.length > 0
-    ? { status: "ok", pages }
-    : { status: "unavailable", reason: firstError ?? "no pages rendered" };
 }
 
 const encode = (text: string) => new TextEncoder().encode(text);
@@ -197,6 +170,10 @@ export function createSidecarCollectors(config: SidecarConfig) {
       const shots = full
         ? screenshotTargets(urls ?? [], samples ?? [])
         : new Set((samples ?? []).map(normalizeUrl));
+      // Non-2xx renders are skipped: they hold no page to read.
+      const retryThrottled = createRenderThrottle((retryInMs) =>
+        ctx.log("handbook.sidecar.throttled", { retryInMs }),
+      );
       return perUrl(ctx, "render", urls, async (url) => {
         const base = {
           url,
@@ -204,31 +181,42 @@ export function createSidecarCollectors(config: SidecarConfig) {
           scrollToEnd: full,
           blockBeacons: true,
         } as const;
-        const [js, noJs] = await Promise.all([
-          sidecar(
-            "/render",
-            {
-              ...base,
-              javascript: true,
-              screenshot: shots.has(normalizeUrl(url)) ? "firstScreen" : "none",
-            },
-            renderResponseSchema,
-            RENDER_TIMEOUT_MS,
-          ),
-          sidecar(
-            "/render",
-            {
-              ...base,
-              scrollToEnd: false,
-              javascript: false,
-              screenshot: "none",
-            },
-            renderResponseSchema,
-            RENDER_TIMEOUT_MS,
-          ),
-        ]);
+        const [js, noJs] = await retryThrottled(
+          () =>
+            Promise.all([
+              sidecar(
+                "/render",
+                {
+                  ...base,
+                  javascript: true,
+                  screenshot: shots.has(normalizeUrl(url))
+                    ? "firstScreen"
+                    : "none",
+                },
+                renderResponseSchema,
+                RENDER_TIMEOUT_MS,
+              ),
+              sidecar(
+                "/render",
+                {
+                  ...base,
+                  scrollToEnd: false,
+                  javascript: false,
+                  screenshot: "none",
+                },
+                renderResponseSchema,
+                RENDER_TIMEOUT_MS,
+              ),
+            ]),
+          (results) => results.some((r) => r.ok && r.value.status === 429),
+        );
         if (!js.ok) return js;
         if (!noJs.ok) return noJs;
+        if (non2xx(js.value.status) || non2xx(noJs.value.status))
+          return {
+            ok: false,
+            reason: `render HTTP ${js.value.status} (no-JS ${noJs.value.status})`,
+          };
         const [renderedKey, nojsKey, firstScreenKey] = await Promise.all([
           ctx.storeBody("rendered", url, encode(js.value.html), "text/html"),
           ctx.storeBody("nojs", url, encode(noJs.value.html), "text/html"),
