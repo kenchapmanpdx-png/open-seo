@@ -87,6 +87,7 @@ import {
   createHandbookJudge,
   createHandbookMapper,
   createHandbookQueryDeriver,
+  createHandbookSerpJudge,
   HANDBOOK_LLM_MODEL_ENV,
 } from "@/server/features/handbook/llm/model";
 import {
@@ -429,25 +430,25 @@ function cliSerpDeps(
   const access =
     llm && apiKey ? { apiKey, baseURL: process.env.OPENROUTER_BASE_URL } : null;
   const budget = createSerpBudget(process.env[SERP_BUDGET_ENV]);
+  const modelId = process.env[HANDBOOK_LLM_MODEL_ENV];
+  const mapper = access
+    ? createHandbookMapper({
+        access,
+        modelId: process.env[LLM_EXTRACT_MODEL_ENV],
+        budgetUsd: budget.remainingUsd,
+        cache: fsProfileCache(),
+        log,
+      })
+    : null;
   return {
     lookup: dataforseoSerpLookup,
     cache: createFsEvidenceStore(SERP_CACHE_DIR),
     deriveQueries: access
-      ? createHandbookQueryDeriver({
-          access,
-          modelId: process.env[HANDBOOK_LLM_MODEL_ENV],
-          budget,
-          log,
-        })
+      ? createHandbookQueryDeriver({ access, modelId, budget, log })
       : null,
-    mapper: access
-      ? createHandbookMapper({
-          access,
-          modelId: process.env[LLM_EXTRACT_MODEL_ENV],
-          budgetUsd: budget.remainingUsd,
-          cache: fsProfileCache(),
-          log,
-        })
+    mapper,
+    judge: access
+      ? createHandbookSerpJudge({ access, modelId, budget, mapper, log })
       : null,
   };
 }

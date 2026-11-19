@@ -154,6 +154,7 @@ async function run(
         lookup,
         deriveQueries,
         mapper,
+        judge: null,
         cache: opts.cache ?? createMemoryEvidenceStore(),
       },
     },

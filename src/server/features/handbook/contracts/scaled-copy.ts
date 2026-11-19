@@ -166,6 +166,41 @@ export const serpBlockedReasonSchema = z.enum([
 ]);
 export type SerpBlockedReason = z.infer<typeof serpBlockedReasonSchema>;
 
+/** SUPP-18 judge output for one page (§3.3); quotes are verified by the check. */
+export const serpVerdictSchema = z.object({
+  hasOriginalElement: z.boolean(),
+  elements: z
+    .array(
+      z.object({
+        type: z.enum([
+          "first-party data",
+          "test",
+          "case",
+          "expert quote",
+          "worked example",
+        ]),
+        quote: z.string(),
+      }),
+    )
+    .max(8),
+  confidence: z.number().min(0).max(1),
+});
+export type SerpVerdict = z.infer<typeof serpVerdictSchema>;
+
+/**
+ * One SUPP-18 verdict call on the SUPP-18 budget (ADR-024); `"budget"` when
+ * the budget or the provider credits are out. Other errors throw.
+ */
+export type SerpJudge = (input: {
+  url: string;
+  title: string;
+  h1: string;
+  /** The audited page's main text (untrusted data). */
+  text: string;
+  profile: PageProfile | null;
+  competitors: readonly PageProfile[];
+}) => Promise<SerpVerdict | "budget">;
+
 /** One audited page's SUPP-18 record, stored as evidence (`artifact`). */
 export const serpOriginalitySchema = z.object({
   url: z.string(),
@@ -180,25 +215,7 @@ export const serpOriginalitySchema = z.object({
       fetch: z.enum(["ok", "failed", "non-html", "skipped"]),
     }),
   ),
-  verdict: z
-    .object({
-      hasOriginalElement: z.boolean(),
-      elements: z.array(
-        z.object({
-          type: z.enum([
-            "first-party data",
-            "test",
-            "case",
-            "expert quote",
-            "worked example",
-          ]),
-          quote: z.string(),
-        }),
-      ),
-      confidence: z.number().min(0).max(1),
-      unsure: z.boolean(),
-    })
-    .nullable(),
+  verdict: serpVerdictSchema.extend({ unsure: z.boolean() }).nullable(),
   blocked: serpBlockedReasonSchema.nullable(),
 });
 export type SerpOriginality = z.infer<typeof serpOriginalitySchema>;
@@ -215,6 +232,8 @@ export type SerpCollection =
       status: "ran";
       blocked: SerpBlockedReason | null;
       lookupUsd: number;
+      /** Verdict caller (WO-B11-009); null when the LLM is off. */
+      judge: SerpJudge | null;
       pages: ReadonlyArray<{
         record: SerpOriginality;
         competitors: readonly PageProfile[];
