@@ -45,4 +45,19 @@ describe("crawl.llms-mirrors", () => {
     });
     expect(statusOf(result, "P9-03")).toBe("OPEN");
   });
+
+  it("ignores a .md URL that answers 200 with HTML (catch-all route)", async () => {
+    const result = await run({
+      files: [],
+      mdMirrors: [
+        {
+          pageUrl: `${ORIGIN}/`,
+          mdUrl: `${ORIGIN}/index.html.md`,
+          status: 200,
+          headers: [["content-type", "text/html; charset=utf-8"]],
+        },
+      ],
+    });
+    expect(statusOf(result, "P9-03")).toBe("NA");
+  });
 });
