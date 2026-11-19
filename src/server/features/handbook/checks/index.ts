@@ -14,6 +14,7 @@ import { aiBotPolicyCheck } from "./ai-bot-policy";
 import { consentLcpCheck, firstScreenActionCheck } from "./first-screen";
 import { hiddenPagesCheck } from "./hidden-pages";
 import { imageMarkupCheck } from "./image-markup";
+import { imageWeightCheck } from "./image-weight";
 import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
 import { labMetricsCheck, pageWeightCheck } from "./lab-performance";
@@ -91,6 +92,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   renderResourcesCheck,
   labMetricsCheck,
   pageWeightCheck,
+  imageWeightCheck,
   resourceHintsCheck,
   thirdPartyCheck,
   axeRulesCheck,
