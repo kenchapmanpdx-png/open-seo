@@ -1,9 +1,9 @@
 {
   "id": "why-HUB",
   "site": "why",
-  "golden": "§2 hub title (/events)",
+  "golden": "§2 hub title (/events): golden P4 'hub title 1'",
   "itemId": "P4-07",
-  "expected": "fail",
+  "expected": "pass",
   "input": {
     "itemId": "P4-07",
     "rubricId": "hub-titles",
