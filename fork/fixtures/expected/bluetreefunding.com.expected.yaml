@@ -262,6 +262,7 @@ findings:
   - id: F23
     title: "Thin / near-identical industry and partner pages (112–351 words); inconsistent URL hierarchy and slugs"
     items: [P5-15, P2-12]
+    supp: [SUPP-17]
     urls:
       [
         /construction/,

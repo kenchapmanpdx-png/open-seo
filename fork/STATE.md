@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: B10 upstream rebase — upstream #1340 adds migrations 0072/0050 project_embeds that collide with the fork migrations; approve the renumbering plan in fork/reports/B10.md R1.1 (fork → sqlite 0073–0076 / pg 0051–0054 incl. B11's 0075 / 0053, original journal `when` kept, embeds SQL applied to Supabase by hand) or rebase by hand; the automated resolution was refused by the session permission policy (not blocking the rest of B10). (none blocking B9; earlier optional items below; optional: raise the Supabase session pool size or approve the transaction pooler for local runs — concurrent in-app audits exhaust 15 slots, run 31); optional: restart the sidecar with fork/sidecar/compose.badgeo.yaml (BadGEO --sidecar + 1000-page sidecar perf); optional: a public tunnel for perf-inapp.ts (in-app 200/500 memory)
-current_batch: B11
-batch_file: fork/batches/B11-heavy-scaled-content-copy.md
+status: done (not-started | in-progress | needs-ken | done)
+needs_ken: build sequence B1–B11 complete; remaining BLOCKED-KEN items (all optional): (1) upstream rebase — upstream #1340 migrations 0072/0050 collide with fork migrations; approve the renumbering plan in fork/reports/B10.md R1.1 (fork → sqlite 0073–0076 / pg 0051–0054 incl. B11 0075 / 0053) or rebase by hand; (2) BadGEO --sidecar (restart sidecar with fork/sidecar/compose.badgeo.yaml); (3) B11 spec conflict, optional: SCALED-COPY §3.1 rule 2 (whole-set skip) vs §8 "F23 pages reported by exactly one item" — default kept §3.1 (fork/reports/B11.md R4 decision 2); (4) earlier optional items below (WO-B6-012, Bing key, BYOK keys, OAuth MCP run, CRUX_API_KEY); optional: Supabase pool size, sidecar health check that runs a real render (stalls after ~5 h, B10 run 54 + B11 run 63)
+current_batch: MAINT
+batch_file: fork/MAINTENANCE.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 62
-next_action: B11 R3 (run 63): WO-B11-090 integration pass per fork/work-orders/WO-B11-090.md (SCALED-COPY §8 in order; live audits one at a time). WO-B11-001…010 done (009 + 010 run 62, fork/reports/B11.md R3). Run 62 already did the §8 BadGEO step with flags off: 83 pages, missing 0, unexpected 0, blocked 18 (366 s) — rerun only if code changes. Notes for 090: SUPP-18 live = `handbook-audit.ts https://bluetreefunding.com --mode AUDIT --serp-originality --serp-originality-pages 3 --llm` (needs DataForSEO creds in .env.local loaded by the script; missing → BLOCKED-KEN `dataforseo credit`); SUPP-18 verdict uses its own judge (`SerpCollection.judge`, check class CRAWL) on the SUPP-18 budget; summary counts in `scaledContent.supp18`. Open BLOCKED-KEN from B10: upstream rebase (approve fork/reports/B10.md R1.1 renumbering, now also covering sqlite 0075 / pg 0053), BadGEO --sidecar (restart sidecar with fork/sidecar/compose.badgeo.yaml).
+current_run: 63
+next_action: MAINT (BLUEPRINT §9 loops). LIGHT queue: WO-B11-091 sitemap 5xx retry (fork/work-orders/WO-B11-091.md). B11 done run 63 (fork/reports/B11.md R4; tag handbook-v3.1.0).
 contracts_version: 1.7.0 (B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -35,19 +35,19 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                          | Model (SPLIT) | Status      |
-| ----- | --------------------------------------------- | ------------- | ----------- |
-| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done        |
-| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done        |
-| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done        |
-| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done        |
-| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done        |
-| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done        |
-| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done        |
-| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | done        |
-| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | done        |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done        |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | in-progress |
+| Batch | File                                          | Model (SPLIT) | Status |
+| ----- | --------------------------------------------- | ------------- | ------ |
+| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done   |
+| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done   |
+| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done   |
+| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done   |
+| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done   |
+| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done   |
+| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done   |
+| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | done   |
+| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | done   |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done   |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | done   |
 
 ## Run log
 
@@ -115,6 +115,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 60  | 2026-11-19 | Opus 5.5 | B11 R3 (AUTOPILOT): WO-B11-006 copy rules in the app — `fork/scripts/copy-rules-sync.ts` (+ `--check`) → `copy-rules.json` (v1), MCP `handbook_copy_rules_get`, findings `copyRules` hint (P5 / SUPP-17 / SUPP-18), Handbook tab "Copy rules" dialog, ui-smoke check OK (app rebuilt); Every App catalog test 93 → 94 (logged). WO-B11-007 SAM glob + `/fork/skills/*/SKILL.md` (copy-rules served, handbook-audit excluded; build OK; logged). Checks: types, lint, test 2526/2526, format green. Stopped before 008 (large WO, context budget).                                                                                                                                                                                                                                                                                                                                        | B11 R3 WO-B11-008             |
 | 61  | 2026-11-19 | Opus 5.5 | B11 R3 (AUTOPILOT run 21): WO-B11-008 SUPP-18 collection done — `llm/serp-originality-collect.ts` `serpForRun` runner hook (option on; REVIEW → na EP-7), page selection (service/product/guide/article/category, best-linked per template then in-links, never home), one-call query deriver with brand stripping, DataForSEO live SERP depth 10 US/en with 7-day evidence-store cache + per-run dedupe + pages × $0.002 cap, competitor fetch (browser UA, 10 s, 1 retry) + map-model profiles on the SUPP-18 budget, BLOCKED states; `CheckContext.serpOriginality` (additive 1.7.0); app settings/env + CLI `--serp-originality[-pages]`; fixtures `fork/fixtures/serp-originality/`; 6 tests; `contractViolation` moved to `engine/contract-violation.ts` (runner 400-line cap). BadGEO with flag 0/0. Tests 408 files / 2532 pass, types/lint/format green, no upstream edits      | B11 WO-B11-009                |
 | 62  | 2026-11-19 | Opus 5.5 | B11 R3 (AUTOPILOT run 22): WO-B11-009 SUPP-18 verdict done (cfa63d2c) — `checks/supp-serp-originality.ts` (class CRAWL, own `SerpJudge` on the SUPP-18 budget = remaining − competitor mapper spend; verbatim quote check, yes-without-verified-quote → unsure, < 0.7 → second call, disagreement → unsure; finding only for a confident "no", §3.3 title / fix / S3; per-page `artifact` record + `textQuote` per element; `supp18Summary` → `scaledContent.supp18`); prompt `SERP_ORIGINALITY_RUBRIC`; 7 tests. WO-B11-010 docs done (baa90edb): RUNBOOK B11 section, MAINTENANCE M4, coverage SUPP-17…19. BadGEO flags off: 83 pages, missing 0, unexpected 0. Checks: types 0, lint 0, tests 409 files / 2539, format clean, knip clean. Next WO-B11-090.                                                                                                                            |
+| 63  | 2026-11-19 | Opus 5.5 | B11 R4 (AUTOPILOT run 23): WO-B11-090 integration pass. SUPP-18 live bug fixed (DataForSEO goto links resolved via free converter; 5681f3f2) → bluetree 3/3 checked, lookups $0.006, LLM $0.044. Goldens flags off: why / ryan / bluetree grade Δ 0, deterministic verdicts identical (bluetree r63c; r63b discarded: sitemap 503). F23 re-mapped to SUPP-17. Copy-quality medians / p90 filled. Speed ≈ 0.23 s / 100 pages. Sidecar stall → restart. WO-B11-091 queued. Checks green. B11 done, tag handbook-v3.1.0                                                                                                                                                                                                                                                                                                                                                                     | MAINT                         |
 
 ## Batch history
 
@@ -130,3 +131,4 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B8    | Opus 5.5 | 2026-11-18 | 2026-11-18 | fork/reports/B8.md  |
 | B9    | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B9.md  |
 | B10   | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B10.md |
+| B11   | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B11.md |
