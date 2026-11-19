@@ -43,4 +43,5 @@
   <url><loc>{{ORIGIN}}/twin-a.html</loc></url>
   <url><loc>{{ORIGIN}}/twin-b.html</loc></url>
   <url><loc>{{ORIGIN}}/repeat-block.html</loc></url>
+  <url><loc>{{ORIGIN}}/many-outbound.html</loc></url>
 </urlset>
