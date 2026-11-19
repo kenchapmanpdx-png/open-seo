@@ -1,6 +1,8 @@
 import { expect, it, vi } from "vitest";
 import { createRenderThrottle } from "./sidecar-per-url";
 
+const isThrottled = (status: number) => status === 429;
+
 it("renders one page at a time once the site has answered 429", async () => {
   vi.useFakeTimers();
   const retry = createRenderThrottle();
@@ -15,7 +17,6 @@ it("renders one page at a time once the site has answered 429", async () => {
     inFlight -= 1;
     return status;
   };
-  const isThrottled = (status: number) => status === 429;
   const first = retry(render, isThrottled);
   await vi.advanceTimersByTimeAsync(150);
   const rest = Array.from({ length: 3 }, () => retry(render, isThrottled));
