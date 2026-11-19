@@ -30,6 +30,40 @@ const isLandmark = (tag: string): tag is (typeof LANDMARKS)[number] =>
   (LANDMARKS as readonly string[]).includes(tag);
 const HEADING = /^h([1-6])$/;
 const MAX_TEXT = 20_000;
+/**
+ * SUPP-14: a line that reads as a list item — "•", "▪", "✓", "–", "1." / "1)"
+ * or "Step N" at its start. Lines end at `<br>` and block tags.
+ */
+const LIST_MARKER = /^(?:[•▪✓–]|\d{1,2}[.)](?=\s)|step\s+\d+\b)/i;
+const LINE_BREAKS = new Set([
+  "br",
+  "p",
+  "div",
+  "li",
+  "ul",
+  "ol",
+  "dl",
+  "table",
+  "tr",
+  "td",
+  "th",
+  "section",
+  "article",
+  "main",
+  "header",
+  "footer",
+  "nav",
+  "aside",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "blockquote",
+]);
+const REAL_LIST = new Set(["ul", "ol", "dl", "table"]);
+const MIN_FAKE_LIST_LINES = 3;
 type Landmark = PageMarkup["headings"][number]["landmark"];
 const STRUCTURAL = new Set([
   "header",
@@ -89,6 +123,29 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   const stack: string[] = [];
   let words = 0;
   let skipDepth = 0;
+  /** Stack depth of the open `data-nosnippet` element (0 = none). */
+  let nosnippetAt = 0;
+  let nosnippetWords = 0;
+  let line: string[] = [];
+  let run: string[] = [];
+  const fakeListRuns: { sample: string; lines: number }[] = [];
+  const endRun = () => {
+    if (run.length >= MIN_FAKE_LIST_LINES)
+      fakeListRuns.push({
+        sample: run.slice(0, 3).join(" / ").slice(0, 300),
+        lines: run.length,
+      });
+    run = [];
+  };
+  /** Close the current text line; list-like lines extend the run, others end it. */
+  const endLine = () => {
+    const text = collapse(line.join(""));
+    line = [];
+    if (!text) return;
+    if (LIST_MARKER.test(text) && !stack.some((t) => REAL_LIST.has(t)))
+      run.push(text);
+    else endRun();
+  };
   let titleBuf: string[] | null = null;
   let h1Buf: string[] | null = null;
   let anchor: {
@@ -199,7 +256,10 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   const parser = new Parser(
     {
       onopentag(name, attrs) {
+        if (LINE_BREAKS.has(name)) endLine();
         stack.push(name);
+        if (nosnippetAt === 0 && "data-nosnippet" in attrs)
+          nosnippetAt = stack.length;
         if (STRUCTURAL.has(name) && stack.length <= 8) {
           skeletonParts.add(stack.filter((t) => STRUCTURAL.has(t)).join("/"));
         }
@@ -250,12 +310,17 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
           textParts.push(text);
           textLength += text.length;
         }
-        words += countWords(text);
+        const n = countWords(text);
+        words += n;
+        if (nosnippetAt > 0) nosnippetWords += n;
+        line.push(text);
       },
       onclosetag(name) {
+        if (LINE_BREAKS.has(name)) endLine();
         // htmlparser2 closes implied tags in order; pop to the matching one.
         const at = stack.lastIndexOf(name);
         if (at >= 0) stack.length = at;
+        if (nosnippetAt > stack.length) nosnippetAt = 0;
         if (name === "title" && titleBuf) {
           head.title = collapse(titleBuf.join(""));
           titleBuf = null;
@@ -290,6 +355,8 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   );
   parser.write(html);
   parser.end();
+  endLine();
+  endRun();
   head.hreflang = hreflang;
   return {
     head,
@@ -307,6 +374,8 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
       embeds,
       counts,
       text: collapse(textParts.join(" ")).slice(0, MAX_TEXT),
+      ...(nosnippetWords ? { nosnippetWords } : {}),
+      ...(fakeListRuns.length ? { fakeListRuns } : {}),
     },
     jsonLdBlocks,
     words,
