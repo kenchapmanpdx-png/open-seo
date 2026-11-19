@@ -321,6 +321,8 @@ export async function runCliAudit(argv: string[]) {
     { lighthouse: lighthouseAll ? "all" : "templates" },
   );
   const totalMs = Math.round(performance.now() - t0);
+  if (serpSpentUsd)
+    console.log(`supp18 llm: $${serpSpentUsd().toFixed(4)} (own budget)`);
   const report = buildReportJson({
     depth,
     result,
@@ -416,6 +418,9 @@ function loadCliEnv() {
 /** SERP lookups cached as files across CLI runs (same key as the app's evidence store). */
 const SERP_CACHE_DIR = "fork/runs/.serp-cache";
 
+/** SUPP-18 LLM spend (queries, competitor profiles, verdicts), set by cliSerpDeps. */
+let serpSpentUsd: (() => number) | null = null;
+
 /** SUPP-18 deps: DataForSEO from .env.local; LLM parts only with --llm. */
 function cliSerpDeps(
   llm: boolean,
@@ -440,6 +445,8 @@ function cliSerpDeps(
         log,
       })
     : null;
+  serpSpentUsd = () =>
+    budget.totalUsd - budget.remainingUsd() + (mapper?.spentUsd() ?? 0);
   return {
     lookup: dataforseoSerpLookup,
     cache: createFsEvidenceStore(SERP_CACHE_DIR),

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sha256Hex } from "@/server/lib/audit/ids";
+import { isGoogleRedirect } from "@/shared/google-serp-url";
 import type {
   CollectedData,
   PageSnapshot,
@@ -353,8 +354,12 @@ async function cachedLookup(
   const cached = bytes
     ? cacheSchema.safeParse(parseJson(new TextDecoder().decode(bytes))).data
     : undefined;
-  if (cached && now.getTime() - Date.parse(cached.fetchedAt) < CACHE_MS)
-    return cached.hits;
+  // Entries written before goto links were resolved are re-read.
+  const fresh =
+    cached &&
+    now.getTime() - Date.parse(cached.fetchedAt) < CACHE_MS &&
+    !cached.hits.some((h) => isGoogleRedirect(h.url));
+  if (cached && fresh) return cached.hits;
   if (!cost.canSpend()) return null;
   const { hits, costUsd } = await deps.lookup(query, location);
   cost.spend(costUsd);
