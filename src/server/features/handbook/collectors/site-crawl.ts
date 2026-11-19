@@ -295,7 +295,8 @@ async function fetchPage(
   const isHtml = contentType ? HTML_TYPE.test(contentType) : true;
   const facts = isHtml ? extractHtmlFacts(res.body, res.finalUrl) : null;
   // Main words, MinHash and in-page repeated blocks (FULL-READ §3.5).
-  const main = isHtml ? mainTextFacts(res.body) : null;
+  const blocks = isHtml ? pageBlocks(res.body) : [];
+  const main = isHtml ? mainTextFacts(res.body, blocks) : null;
   const bytes = new TextEncoder().encode(res.body);
   const rawKey = isHtml
     ? await ctx.storeBody("rawHtml", res.finalUrl, bytes, "text/html")
@@ -324,7 +325,7 @@ async function fetchPage(
       jsonLdBlocks: facts?.jsonLdBlocks ?? [],
       skeleton: facts?.skeleton ?? "",
       bytes: bytes.byteLength,
-      blocks: isHtml ? pageBlocks(res.body) : [],
+      blocks,
     },
   };
 }

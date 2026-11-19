@@ -14,6 +14,8 @@ import {
   only,
 } from "./llm-copy";
 import { headLineViews } from "./llm-views";
+import { findScaledSets, swapped } from "./scaled-sets";
+import { scaledSetSummary } from "./supp-scaled";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -93,19 +95,6 @@ const hubTitlesCheck = llmCheck(
 
 const SERVICE_PATH = /\/(?:services?|locations?|areas?|service-areas?)$/i;
 
-/** Titles that differ only by one run of ≤ 2 words (place or service swapped). */
-function swapped(a: string, b: string): boolean {
-  const x = a.toLowerCase().split(/\s+/);
-  const y = b.toLowerCase().split(/\s+/);
-  if (x.length !== y.length || x.length < 3) return false;
-  const diff = x.flatMap((w, i) => (w === y[i] ? [] : [i]));
-  return (
-    diff.length > 0 &&
-    diff.length <= 2 &&
-    diff[diff.length - 1] - diff[0] < diff.length
-  );
-}
-
 const localPagesCheck: HandbookCheck = {
   id: "llm.local-pages",
   itemIds: ["P5-09"],
@@ -144,10 +133,20 @@ const localPagesCheck: HandbookCheck = {
       );
       return out.build();
     }
+    // SUPP-17 set evidence for the same pages (SCALED-COPY §3.2).
+    const { pages: crawled, templates } = ctx.collected;
+    const sets =
+      crawled.status === "ok" && templates.status === "ok"
+        ? findScaledSets(crawled.snapshots, templates.templates)
+        : [];
+    const setLine = (url: string) => {
+      const set = sets.find((x) => x.pages.some((q) => q.snapshot.url === url));
+      return set ? `\nPage set: ${scaledSetSummary(set)}` : "";
+    };
     const views: View[] = [
       ...twins.slice(0, 6).map((p) => ({
         url: p.url,
-        text: `${headLines(p)}\nsharedSentenceRatio: ${ratios[swaps.indexOf(p)]}\n\n${p.markup.text.slice(0, 2_500)}`,
+        text: `${headLines(p)}\nsharedSentenceRatio: ${ratios[swaps.indexOf(p)]}${setLine(p.url)}\n\n${p.markup.text.slice(0, 2_500)}`,
       })),
       ...single.slice(0, 2).map((p) => ({
         url: p.url,

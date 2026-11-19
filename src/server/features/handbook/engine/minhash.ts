@@ -121,7 +121,10 @@ function minhashSignature(text: string): number[] {
 }
 
 /** Jaccard estimate: share of equal signature values. */
-function estimateJaccard(a: readonly number[], b: readonly number[]): number {
+export function estimateJaccard(
+  a: readonly number[],
+  b: readonly number[],
+): number {
   if (a.length !== PERMUTATIONS || b.length !== PERMUTATIONS) return 0;
   let same = 0;
   for (let i = 0; i < PERMUTATIONS; i += 1) if (a[i] === b[i]) same += 1;
@@ -160,12 +163,15 @@ export function similarPairs(
   return out;
 }
 
-/** Main-text facts per page, computed while the body is in memory. */
-export function mainTextFacts(html: string) {
-  const blocks = mainTextBlocks(html);
-  const text = blocks.join(" ");
+/**
+ * Main-text facts per page, computed while the body is in memory;
+ * `blocks` (`pageBlocks`) feed the SUPP-17 sentence hashes (ADR-022).
+ */
+export function mainTextFacts(html: string, blocks: readonly string[] = []) {
+  const main = mainTextBlocks(html);
+  const text = main.join(" ");
   const counts = new Map<string, number>();
-  for (const block of blocks) {
+  for (const block of main) {
     if (words(block).length < BLOCK_MIN_WORDS) continue;
     counts.set(block, (counts.get(block) ?? 0) + 1);
   }
@@ -178,5 +184,23 @@ export function mainTextFacts(html: string) {
         text: block.slice(0, BLOCK_TEXT_MAX),
         count,
       })),
+    sentenceHashes: sentenceHashes(blocks),
   };
+}
+
+/** SUPP-17 sentence: ≥ 20 chars, lower-cased; ≤ 400 per page (ADR-022). */
+const SENTENCE_MIN_CHARS = 20;
+const SENTENCE_HASHES_MAX = 400;
+
+/** FNV-1a hashes of the unique sentences of a page's blocks, document order. */
+function sentenceHashes(blocks: readonly string[]): number[] {
+  const seen = new Set<number>();
+  for (const block of blocks)
+    for (const part of block.split(/(?<=[.!?])\s+/)) {
+      const sentence = part.trim().toLowerCase();
+      if (sentence.length < SENTENCE_MIN_CHARS) continue;
+      seen.add(fnv1a(sentence));
+      if (seen.size >= SENTENCE_HASHES_MAX) return [...seen];
+    }
+  return [...seen];
 }

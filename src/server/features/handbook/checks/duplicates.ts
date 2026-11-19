@@ -2,7 +2,8 @@ import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { sort } from "remeda";
 import { similarPairs } from "@/server/features/handbook/engine/minhash";
-import { createResult, normalizeUrl } from "./support";
+import { indexable, linkedSets } from "./scaled-sets";
+import { createResult } from "./support";
 
 /**
  * Duplicates + thin pages (FULL-READ §3.5, ADR-021). P3-12: indexable,
@@ -21,17 +22,6 @@ const THIN_WORDS = 50;
 const MAX_LIST = 10;
 /** A sentence on ≥ 30 % of pages (and ≥ 3) counts as boilerplate. */
 const BOILERPLATE_SHARE = 0.3;
-
-const noindex = (s: PageSnapshot) =>
-  /noindex/i.test(`${s.head.robotsMeta ?? ""} ${s.xRobotsTag ?? ""}`);
-
-const indexable = (s: PageSnapshot) =>
-  s.status === 200 &&
-  s.mainWords !== undefined &&
-  normalizeUrl(s.finalUrl) === normalizeUrl(s.url) &&
-  !noindex(s) &&
-  (!s.head.canonical ||
-    normalizeUrl(s.head.canonical) === normalizeUrl(s.finalUrl));
 
 const sentences = (text: string) =>
   text
@@ -67,23 +57,6 @@ function boilerplateNote(snaps: readonly PageSnapshot[]): string {
     .join(", ")}`;
 }
 
-/** Union-find clusters over similar pairs. */
-function clusters(n: number, pairs: ReadonlyArray<{ a: number; b: number }>) {
-  const parent = Array.from({ length: n }, (_, i) => i);
-  const find = (i: number): number =>
-    parent[i] === i ? i : (parent[i] = find(parent[i]));
-  for (const { a, b } of pairs) parent[find(a)] = find(b);
-  const groups = new Map<number, number[]>();
-  for (const { a, b } of pairs)
-    for (const i of [a, b]) {
-      const root = find(i);
-      const list = groups.get(root) ?? [];
-      if (!list.includes(i)) list.push(i);
-      groups.set(root, list);
-    }
-  return [...groups.values()];
-}
-
 export const duplicatesCheck: HandbookCheck = {
   id: "crawl.duplicates",
   itemIds: ITEMS,
@@ -101,7 +74,7 @@ export const duplicatesCheck: HandbookCheck = {
       withSig.map((s) => s.minhash ?? []),
       SIMILAR,
     );
-    const groups = clusters(withSig.length, pairs);
+    const groups = linkedSets(withSig.length, pairs);
     if (groups.length > 0) {
       const pairText = (p: (typeof pairs)[number]) =>
         `${withSig[p.a].url} ≈ ${withSig[p.b].url} · Jaccard ${p.jaccard.toFixed(2)} (5-word shingles, MinHash estimate)`;

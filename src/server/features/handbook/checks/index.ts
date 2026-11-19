@@ -46,6 +46,7 @@ import { socialMetaCheck } from "./social-meta";
 import { suppAeoCheck } from "./supp-aeo";
 import { suppLinksCheck } from "./supp-links";
 import { suppPagesCheck } from "./supp-pages";
+import { suppScaledCheck } from "./supp-scaled";
 import { thirdPartyCheck } from "./third-party";
 import { urlInventoryCheck } from "./url-inventory";
 import { urlVariantsCheck } from "./url-variants";
@@ -80,6 +81,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   outboundLinksCheck,
   suppLinksCheck,
   suppPagesCheck,
+  suppScaledCheck,
   suppAeoCheck,
   rawCopyCheck,
   imageMarkupCheck,
