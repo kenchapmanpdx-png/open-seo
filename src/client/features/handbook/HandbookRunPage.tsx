@@ -31,6 +31,7 @@ import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { FindingsTable } from "./FindingsTable";
 import { RunActions } from "./RunActions";
+import { RunProgress } from "./RunProgress";
 import { ScoreCard } from "./ScoreCard";
 import { handbookRunQuery } from "./queries";
 
@@ -61,6 +62,10 @@ export function HandbookRunPage({
                 />
                 {detail.run.status === "completed" ? (
                   <ScoreCard report={detail.report} />
+                ) : null}
+                {detail.run.status === "queued" ||
+                detail.run.status === "running" ? (
+                  <RunProgress projectId={projectId} runId={runId} />
                 ) : null}
                 <Tabs defaultValue="findings">
                   <TabsList>

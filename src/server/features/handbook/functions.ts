@@ -107,3 +107,16 @@ export const publishHandbookReport = createServerFn({ method: "POST" })
       runId: data.runId,
     }),
   );
+
+/** Live stage / pages / escalations / spend for the run page (WO-B9-024). */
+export const getHandbookRunProgress = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(runScopeSchema)
+  .handler(async ({ data, context }) => {
+    const progress = await HandbookService.getRunProgress(
+      context.projectId,
+      data.runId,
+    );
+    if (!progress) throw new AppError("NOT_FOUND", "Handbook run not found");
+    return progress;
+  });

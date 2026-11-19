@@ -19,6 +19,13 @@ import { OutcomeService } from "@/server/features/agency/outcomeService";
 import { ReportService } from "@/server/features/reports/services/ReportService";
 import { AppError } from "@/server/lib/errors";
 import { supabaseConfig } from "./HandbookRunService";
+import { HandbookStageRepository } from "@/server/features/handbook/repositories/HandbookStageRepository";
+import { HandbookLeaseRepository } from "@/server/features/handbook/repositories/HandbookLeaseRepository";
+import {
+  STAGES,
+  type StageName,
+  type StageStatus,
+} from "@/server/features/handbook/engine/stages";
 import { isSuppOnly } from "../registry-supp";
 
 const SIGNED_URL_SECONDS = 300;
@@ -219,7 +226,93 @@ async function getEvidence(projectId: string, evidenceId: string) {
   return { ...evidence, bodyUrl };
 }
 
+type StageProgress = {
+  stage: StageName;
+  status: StageStatus;
+  batchesDone: number;
+  batches: number;
+  itemsDone: number;
+  error: string | null;
+};
+
+/**
+ * Live run progress (FULL-READ §7.5): per-stage batch state, pages done in
+ * the current stage against pages read by the crawl, bot-parity escalation
+ * probes, and LLM spend so far. A queued run names the run it waits on only
+ * when that run is in the same project. Null when the run is not in
+ * `projectId`.
+ */
+async function getRunProgress(projectId: string, runId: string) {
+  const run = await HandbookRepository.getRun(projectId, runId);
+  if (!run) return null;
+  const rows = await HandbookStageRepository.progressRows(runId);
+  const stages: StageProgress[] = STAGES.flatMap((stage) => {
+    const batches = rows.stages.filter((r) => r.stage === stage);
+    if (batches.length === 0) return [];
+    const has = (status: StageStatus) =>
+      batches.some((b) => b.status === status);
+    const finished = batches.filter(
+      (b) => b.status === "done" || b.status === "skipped",
+    );
+    return [
+      {
+        stage,
+        status: has("failed")
+          ? "failed"
+          : has("running")
+            ? "running"
+            : finished.length === batches.length
+              ? batches.every((b) => b.status === "skipped")
+                ? "skipped"
+                : "done"
+              : "pending",
+        batchesDone: finished.length,
+        batches: batches.length,
+        itemsDone: batches.reduce((n, b) => n + b.itemsDone, 0),
+        error: batches.find((b) => b.error)?.error ?? null,
+      },
+    ];
+  });
+  const current =
+    stages.find((s) => s.status === "running" || s.status === "pending") ??
+    stages.at(-1) ??
+    null;
+  const pagesTotal =
+    run.coverageRead ??
+    stages.find((s) => s.stage === "crawl" && s.status === "done")?.itemsDone ??
+    null;
+
+  let queuedBehind: { sameProject: boolean; runId: string | null } | null =
+    null;
+  if (run.status === "queued") {
+    const holder = await HandbookLeaseRepository.currentHolder();
+    const holderRun = holder
+      ? await HandbookRepository.getRun(projectId, holder)
+      : null;
+    queuedBehind = holderRun
+      ? { sameProject: true, runId: holderRun.id }
+      : { sameProject: false, runId: null };
+  }
+
+  return {
+    runId,
+    status: run.status,
+    stages,
+    currentStage: current?.stage ?? null,
+    pagesDone: current && current.stage !== "crawl" ? current.itemsDone : null,
+    pagesTotal,
+    escalations: rows.botProbes,
+    llmCostUsd: Math.max(rows.llmCostUsd, run.llmCostUsd),
+    queuedBehind,
+  };
+}
+
+export type HandbookRunProgress = NonNullable<
+  Awaited<ReturnType<typeof getRunProgress>>
+>;
+
 export const HandbookService = {
+  getRunProgress,
   getSettings,
   updateSettings,
   listRuns: (projectId: string) => HandbookRepository.listRuns(projectId),
