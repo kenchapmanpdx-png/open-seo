@@ -85,7 +85,7 @@ findings:
     class: LLM
     detectableBy: llm
     severity: S2
-    note: "not a §24 sentinel string; needs placeholder-copy judgment"
+    note: "not a §24 sentinel string; needs placeholder-copy judgment. site-changed on 2026-11-19 (no event page or .md mirror has the placeholder venue any more)"
   - id: F09
     title: "Same 5-question FAQ + FAQPage on 11 event pages"
     items: [P5-05, P6-07]

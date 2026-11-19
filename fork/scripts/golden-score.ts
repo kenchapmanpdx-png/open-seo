@@ -156,13 +156,19 @@ async function directStatus(url: string): Promise<number | null> {
   }
 }
 
-/** Missed → site-changed per note or a status drift on re-fetch (same origin only). */
+/**
+ * Missed or partial with a site-changed note → site-changed (FULL-READ §9
+ * leaves site-changed findings out of the rate; a partial match on a finding
+ * the site no longer has is coincidence). Missed → site-changed on a status
+ * drift on re-fetch (same origin only).
+ */
 async function markSiteChanged(
   scored: Scored,
   origin: string,
   crawled: Map<string, number>,
 ) {
-  if (scored.verdict !== "missed") return scored;
+  if (scored.verdict !== "missed" && scored.verdict !== "partial")
+    return scored;
   if (scored.entry.note?.includes("site-changed")) {
     return {
       ...scored,
@@ -170,6 +176,7 @@ async function markSiteChanged(
       why: `${scored.why}; note: ${scored.entry.note}`,
     };
   }
+  if (scored.verdict !== "missed") return scored;
   for (const path of scored.entry.urls.filter(
     (u) => u.startsWith("/") && !u.includes("*"),
   )) {
