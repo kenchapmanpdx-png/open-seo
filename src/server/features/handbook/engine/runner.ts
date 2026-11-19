@@ -33,6 +33,7 @@ import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
 import { evidenceKey, factMapEvidence, materialize } from "./evidence";
 import { runCopyQuality } from "./copy-quality";
+import { scaledContentEvidence } from "./scaled-summary";
 import { applyScaledPrecedence } from "../checks/supp-scaled";
 import type { CopyQuality, RunOptions } from "../contracts/scaled-copy";
 import {
@@ -310,6 +311,9 @@ export async function evaluateRun(
     ? await runCopyQuality(input, runtime, collected, pageProfiles)
     : null;
   if (copy) evidence.push(copy.evidence);
+  evidence.push(
+    await scaledContentEvidence(input, runtime, collected, findings),
+  );
   return {
     intake,
     collected,

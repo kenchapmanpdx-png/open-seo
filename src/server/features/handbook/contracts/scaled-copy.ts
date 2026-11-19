@@ -43,6 +43,38 @@ export const scaledContentSchema = z.object({
 });
 export type ScaledContent = z.infer<typeof scaledContentSchema>;
 
+/** §3.5 rows (label, value) shared by the markdown export and the run page; zeros shown. */
+export function scaledContentRows(s: ScaledContent) {
+  return [
+    { label: "Indexable pages", value: String(s.indexablePages) },
+    {
+      label: "Pages in near-duplicate clusters (P3-12)",
+      value: String(s.duplicateClusterPages),
+    },
+    { label: "Thin pages (P3-12, P5-15)", value: String(s.thinPages) },
+    {
+      label: "Templated / variation page sets (SUPP-17)",
+      value: `${s.supp17Sets} sets, ${s.supp17Pages} pages`,
+    },
+    ...s.ownTextShare.map((t) => ({
+      label: `Median own-text share, ${t.template} (${t.pages} pages)`,
+      value: `${Math.round(t.median * 100)} %`,
+    })),
+    ...(s.supp18
+      ? [
+          {
+            label: "Original value vs top-10 results (SUPP-18)",
+            value: `${s.supp18.checked} checked, ${s.supp18.withoutOriginalElement} without an original element, ${s.supp18.blocked} blocked${s.supp18.note ? ` (${s.supp18.note})` : ""}`,
+          },
+        ]
+      : []),
+    {
+      label: "Pages with text addressed to AI assistants (SUPP-19)",
+      value: String(s.supp19Pages),
+    },
+  ];
+}
+
 /** Copy-quality metric ids in report order (§4.3). */
 export const COPY_METRIC_IDS = [
   "E7a",
