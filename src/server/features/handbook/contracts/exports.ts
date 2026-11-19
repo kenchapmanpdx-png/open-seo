@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { copyQualitySchema, scaledContentSchema } from "./scaled-copy";
 import { severitySchema } from "./registry-types";
 import {
   handbookModeSchema,
@@ -116,6 +117,10 @@ export const reportJsonSchema = z.object({
   /** SUPP-nn findings (ADR-020): "Additional findings", never scored. 1.5.0 */
   additionalFindings: z.array(findingSchema).optional(),
   answerEngineReadiness: answerEngineReadinessSchema.optional(),
+  /** Scaled-content summary (ADR-022), not scored; full depth only. 1.7.0 */
+  scaledContent: scaledContentSchema.optional(),
+  /** Copy quality (ADR-023), not scored; only when the gate is on. 1.7.0 */
+  copyQuality: copyQualitySchema.optional(),
   escalations: z.array(escalationSchema).optional(),
   items: z.array(
     z.object({

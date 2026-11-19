@@ -379,6 +379,13 @@
       "when": 1795033087737,
       "tag": "0053_fork_full_read",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795092565509,
+      "tag": "0054_fork_scaled_copy",
+      "breakpoints": true
     }
   ]
 }

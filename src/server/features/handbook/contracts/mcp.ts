@@ -12,6 +12,7 @@ export const HANDBOOK_MCP_TOOL_NAMES = [
   "handbook_audit_run",
   "handbook_findings_get",
   "handbook_status_export",
+  "handbook_copy_rules_get",
 ] as const;
 
 const projectId = z.string().min(1).describe("OpenSEO project ID.");
@@ -59,6 +60,16 @@ export const handbookFindingsGetOutput = z.looseObject({
     }),
   ),
   truncated: z.boolean(),
+  /**
+   * Present when ≥ 1 returned finding is in phase P5 or cites SUPP-17 /
+   * SUPP-18: load the copy rules before rewriting page copy (ADR-024). 1.7.0
+   */
+  copyRules: z
+    .looseObject({
+      tool: z.literal("handbook_copy_rules_get"),
+      version: z.string(),
+    })
+    .optional(),
 });
 
 export const handbookStatusExportInput = {
@@ -71,4 +82,12 @@ export const handbookStatusExportOutput = z.looseObject({
   runId: z.string(),
   format: z.enum(["status-md", "report-json"]),
   content: z.string(),
+});
+
+/** Copy rules pack (fork/skills/copy-rules, ADR-024); read-only. 1.7.0 */
+export const handbookCopyRulesGetInput = {};
+
+export const handbookCopyRulesGetOutput = z.looseObject({
+  version: z.string(),
+  text: z.string(),
 });

@@ -35,6 +35,13 @@ export const handbookProjectSettings = sqliteTable("handbook_project_setting", {
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(false),
   mode: text("mode", { enum: HANDBOOK_MODES }).notNull().default("AUDIT"),
   tierOverride: text("tier_override", { enum: SITE_TIERS }),
+  // B11 per-run options (ADR-023): apply to every following run.
+  copyQuality: integer("copy_quality", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  serpOriginality: integer("serp_originality", { mode: "boolean" })
+    .notNull()
+    .default(false),
   updatedAt: text("updated_at").notNull().default(now),
 });
 

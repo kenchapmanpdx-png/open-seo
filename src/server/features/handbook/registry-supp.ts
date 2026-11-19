@@ -1,7 +1,7 @@
 // Supplementary rules (ADR-020, FULL-READ §6): app rules outside handbook §41.
 // Not in registry.json, so handbook-sync stays a pure §41 diff. SUPP findings
-// are reported under "Additional findings" and never scored. SUPP-17…19 are
-// reserved for B11 (fork/SCALED-COPY.md). If Ken adds a rule to §41, delete
+// are reported under "Additional findings" and never scored. SUPP-17…19 come
+// from B11 (fork/SCALED-COPY.md §3, ADR-022 / ADR-024). If Ken adds a rule to §41, delete
 // it here and re-register the check under the new §41 id.
 import { z } from "zod";
 import { suppEntrySchema } from "./contracts/registry-types";
@@ -154,6 +154,33 @@ export const SUPP_REGISTRY = z.array(suppEntrySchema).parse([
     severityDefault: "S4",
     effect: "GEO",
     evidence: ["textQuote", "rawHtml"],
+  },
+  {
+    id: "SUPP-17",
+    title: "Page set shares most of its text (templated or variation pages)",
+    refs: [6, 9, 29],
+    class: "deterministic",
+    severityDefault: "S3",
+    effect: "SEO",
+    evidence: ["rawHtml", "url"],
+  },
+  {
+    id: "SUPP-18",
+    title: "Nothing on the page that the top-10 results for its query lack",
+    refs: [6, 33],
+    class: "llm",
+    severityDefault: "S3",
+    effect: "SEO",
+    evidence: ["textQuote", "artifact"],
+  },
+  {
+    id: "SUPP-19",
+    title: "Text addressed to AI assistants",
+    refs: [23, 29],
+    class: "deterministic",
+    severityDefault: "S2",
+    effect: "GEO",
+    evidence: ["rawHtml"],
   },
 ]);
 
