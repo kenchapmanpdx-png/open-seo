@@ -44,4 +44,8 @@
   <url><loc>{{ORIGIN}}/twin-b.html</loc></url>
   <url><loc>{{ORIGIN}}/repeat-block.html</loc></url>
   <url><loc>{{ORIGIN}}/many-outbound.html</loc></url>
+  <url><loc>{{ORIGIN}}/autoplay-video.html</loc></url>
+  <url><loc>{{ORIGIN}}/embed.html</loc></url>
+  <url><loc>{{ORIGIN}}/content-video.html</loc></url>
+  <url><loc>{{ORIGIN}}/video-ok.html</loc></url>
 </urlset>

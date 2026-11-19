@@ -1,9 +1,12 @@
 import { sort } from "remeda";
 import { Parser } from "htmlparser2";
 import type {
+  MarkupEmbed,
+  MarkupVideo,
   PageMarkup,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
+import { aspectRatio, embedOf } from "./video-embeds";
 
 /**
  * One streaming pass over raw HTML → the parsed facts every raw-HTML check
@@ -66,7 +69,12 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   const scripts: PageMarkup["scripts"][number][] = [];
   const headLinks: PageMarkup["headLinks"][number][] = [];
   const buttons: PageMarkup["buttons"][number][] = [];
-  const videos: PageMarkup["videos"][number][] = [];
+  const videos: MarkupVideo[] = [];
+  const embeds: MarkupEmbed[] = [];
+  let video: {
+    sources: { src: string; type: string | null }[];
+    tracks: { kind: string | null; src: string | null }[];
+  } | null = null;
   const counts = { tables: 0, lists: 0, forms: 0, iframes: 0, videos: 0 };
   let mainCount = 0;
   let textLength = 0;
@@ -140,19 +148,37 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     if (name === "ul" || name === "ol" || name === "dl") counts.lists += 1;
     if (name === "form") counts.forms += 1;
     if (name === "iframe") counts.iframes += 1;
+    const embed = embedOf(name, attrs, resolve);
+    if (embed) embeds.push(embed);
     if (name === "video") {
       counts.videos += 1;
+      video = { sources: [], tracks: [] };
       videos.push({
         src: attrs.src ? resolve(attrs.src) : null,
         poster: attrs.poster ? resolve(attrs.poster) : null,
         autoplay: "autoplay" in attrs,
         muted: "muted" in attrs,
         controls: "controls" in attrs,
+        preload: attrs.preload ?? null,
+        loop: "loop" in attrs,
+        width: attrs.width ?? null,
+        height: attrs.height ?? null,
+        aspectRatio: aspectRatio(attrs.style),
+        sources: video.sources,
+        tracks: video.tracks,
       });
     }
+    if (name === "source" && video && attrs.src)
+      video.sources.push({ src: resolve(attrs.src), type: attrs.type ?? null });
+    if (name === "track" && video)
+      video.tracks.push({
+        kind: attrs.kind ?? null,
+        src: attrs.src ? resolve(attrs.src) : null,
+      });
   }
 
   function readMarkupClose(name: string) {
+    if (name === "video") video = null;
     if (HEADING.test(name) && headingBuf) {
       headings.push({
         level: headingBuf.level,
@@ -278,6 +304,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
       headLinks,
       buttons,
       videos,
+      embeds,
       counts,
       text: collapse(textParts.join(" ")).slice(0, MAX_TEXT),
     },

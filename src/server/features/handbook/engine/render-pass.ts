@@ -4,6 +4,7 @@ import type {
   CollectorContext,
   CollectorKey,
 } from "@/server/features/handbook/contracts/collectors";
+import { withMediaSizes } from "../collectors/media-sizes";
 import { crawlSecondPass } from "../collectors/site-crawl";
 import type { RunInput } from "./runner";
 import { collectStage, type StageName } from "./stages";
@@ -12,7 +13,8 @@ import { collectStage, type StageName } from "./stages";
  * One stage's collectors. After `render`, links found only in the rendered
  * DOM get a second crawl pass and those pages are rendered too (ADR-021);
  * the stage then also re-emits `pages` and `jsonld`, which override the
- * crawl stage's output when stages merge in order.
+ * crawl stage's output when stages merge in order. Media sizes (HEAD) are
+ * added last.
  */
 export async function collectRunStage(
   input: RunInput,
@@ -22,10 +24,17 @@ export async function collectRunStage(
 ): Promise<Partial<CollectedData>> {
   const produced = await collectStage(input.collectors, ctx, stage, prior);
   if (stage !== "render") return produced;
-  return {
+  const out = {
     ...produced,
     ...(await renderDiscoveredPass(input, ctx, { ...prior, ...produced })),
   };
+  // Media sizes once every rendered page is in (HEAD only, FULL-READ §3.12).
+  if (out.render?.status === "ok")
+    out.render = {
+      status: "ok",
+      ...(await withMediaSizes(ctx, out.render)),
+    };
+  return out;
 }
 
 const isRenderCollector = (
