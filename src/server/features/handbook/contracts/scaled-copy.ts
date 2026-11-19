@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PageProfile } from "./page-profile";
 
 /**
  * B11 contracts (fork/SCALED-COPY.md, ADR-022…024), all additive in 1.7.0:
@@ -163,6 +164,7 @@ export const serpBlockedReasonSchema = z.enum([
   "dataforseo credit",
   "llm budget",
 ]);
+export type SerpBlockedReason = z.infer<typeof serpBlockedReasonSchema>;
 
 /** One audited page's SUPP-18 record, stored as evidence (`artifact`). */
 export const serpOriginalitySchema = z.object({
@@ -200,3 +202,21 @@ export const serpOriginalitySchema = z.object({
   blocked: serpBlockedReasonSchema.nullable(),
 });
 export type SerpOriginality = z.infer<typeof serpOriginalitySchema>;
+
+/**
+ * SUPP-18 collection output (WO-B11-008) the check reads from
+ * `CheckContext.serpOriginality`: REVIEW mode → `na`; otherwise one record
+ * per selected page (verdict still null) with the competitor PageProfiles
+ * the verdict compares against. `blocked` = a run-level stop (credit, budget).
+ */
+export type SerpCollection =
+  | { status: "na"; note: string }
+  | {
+      status: "ran";
+      blocked: SerpBlockedReason | null;
+      lookupUsd: number;
+      pages: ReadonlyArray<{
+        record: SerpOriginality;
+        competitors: readonly PageProfile[];
+      }>;
+    };
