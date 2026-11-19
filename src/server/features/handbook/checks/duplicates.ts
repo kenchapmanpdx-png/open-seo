@@ -1,5 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import { sort } from "remeda";
 import { similarPairs } from "@/server/features/handbook/engine/minhash";
 import { createResult, normalizeUrl } from "./support";
 
@@ -7,14 +8,19 @@ import { createResult, normalizeUrl } from "./support";
  * Duplicates + thin pages (FULL-READ §3.5, ADR-021). P3-12: indexable,
  * self-canonical 200 pages whose main text (5-word shingles, MinHash) is
  * ≥ 0.8 similar; pages that canonicalize elsewhere, are noindex or redirect
- * are not candidates. Thin pages (< 50 main words) follow once the BadGEO
- * fixtures carry real body text (queue WO-B9-011 note). SUPP-03: a text block (≥ 8 words) printed ≥ 2× inside one page's main
+ * are not candidates. The same indexable pages with < 50 main-content words
+ * are thin → P3-12 (the list feeds the P5-15 view later). A boilerplate
+ * note gives each page's share of sentences repeated across the site.
+ * SUPP-03: a text block (≥ 8 words) printed ≥ 2× inside one page's main
  * HTML (sliders, duplicated cards, pasted paragraphs). Not scored.
  */
 const ITEMS = ["P3-12", "SUPP-03"];
 
 const SIMILAR = 0.8;
+const THIN_WORDS = 50;
 const MAX_LIST = 10;
+/** A sentence on ≥ 30 % of pages (and ≥ 3) counts as boilerplate. */
+const BOILERPLATE_SHARE = 0.3;
 
 const noindex = (s: PageSnapshot) =>
   /noindex/i.test(`${s.head.robotsMeta ?? ""} ${s.xRobotsTag ?? ""}`);
@@ -26,6 +32,40 @@ const indexable = (s: PageSnapshot) =>
   !noindex(s) &&
   (!s.head.canonical ||
     normalizeUrl(s.head.canonical) === normalizeUrl(s.finalUrl));
+
+const sentences = (text: string) =>
+  text
+    .split(/(?<=[.!?])\s+/)
+    .map((x) => x.trim().toLowerCase())
+    .filter((x) => x.split(/\s+/).length >= 4);
+
+/** Pages whose visible sentences are mostly site-wide boilerplate. */
+function boilerplateNote(snaps: readonly PageSnapshot[]): string {
+  const perPage = snaps.map((s) => new Set(sentences(s.markup.text)));
+  const seen = new Map<string, number>();
+  for (const set of perPage)
+    for (const x of set) seen.set(x, (seen.get(x) ?? 0) + 1);
+  const min = Math.max(3, Math.ceil(snaps.length * BOILERPLATE_SHARE));
+  const ratios = sort(
+    perPage
+      .map((set, i) => {
+        const all = [...set];
+        const shared = all.filter((x) => (seen.get(x) ?? 0) >= min).length;
+        return {
+          url: snaps[i].url,
+          ratio: all.length ? shared / all.length : 0,
+        };
+      })
+      .filter((r) => r.ratio > 0.5),
+    (a, b) => b.ratio - a.ratio,
+  );
+  if (ratios.length === 0)
+    return "Boilerplate: no page has > 50 % site-wide sentences.";
+  return `Boilerplate (note only): ${ratios.length} page(s) with > 50 % site-wide sentences — ${ratios
+    .slice(0, 5)
+    .map((r) => `${r.url} ${Math.round(r.ratio * 100)} %`)
+    .join(", ")}`;
+}
 
 /** Union-find clusters over similar pairs. */
 function clusters(n: number, pairs: ReadonlyArray<{ a: number; b: number }>) {
@@ -89,6 +129,34 @@ export const duplicatesCheck: HandbookCheck = {
           ),
       });
     }
+
+    // P3-12 thin pages.
+    const thin = live.filter((s) => (s.mainWords ?? 0) < THIN_WORDS);
+    if (thin.length > 0)
+      out.finding({
+        itemIds: ["P3-12"],
+        severity: "S3",
+        title: `Thin pages (< ${THIN_WORDS} main-content words)`,
+        detail: thin
+          .slice(0, MAX_LIST * 2)
+          .map((s) => `${s.url} — ${s.mainWords} words`)
+          .join("\n"),
+        fix: "Give each page enough first-hand content to answer its own question (facts, steps, prices, dates), merge it into a stronger page, or noindex it if it only exists for navigation.",
+        fixability: "FIXABLE",
+        effort: "M",
+        urls: thin.map((s) => s.url),
+        evidenceRefs: thin
+          .slice(0, MAX_LIST)
+          .map((s) =>
+            out.evidence(
+              "rawHtml",
+              s.url,
+              `${s.mainWords} main-content words · ${s.markup.text.slice(0, 200)}`,
+              s.rawKey,
+            ),
+          ),
+      });
+    if (live.length > 0) out.pass("P3-12", boilerplateNote(live), []);
 
     // SUPP-03 repeated blocks inside one page.
     const repeats = pages.snapshots.filter(
