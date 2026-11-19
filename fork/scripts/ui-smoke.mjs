@@ -92,8 +92,21 @@ async function visit(path) {
     fullPage: true,
   });
 }
+// WO-B11-006: the handbook tab's "Copy rules" dialog opens with the pack text.
+async function checkCopyRules() {
+  await page.getByRole("button", { name: "Copy rules" }).click();
+  const text = await page
+    .getByTestId("copy-rules-text")
+    .textContent({ timeout: 5000 })
+    .catch(() => "");
+  const ok = /Order of authority/.test(text ?? "");
+  if (!ok) failed++;
+  console.log(`${ok ? "OK  " : "FAIL"} copy rules dialog — text present`);
+  await page.keyboard.press("Escape");
+}
 for (const p of paths) {
   await visit(p);
+  if (p === "handbook") await checkCopyRules();
   if (p === "handbook" && !runId) {
     const href = await page
       .locator(`a[href*="/handbook/"]`)

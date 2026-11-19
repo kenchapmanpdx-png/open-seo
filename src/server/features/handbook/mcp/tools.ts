@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   handbookAuditRunInput,
   handbookAuditRunOutput,
+  handbookCopyRulesGetOutput,
   handbookFindingsGetInput,
   handbookFindingsGetOutput,
   handbookStatusExportInput,
@@ -10,6 +11,7 @@ import {
 } from "@/server/features/handbook/contracts/mcp";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { renderStatusMd } from "@/server/features/handbook/export/markdown";
+import copyRules from "@/server/features/handbook/copy-rules.json";
 import { REGISTRY } from "@/server/features/handbook/registry";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import { HandbookService } from "@/server/features/handbook/services/HandbookService";
@@ -134,7 +136,7 @@ export const findingsGetTool = {
   config: {
     title: "Get handbook findings",
     description:
-      "Read a handbook run: grade, phase scores, and findings (S1 most severe) with the fix for each and one evidence excerpt. Omit runId for the latest run. Filter by severity or by the status of the checklist items a finding is linked to. The grade only compares with runs on the same handbook version.",
+      "Read a handbook run: grade, phase scores, and findings (S1 most severe) with the fix for each and one evidence excerpt. Omit runId for the latest run. Filter by severity or by the status of the checklist items a finding is linked to. The grade only compares with runs on the same handbook version. When the result carries copyRules, load the rules with handbook_copy_rules_get before rewriting any page copy.",
     inputSchema: handbookFindingsGetInput,
     outputSchema: handbookFindingsGetOutput.extend({
       status: z.string(),
@@ -165,8 +167,17 @@ export const findingsGetTool = {
     const findings = matching.slice(0, args.limit);
     const { score } = report;
     const status = report.run.finishedAt ? "completed" : "running";
+    // ADR-024: content findings point the agent at the copy rules pack.
+    const needsCopyRules = findings.some(
+      (f) =>
+        f.phase === "P5" ||
+        f.itemIds.some((id) => id === "SUPP-17" || id === "SUPP-18"),
+    );
+    const text = findingsText(report, findings, matching.length);
     return mcpResponse({
-      text: findingsText(report, findings, matching.length),
+      text: needsCopyRules
+        ? `${text}\nBefore rewriting page copy for these findings, load the copy rules with handbook_copy_rules_get.`
+        : text,
       meta: buildProjectMeta(
         context,
         args.projectId,
@@ -193,6 +204,12 @@ export const findingsGetTool = {
           fixability: f.fixability,
         })),
         truncated: matching.length > findings.length,
+        ...(needsCopyRules && {
+          copyRules: {
+            tool: "handbook_copy_rules_get" as const,
+            version: copyRules.version,
+          },
+        }),
       },
     });
   }),
@@ -233,6 +250,26 @@ function findingsText(
     );
   return lines.join("\n");
 }
+
+// -------------------------------------------------- handbook_copy_rules_get
+
+/** The copy rules pack (fork/skills/copy-rules, ADR-024); same for every project. */
+export const copyRulesGetTool = {
+  name: "handbook_copy_rules_get",
+  config: {
+    title: "Get copy rules",
+    description:
+      "Rules for drafting, rewriting or reviewing website copy (pages, posts, service and product copy): specific, first-hand, free of generic AI wording patterns, inside Google's content policies. Load these before rewriting page copy, including when fixing content findings from handbook_findings_get. Uses no credits.",
+    inputSchema: {} as Record<string, never>,
+    outputSchema: handbookCopyRulesGetOutput,
+    annotations: { readOnlyHint: true, openWorldHint: false },
+  },
+  handler: async () =>
+    mcpResponse({
+      text: copyRules.text,
+      structuredContent: { version: copyRules.version, text: copyRules.text },
+    }),
+} satisfies OpenSeoToolDefinition<Record<string, never>>;
 
 // --------------------------------------------------- handbook_status_export
 
@@ -378,6 +415,7 @@ export function registerHandbookTools(
 ) {
   register(auditRunTool);
   register(findingsGetTool);
+  register(copyRulesGetTool);
   register(statusExportTool);
   register(reportPublishTool);
   register(aiTrafficSummaryTool);
