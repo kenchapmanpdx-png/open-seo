@@ -14,6 +14,7 @@ import {
   renderStatusMd,
 } from "../export/markdown";
 import { collectEscalations } from "./escalations";
+import { buildScaledContent } from "./scaled-summary";
 import { scoreItems } from "./scoring";
 import { isSuppOnly } from "../registry-supp";
 import { indexablePages, snippetBlockers } from "../checks/supp-aeo";
@@ -111,6 +112,11 @@ export function buildReportJson(input: {
   const escalations = collectEscalations(result.collected, input.depth);
   if (escalations.length > 0) report.escalations = escalations;
   if (result.copyQuality) report.copyQuality = result.copyQuality;
+  if (input.depth === "full")
+    report.scaledContent = buildScaledContent(
+      result.collected,
+      result.findings,
+    );
   const scored = { ...report, score: scoreReport(report) };
   const confirmed = confirmExports(scored, input.registry);
   return { ...confirmed, score: scoreReport(confirmed) };

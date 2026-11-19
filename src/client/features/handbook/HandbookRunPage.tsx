@@ -29,6 +29,7 @@ import {
 import { ITEM_STATUSES } from "@/server/features/handbook/contracts/status";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { CopyQualityPanel } from "./CopyQualityPanel";
+import { ScaledContentPanel } from "./ScaledContentPanel";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { FindingsTable } from "./FindingsTable";
 import { RunActions } from "./RunActions";
@@ -77,6 +78,9 @@ export function HandbookRunPage({
                       Checklist ({detail.report.items.length})
                     </TabsTrigger>
                     <TabsTrigger value="evidence">Evidence</TabsTrigger>
+                    {detail.report.scaledContent ? (
+                      <TabsTrigger value="scaled">Scaled content</TabsTrigger>
+                    ) : null}
                     {detail.report.copyQuality ? (
                       <TabsTrigger value="copy">Copy quality</TabsTrigger>
                     ) : null}
@@ -90,6 +94,13 @@ export function HandbookRunPage({
                   <TabsContent value="evidence">
                     <EvidenceViewer projectId={projectId} runId={runId} />
                   </TabsContent>
+                  {detail.report.scaledContent ? (
+                    <TabsContent value="scaled">
+                      <ScaledContentPanel
+                        summary={detail.report.scaledContent}
+                      />
+                    </TabsContent>
+                  ) : null}
                   {detail.report.copyQuality ? (
                     <TabsContent value="copy">
                       <CopyQualityPanel section={detail.report.copyQuality} />

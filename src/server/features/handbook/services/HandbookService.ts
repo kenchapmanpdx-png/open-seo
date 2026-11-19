@@ -12,11 +12,15 @@ import {
   createSupabaseEvidenceStore,
   createSupabaseSignedUrl,
 } from "@/server/features/handbook/engine/supabase-evidence-store";
-import { COPY_QUALITY_EVIDENCE_ITEM } from "@/server/features/handbook/engine/evidence";
+import {
+  COPY_QUALITY_EVIDENCE_ITEM,
+  SCALED_CONTENT_EVIDENCE_ITEM,
+} from "@/server/features/handbook/engine/evidence";
 import {
   copyQualitySchema,
-  type CopyQuality,
+  scaledContentSchema,
 } from "@/server/features/handbook/contracts/scaled-copy";
+import type { z } from "zod";
 import {
   REPORT_JSON_VERSION,
   reportJsonSchema,
@@ -75,24 +79,23 @@ async function getRunDetail(projectId: string, runId: string) {
 }
 
 /**
- * Copy quality (ADR-023) is stored as one artifact body in the evidence
- * store, not in rows; absent when the option was off or no store is set.
+ * Copy quality (ADR-023) and the scaled-content summary (ADR-022) are
+ * stored as one artifact body each in the evidence store, not in rows;
+ * null when absent (option off, older run) or no store is set.
  */
-async function storedCopyQuality(
+async function storedArtifact<T>(
   projectId: string,
   runId: string,
-): Promise<CopyQuality | null> {
-  const row = await getRunItemEvidence(
-    projectId,
-    runId,
-    COPY_QUALITY_EVIDENCE_ITEM,
-  );
+  itemId: string,
+  schema: z.ZodType<T>,
+): Promise<T | null> {
+  const row = await getRunItemEvidence(projectId, runId, itemId);
   const config = row?.storageKey ? await supabaseConfig() : null;
   if (!config || !row?.storageKey) return null;
   const bytes = await createSupabaseEvidenceStore(config).get(row.storageKey);
   if (!bytes) return null;
   try {
-    const parsed = copyQualitySchema.safeParse(
+    const parsed = schema.safeParse(
       JSON.parse(new TextDecoder().decode(bytes)),
     );
     return parsed.success ? parsed.data : null;
@@ -104,9 +107,28 @@ async function storedCopyQuality(
 async function withSections(
   rows: NonNullable<Awaited<ReturnType<typeof getReportRows>>>,
 ): Promise<ReportJson> {
-  const report = buildReport(rows);
-  const copyQuality = await storedCopyQuality(rows.run.projectId, rows.run.id);
-  return copyQuality ? { ...report, copyQuality } : report;
+  const { projectId, id, depth } = rows.run;
+  const [copyQuality, scaledContent] = await Promise.all([
+    storedArtifact(
+      projectId,
+      id,
+      COPY_QUALITY_EVIDENCE_ITEM,
+      copyQualitySchema,
+    ),
+    depth === "full"
+      ? storedArtifact(
+          projectId,
+          id,
+          SCALED_CONTENT_EVIDENCE_ITEM,
+          scaledContentSchema,
+        )
+      : null,
+  ]);
+  return {
+    ...buildReport(rows),
+    ...(scaledContent ? { scaledContent } : {}),
+    ...(copyQuality ? { copyQuality } : {}),
+  };
 }
 
 /**
