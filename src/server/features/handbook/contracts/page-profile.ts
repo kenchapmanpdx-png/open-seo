@@ -10,7 +10,7 @@ import { z } from "zod";
  */
 
 /** Bump on any prompt or schema change; part of the profile cache key. */
-export const PAGE_PROFILE_PROMPT_VERSION = "1";
+export const PAGE_PROFILE_PROMPT_VERSION = "2";
 
 export const PAGE_TYPES = [
   "home",
