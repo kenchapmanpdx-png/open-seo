@@ -62,33 +62,49 @@ const BLOCK = new Set([
   "label",
 ]);
 
+/** Google Maps JS widget root (`div.gm-style`) or its `role=region` map container. */
+const isMapWidget = (attribs: Record<string, string>): boolean =>
+  attribs["aria-roledescription"] === "map" ||
+  (attribs.class ?? "").split(/\s+/).includes("gm-style");
+
 /**
  * Unique visible text blocks in document order, split at every block-level
  * tag. Header / nav / footer text is kept: on templated pages it matches the
  * template's boilerplate blocks and is removed there; on one-off pages (home,
  * contact) it may carry the only contact or award text.
+ *
+ * Map widget chrome (Google Maps keyboard help, zoom buttons, "Map data")
+ * and blocks with no letter or digit are dropped: they are not page copy,
+ * and a widget that loads in one render but not the next would change the
+ * input hash and force a new map call on an unchanged page.
  */
 function textBlocks(html: string): string[] {
   const blocks = new Set<string>();
   let buf: string[] = [];
   let skip = 0;
+  let depth = 0;
+  let widgetDepth: number | null = null;
   const flush = () => {
     const text = buf.join("").replace(/\s+/g, " ").trim();
-    if (text) blocks.add(text);
+    if (/[\p{L}\p{N}]/u.test(text)) blocks.add(text);
     buf = [];
   };
   const parser = new Parser(
     {
-      onopentag(name) {
+      onopentag(name, attribs) {
+        depth += 1;
         if (BLOCK.has(name)) flush();
         if (SKIP.has(name)) skip += 1;
+        if (widgetDepth === null && isMapWidget(attribs)) widgetDepth = depth;
       },
       ontext(text) {
-        if (skip === 0) buf.push(text);
+        if (skip === 0 && widgetDepth === null) buf.push(text);
       },
       onclosetag(name) {
         if (SKIP.has(name)) skip = Math.max(0, skip - 1);
         if (BLOCK.has(name)) flush();
+        if (widgetDepth === depth) widgetDepth = null;
+        depth -= 1;
       },
     },
     { decodeEntities: true, lowerCaseTags: true },
