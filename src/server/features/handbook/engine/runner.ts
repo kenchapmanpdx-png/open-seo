@@ -24,12 +24,12 @@ import {
 import { ITEM_SCORE } from "@/server/features/handbook/contracts/scoring";
 import { LlmBudgetError } from "../llm/judge";
 import type { PageMapper } from "../llm/map";
-import { collectRunUnit, stageProfiles } from "./map-stage";
+import { collectRunUnit, stageFactMap, stageProfiles } from "./map-stage";
 import { checkerReproduction } from "./checker-reproduction";
 import { appliesWithSupp, SUPP_BY_ID } from "../registry-supp";
 import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
-import { evidenceKey, materialize } from "./evidence";
+import { evidenceKey, factMapEvidence, materialize } from "./evidence";
 import {
   completeCollected,
   createMemoryStageStore,
@@ -154,6 +154,7 @@ export async function evaluateRun(
 ): Promise<RunResult> {
   const collected = completeCollected(partial);
   const pageProfiles = stageProfiles(partial);
+  const siteFactMap = stageFactMap(partial, collected, pageProfiles);
   const intake = runIntake({
     collected,
     registry: input.registry,
@@ -215,6 +216,7 @@ export async function evaluateRun(
       applicableItems: intake.applicable,
       collected,
       ...(pageProfiles ? { pageProfiles } : {}),
+      ...(siteFactMap ? { siteFactMap } : {}),
       ...(check.class === "LLM" && input.judge ? { judge: input.judge } : {}),
       fetchOffsite: cappedFetch(runtime.fetchOffsite, CHECK_OFFSITE_FETCHES),
     };
@@ -288,6 +290,8 @@ export async function evaluateRun(
     pending,
     registryById,
   );
+  if (siteFactMap)
+    evidence.push(await factMapEvidence(input, runtime, siteFactMap));
   return { intake, collected, statuses, findings, evidence, checkerErrors };
 }
 

@@ -3,6 +3,7 @@ import { truncateToBytes } from "@/server/lib/audit/html-response";
 import type { EvidenceDraft } from "@/server/features/handbook/contracts/check";
 import { EVIDENCE_EXCERPT_MAX_BYTES } from "@/server/features/handbook/contracts/evidence-store";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
+import type { SiteFactMap } from "@/server/features/handbook/contracts/site-fact-map";
 import { SUPP_BY_ID } from "../registry-supp";
 import type {
   EvidenceRow,
@@ -92,6 +93,41 @@ export async function materialize(
     }
   }
   return { findings, evidence };
+}
+
+/**
+ * The run's K15 fact map as one `factMap` evidence row (full JSON in the
+ * store, counts in the excerpt). Filed under P5-02, the fact map's
+ * stat-conflict item; WO-B9-017 judges cite its entries.
+ */
+export function factMapEvidence(
+  input: RunInput,
+  runtime: HandbookRuntime,
+  map: SiteFactMap,
+): Promise<EvidenceRow> {
+  const c = map.coverage;
+  const excerpt = [
+    `fact map: ${map.statConflicts.length} stat conflicts, ${map.nameVariants.length} name clusters, ${map.faqDuplicates.length} duplicate FAQs, ${map.thinPages.length} thin pages, ${map.serviceCoverage.length} hubs`,
+    `coverage: ${c.profiled}/${c.pages} pages profiled (${c.cached} cached, ${c.skippedBudget} skipped by budget), ${c.droppedQuotes} quotes dropped`,
+    ...map.statConflicts
+      .slice(0, 10)
+      .map((s) => `${s.subject}: ${s.values.map((v) => v.value).join(" vs ")}`),
+  ].join("\n");
+  return evidenceRow(
+    { input, runtime, checkId: "runner.reduce" },
+    {
+      ref: "fact-map",
+      kind: "factMap",
+      url: input.origin,
+      excerpt,
+      body: {
+        bytes: new TextEncoder().encode(JSON.stringify(map, null, 2)),
+        contentType: "application/json",
+      },
+    },
+    "P5-02",
+    null,
+  );
 }
 
 async function evidenceRow(
