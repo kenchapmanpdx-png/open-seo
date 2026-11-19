@@ -33,6 +33,7 @@ import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
 import { evidenceKey, factMapEvidence, materialize } from "./evidence";
 import { runCopyQuality } from "./copy-quality";
+import { applyScaledPrecedence } from "../checks/supp-scaled";
 import type { CopyQuality, RunOptions } from "../contracts/scaled-copy";
 import {
   completeCollected,
@@ -300,7 +301,7 @@ export async function evaluateRun(
   const { findings, evidence } = await materialize(
     input,
     runtime,
-    pending,
+    applyScaledPrecedence(pending),
     registryById,
   );
   if (siteFactMap)
