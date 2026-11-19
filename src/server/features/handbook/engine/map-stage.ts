@@ -5,6 +5,8 @@ import {
   type PageProfile,
 } from "@/server/features/handbook/contracts/page-profile";
 import { buildMapJobs } from "../llm/map-input";
+import { buildSiteFactMap, type MapCounts } from "../llm/reduce";
+import type { SiteFactMap } from "@/server/features/handbook/contracts/site-fact-map";
 import type { CollectorContext } from "@/server/features/handbook/contracts/collectors";
 import { collectRunStage } from "./render-pass";
 import type { HandbookRuntime, RunInput } from "./runner";
@@ -13,6 +15,7 @@ import type { StageName } from "./stages";
 /** Stage output: collector data, plus `pageProfiles` from the map stage. */
 type StageOutput = Partial<CollectedData> & {
   pageProfiles?: readonly PageProfile[];
+  mapCounts?: MapCounts;
 };
 
 /** One collection unit: the map stage runs the mapper, every other stage its collectors. */
@@ -40,7 +43,7 @@ async function runMapStage(
   input: RunInput,
   runtime: HandbookRuntime,
   prior: Partial<CollectedData>,
-): Promise<{ pageProfiles?: PageProfile[] }> {
+): Promise<{ pageProfiles?: PageProfile[]; mapCounts?: MapCounts }> {
   const mapper = input.mapper;
   if (!mapper) return {};
   const jobs = await buildMapJobs(prior, (key) => runtime.store.get(key));
@@ -67,7 +70,10 @@ async function runMapStage(
     droppedQuotes: profiles.reduce((n, p) => n + p.droppedQuotes, 0),
     costUsd: Number(mapper.spentUsd().toFixed(5)),
   });
-  return { pageProfiles: profiles };
+  return {
+    pageProfiles: profiles,
+    mapCounts: { cached: counts.cached, skippedBudget: counts.budget },
+  };
 }
 
 /** PageProfiles the map stage saved (stage store JSON in the app → parsed). */
@@ -77,4 +83,30 @@ export function stageProfiles(
   if (!("pageProfiles" in partial)) return undefined;
   const parsed = z.array(pageProfileSchema).safeParse(partial.pageProfiles);
   return parsed.success ? parsed.data : undefined;
+}
+
+const mapCountsSchema = z.object({
+  cached: z.number().int().nonnegative(),
+  skippedBudget: z.number().int().nonnegative(),
+});
+
+/** Reduce stage (ADR-019): the K15 fact map over the map stage's profiles; none without profiles. */
+export function stageFactMap(
+  partial: Partial<CollectedData>,
+  collected: CollectedData,
+  profiles: readonly PageProfile[] | undefined,
+): SiteFactMap | undefined {
+  if (!profiles) return undefined;
+  const counts =
+    "mapCounts" in partial
+      ? mapCountsSchema.safeParse(partial.mapCounts).data
+      : undefined;
+  const { jsonld, llms, pages } = collected;
+  return buildSiteFactMap(
+    profiles,
+    jsonld.status === "ok" ? jsonld : null,
+    llms.status === "ok" ? llms : null,
+    pages.status === "ok" ? pages.snapshots : [],
+    counts,
+  );
 }
