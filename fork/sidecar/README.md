@@ -13,10 +13,19 @@ docker compose -f fork/sidecar/compose.yaml up -d --build
 curl -s http://127.0.0.1:4777/health
 ```
 
-- BadGEO / local fixture sites: add `HANDBOOK_SIDECAR_ALLOW_PRIVATE=1` before
-  `up` (the guard otherwise refuses hosts resolving to private/loopback ranges;
-  `127.0.0.1.nip.io` inside the container needs `host.docker.internal` routing,
-  see below).
+- BadGEO / local fixture sites: use the test-only service `sidecar-badgeo` on
+  `127.0.0.1:4778` (`compose.badgeo.yaml`, `HANDBOOK_SIDECAR_ALLOW_PRIVATE=1`,
+  `127.0.0.1.nip.io` → host gateway). `start-build.sh` starts it with the real
+  one. Never set `ALLOW_PRIVATE=1` on the real sidecar (4777): it is the SSRF
+  guard for live audits.
+- Stall recovery (1.2.1): every task has a hard deadline (render = request
+  timeout + 60 s, axe 120 s, Lighthouse 240 s) → HTTP 504 `deadline`. Two misses
+  within 10 min, or a task still running at 2× its deadline → one log line and
+  `exit(1)`; Docker restarts the container (`restart: unless-stopped`). Chromium
+  is relaunched after `HANDBOOK_SIDECAR_RECYCLE_AFTER` tasks (default 500) when
+  idle. The engine times out at deadline + 30 s; 3 timeouts in a row → it waits
+  60 s, probes `/health` once, then resumes or marks the sidecar unavailable for
+  the run.
 - Playwright Chromium does not launch directly on the WSL host (missing system
   libs), so the container is the supported runtime.
 
@@ -54,6 +63,6 @@ pnpm exec vitest run --root fork/sidecar
 ## Local fixture sites from the container
 
 BadGEO advertises `http://127.0.0.1.nip.io:<port>`, which resolves to the
-container's own loopback. Serve BadGEO on `0.0.0.0` and point the audit at
-`http://host.docker.internal:<port>` (compose adds no extra_hosts; Docker
-Desktop provides that name), or run the container with `network_mode: host`.
+container's own loopback. `sidecar-badgeo` maps that name to the host gateway
+(`extra_hosts`), and `badgeo-run.ts --sidecar http://127.0.0.1:4778` serves
+BadGEO on `0.0.0.0` so the container can reach it.

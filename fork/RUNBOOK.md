@@ -22,7 +22,7 @@ Local production per ADR-011: the app runs on this computer (`vite preview`, 127
 - **UI**: project → Handbook tab → enable, pick the mode → run a site audit; the handbook phase runs after the crawl. The run page shows grade, phases, findings, checklist, evidence.
 - **MCP** (after the B5 registration hook): `handbook_audit_run` → poll `handbook_findings_get` → `handbook_status_export` / `handbook_report_publish`. Agent instructions: `fork/skills/handbook-audit/SKILL.md`.
 - **CLI** (no app needed): `pnpm exec tsx fork/scripts/handbook-audit.ts https://example.com --mode REVIEW --out fork/runs/example.com/r1` — add `--sidecar http://127.0.0.1:4777` for render/axe/Lighthouse evidence and `--llm` for the LLM-judged checks. `--lighthouse all` (or `HANDBOOK_LIGHTHOUSE=all`; needs `--depth full` + `--sidecar`) runs Lighthouse on every live page in batches of 25, prints a time estimate (0.6 min per page + base) before start and the exact page count after the crawl, and raises the run cap by 0.6 min per page. In-app runs have no sidecar, so the scope only affects the CLI.
-- BadGEO regression: `pnpm exec tsx fork/scripts/badgeo-run.ts` (see the script header for `--only` and sidecar use).
+- BadGEO regression: `pnpm exec tsx fork/scripts/badgeo-run.ts` (see the script header for `--only` and sidecar use). With render: `--sidecar http://127.0.0.1:4778` (test-only sidecar that may reach private addresses; started by `start-build.sh`; the real sidecar on 4777 refuses them).
 
 ## Full-read audits (depth, caps, budget, queue, storage, escalations)
 
@@ -86,7 +86,7 @@ Saving into the app's own Reports (private) is the run page's "Save client repor
 4. `bash fork/scripts/backup.sh`
 5. `bash fork/scripts/run-local.sh migrate` (upstream + handbook migrations → `supabase-harden.sql` → `supabase-check.ts`)
 6. Session-end checks: `pnpm types:check`, `pnpm lint`, `pnpm test`, `pnpm format:check` against `fork/BASELINE.md`
-7. Sidecar changed (`fork/sidecar/`) → `docker compose -f fork/sidecar/compose.yaml up -d --build`
+7. Sidecar changed (`fork/sidecar/`) → `bash fork/scripts/start-build.sh --check` (rebuilds both sidecars: 4777 real, 4778 BadGEO test)
 8. `systemctl --user start openseo-app.service`; smoke: home page loads, one handbook run on BadGEO
 
 ## Backup and restore drill
@@ -113,7 +113,7 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 
 ## Troubleshooting
 
-- **Sidecar unhealthy**: `docker compose -f fork/sidecar/compose.yaml logs --tail 50`; rebuild with `up -d --build`. Wrong token → 401 in the CLI log; rotate.
+- **Sidecar unhealthy**: `docker compose -f fork/sidecar/compose.yaml logs --tail 50`; rebuild with `up -d --build`. Wrong token → 401 in the CLI log; rotate. A stalled sidecar (1.2.1+) exits by itself and Docker restarts it: look for `sidecar stall:` / `sidecar deadline:` lines in the log; audits mark the affected pages `sidecar timeout` / `sidecar unavailable` and finish.
 - **`EMAXCONNSESSION` (max clients reached in session mode)**: several site audits at once exhaust the Supabase session pooler (15 clients) under `run-local.sh dev`; audits fail or stall at 0 pages. Run one audit at a time; restarting the app (or touching `.env.local`, which restarts vite) frees the connections. Handbook runs queue behind one machine lease (`handbook_run_lease`, 2-h expiry), but the upstream crawl phase and every app request open their own session-pooler client, so 2–3 concurrent site audits still exhaust the pool before the handbook starts (run 31). Start audits one at a time until B10 decides the pooler.
 - **Playwright host libraries missing** (in-app UI smoke): the sidecar image has them; the host needs `pnpm exec playwright install-deps` (sudo).
 - **New route 404 / route tree stale**: `pnpm exec vite dev` for ~45 s regenerates `src/routeTree.gen.ts`; commit it and log it in `fork/UPSTREAM-EDITS.md`.

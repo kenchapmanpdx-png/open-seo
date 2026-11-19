@@ -34,7 +34,14 @@ import {
   sampleUrls,
   screenshotTargets,
 } from "./sidecar-targets";
-import { createRenderThrottle, perUrl, type Outcome } from "./sidecar-per-url";
+import {
+  CLIENT_TIMEOUT_MS,
+  createRenderThrottle,
+  createSidecarGate,
+  perUrl,
+  SIDECAR_TIMEOUT,
+  type Outcome,
+} from "./sidecar-per-url";
 import { renderOnlyLinks } from "./site-crawl";
 
 /**
@@ -64,8 +71,6 @@ export type SidecarConfig = {
 };
 
 const DEFAULT_CONCURRENCY = 3;
-const RENDER_TIMEOUT_MS = 90_000;
-const LIGHTHOUSE_TIMEOUT_MS = 180_000;
 /** A known non-2xx status (null = sidecar saw no main response). */
 const non2xx = (status: number | null) =>
   status !== null && (status < 200 || status >= 300);
@@ -74,10 +79,9 @@ type LighthousePage = LighthouseData["pages"][number];
 
 async function call<T extends z.ZodTypeAny>(
   config: SidecarConfig,
-  path: string,
+  path: keyof typeof CLIENT_TIMEOUT_MS,
   body: RenderRequest | AxeRequest | LighthouseRequest,
   schema: T,
-  timeoutMs: number,
 ): Promise<Outcome<z.output<T>>> {
   try {
     const res = await fetch(`${config.url.replace(/\/$/, "")}${path}`, {
@@ -87,8 +91,9 @@ async function call<T extends z.ZodTypeAny>(
         "content-type": "application/json",
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(CLIENT_TIMEOUT_MS[path]),
     });
+    if (res.status === 504) return { ok: false, reason: SIDECAR_TIMEOUT };
     if (!res.ok)
       return {
         ok: false,
@@ -99,6 +104,8 @@ async function call<T extends z.ZodTypeAny>(
       return { ok: false, reason: `sidecar ${path} response failed K3 schema` };
     return { ok: true, value: parsed.data as z.output<T> };
   } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError")
+      return { ok: false, reason: SIDECAR_TIMEOUT };
     return {
       ok: false,
       reason: `sidecar ${path} unreachable: ${error instanceof Error ? error.message : String(error)}`,
@@ -150,12 +157,12 @@ export function createSidecarCollectors(config: SidecarConfig) {
       ? Math.min(want, 8)
       : DEFAULT_CONCURRENCY,
   );
+  const gate = createSidecarGate(config.url);
   const sidecar = <T extends z.ZodTypeAny>(
-    path: string,
+    path: keyof typeof CLIENT_TIMEOUT_MS,
     body: RenderRequest | AxeRequest | LighthouseRequest,
     schema: T,
-    timeoutMs: number,
-  ) => limit(() => call(config, path, body, schema, timeoutMs));
+  ) => gate(() => limit(() => call(config, path, body, schema)));
   // Lighthouse cannot run two audits at once in one sidecar process.
   const oneAtATime = createLimiter(1);
   // `all`: URLs already tried by an earlier batch of this process, so a
@@ -195,7 +202,6 @@ export function createSidecarCollectors(config: SidecarConfig) {
                     : "none",
                 },
                 renderResponseSchema,
-                RENDER_TIMEOUT_MS,
               ),
               sidecar(
                 "/render",
@@ -206,7 +212,6 @@ export function createSidecarCollectors(config: SidecarConfig) {
                   screenshot: "none",
                 },
                 renderResponseSchema,
-                RENDER_TIMEOUT_MS,
               ),
             ]),
           (results) => results.some((r) => r.ok && r.value.status === 429),
@@ -293,7 +298,6 @@ export function createSidecarCollectors(config: SidecarConfig) {
           "/axe",
           { url, viewport: "mobile", scrollToEnd: true },
           axeResponseSchema,
-          RENDER_TIMEOUT_MS,
         );
         if (!res.ok) return res;
         const page: AxeData["pages"][number] = {
@@ -317,12 +321,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
     (ctx: CollectorContext, formFactor: "mobile" | "desktop") =>
     async (url: string): Promise<Outcome<LighthousePage>> => {
       const res = await oneAtATime(() =>
-        sidecar(
-          "/lighthouse",
-          { url, formFactor },
-          lighthouseResponseSchema,
-          LIGHTHOUSE_TIMEOUT_MS,
-        ),
+        sidecar("/lighthouse", { url, formFactor }, lighthouseResponseSchema),
       );
       if (!res.ok) return res;
       const storageKey = await ctx.storeBody(

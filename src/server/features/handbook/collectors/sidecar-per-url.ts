@@ -75,3 +75,64 @@ export function createRenderThrottle(
     return result;
   };
 }
+
+/**
+ * Client timeouts = the sidecar's hard deadline + 30 s (WO-B12-003): render
+ * 30 s page timeout + 60 s, axe 60 s + 60 s, Lighthouse 240 s.
+ */
+export const CLIENT_TIMEOUT_MS = {
+  "/render": 120_000,
+  "/axe": 150_000,
+  "/lighthouse": 270_000,
+} as const;
+export const SIDECAR_TIMEOUT = "sidecar timeout";
+export const SIDECAR_UNAVAILABLE = "sidecar unavailable";
+/** Timeouts in a row before the sidecar is treated as down (WO-B12-003). */
+const TIMEOUTS_BEFORE_DOWN = 3;
+const HEALTH_WAIT_MS = 60_000;
+
+/**
+ * One per run (WO-B12-003). After 3 sidecar timeouts in a row every call
+ * waits 60 s, `/health` is probed once: healthy → calls resume; otherwise
+ * every later call fails `sidecar unavailable` without reaching the sidecar
+ * (render / axe / Lighthouse items BLOCKED, FULL-READ §8). The single probe
+ * is spent: a second run of 3 timeouts marks the sidecar unavailable.
+ */
+export function createSidecarGate(
+  sidecarUrl: string,
+  probe = async () =>
+    (
+      await fetch(`${sidecarUrl.replace(/\/$/, "")}/health`, {
+        signal: AbortSignal.timeout(10_000),
+      })
+    ).ok,
+) {
+  let inARow = 0;
+  let probed = false;
+  let unavailable = false;
+  let waiting: Promise<void> | null = null;
+  return async <T>(attempt: () => Promise<Outcome<T>>): Promise<Outcome<T>> => {
+    if (waiting) await waiting;
+    if (unavailable) return { ok: false, reason: SIDECAR_UNAVAILABLE };
+    const result = await attempt();
+    inARow = !result.ok && result.reason === SIDECAR_TIMEOUT ? inARow + 1 : 0;
+    if (inARow >= TIMEOUTS_BEFORE_DOWN && !waiting && !unavailable) {
+      if (probed) unavailable = true;
+      else {
+        probed = true;
+        waiting = sleep(HEALTH_WAIT_MS)
+          .then(probe)
+          .catch(() => false)
+          .then((healthy) => {
+            console.warn(
+              `handbook sidecar: ${TIMEOUTS_BEFORE_DOWN} timeouts in a row; /health ${healthy ? "ok, resuming" : "failed, unavailable for this run"}`,
+            );
+            unavailable = !healthy;
+            inARow = 0;
+            waiting = null;
+          });
+      }
+    }
+    return result;
+  };
+}
