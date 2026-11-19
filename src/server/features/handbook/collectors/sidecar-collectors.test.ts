@@ -102,6 +102,34 @@ describe("sidecar render collector", () => {
     expect(result).toMatchObject({ status: "unavailable" });
     if (result.status === "unavailable") expect(result.reason).toContain("500");
   });
+
+  it("backs off on a 429 render and keeps the page once it renders", async () => {
+    vi.useFakeTimers();
+    let calls = 0;
+    fetchMock.mockImplementation(async () =>
+      Response.json({ ...rendered0, status: ++calls <= 2 ? 429 : 200 }),
+    );
+    const pending = render.collect(ctx, collected);
+    await vi.runAllTimersAsync();
+    const result = await pending;
+    vi.useRealTimers();
+    expect(result.status === "ok" && result.pages.length).toBe(1);
+  });
+
+  it("skips a page that stays throttled", async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation(async () =>
+      Response.json({ ...rendered0, status: 429 }),
+    );
+    const pending = render.collect(ctx, collected);
+    await vi.runAllTimersAsync();
+    const result = await pending;
+    vi.useRealTimers();
+    expect(result).toEqual({
+      status: "unavailable",
+      reason: "render HTTP 429 (no-JS 429)",
+    });
+  });
 });
 
 describe("sidecar axe + lighthouse collectors (contracts 1.3.0 fields)", () => {
