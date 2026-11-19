@@ -17,8 +17,8 @@ import { createResult } from "./support";
  */
 const ITEMS = ["P3-12", "SUPP-03"];
 
-const SIMILAR = 0.8;
-const THIN_WORDS = 50;
+export const SIMILAR = 0.8;
+export const THIN_WORDS = 50;
 const MAX_LIST = 10;
 /** A sentence on ≥ 30 % of pages (and ≥ 3) counts as boilerplate. */
 const BOILERPLATE_SHARE = 0.3;

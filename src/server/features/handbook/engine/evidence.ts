@@ -4,7 +4,10 @@ import type { EvidenceDraft } from "@/server/features/handbook/contracts/check";
 import { EVIDENCE_EXCERPT_MAX_BYTES } from "@/server/features/handbook/contracts/evidence-store";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { SiteFactMap } from "@/server/features/handbook/contracts/site-fact-map";
-import type { CopyQuality } from "@/server/features/handbook/contracts/scaled-copy";
+import type {
+  CopyQuality,
+  ScaledContent,
+} from "@/server/features/handbook/contracts/scaled-copy";
 import { SUPP_BY_ID } from "../registry-supp";
 import type {
   EvidenceRow,
@@ -154,6 +157,32 @@ export function copyQualityEvidence(
       },
     },
     COPY_QUALITY_EVIDENCE_ITEM,
+    null,
+  );
+}
+
+/** Item id of the scaled-content summary artifact row (ADR-022; not a registry item). */
+export const SCALED_CONTENT_EVIDENCE_ITEM = "scaled-content";
+
+/** The scaled-content summary as one artifact (JSON body); the app's run page reads it back. */
+export function scaledContentArtifact(
+  input: RunInput,
+  runtime: HandbookRuntime,
+  summary: ScaledContent,
+): Promise<EvidenceRow> {
+  return evidenceRow(
+    { input, runtime, checkId: "runner.scaled-content" },
+    {
+      ref: "scaled-content",
+      kind: "artifact",
+      url: input.origin,
+      excerpt: `scaled content: ${summary.indexablePages} indexable pages, ${summary.supp17Sets} SUPP-17 sets, ${summary.supp19Pages} SUPP-19 pages`,
+      body: {
+        bytes: new TextEncoder().encode(JSON.stringify(summary)),
+        contentType: "application/json",
+      },
+    },
+    SCALED_CONTENT_EVIDENCE_ITEM,
     null,
   );
 }

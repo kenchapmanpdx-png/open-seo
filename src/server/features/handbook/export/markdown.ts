@@ -2,6 +2,7 @@ import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { ItemStatus } from "@/server/features/handbook/contracts/status";
 import { copyQualityMd } from "./copy-quality-md";
+import { scaledContentRows } from "@/server/features/handbook/contracts/scaled-copy";
 import { depthLine } from "../engine/depth";
 
 /**
@@ -350,6 +351,16 @@ export function renderReviewMd(
         )
       : ["- not collected"]),
     "",
+    ...(report.scaledContent
+      ? [
+          "## Scaled content (not scored)",
+          "",
+          ...scaledContentRows(report.scaledContent).map(
+            (r) => `- ${cell(r.label)}: ${cell(r.value)}`,
+          ),
+          "",
+        ]
+      : []),
     ...(report.copyQuality ? copyQualityMd(report.copyQuality) : []),
     "## Escalations",
     "",
