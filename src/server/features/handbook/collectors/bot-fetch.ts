@@ -39,6 +39,8 @@ type Fetch = BotFetchData["fetches"][number];
 type Agent = Fetch["bot"];
 
 const PROBE_URLS = 8;
+/** Body excerpt kept as evidence for a blocked fetch (WO-B9-008). */
+const EXCERPT_CHARS = 400;
 
 const isBotName = (key: string): key is BotName => key in BOT_USER_AGENTS;
 const ALL_BOTS = Object.keys(BOT_USER_AGENTS).filter(isBotName);
@@ -95,7 +97,6 @@ async function fetchAs(
       round,
       status: res.status,
       reason: blocked,
-      excerpt: res.body.slice(0, 400),
     });
   return {
     url,
@@ -107,6 +108,7 @@ async function fetchAs(
     bodySha256: await sha256Hex(res.body),
     blockedReason: blocked,
     ...(round === 2 ? { round } : {}),
+    ...(blocked ? { excerpt: res.body.slice(0, EXCERPT_CHARS) } : {}),
   };
 }
 

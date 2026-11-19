@@ -19,5 +19,5 @@ export type EvidenceStore = {
 export const EVIDENCE_BUCKET = "handbook-evidence";
 /** Max bytes of an inline `handbook_evidence.excerpt`. */
 export const EVIDENCE_EXCERPT_MAX_BYTES = 2_048;
-/** Runs per project whose stored bodies are kept (published reports exempt). */
-export const EVIDENCE_RETAIN_RUNS = 5;
+/** Runs per project whose stored bodies are kept (FULL-READ §7.4; published reports exempt). 1.6.0: 5 → 2 */
+export const EVIDENCE_RETAIN_RUNS = 2;

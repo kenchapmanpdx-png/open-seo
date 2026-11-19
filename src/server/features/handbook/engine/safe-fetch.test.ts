@@ -72,4 +72,16 @@ describe("safeFetch", () => {
       SafeFetchBlockedError,
     );
   });
+
+  it("does not read a body the server sends whole for a ranged request", async () => {
+    const { safeFetch } = setup({
+      "https://example.com/v.mp4": new Response("x".repeat(5000), {
+        status: 200,
+      }),
+    });
+    const res = await safeFetch("https://example.com/v.mp4", {
+      headers: { range: "bytes=0-0" },
+    });
+    expect(res).toMatchObject({ status: 200, body: "" });
+  });
 });

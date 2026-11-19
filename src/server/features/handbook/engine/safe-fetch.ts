@@ -109,15 +109,18 @@ export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
     for (;;) {
       const host = await validate(current);
       await pace(host);
+      const sent = Date.now();
       const response = await doFetch(current, {
         method: init.method ?? "GET",
         redirect: "manual",
         headers: {
+          ...init.headers,
           "user-agent": init.userAgent ?? HANDBOOK_USER_AGENT,
           accept: "text/html,application/xhtml+xml,*/*;q=0.8",
         },
         signal: AbortSignal.timeout(timeoutMs),
       });
+      const ttfbMs = Date.now() - sent;
       const location = response.headers.get("location");
       const isRedirect = response.status >= 300 && response.status < 400;
       if (isRedirect && location && chain.length < maxRedirects) {
@@ -135,8 +138,13 @@ export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
         finalUrl: current,
         chain,
         started,
+        ttfbMs,
         maxBytes,
-        head: init.method === "HEAD",
+        // A ranged request answered with the whole body (200, not 206) is
+        // not read: media bodies are never downloaded (FULL-READ §3.12).
+        skipBody:
+          init.method === "HEAD" ||
+          (init.headers?.range !== undefined && response.status !== 206),
       });
     }
   };
@@ -149,15 +157,17 @@ async function finish(
     finalUrl: string;
     chain: { url: string; status: number }[];
     started: number;
+    ttfbMs: number;
     maxBytes: number;
-    head: boolean;
+    skipBody: boolean;
   },
 ): Promise<SafeFetchResult> {
-  const { url, finalUrl, chain, started, maxBytes } = meta;
+  const { url, finalUrl, chain, started, ttfbMs, maxBytes } = meta;
   const headers = [...response.headers.entries()].map(
     ([k, v]) => [k.toLowerCase(), v] as const,
   );
-  const body = meta.head ? "" : await readTextUpTo(response, maxBytes + 1);
+  if (meta.skipBody) await response.body?.cancel();
+  const body = meta.skipBody ? "" : await readTextUpTo(response, maxBytes + 1);
   const truncated = new TextEncoder().encode(body).byteLength > maxBytes;
   return {
     url,
@@ -168,5 +178,6 @@ async function finish(
     truncated,
     redirectChain: chain,
     timingMs: Date.now() - started,
+    ttfbMs,
   };
 }

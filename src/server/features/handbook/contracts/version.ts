@@ -19,6 +19,11 @@
  * bot-fetch round + AI-bot policy map, render numeric mismatches + media
  * sizes, PageSnapshot main words / minhash / duplicate blocks, PageMarkup
  * nosnippet words / fake list runs, CrUX field slot, CheckContext page
- * profiles + site fact map, evidence kind `factMap`. No K3 change.
+ * profiles + site fact map, evidence kind `factMap`. No K3 change;
+ * 1.6.0, B10: closed B9 escalations — `SafeFetchResult.ttfbMs`, SafeFetch
+ * request `headers` (media Range fallback), bot-fetch body `excerpt` on
+ * blocked fetches, `RenderData.noJs.opacityZeroWords`,
+ * `PageMarkup.firstAnswerNosnippet`, `EVIDENCE_RETAIN_RUNS` 5 → 2. No K3
+ * change.
  */
-export const CONTRACTS_VERSION = "1.5.1";
+export const CONTRACTS_VERSION = "1.6.0";

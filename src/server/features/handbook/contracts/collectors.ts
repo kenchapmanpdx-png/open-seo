@@ -63,12 +63,21 @@ export type SafeFetchResult = {
   body: string;
   truncated: boolean;
   redirectChain: ReadonlyArray<{ url: string; status: number }>;
+  /** Whole call: pacing waits, every redirect hop and the body read. */
   timingMs: number;
+  /** Final hop only: request sent → response headers received, ms. 1.6.0 */
+  ttfbMs?: number;
 };
 
 export type SafeFetch = (
   url: string,
-  init?: { userAgent?: string; method?: "GET" | "HEAD"; maxRedirects?: number },
+  init?: {
+    userAgent?: string;
+    method?: "GET" | "HEAD";
+    maxRedirects?: number;
+    /** Extra request headers (e.g. `range` for media sizes). 1.6.0 */
+    headers?: Readonly<Record<string, string>>;
+  },
 ) => Promise<SafeFetchResult>;
 
 // ---------------------------------------------------------------------------
@@ -224,6 +233,12 @@ export type PageMarkup = {
   text: string;
   /** Words inside `data-nosnippet` elements (raw HTML). 1.5.1 */
   nosnippetWords?: number;
+  /**
+   * Start of the page's first answer paragraph (first `<p>` of ≥ 15 words
+   * outside nav / header / footer / aside) when it sits inside
+   * `data-nosnippet`; absent otherwise (SUPP-13). 1.6.0
+   */
+  firstAnswerNosnippet?: string;
   /** Runs of ≥ 3 lines that read as a list but are not `<ul>`/`<ol>` (e.g. `<br>`-separated "•" lines). 1.5.1 */
   fakeListRuns?: ReadonlyArray<{ sample: string; lines: number }>;
 };
@@ -351,6 +366,8 @@ export type BotFetchData = {
     blockedReason: string | null;
     /** Repeat round for ×2 parity fetches; absent = 1. 1.5.1 */
     round?: 1 | 2;
+    /** First 400 chars of the body, kept only when `blockedReason` is set (stored evidence). 1.6.0 */
+    excerpt?: string;
   }>;
   /**
    * Robots + live-fetch result per AI / search crawler token (≈ 23 tokens,
