@@ -57,10 +57,12 @@ Ken drops the new handbook into `fork/handbook/` (verbatim, never reformatted).
 Ken adds a manual audit to `fork/fixtures/audits/` (verbatim).
 
 1. Convert it to `fork/fixtures/expected/<site>.expected.yaml` in the format of the existing two files: each finding → `items`, `urls` (path patterns, `*` = one segment), severity, `note`; each stated pass → `passes`. Ids must exist in the registry (`handbook-sync.ts` checks this).
-2. Run the engine on the site: `pnpm exec tsx fork/scripts/handbook-audit.ts https://<site> --mode AUDIT --out fork/runs/<site>/<run>` (add `--sidecar` and `--llm` when available).
-3. `pnpm exec tsx fork/scripts/golden-score.ts fork/runs/<site>/<run>/report.json fork/fixtures/expected/<site>.expected.yaml --report`.
-4. Triage every `missed` and `partial`: site changed since the field audit (mark `note: site-changed`) · check defect (WO for LIGHT, or fix now) · rule gap (M2-style registry/check change) · out of scope for automation (note why). Write the triage into `fork/reports/` and the WOs into `fork/queue.md`.
-5. Commit the expectation, triage and WOs; push.
+2. Mark each finding's `detectableBy` (deterministic · render · llm · owner-only) and drop findings outside Ken's scope (rankings, SEO, GEO) as `outside-scope [Ken]`.
+3. Run the engine at full depth: `pnpm exec tsx fork/scripts/handbook-audit.ts https://<site> --mode AUDIT --depth full --sidecar http://127.0.0.1:4777 --llm --out fork/runs/<site>/<run>`.
+4. `pnpm exec tsx fork/scripts/golden-score.ts fork/runs/<site>/<run>/report.json fork/fixtures/expected/<site>.expected.yaml --md fork/runs/<site>/<run>-score.md`. Target (FULL-READ §9): caught ≥ 85 %, caught + partial ≥ 95 % over `detectableBy` deterministic / render / llm.
+5. Triage every `missed` and `partial`: site changed since the field audit (`note: site-changed`) · check defect (WO for LIGHT, or fix now) · rule gap in a §41 item (M2-style registry/check change) · not a §41 item but affects rankings / SEO / GEO → **SUPP candidate** (new `SUPP-nn` in `registry-supp.ts`, reported unscored; FULL-READ §6) · truth verification or owner-only (note why, `[Ken]`).
+6. Every new check, SUPP rule or escalation gets a BadGEO page (`fork/fixtures/badgeo/`, `badgeo-expect` meta, linked from `/about/`, listed in `sitemap.xml`); `pnpm exec tsx fork/scripts/badgeo-run.ts` must end `missing 0 · unexpected 0`.
+7. Write the triage into `fork/reports/` and the WOs into `fork/queue.md`; commit and push.
 
 ## Drill results (B7 R2, 2026-11-14)
 

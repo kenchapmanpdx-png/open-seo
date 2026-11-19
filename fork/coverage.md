@@ -125,4 +125,10 @@ Headline: 64 upstream misses/partials. 61 map to ≥1 registry item; 1 has no §
 
 - Severity defaults: 90 items map onto a category the handbook EP severity scale names (`severitySource: scale`); 39 fall back to S3 (`default`). Golden audits show auditors downgrade per finding (e.g. redirect hop count S4, robots over-allow S2); checks may do the same with a stated reason.
 - Handbook gap candidates seen in the golden audits that v4.6 now covers: viewport `width=device-width` (P4-04), skip link (P8-04), postal-format address + one `tel:` format (P5-08).
-- Still uncovered by a §41 line: generic anchor text (§12). Candidate for a future handbook version; the engine may still report it as a §12 observation without an item status.
+- Generic anchor text (§12) has no §41 line; since B9 it is reported as SUPP-01 (unscored).
+
+## Full-read refresh (B10, 2026-11-19, contracts 1.6.0)
+
+- Item coverage on a `quick` run (whyracingevents.com, run 53): 129 items · PASS 30 · OPEN 22 · BLOCKED 39 (no sidecar / no LLM key in that run, owner decisions) · NA 20 · DEFERRED 18. The 18 with no automated check: P1-01, P1-05, P2-13, P3-06, P3-09, P3-18, P4-05, P5-18, P10-01…P10-07 (minus P10-05), P11-01…P11-04 (owner / off-site / data items).
+- Supplementary rules (FULL-READ §6, ADR-020; reported under "Additional findings", never scored): SUPP-01…SUPP-16, each with a BadGEO page. The earlier sensitive-data-forms rule was dropped as outside scope [Ken 2026-11-16]; SUPP-05 is now test / dev / numbered-slug pages.
+- Full-depth golden results (catch rates per site, FULL-READ §9) are in `fork/reports/B10.md`.
