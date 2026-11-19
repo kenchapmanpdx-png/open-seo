@@ -194,6 +194,7 @@ findings:
     class: CRAWL
     detectableBy: llm
     severity: S3
+    note: "site-changed on 2026-11-19 (llms.txt now states 21 events = 14 own + 7 partner)"
   - id: F20
     title: "About has no first-screen primary action and no Person schema"
     items: [P5-14, P5-17]
