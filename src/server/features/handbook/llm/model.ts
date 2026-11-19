@@ -1,11 +1,13 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { wrapLanguageModel } from "ai";
+import { wrapLanguageModel, type LanguageModel } from "ai";
 import type { OpenRouterAccess } from "@/server/lib/openrouter";
 import {
   LLM_DEFAULT_BUDGET_USD,
   type Judge,
 } from "@/server/features/handbook/contracts/llm";
 import { createJudge, type LlmCallLog, type ModelPrice } from "./judge";
+import { LLM_EXTRACT_DEFAULT_MODEL } from "@/server/features/handbook/contracts/page-profile";
+import { createPageMapper, type PageMapper, type ProfileCache } from "./map";
 import { RUBRICS } from "./rubrics";
 
 /**
@@ -63,26 +65,30 @@ export function parseBudgetUsd(raw: string | undefined): number {
     : LLM_DEFAULT_BUDGET_USD;
 }
 
-export function createHandbookJudge(options: {
-  access: OpenRouterAccess;
-  modelId?: string;
-  budgetUsd: number;
-  log: (call: LlmCallLog) => Promise<void>;
-}): Judge {
-  const modelId = options.modelId || DEFAULT_MODEL;
+/** USD per million tokens for `modelId` (unknown ids budget high). */
+function modelPrice(modelId: string): ModelPrice {
+  return PRICES[modelId] ?? FALLBACK_PRICE;
+}
+
+/** The OpenAI-compatible chat model (OpenRouter or Anthropic base URL) with response-format keywords stripped. */
+function createHandbookModel(
+  access: OpenRouterAccess,
+  modelId: string,
+  extraBody?: Record<string, unknown>,
+): LanguageModel {
   const openrouter =
-    "apiKey" in options.access
+    "apiKey" in access
       ? createOpenRouter({
-          apiKey: options.access.apiKey,
-          baseURL: options.access.baseURL,
+          apiKey: access.apiKey,
+          baseURL: access.baseURL,
         })
       : createOpenRouter({
           apiKey: "gateway-managed",
           baseURL: "https://every-app-gateway.invalid/api/ai/openrouter/api/v1",
-          fetch: options.access.gatewayFetch,
+          fetch: access.gatewayFetch,
         });
-  const model = wrapLanguageModel({
-    model: openrouter.chat(modelId),
+  return wrapLanguageModel({
+    model: openrouter.chat(modelId, extraBody ? { extraBody } : undefined),
     middleware: {
       specificationVersion: "v3",
       transformParams: async ({ params }) => {
@@ -96,12 +102,47 @@ export function createHandbookJudge(options: {
       },
     },
   });
+}
+
+export function createHandbookJudge(options: {
+  access: OpenRouterAccess;
+  modelId?: string;
+  budgetUsd: number;
+  log: (call: LlmCallLog) => Promise<void>;
+}): Judge {
+  const modelId = options.modelId || DEFAULT_MODEL;
   return createJudge({
-    model,
+    model: createHandbookModel(options.access, modelId),
     modelId,
-    price: PRICES[modelId] ?? FALLBACK_PRICE,
+    price: modelPrice(modelId),
     budgetUsd: options.budgetUsd,
     rubrics: RUBRICS,
+    log: options.log,
+  });
+}
+
+/** Map share of the run's LLM budget (ADR-019: map ≤ 60 %, judge ≥ 40 %). */
+const MAP_BUDGET_SHARE = 0.6;
+
+/** Map-stage extractor; model `HANDBOOK_LLM_EXTRACT_MODEL` (default Haiku). */
+export function createHandbookMapper(options: {
+  access: OpenRouterAccess;
+  modelId?: string;
+  /** The run's whole LLM budget; the mapper takes its share. */
+  budgetUsd: number;
+  cache: ProfileCache;
+  log?: (event: string, fields: Record<string, unknown>) => void;
+}): PageMapper {
+  const modelId = options.modelId || LLM_EXTRACT_DEFAULT_MODEL;
+  return createPageMapper({
+    // Extraction needs no thinking; off, a probe page's output fell 1 321 → 577 tokens (B9 run 43).
+    model: createHandbookModel(options.access, modelId, {
+      thinking: { type: "disabled" },
+    }),
+    modelId,
+    price: modelPrice(modelId),
+    budgetUsd: options.budgetUsd * MAP_BUDGET_SHARE,
+    cache: options.cache,
     log: options.log,
   });
 }
