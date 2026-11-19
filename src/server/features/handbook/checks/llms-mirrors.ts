@@ -1,4 +1,5 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
+import { isMdMirror } from "@/server/features/handbook/engine/escalations";
 import {
   createResult,
   formatHeaders,
@@ -12,9 +13,11 @@ import {
  * "numbers match the site" is LLM fact-table work in B3); each 200 `.md`
  * mirror sends `X-Robots-Tag: noindex` or a canonical `Link` header and its
  * HTML page exposes `<link rel=alternate type=text/markdown>` (P9-03; "key
- * facts mirrored" is LLM work in B3).
+ * facts mirrored" is LLM work in B3). Mirrors = non-HTML 200s; once llms.txt
+ * or a mirror exists, every live page's mirror is probed (cap 200, WO-B9-014).
  */
 const ITEMS = ["P9-02", "P9-03"];
+const MAX_EVIDENCE = 10;
 
 export const llmsMirrorsCheck: HandbookCheck = {
   id: "crawl.llms-mirrors",
@@ -77,9 +80,9 @@ export const llmsMirrorsCheck: HandbookCheck = {
     }
 
     // P9-03
-    const mirrors = llms.mdMirrors.filter((m) => m.status === 200);
+    const mirrors = llms.mdMirrors.filter(isMdMirror);
     if (mirrors.length === 0) {
-      out.na("P9-03", "no .md mirror answered 200");
+      out.na("P9-03", "no .md mirror answered 200 (non-HTML)");
       return out.build();
     }
     const issues = mirrors.flatMap((m) => {
@@ -115,7 +118,7 @@ export const llmsMirrorsCheck: HandbookCheck = {
         fixability: "FIXABLE",
         effort: "S",
         urls: issues.map(({ m }) => m.mdUrl),
-        evidenceRefs: issues.map(({ m }) => ref(m)),
+        evidenceRefs: issues.slice(0, MAX_EVIDENCE).map(({ m }) => ref(m)),
       });
     } else {
       out.pass(

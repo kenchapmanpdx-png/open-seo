@@ -3,6 +3,7 @@ import type {
   BotFetchData,
   BotName,
   CollectedData,
+  LlmsData,
 } from "@/server/features/handbook/contracts/collectors";
 import type {
   Escalation,
@@ -251,6 +252,31 @@ function stoppedBots(fetches: readonly BotFetch[], planned: number) {
   );
 }
 
+/** `.md` mirrors probed at most once escalated (FULL-READ §4 row 4). */
+export const MD_MIRROR_CAP = 200;
+
+/**
+ * A `.md` URL that is a real mirror: 200 and not HTML (a catch-all route
+ * answering 200 with the app shell is not a mirror).
+ */
+export const isMdMirror = (m: LlmsData["mdMirrors"][number]) =>
+  m.status === 200 &&
+  !/text\/html/i.test(
+    m.headers.find(([k]) => k.toLowerCase() === "content-type")?.[1] ?? "",
+  );
+
+/** Why every page's `.md` mirror is probed, or null: llms.txt or a mirror answers 200. */
+export function mdMirrorTrigger(
+  llms: Pick<LlmsData, "files" | "mdMirrors">,
+): string | null {
+  const file = llms.files.find(
+    (f) => f.status === 200 && /\/llms\.txt$/i.test(new URL(f.url).pathname),
+  );
+  if (file) return `${file.url} answers 200`;
+  const mirror = llms.mdMirrors.find(isMdMirror);
+  return mirror ? `.md mirror ${mirror.mdUrl} answers 200` : null;
+}
+
 const ESCALATION_RULES: readonly EscalationRule[] = [
   {
     // RenderData has no JS-off opacity count (contracts 1.5.1), so the rank-1
@@ -321,6 +347,25 @@ const ESCALATION_RULES: readonly EscalationRule[] = [
       depth === "full"
         ? lighthouseEscalations(collected, baseRunsOf(collected)).heavy
         : [],
+  },
+  {
+    // The llms collector probes the mirrors itself; this rule reports it.
+    trigger: "md-mirror",
+    action: ".md mirror probe on every crawled page (cap 200)",
+    cap: null,
+    fire(collected) {
+      const llms = collected.llms;
+      if (llms.status !== "ok") return [];
+      const because = mdMirrorTrigger(llms);
+      if (!because) return [];
+      const urls = llms.mdMirrors.map((m) => m.mdUrl);
+      const pages = collected.pages;
+      const live =
+        pages.status === "ok"
+          ? pages.snapshots.filter((s) => s.status === 200).length
+          : 0;
+      return [{ because, urls, capped: live > MD_MIRROR_CAP }];
+    },
   },
   {
     // The bot-fetch collector runs the escalation itself (it owns the

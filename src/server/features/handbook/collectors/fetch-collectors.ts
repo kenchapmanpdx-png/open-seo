@@ -3,6 +3,10 @@ import { decide, parseRobots } from "@/server/features/handbook/engine/robots";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import {
+  MD_MIRROR_CAP,
+  mdMirrorTrigger,
+} from "@/server/features/handbook/engine/escalations";
+import {
   BOT_USER_AGENTS,
   type Collector,
   type CollectorContext,
@@ -201,6 +205,15 @@ function parseSitemapXml(body: string) {
   };
 }
 
+const MD_MIRROR_BASE = 5;
+
+const mdMirrorUrl = (pageUrl: string) => {
+  const u = new URL(pageUrl);
+  return u.pathname.endsWith("/")
+    ? `${u.origin}${u.pathname}index.html.md`
+    : `${u.origin}${u.pathname}.md`;
+};
+
 const MD_LINK = /\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g;
 
 export const llmsCollector: Collector<"llms"> = {
@@ -229,23 +242,35 @@ export const llmsCollector: Collector<"llms"> = {
         ...(ok ? { text: res.body.slice(0, 20_000) } : {}),
       });
     }
-    const pages =
-      collected.pages?.status === "ok"
-        ? collected.pages.snapshots.slice(0, 5)
-        : [];
-    const mdMirrors = [];
-    for (const page of pages) {
-      const u = new URL(page.finalUrl);
-      const mdUrl = u.pathname.endsWith("/")
-        ? `${u.origin}${u.pathname}index.html.md`
-        : `${u.origin}${u.pathname}.md`;
-      const res = await tryFetch(ctx, mdUrl, { maxRedirects: 0 });
-      mdMirrors.push({
-        pageUrl: page.url,
-        mdUrl,
-        status: res?.status ?? 0,
-        headers: res?.headers ?? [],
-      });
+    const snapshots =
+      collected.pages?.status === "ok" ? collected.pages.snapshots : [];
+    const mdMirrors: LlmsData["mdMirrors"][number][] = [];
+    const seen = new Set<string>();
+    const probeMirrors = async (pages: typeof snapshots) => {
+      for (const page of pages) {
+        const mdUrl = mdMirrorUrl(page.finalUrl);
+        if (seen.has(mdUrl)) continue;
+        seen.add(mdUrl);
+        const res = await tryFetch(ctx, mdUrl, { maxRedirects: 0 });
+        mdMirrors.push({
+          pageUrl: page.url,
+          mdUrl,
+          status: res?.status ?? 0,
+          headers: res?.headers ?? [],
+        });
+      }
+    };
+    await probeMirrors(snapshots.slice(0, MD_MIRROR_BASE));
+    // Escalation (FULL-READ §4 row 4, WO-B9-014): llms.txt or any mirror
+    // answering 200 → probe the mirror of every live page, cap 200.
+    const because = mdMirrorTrigger({ files, mdMirrors });
+    if (because) {
+      const rest = snapshots
+        .slice(MD_MIRROR_BASE)
+        .filter((s) => s.status === 200)
+        .slice(0, MD_MIRROR_CAP - mdMirrors.length);
+      ctx.log("handbook.md_mirror.escalate", { because, pages: rest.length });
+      await probeMirrors(rest);
     }
     return { status: "ok", files, mdMirrors };
   },
