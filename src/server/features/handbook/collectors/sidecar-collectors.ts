@@ -21,6 +21,7 @@ import type { HandbookDepth } from "@/server/features/handbook/contracts/exports
 import type { LighthouseScope } from "@/server/features/handbook/engine/depth";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { numericMismatches } from "@/server/features/handbook/engine/numeric-parity";
+import { renderRemovedAiTexts } from "@/server/features/handbook/engine/ai-addressed";
 import { normalizeUrl } from "@/server/features/handbook/checks/support";
 import {
   lighthouseEscalations,
@@ -257,6 +258,10 @@ export function createSidecarCollectors(config: SidecarConfig) {
                   ),
                   numericMismatches: numericMismatches(
                     raw.markup.text,
+                    jsFacts.markup.text,
+                  ),
+                  aiAddressedRemoved: renderRemovedAiTexts(
+                    raw.aiAddressed,
                     jsFacts.markup.text,
                   ),
                 }

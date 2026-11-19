@@ -45,6 +45,11 @@ export type RenderData = {
         rendered: string;
         context: string;
       }>;
+      /**
+       * SUPP-19 texts visible in the raw HTML but absent from the rendered
+       * visible text (JS removed them → hidden). Engine-side. 1.7.0
+       */
+      aiAddressedRemoved?: readonly string[];
       firstScreenActions: ReadonlyArray<{
         tag: string;
         text: string;
