@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start or resume the unattended build. Safe to run again at any time.
 #   cd ~/open-seo && git pull --ff-only && bash fork/scripts/start-build.sh
-# Steps: Docker reachable -> sidecar token in .env.local -> sidecar rebuilt + started with that
+# Steps: Docker reachable -> sidecar token in .env.local -> sidecar (+ BadGEO test sidecar on 4778) rebuilt + started with that
 #        token -> health, contracts version and token check -> clear a "restart sidecar"
 #        needs-ken in fork/STATE.md -> autopilot.
 # Never prints the token and never exports it to the build. `--check` = do everything except
@@ -19,6 +19,7 @@ WAIT_HEALTH="${WAIT_HEALTH:-120}"   # seconds
 ENV_FILE=.env.local
 TMP_ENV=.env.sidecar                # gitignored (.env.*); deleted right after use
 COMPOSE=fork/sidecar/compose.yaml
+COMPOSE_BADGEO=fork/sidecar/compose.badgeo.yaml   # test-only sidecar on 4778 (WO-B12-004)
 BASE="${SIDECAR_URL:-http://127.0.0.1:4777}"
 VERSION_FILE=src/server/features/handbook/contracts/version.ts
 
@@ -63,7 +64,7 @@ fi
 # 3. Sidecar: build from the current code, start with the .env.local token
 (umask 077 && grep -m1 '^HANDBOOK_SIDECAR_TOKEN=' "$ENV_FILE" | tr -d '\r' >"$TMP_ENV")
 say "building and starting the sidecar"
-docker compose --env-file "$TMP_ENV" -f "$COMPOSE" up -d --build || die "The sidecar did not start. Docker's message is above."
+docker compose --env-file "$TMP_ENV" -f "$COMPOSE" -f "$COMPOSE_BADGEO" up -d --build || die "The sidecar did not start. Docker's message is above."
 rm -f "$TMP_ENV"
 
 # 4. Health + contracts version
@@ -91,6 +92,14 @@ case "$code" in
   "" | 000) die "No answer from the sidecar token check." ;;
 esac
 say "sidecar ok (contracts ${want:-unknown}, token matches)"
+# The BadGEO test sidecar only warns: real audits do not need it.
+waited=0
+until curl -s --max-time 5 http://127.0.0.1:4778/health | grep -q '"ok":true'; do
+  waited=$((waited + 3))
+  if [ "$waited" -ge 30 ]; then say "warning: BadGEO test sidecar (4778) not healthy; BadGEO --sidecar runs will fail"; break; fi
+  sleep 3
+done
+docker rm -f hb-sidecar-badgeo >/dev/null 2>&1 || true   # ad-hoc container from B9/B10
 
 # 6. The app reads the token when it starts: restart it so it always holds the .env.local value
 if systemctl --user restart openseo-app.service 2>/dev/null; then

@@ -1,9 +1,23 @@
-# BadGEO override (WO-B2-027): lets the sidecar reach the BadGEO server on the
-# WSL/Docker host. badgeo-serve binds 0.0.0.0 when run with --sidecar.
-#   HANDBOOK_SIDECAR_TOKEN=… docker compose -f fork/sidecar/compose.yaml -f fork/sidecar/compose.badgeo.yaml up -d
+# Test-only BadGEO sidecar (WO-B12-004): a second service on 127.0.0.1:4778 that may
+# reach the BadGEO fixture server on the WSL/Docker host (private network). The real
+# `sidecar` service (4777) is not overridden and keeps HANDBOOK_SIDECAR_ALLOW_PRIVATE=0.
+# badgeo-serve binds 0.0.0.0 when run with --sidecar.
+#   bash fork/scripts/start-build.sh --check   (starts both services)
+#   pnpm exec tsx fork/scripts/badgeo-run.ts --sidecar http://127.0.0.1:4778
 services:
-  sidecar:
+  sidecar-badgeo:
+    build:
+      context: ../..
+      dockerfile: fork/sidecar/Dockerfile
+    image: handbook-sidecar:1.2.1
+    ports:
+      - "127.0.0.1:4778:4777"
     extra_hosts:
       - "127.0.0.1.nip.io:host-gateway"
     environment:
+      HANDBOOK_SIDECAR_TOKEN: ${HANDBOOK_SIDECAR_TOKEN:?set HANDBOOK_SIDECAR_TOKEN}
       HANDBOOK_SIDECAR_ALLOW_PRIVATE: "1"
+      HANDBOOK_SIDECAR_MAX_RENDERS: ${HANDBOOK_SIDECAR_MAX_RENDERS:-3}
+    ipc: host
+    init: true
+    restart: unless-stopped

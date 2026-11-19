@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSidecar, SIDECAR_VERSION, type Engines } from "./server";
 
 const unused = () => Promise.reject(new Error("engine not stubbed"));
@@ -12,12 +12,15 @@ const engines: Engines = {
 let close: (() => void) | undefined;
 afterEach(() => close?.());
 
-async function start() {
+async function start(
+  overrides: Partial<Parameters<typeof createSidecar>[0]> = {},
+) {
   const server = createSidecar({
     token: "t",
     allowPrivate: false,
     engines,
     resolve: async () => ["10.0.0.5"],
+    ...overrides,
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   close = () => server.close();
@@ -62,5 +65,38 @@ describe("sidecar server", () => {
     const res = await call("/render", renderBody);
     expect(res.status).toBe(422);
     expect(await res.json()).toHaveProperty("error");
+  });
+
+  it("answers 504 past the deadline and exits on the second miss", async () => {
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "Date"],
+    });
+    const exit = vi.fn();
+    let started: (() => void) | undefined;
+    const call = await start({
+      allowPrivate: true,
+      engines: {
+        ...engines,
+        render: () => {
+          started?.();
+          return new Promise(() => {});
+        },
+      },
+      exit,
+      log: () => {},
+    });
+    const missOnce = async () => {
+      const reached = new Promise<void>((r) => (started = r));
+      const res = call("/render", { ...renderBody, timeoutMs: 1000 });
+      await reached;
+      await vi.advanceTimersByTimeAsync(61_000);
+      return (await res).status;
+    };
+    expect(await missOnce()).toBe(504);
+    expect(exit).not.toHaveBeenCalled();
+    expect(await missOnce()).toBe(504);
+    await vi.advanceTimersByTimeAsync(6_000);
+    expect(exit).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 });

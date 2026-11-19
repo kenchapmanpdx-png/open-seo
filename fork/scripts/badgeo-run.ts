@@ -9,8 +9,10 @@
  * no sidecar ran) are listed as `blocked`, not `missing`, and do not fail.
  * A page marked `<meta name="badgeo-requires" content="sidecar">` is only
  * reachable through a rendered link: without a sidecar it expects nothing.
- * `--sidecar http://127.0.0.1:4777` (token from HANDBOOK_SIDECAR_TOKEN) binds
- * the server on 0.0.0.0 so the sidecar container can render it.
+ * `--sidecar http://127.0.0.1:4778` (token from HANDBOOK_SIDECAR_TOKEN) binds
+ * the server on 0.0.0.0 so the sidecar container can render it. 4778 is the
+ * test-only `sidecar-badgeo` service (private addresses allowed, WO-B12-004);
+ * the real sidecar on 4777 refuses the fixture server.
  *
  * `--only P3-01,P3-02` keeps rows whose expected ∪ fired ids intersect the
  * filter and ignores ids outside it (exit code counts filtered rows only).

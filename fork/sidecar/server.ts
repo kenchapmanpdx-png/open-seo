@@ -26,7 +26,7 @@ import { maxRendersFromEnv } from "./classify";
  * so the HTTP layer is testable without a browser; `main()` wires the real
  * ones. Requests and responses are validated with the K3 Zod schemas.
  */
-export const SIDECAR_VERSION = "1.2.0";
+export const SIDECAR_VERSION = "1.2.1";
 const MAX_BODY = 64 * 1024;
 
 export type Engines = {
@@ -38,7 +38,11 @@ export type Engines = {
   lighthouse: (
     req: z.output<typeof lighthouseRequestSchema>,
   ) => Promise<LighthouseResponse>;
+  /** Close and relaunch the browser (WO-B12-003); called with no task in flight. */
+  recycle?: () => Promise<void>;
 };
+
+type TaskKind = "render" | "axe" | "lighthouse";
 
 export type SidecarOptions = {
   token: string;
@@ -47,7 +51,21 @@ export type SidecarOptions = {
   resolve?: (host: string) => Promise<string[]>;
   /** Concurrent browser tasks; default `HANDBOOK_SIDECAR_MAX_RENDERS` or 3 (ADR-018). */
   maxRenders?: number;
+  /** Browser recycle after this many tasks; default `HANDBOOK_SIDECAR_RECYCLE_AFTER` or 500. */
+  recycleAfter?: number;
+  /** Called once on a stall (WO-B12-003); default `process.exit(1)`, Docker restarts. */
+  exit?: () => void;
+  log?: (line: string) => void;
 };
+
+/** Hard task deadlines (WO-B12-003): render / axe = request timeout + 60 s, Lighthouse 240 s. */
+const DEADLINE_SLACK_MS = 60_000;
+const AXE_TIMEOUT_MS = 60_000;
+const LIGHTHOUSE_DEADLINE_MS = 240_000;
+/** Stall: 2 deadline misses within 10 min, or one task running at 2× its deadline. */
+const MISS_WINDOW_MS = 10 * 60_000;
+const STALL_CHECK_MS = 15_000;
+const EXIT_GRACE_MS = 5_000;
 
 class HttpError extends Error {
   constructor(
@@ -152,6 +170,87 @@ export function createSidecar(options: SidecarOptions): Server {
       maxRendersFromEnv(process.env.HANDBOOK_SIDECAR_MAX_RENDERS),
   );
   const { engines } = options;
+  const log = options.log ?? ((line: string) => console.log(line));
+  const recycleAfter =
+    options.recycleAfter ??
+    (Number(process.env.HANDBOOK_SIDECAR_RECYCLE_AFTER) || 500);
+  const running = new Set<{ kind: TaskKind; deadline: number; at: number }>();
+  let misses: number[] = [];
+  let done = 0;
+  let recycling: Promise<void> | null = null;
+  let stalled = false;
+  let pendingResponses = 0;
+
+  let exited = false;
+  function exitWhenFlushed() {
+    if (exited || pendingResponses > 0) return;
+    exited = true;
+    (options.exit ?? (() => process.exit(1)))();
+  }
+  function stall(reason: string) {
+    if (stalled) return;
+    stalled = true;
+    log(`${new Date().toISOString()} sidecar stall: ${reason}; exiting`);
+    clearInterval(watch);
+    exitWhenFlushed();
+    // A response that never finishes writing must not keep a stalled process alive.
+    setTimeout(() => {
+      pendingResponses = 0;
+      exitWhenFlushed();
+    }, EXIT_GRACE_MS).unref();
+  }
+  const watch = setInterval(() => {
+    for (const t of running)
+      if (Date.now() - t.at >= 2 * t.deadline)
+        stall(`${t.kind} still running at 2× its ${t.deadline} ms deadline`);
+  }, STALL_CHECK_MS);
+  watch.unref();
+
+  async function maybeRecycle() {
+    if (!engines.recycle || done < recycleAfter || running.size > 0) return;
+    done = 0;
+    log(`${new Date().toISOString()} sidecar browser recycle`);
+    recycling = engines.recycle().finally(() => {
+      recycling = null;
+    });
+    await recycling;
+  }
+
+  /** Runs one browser task in a limiter slot with a hard deadline (504 past it). */
+  function task<T>(
+    kind: TaskKind,
+    deadline: number,
+    run: () => Promise<T>,
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      void limit(async () => {
+        await recycling;
+        const entry = { kind, deadline, at: Date.now() };
+        running.add(entry);
+        const timer = setTimeout(() => {
+          const now = Date.now();
+          misses = [...misses.filter((t) => now - t < MISS_WINDOW_MS), now];
+          log(
+            `${new Date(now).toISOString()} sidecar deadline: ${kind} ${deadline} ms`,
+          );
+          reject(new HttpError(504, "deadline"));
+          if (misses.length >= 2)
+            stall(`2 deadline misses within ${MISS_WINDOW_MS / 60_000} min`);
+        }, deadline);
+        try {
+          resolve(await run());
+        } catch (error) {
+          reject(error);
+        } finally {
+          clearTimeout(timer);
+          running.delete(entry);
+          done += 1;
+        }
+        // The slot stays held until the engine settles, even after a 504.
+      }).then(maybeRecycle);
+    });
+  }
+  const renderDeadline = (timeoutMs: number) => timeoutMs + DEADLINE_SLACK_MS;
 
   async function route(req: IncomingMessage): Promise<unknown> {
     const url = new URL(req.url ?? "/", "http://sidecar");
@@ -179,7 +278,9 @@ export function createSidecar(options: SidecarOptions): Server {
           : {}),
       });
       await guardTarget(request.url, options);
-      const page = await limit(() => engines.render(request));
+      const page = await task("render", renderDeadline(request.timeoutMs), () =>
+        engines.render(request),
+      );
       return contextScrapeResponseSchema.parse({
         success: true,
         type: "html",
@@ -196,19 +297,27 @@ export function createSidecar(options: SidecarOptions): Server {
         const request = parse(renderRequestSchema, body);
         await guardTarget(request.url, options);
         return renderResponseSchema.parse(
-          await limit(() => engines.render(request)),
+          await task("render", renderDeadline(request.timeoutMs), () =>
+            engines.render(request),
+          ),
         );
       }
       case "/axe": {
         const request = parse(axeRequestSchema, body);
         await guardTarget(request.url, options);
-        return axeResponseSchema.parse(await limit(() => engines.axe(request)));
+        return axeResponseSchema.parse(
+          await task("axe", AXE_TIMEOUT_MS + DEADLINE_SLACK_MS, () =>
+            engines.axe(request),
+          ),
+        );
       }
       case "/lighthouse": {
         const request = parse(lighthouseRequestSchema, body);
         await guardTarget(request.url, options);
         return lighthouseResponseSchema.parse(
-          await limit(() => engines.lighthouse(request)),
+          await task("lighthouse", LIGHTHOUSE_DEADLINE_MS, () =>
+            engines.lighthouse(request),
+          ),
         );
       }
       default:
@@ -216,7 +325,12 @@ export function createSidecar(options: SidecarOptions): Server {
     }
   }
 
-  return createServer((req, res) => {
+  const server = createServer((req, res) => {
+    pendingResponses += 1;
+    res.on("close", () => {
+      pendingResponses -= 1;
+      if (stalled) exitWhenFlushed();
+    });
     route(req)
       .then((payload) => {
         res.writeHead(200, { "content-type": "application/json" });
@@ -235,6 +349,8 @@ export function createSidecar(options: SidecarOptions): Server {
         res.end(JSON.stringify({ error: message }));
       });
   });
+  server.on("close", () => clearInterval(watch));
+  return server;
 }
 
 async function main() {
@@ -247,12 +363,16 @@ async function main() {
       import("./axe"),
       import("./lighthouse"),
     ]);
-  const browser = await chromium.launch();
+  let browser = await chromium.launch();
   const engines: Engines = {
     chromium: async () => browser.version(),
     render: (req) => render(browser, req),
     axe: (req) => runAxe(browser, req),
     lighthouse: (req) => runLighthouse(req),
+    recycle: async () => {
+      await browser.close().catch(() => {});
+      browser = await chromium.launch();
+    },
   };
   const host = process.env.HANDBOOK_SIDECAR_HOST ?? "127.0.0.1";
   createSidecar({
