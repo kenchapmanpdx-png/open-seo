@@ -18,7 +18,7 @@
  * unchanged rerun makes no map calls.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 import {
@@ -395,7 +395,7 @@ function fsProfileCache(): ProfileCache {
       return parsed.success ? parsed.data : null;
     },
     async put(profile: PageProfile) {
-      writeFileSync(path(profile), JSON.stringify(profile));
+      await writeFormatted(path(profile), JSON.stringify(profile));
     },
   };
 }
