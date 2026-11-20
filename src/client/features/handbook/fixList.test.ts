@@ -5,6 +5,7 @@ import {
   fixListCsv,
   loadDone,
   saveDone,
+  topFixes,
   type Finding,
 } from "./fixList";
 
@@ -58,6 +59,27 @@ describe("buildFixGroups", () => {
     ];
     expect(codes(buildFixGroups(findings, "AEO", new Set())).should).toEqual([
       "F01",
+    ]);
+  });
+});
+
+describe("topFixes", () => {
+  it("lists at most 5 open fixes, Must before Should, no Nice to have", () => {
+    const findings = [
+      finding({ code: "S2a", severity: "S2" }),
+      finding({ code: "S2b", severity: "S2" }),
+      finding({ code: "S2c", severity: "S2" }),
+      finding({ code: "S3a", severity: "S3" }),
+      finding({ code: "S1a", severity: "S1" }),
+      finding({ code: "S1b", severity: "S1" }),
+      finding({ code: "S1c", severity: "S1" }),
+    ];
+    expect(topFixes(findings, new Set(["S1b"])).map((f) => f.code)).toEqual([
+      "S1a",
+      "S1c",
+      "S2a",
+      "S2b",
+      "S2c",
     ]);
   });
 });
