@@ -36,6 +36,8 @@ import { RunActions } from "./RunActions";
 import { RunProgress } from "./RunProgress";
 import { ScoreCard } from "./ScoreCard";
 import { handbookRunQuery } from "./queries";
+import { HelpLabel } from "@/client/components/HelpLabel";
+import { MODE_LABEL, STATUS_LABELS, TIER_LABEL } from "./labels";
 
 /** Run page line for a run the reconciler marked interrupted (ADR-027). */
 function interruptedNote(
@@ -64,8 +66,8 @@ export function HandbookRunPage({
             detail ? (
               <>
                 <PageHeader
-                  title={`Handbook run · ${detail.run.origin}`}
-                  description={`${detail.run.mode} · tier ${detail.run.tier ?? "?"} · ${detail.run.status}`}
+                  title={`Site check · ${detail.run.origin}`}
+                  description={`${new Date(detail.run.startedAt).toLocaleString()} · ${detail.run.status}`}
                   actions={
                     detail.run.status === "completed" ? (
                       <RunActions projectId={projectId} runId={runId} />
@@ -122,6 +124,10 @@ export function HandbookRunPage({
                     ) : null}
                   </TabsContent>
                   <TabsContent value="items">
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      {MODE_LABEL}: {detail.run.mode} · {TIER_LABEL}:{" "}
+                      {detail.run.tier ?? "?"}
+                    </p>
                     <ItemsTable items={detail.report.items} />
                   </TabsContent>
                   <TabsContent value="evidence">
@@ -168,13 +174,10 @@ function FilterSelect({
 }: {
   label: string;
   value: string;
-  options: readonly string[];
+  options: readonly { value: string; label: string }[];
   onChange: (value: string) => void;
 }) {
-  const items = [
-    { value: ALL, label: `All ${label}` },
-    ...options.map((o) => ({ value: o, label: o })),
-  ];
+  const items = [{ value: ALL, label: `All ${label}` }, ...options];
   return (
     <Select
       items={items}
@@ -214,13 +217,16 @@ function ItemsTable({ items }: { items: Item[] }) {
         <FilterSelect
           label="phases"
           value={phase}
-          options={phases}
+          options={phases.map((p) => ({ value: p, label: p }))}
           onChange={setPhase}
         />
         <FilterSelect
           label="statuses"
           value={status}
-          options={ITEM_STATUSES}
+          options={ITEM_STATUSES.map((s) => ({
+            value: s,
+            label: STATUS_LABELS[s].label,
+          }))}
           onChange={setStatus}
         />
       </div>
@@ -243,7 +249,10 @@ function ItemsTable({ items }: { items: Item[] }) {
                   <Badge
                     variant={item.status === "OPEN" ? "destructive" : "outline"}
                   >
-                    {item.status}
+                    <HelpLabel
+                      label={STATUS_LABELS[item.status].label}
+                      helpText={STATUS_LABELS[item.status].help}
+                    />
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
