@@ -254,3 +254,47 @@ describe("app-shell crawl coverage", () => {
     },
   );
 });
+
+// fork: Handbook runs after finalize (ADR-026)
+describe("handbook phase order", () => {
+  it("finalizes the audit before the handbook phase starts", async () => {
+    vi.mocked(runCrawlPhase).mockResolvedValue({
+      pagesCrawled: 1,
+      completed: true,
+    });
+    vi.mocked(runMultipageChecks).mockResolvedValue({
+      issues: [],
+      hasUnreadShells: false,
+    });
+    // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+    vi.mocked(getAuditScratchpad).mockReturnValue({
+      runFinalizeChecks: vi
+        .fn()
+        .mockResolvedValue({ brokenLinks: [], orphanPages: [] }),
+      destroy: vi.fn(),
+    } as unknown as ReturnType<typeof getAuditScratchpad>);
+    const names: string[] = [];
+    pgStepMock.mockImplementation(
+      async (_step: unknown, name: string, _config: unknown, callback) => {
+        names.push(name);
+        if (name === "discover-urls-v2")
+          return { robotsText: "", seededCount: 1 };
+        // Handbook flag off: the hook returns after its first step.
+        if (name === "handbook-setting-v1") return null;
+        // oxlint-disable-next-line typescript-eslint/no-unsafe-call
+        return callback();
+      },
+    );
+    // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+    await runAuditPhases({} as never, {
+      ...PHASE_PARAMS,
+      config: { maxPages: 50, lighthouseStrategy: "none" },
+      renderUsage: { cloudflareAttempts: 0, contextCredits: 0 },
+    });
+    expect(names.slice(-3)).toEqual([
+      "multipage-checks",
+      "finalize",
+      "handbook-setting-v1",
+    ]);
+  });
+});
