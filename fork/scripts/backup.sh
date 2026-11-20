@@ -41,12 +41,14 @@ prune_list() {
     {
       ls -1 "$DIR"/????-??-??.dump 2>/dev/null | sort -r | head -n 14
       for f in $(ls -1 "$DIR"/????-??-??.dump 2>/dev/null | sort -r); do
-        [ "$(date -d "$(basename "$f" .dump)" +%u)" = 7 ] && echo "$f"
+        # if/fi, not `&&`: a false test as the loop's last command would
+        # make the function fail under set -e + pipefail (unit failed nightly).
+        if [ "$(date -d "$(basename "$f" .dump)" +%u)" = 7 ]; then echo "$f"; fi
       done | head -n 8
     } | sort -u
   )
   for f in $(ls -1 "$DIR"/????-??-??.dump 2>/dev/null); do
-    grep -qxF "$f" <<<"$keep" || echo "$f"
+    if ! grep -qxF "$f" <<<"$keep"; then echo "$f"; fi
   done
 }
 
