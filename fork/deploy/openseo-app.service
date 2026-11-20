@@ -9,7 +9,7 @@ WorkingDirectory=@REPO@
 Environment=PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64
 ExecStart=/usr/bin/env bash fork/scripts/run-local.sh prod
 Restart=always
-RestartSec=10
+RestartSec=30
 
 [Install]
 WantedBy=default.target

@@ -18,6 +18,7 @@ import {
   handbookTemplateSamples,
 } from "@/db/handbook-tables";
 import { sha256Hex } from "@/server/lib/audit/ids";
+import { scoreColumns, type RunScore } from "./HandbookGradeRepository";
 import type {
   HandbookMode,
   RunStatus,
@@ -104,11 +105,14 @@ async function finishRun(input: {
   tier?: SiteTier | null;
   errorCode?: string | null;
   coverage?: Coverage;
+  /** K6 score of the finished run (B13 WO-B13-008); absent on failure. */
+  score?: RunScore;
 }) {
   await db
     .update(handbookRuns)
     .set({
       status: input.status,
+      ...(input.score ? scoreColumns(input.score) : {}),
       tier: input.tier ?? null,
       errorCode: input.errorCode ?? null,
       ...(input.coverage
@@ -128,17 +132,21 @@ async function finishRun(input: {
     );
 }
 
+/**
+ * Runs with their findings count. A left join + group by, not a correlated
+ * subquery: Drizzle drops table names inside `sql` fields of single-table
+ * selects, so the subquery compared `run_id = id` inside itself (B13 E25).
+ */
 async function listRuns(projectId: string, limit = 20) {
   return db
     .select({
       ...getTableColumns(handbookRuns),
-      findingsCount:
-        sql<number>`(select count(*) from ${handbookFindings} where ${handbookFindings.runId} = ${handbookRuns.id})`.mapWith(
-          Number,
-        ),
+      findingsCount: sql<number>`count(${handbookFindings.id})`.mapWith(Number),
     })
     .from(handbookRuns)
+    .leftJoin(handbookFindings, eq(handbookFindings.runId, handbookRuns.id))
     .where(eq(handbookRuns.projectId, projectId))
+    .groupBy(handbookRuns.id)
     .orderBy(desc(handbookRuns.startedAt))
     .limit(limit);
 }
