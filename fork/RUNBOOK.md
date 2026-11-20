@@ -111,10 +111,17 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 - No key, budget reached, or credits exhausted → LLM items are `BLOCKED` with a note; deterministic checks and the grade are unaffected (LLM findings never cap the grade).
 - Cost per run: `handbook_llm_call` rows (tokens + USD); eval: `pnpm exec tsx fork/scripts/llm-eval.ts run`.
 
+## Survives reboot
+
+- Inside WSL the app, tick, backup and watchdog are systemd user units (`ops units` installs them; `loginctl enable-linger` keeps them without a shell). WSL itself still stops the distro when no session process is left.
+- Ken action K1 (once): run `fork/scripts/windows/install-autostart.ps1 -Distro Ubuntu` from Windows (`fork/scripts/windows/README.md`). It writes `OpenSEO-keepalive.vbs` in the Startup folder, which keeps the distro running from sign-in. `-Uninstall` removes it.
+- The sidecar container restarts with Docker Desktop (`restart: unless-stopped`); when Docker is down, `ops sidecar start` (`fork/scripts/ops/sidecar-up.sh`) starts Docker Desktop once, waits, brings the sidecar up and checks health, contracts and token (`--probe` also renders one page; `--build` forces an image rebuild).
+- Not covered: PC off, asleep, or rebooted without sign-in.
+
 ## Troubleshooting
 
 - **Sidecar unhealthy**: `docker compose -f fork/sidecar/compose.yaml logs --tail 50`; rebuild with `up -d --build`. Wrong token → 401 in the CLI log; rotate. A stalled sidecar (1.2.1+) exits by itself and Docker restarts it: look for `sidecar stall:` / `sidecar deadline:` lines in the log; audits mark the affected pages `sidecar timeout` / `sidecar unavailable` and finish.
-- **`EMAXCONNSESSION` (max clients reached in session mode)**: several site audits at once exhaust the Supabase session pooler (15 clients) under `run-local.sh dev`; audits fail or stall at 0 pages. Run one audit at a time; restarting the app (or touching `.env.local`, which restarts vite) frees the connections. Handbook runs queue behind one machine lease (`handbook_run_lease`, 2-h expiry), but the upstream crawl phase and every app request open their own session-pooler client, so 2–3 concurrent site audits still exhaust the pool before the handbook starts (run 31). Start audits one at a time until B10 decides the pooler.
+- **`EMAXCONNSESSION` (max clients reached in session mode)**: the app opens one Postgres client per request and per workflow step; on the session pooler (:5432, 15 slots) each one pins a server connection, so a long audit fills the pool and the app returns errors until restarted (B13 WO-B13-003, outcome C1). Since B13 `run-local.sh prod|dev` puts the app on the transaction pooler (:6543, same host, ADR-025); the start log line `pool-mode=transaction` and `ops status` (`pool_mode=`) confirm it. `pool-mode=session (<reason>)` means the switch was skipped: check `bash fork/scripts/preflight.sh` (`Supabase transaction pooler reachable (:6543)`). Rollback: `Environment=OPENSEO_DB_POOL_MODE=session` in `fork/deploy/openseo-app.service`, then `ops units` and `ops restart app`. Migrations and scripts stay on :5432. Still seeing it on session mode: run one audit at a time and `ops restart app`; raising the pool size is Ken action K3.
 - **Playwright host libraries missing** (in-app UI smoke): the sidecar image has them; the host needs `pnpm exec playwright install-deps` (sudo).
 - **New route 404 / route tree stale**: `pnpm exec vite dev` for ~45 s regenerates `src/routeTree.gen.ts`; commit it and log it in `fork/UPSTREAM-EDITS.md`.
 - **Ticks fail (curl exit 7)**: the app is not up on 3001 — `journalctl --user -u openseo-app.service`.

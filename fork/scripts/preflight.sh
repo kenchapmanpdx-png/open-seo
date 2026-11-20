@@ -27,6 +27,7 @@ for k in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_MAPS_API_KEY OPENAI_API_KE
 
 echo "== reachability (no secrets printed)"
 check "Supabase pooler host resolves" "getent hosts \"\$(grep -E '^SUPABASE_DB_URL=' .env.local | sed -E 's#.*@([^:/]+).*#\\1#')\"" MISS
+check "Supabase transaction pooler reachable (:6543)" "timeout 3 bash -c \"exec 3<>/dev/tcp/\$(grep -E '^SUPABASE_DB_URL=' .env.local | sed -E 's#.*@([^:/]+).*#\\1#')/6543\"" OPT
 check "Vercel API reachable" "curl -s -o /dev/null -m 8 https://api.vercel.com" MISS
 
 echo "---"

@@ -51,4 +51,28 @@ check "fresh testmode.env loaded" "[ '$fresh' = 1 ]"
 check "stale testmode.env ignored" "[ '$stale' = unset ]"
 rm -r "$tmp"
 
+# Pool mode (WO-B13-004): only the mode line is printed; the derived URL keeps
+# credentials, path and query and changes the port only. Fake URLs, no network
+# for the non-pooler cases; 127.0.0.1 never ends in pooler.supabase.com.
+tmp=$(mktemp -d)
+fn=$(sed -n '/^apply_pool_mode() {/,/^}/p' fork/scripts/run-local.sh)
+pm() {
+  (cd "$tmp" && OPENSEO_DB_POOL_MODE="${2:-}" bash -c "$fn"'
+    [ -z "$OPENSEO_DB_POOL_MODE" ] && unset OPENSEO_DB_POOL_MODE
+    SUPABASE_DB_URL="$1"; apply_pool_mode
+    want="${1/:5432\//:6543/}"
+    if [ "${CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE:-}" = "$want" ]; then echo derived=6543
+    elif [ -z "${CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE:-}" ]; then echo derived=unset
+    else echo derived=other; fi' _ "$1")
+}
+o1=$(pm "postgresql://u:p@db.example.com:5432/postgres")
+o2=$(pm "postgresql://u:p@aws-0-x.pooler.supabase.com:6543/postgres")
+o3=$(pm "postgresql://u:p@aws-0-x.pooler.supabase.com:5432/postgres" session)
+check "pool-mode: non-pooler host stays session" "grep -qx 'pool-mode=session (host is not a Supabase pooler)' <<<\"\$o1\" && grep -qx derived=unset <<<\"\$o1\""
+check "pool-mode: port not 5432 stays session" "grep -qx 'pool-mode=session (port is not 5432)' <<<\"\$o2\""
+check "pool-mode: env session wins" "grep -qx 'pool-mode=session (OPENSEO_DB_POOL_MODE=session)' <<<\"\$o3\""
+check "pool-mode file written" "[ \"\$(cat $tmp/fork/runs/_ops/pool-mode)\" = session ]"
+check "pool-mode output has no secret" "no_secret \"\$o1\$o2\$o3\""
+rm -r "$tmp"
+
 exit $fail
