@@ -1,0 +1,9 @@
+[Unit]
+Description=OpenSEO watchdog pass (health probe, self-heal, notify)
+After=openseo-app.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO@
+TimeoutStartSec=15min
+ExecStart=/usr/bin/env bash fork/scripts/run-local.sh ops watchdog

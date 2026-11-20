@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Installs the OpenSEO local-production systemd user units (ADR-011):
-# app, 5-minute cron ticker, nightly backup, monthly Common Crawl import. Needs systemd in WSL
+# app, 5-minute cron ticker, nightly backup, monthly Common Crawl import,
+# 2-minute watchdog (WO-B13-013). Needs systemd in WSL
 # (/etc/wsl.conf: [boot] systemd=true).
 set -euo pipefail
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
@@ -21,7 +22,7 @@ for unit in fork/deploy/openseo-*.service fork/deploy/openseo-*.timer; do
   sed "s#@REPO@#$REPO#g" "$unit" >"$DEST/$(basename "$unit")"
 done
 systemctl --user daemon-reload
-systemctl --user enable --now openseo-app.service openseo-tick.timer openseo-backup.timer openseo-commoncrawl.timer
+systemctl --user enable --now openseo-app.service openseo-tick.timer openseo-backup.timer openseo-commoncrawl.timer openseo-watchdog.timer
 # Keep user units running without an open login session.
 loginctl enable-linger "$USER" 2>/dev/null || true
-systemctl --user --no-pager status openseo-app.service openseo-tick.timer openseo-backup.timer openseo-commoncrawl.timer | head -n 30
+systemctl --user --no-pager status openseo-app.service openseo-tick.timer openseo-backup.timer openseo-commoncrawl.timer openseo-watchdog.timer | head -n 30
