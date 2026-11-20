@@ -18,6 +18,44 @@ export DATABASE_PROVIDER=postgres
 # the exported DATABASE_PROVIDER through without editing .env.local.
 export CLOUDFLARE_INCLUDE_PROCESS_ENV=true
 
+# Pool mode (B13 WO-B13-004, ADR-025). prod / dev only: the app's Hyperdrive
+# local connection string moves to the Supabase transaction pooler (:6543, same
+# host) when OPENSEO_DB_POOL_MODE is `transaction` (default), the host ends in
+# pooler.supabase.com, the port is 5432 and a 3-s TCP connect to :6543 works.
+# Anything else keeps the session pooler. POSTGRES_DATABASE_URL, migrations and
+# scripts stay on session. Prints only the mode line; the mode is also written
+# to fork/runs/_ops/pool-mode for `ops status` and the build stamp.
+apply_pool_mode() {
+  local url="$SUPABASE_DB_URL" mode reason="" after hostport host port path
+  mode="${OPENSEO_DB_POOL_MODE:-transaction}"
+  after="${url##*@}"
+  hostport="${after%%/*}"
+  host="${hostport%%:*}"
+  port="${hostport##*:}"
+  [ "$hostport" = "$host" ] && port=""
+  path=""
+  [ "$after" != "$hostport" ] && path="/${after#*/}"
+  if [ "$mode" != transaction ]; then
+    reason="OPENSEO_DB_POOL_MODE=$mode"
+  elif [ "${host%pooler.supabase.com}" = "$host" ]; then
+    reason="host is not a Supabase pooler"
+  elif [ "$port" != 5432 ]; then
+    reason="port is not 5432"
+  elif ! timeout 3 bash -c "exec 3<>/dev/tcp/$host/6543" 2>/dev/null; then
+    reason="port 6543 unreachable"
+  fi
+  mkdir -p fork/runs/_ops
+  if [ -n "$reason" ]; then
+    POOL_MODE=session
+    echo "pool-mode=session ($reason)"
+  else
+    POOL_MODE=transaction
+    export CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="${url%@*}@$host:6543$path"
+    echo "pool-mode=transaction"
+  fi
+  echo "$POOL_MODE" >fork/runs/_ops/pool-mode
+}
+
 # Test mode (B13, ADR-028): `ops testmode on` writes this file; it applies to
 # prod / dev only while it is younger than 12 h, so a forgotten flag expires.
 load_testmode() {
@@ -48,6 +86,7 @@ build_stamp() {
       sort -z | xargs -0 -r sha256sum
     cat .env.local
     if [ "${TESTMODE_LOADED:-0}" = 1 ]; then cat "$OPS_DIR/testmode.env"; fi
+    echo "pool-mode=${POOL_MODE:-session}"
   } | sha256sum | cut -d' ' -f1
 }
 
@@ -95,6 +134,7 @@ build_if_needed() {
 case "${1:-}" in
   dev)
     load_testmode
+    apply_pool_mode
     mkdir -p .logs
     exec pnpm dev:agents
     ;;
@@ -113,6 +153,7 @@ case "${1:-}" in
     ;;
   prod)
     load_testmode
+    apply_pool_mode
     build_if_needed
     exec pnpm exec vite preview --port "${PORT:-3001}"
     ;;
