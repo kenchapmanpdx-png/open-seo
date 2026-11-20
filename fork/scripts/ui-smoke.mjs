@@ -54,6 +54,8 @@ if (!projectId) throw new Error("no project found; pass a projectId");
 let runId = process.argv[4];
 const paths = [
   "handbook",
+  // B14 WO-B14-004 "Check a site".
+  "handbook/check",
   "handbook/overview",
   "handbook/ai-traffic",
   "handbook/bing",

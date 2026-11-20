@@ -79,6 +79,7 @@ import { Route as AppPProjectIdHandbookAiTrafficRouteImport } from './routes/_ap
 import { Route as AppPProjectIdHandbookAiVisibilityByokRouteImport } from './routes/_app/p/$projectId/handbook/ai-visibility-byok'
 import { Route as AppPProjectIdHandbookBacklinksCcRouteImport } from './routes/_app/p/$projectId/handbook/backlinks-cc'
 import { Route as AppPProjectIdHandbookBingRouteImport } from './routes/_app/p/$projectId/handbook/bing'
+import { Route as AppPProjectIdHandbookCheckRouteImport } from './routes/_app/p/$projectId/handbook/check'
 import { Route as AppPProjectIdHandbookOverviewRouteImport } from './routes/_app/p/$projectId/handbook/overview'
 import { Route as AppPProjectIdLocalSeoIndexRouteImport } from './routes/_app/p/$projectId/local-seo/index'
 import { Route as AppPProjectIdLocalSeoTrackerIdRouteImport } from './routes/_app/p/$projectId/local-seo/$trackerId'
@@ -460,6 +461,12 @@ const AppPProjectIdHandbookBingRoute =
     path: '/handbook/bing',
     getParentRoute: () => AppPProjectIdRouteRoute,
   } as any)
+const AppPProjectIdHandbookCheckRoute =
+  AppPProjectIdHandbookCheckRouteImport.update({
+    id: '/handbook/check',
+    path: '/handbook/check',
+    getParentRoute: () => AppPProjectIdRouteRoute,
+  } as any)
 const AppPProjectIdHandbookOverviewRoute =
   AppPProjectIdHandbookOverviewRouteImport.update({
     id: '/handbook/overview',
@@ -615,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
   '/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
+  '/p/$projectId/handbook/check': typeof AppPProjectIdHandbookCheckRoute
   '/p/$projectId/handbook/overview': typeof AppPProjectIdHandbookOverviewRoute
   '/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
@@ -693,6 +701,7 @@ export interface FileRoutesByTo {
   '/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
   '/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
+  '/p/$projectId/handbook/check': typeof AppPProjectIdHandbookCheckRoute
   '/p/$projectId/handbook/overview': typeof AppPProjectIdHandbookOverviewRoute
   '/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
@@ -781,6 +790,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/_app/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
   '/_app/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
+  '/_app/p/$projectId/handbook/check': typeof AppPProjectIdHandbookCheckRoute
   '/_app/p/$projectId/handbook/overview': typeof AppPProjectIdHandbookOverviewRoute
   '/_app/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/_app/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
@@ -867,6 +877,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/handbook/ai-visibility-byok'
     | '/p/$projectId/handbook/backlinks-cc'
     | '/p/$projectId/handbook/bing'
+    | '/p/$projectId/handbook/check'
     | '/p/$projectId/handbook/overview'
     | '/p/$projectId/local-seo/$trackerId'
     | '/p/$projectId/rank-tracking/$configId'
@@ -945,6 +956,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/handbook/ai-visibility-byok'
     | '/p/$projectId/handbook/backlinks-cc'
     | '/p/$projectId/handbook/bing'
+    | '/p/$projectId/handbook/check'
     | '/p/$projectId/handbook/overview'
     | '/p/$projectId/local-seo/$trackerId'
     | '/p/$projectId/rank-tracking/$configId'
@@ -1032,6 +1044,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/handbook/ai-visibility-byok'
     | '/_app/p/$projectId/handbook/backlinks-cc'
     | '/_app/p/$projectId/handbook/bing'
+    | '/_app/p/$projectId/handbook/check'
     | '/_app/p/$projectId/handbook/overview'
     | '/_app/p/$projectId/local-seo/$trackerId'
     | '/_app/p/$projectId/rank-tracking/$configId'
@@ -1578,6 +1591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdHandbookBingRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/handbook/check': {
+      id: '/_app/p/$projectId/handbook/check'
+      path: '/handbook/check'
+      fullPath: '/p/$projectId/handbook/check'
+      preLoaderRoute: typeof AppPProjectIdHandbookCheckRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/handbook/overview': {
       id: '/_app/p/$projectId/handbook/overview'
       path: '/handbook/overview'
@@ -1791,6 +1811,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdHandbookAiVisibilityByokRoute: typeof AppPProjectIdHandbookAiVisibilityByokRoute
   AppPProjectIdHandbookBacklinksCcRoute: typeof AppPProjectIdHandbookBacklinksCcRoute
   AppPProjectIdHandbookBingRoute: typeof AppPProjectIdHandbookBingRoute
+  AppPProjectIdHandbookCheckRoute: typeof AppPProjectIdHandbookCheckRoute
   AppPProjectIdHandbookOverviewRoute: typeof AppPProjectIdHandbookOverviewRoute
   AppPProjectIdReportsReportIdRoute: typeof AppPProjectIdReportsReportIdRoute
   AppPProjectIdReportsTemplatesRoute: typeof AppPProjectIdReportsTemplatesRoute
@@ -1822,6 +1843,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
     AppPProjectIdHandbookAiVisibilityByokRoute,
   AppPProjectIdHandbookBacklinksCcRoute: AppPProjectIdHandbookBacklinksCcRoute,
   AppPProjectIdHandbookBingRoute: AppPProjectIdHandbookBingRoute,
+  AppPProjectIdHandbookCheckRoute: AppPProjectIdHandbookCheckRoute,
   AppPProjectIdHandbookOverviewRoute: AppPProjectIdHandbookOverviewRoute,
   AppPProjectIdReportsReportIdRoute: AppPProjectIdReportsReportIdRoute,
   AppPProjectIdReportsTemplatesRoute: AppPProjectIdReportsTemplatesRoute,
