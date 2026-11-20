@@ -57,6 +57,8 @@ const findingSchema = z.object({
   evidence: z.array(
     z.object({ kind: z.string(), url: z.string(), excerpt: z.string() }),
   ),
+  /** Union of the finding's items' tags (ADR-029). 1.8.0 */
+  categories: z.array(handbookCategorySchema).optional(),
 });
 
 /**
