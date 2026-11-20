@@ -66,7 +66,7 @@ detach() {
   rm -f "$OPS_DIR/job-$label.exit"
   # New session, no inherited stdout: the job outlives this call and does not
   # hold the `| redact` pipe open.
-  setsid bash -c '"${@:2}" 2>&1 | sed -E "s#postgres(ql)?://[^[:space:]]+#postgres://[redacted]#g; s#Bearer [^[:space:]]+#Bearer [redacted]#g" >>"$1"; echo "${PIPESTATUS[0]}" >"${1%.log}.exit"' \
+  setsid bash -c '"${@:2}" 2>&1 | sed -u -E "s#postgres(ql)?://[^[:space:]]+#postgres://[redacted]#g; s#Bearer [^[:space:]]+#Bearer [redacted]#g" >>"$1"; echo "${PIPESTATUS[0]}" >"${1%.log}.exit"' \
     _ "$out" "$@" </dev/null >/dev/null 2>&1 &
   local pid=$!
   echo "$pid" >"$OPS_DIR/job-$label.pid"
