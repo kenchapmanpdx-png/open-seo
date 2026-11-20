@@ -3,9 +3,9 @@ name: copy-rules
 description: Rules for drafting, rewriting or reviewing website copy (pages, posts, service and product copy) so it is specific, first-hand and free of generic AI wording patterns, and stays inside Google's content policies. Use when writing or editing on-page copy, or when fixing content findings from a handbook audit.
 ---
 
-# Copy rules for web pages · v1 · 2026-11-18
+# Copy rules for web pages · v2 · 2026-11-20
 
-Source: Human-Sounding AI Writing master guide v1 (rule IDs in brackets) + on-site SEO/GEO handbook. Scope: website copy. Emails are out of scope (guide W8, E18).
+Source: Human-Sounding AI Writing guide v3, 2026-11-20 (rule IDs in brackets) + on-site SEO/GEO handbook. Scope: website copy. Emails are out of scope (guide W8, W21, E18).
 
 ## Order of authority
 
@@ -17,7 +17,9 @@ Source: Human-Sounding AI Writing master guide v1 (rule IDs in brackets) + on-si
 ## Before writing
 
 - Load 5 passages of the site owner's own writing, same genre as the page. Match their sentence-length spread, vocabulary level and opening habits. Do not copy their content. [W1, E20]
+- Fewer than 5 samples → use every one supplied, ≥ 2 where possible. Never use a written style description in place of samples. [W18, E20]
 - No samples → one consistent house voice; say so in the hand-off note. Blog and forum copy needs a human voice edit even with samples. [W2, W15]
+- Page under a named person's byline: draft from ≥ 1 sample that person wrote without AI help. None supplied → say so in the hand-off note. [W19]
 - Imitate only the owner's own writing. Never a third party's without consent. [X8]
 - Keep the model's default sampling settings. [W17]
 
@@ -34,8 +36,9 @@ Source: Human-Sounding AI Writing master guide v1 (rule IDs in brackets) + on-si
 - "may / might / could" only where a named source or a stated condition supports it. [W11, E10]
 - A real question is allowed where the argument turns. [W12]
 - Vary sentence length across each paragraph. [W13, E13]
-- Em dashes: match the owner's samples; without samples ≤ 3 per 1,000 words. Vary punctuation; do not ban one mark. [W14, E12]
+- Em dashes: match the owner's samples; without samples ≤ 1 per 1,000 words. Vary punctuation; do not ban one mark. [W14, E12]
 - Write for an expert reader. Never write to pass an AI detector. [W16]
+- Product and e-commerce copy: natural, warm phrasing. Cut cold, blunt or over-eager lines. [W22]
 
 ## Never write
 
@@ -52,7 +55,7 @@ Source: Human-Sounding AI Writing master guide v1 (rule IDs in brackets) + on-si
 
 - No "make it better / sound human / remove AI tells" pass by an LLM. [X5]
 - No humanizer tools. [X6]
-- No detection-evasion steps (base-model stitching, sampling tweaks aimed at detectors). [X9]
+- No detection-evasion steps (base-model stitching, sampling tweaks or model switches aimed at detectors). [X9]
 - No stripping or scrubbing of provider watermarks. [X12]
 - No single-prompt draft published as-is. [X7]
 
@@ -67,7 +70,7 @@ Thresholds are the guide's heuristics; none is validated against rankings.
 | X3–X4 word list                                                                            | 0                                                               | E8   |
 | Three-item lists                                                                           | ≤ 1 per 500 words                                               | E9   |
 | One transition word repeated                                                               | ≤ 2 times per 1,000 words                                       | E11  |
-| Em dashes                                                                                  | ≤ 3 per 1,000 words (no samples)                                | E12  |
+| Em dashes                                                                                  | ≤ 1 per 1,000 words (no samples)                                | E12  |
 | Sentence-length spread                                                                     | SD ≥ 8 words across any 300 words                               | E13  |
 | Mean word length                                                                           | ≤ 5.0 characters                                                | E4   |
 | Numbers or proper nouns                                                                    | ≥ 1 per 150 words                                               | E6   |
@@ -80,4 +83,4 @@ Thresholds are the guide's heuristics; none is validated against rankings.
 - First line: `DRAFT — human review required`. [X7]
 - Every number, date, name and quote used, each with where it came from (brief, site URL, first-party file). [E2]
 - Every `[NEEDED: …]` marker.
-- Whether owner samples were used. [W1]
+- Whether owner samples were used and how many; bylined page: whether the named person's own samples were used. [W1, W18, W19]

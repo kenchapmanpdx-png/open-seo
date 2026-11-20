@@ -1,6 +1,6 @@
-# SCALED-COPY — scaled-content checks, copy quality, copy rules · v1 · 2026-11-18
+# SCALED-COPY — scaled-content checks, copy quality, copy rules · v2 · 2026-11-20
 
-Source of truth for B11. Builds on `fork/FULL-READ.md` (B8–B10). Research: `fork/research/human-writing-guide-v1-excerpts-2026-11-18.md` ("the guide"; rule IDs W / X / E / C / Q). Decisions marked [Ken] are operator instructions; do not revisit.
+Source of truth for B11. Builds on `fork/FULL-READ.md` (B8–B10). Research: Human-Sounding AI Writing guide v3, 2026-11-20 09:10 ("the guide"; rule IDs W / X / E / C / Q). Repo excerpts: `fork/research/human-writing-guide-v1-excerpts-2026-11-18.md` (v1 rule text) + `fork/research/human-writing-guide-v3-changes-2026-11-20.md` (rows v3 changed or added; these win). Project copies of the guide are canonical. Decisions marked [Ken] are operator instructions; do not revisit.
 
 ## 0. Goal
 
@@ -28,11 +28,13 @@ Source of truth for B11. Builds on `fork/FULL-READ.md` (B8–B10). Research: `fo
 | Rule                                | Verdict         | App effect                                                                                          | Ranking effect            |
 | ----------------------------------- | --------------- | --------------------------------------------------------------------------------------------------- | ------------------------- |
 | W1, W2, E20                         | adopt-partially | pack: owner samples as optional input; blog voice needs a human edit                                | SPECULATIVE               |
-| W3, W6, W9–W16                      | adopt           | pack                                                                                                | SPECULATIVE               |
+| W3, W6, W9–W16, W18, W22            | adopt           | pack                                                                                                | SPECULATIVE               |
 | W4, W5                              | adopt-partially | pack: handbook page structure wins; rules apply inside sections                                     | SPECULATIVE               |
 | W7                                  | adopt           | pack                                                                                                | SUPPORTED (Google policy) |
-| W8, E18                             | skip            | email only                                                                                          | —                         |
+| W8, W21, E18                        | skip            | email only                                                                                          | —                         |
 | W17                                 | adopt           | pack; app drafting calls set no sampling override                                                   | SPECULATIVE               |
+| W19                                 | adopt-partially | pack: bylined page drafted from the named person's own samples, else flagged in the hand-off note   | SPECULATIVE               |
+| W20, W23, E23                       | skip            | no pack or app effect; reasons in §9                                                                | —                         |
 | X1–X4                               | adopt           | pack + copy quality E7, E8                                                                          | SPECULATIVE               |
 | X5–X9, X12                          | adopt           | pack bans only; no site check                                                                       | —                         |
 | X10                                 | adopt           | pack ban only; no site check (authorship not detectable; legal)                                     | —                         |
@@ -46,7 +48,8 @@ Source of truth for B11. Builds on `fork/FULL-READ.md` (B8–B10). Research: `fo
 | E21, C7 (original element)          | adopt           | SUPP-18                                                                                             | SUPPORTED (Google policy) |
 | E22                                 | reject          | internal process / legal; not visible on a site                                                     | —                         |
 | C7 ("fact-check claims")            | reject          | [Ken] no truth checks; effort / authorship covered by P5-10, P5-17                                  | —                         |
-| C10–C13                             | reject          | Medium, KDP, LinkedIn, publisher rules: not rankings / SEO / GEO                                    | —                         |
+| C10–C13, E24                        | reject          | Medium, KDP, LinkedIn, publisher rules, Merchant Center feed labels: not rankings / SEO / GEO       | —                         |
+| Q13–Q16                             | skip            | detector-use rules; the app uses no detector (§0)                                                   | —                         |
 | §13 mass pages per query variant    | adopt           | SUPP-17, P5-09                                                                                      | SUPPORTED (Google policy) |
 | §13 unedited AI sites at scale      | adopt-partially | P3-12, P5-15, SUPP-17, SUPP-18; "unedited AI" itself is never detected or stated                    | SUPPORTED (Google policy) |
 | §13 single detector as QA gate      | adopt           | design rule: no detector anywhere                                                                   | —                         |
@@ -147,7 +150,7 @@ Registry: `registry-supp.ts` entries SUPP-17, SUPP-18, SUPP-19 (ids continue aft
 | E11 | Highest per-1,000-word rate among: `however`, `moreover`, `furthermore`, `additionally`, `therefore`, `consequently`, `nevertheless`, `nonetheless`, `thus`, `hence`, `meanwhile`, `ultimately`, `overall`, `indeed`, `in addition`, `in conclusion`, `on the other hand`, `as a result` (list defined here; the guide gives the rule, not the words) | > 2                          | E11         |
 | E10 | `may` + `might` + `could` per 1,000 words                                                                                                                                                                                                                                                                                                             | number only                  | E10, W11    |
 | E15 | Paragraphs per 500 words                                                                                                                                                                                                                                                                                                                              | number only                  | E15, W5     |
-| E12 | Em dashes (U+2014) per 1,000 words                                                                                                                                                                                                                                                                                                                    | > 3                          | E12, W14    |
+| E12 | Em dashes (U+2014) per 1,000 words                                                                                                                                                                                                                                                                                                                    | > 1                          | E12, W14    |
 
 ### 4.4 Output
 
@@ -158,7 +161,7 @@ Registry: `registry-supp.ts` entries SUPP-17, SUPP-18, SUPP-19 (ids continue aft
 
 ## 5. Copy rules pack
 
-- Canonical file: `fork/skills/copy-rules/SKILL.md` (frontmatter `name`, `description`; body = the pack; version line in its H1). Written by Ken's session 2026-11-18. B11 does not edit its rules; format-only fixes allowed.
+- Canonical file: `fork/skills/copy-rules/SKILL.md` (frontmatter `name`, `description`; body = the pack; version line in its H1). Written by Ken's session 2026-11-18; v2 2026-11-20 (§9). B11 does not edit its rules; format-only fixes allowed.
 - App bundle: `src/server/features/handbook/copy-rules.json` `{version, sha256, text}` generated from the SKILL.md body by `fork/scripts/copy-rules-sync.ts` (`--check` exits 1 on drift). Precedent: `registry.json` + `fork/scripts/handbook-sync.ts`. Must load in the app (workerd) and the CLI (node).
 - Served by:
   1. MCP tool `handbook_copy_rules_get` → `{version, text}` (K8 addition; read-only).
@@ -214,3 +217,41 @@ Registry: `registry-supp.ts` entries SUPP-17, SUPP-18, SUPP-19 (ids continue aft
 | Copy rules                       | `copy-rules-sync.ts --check` exit 0; MCP tool text = SKILL.md body; findings hint present / absent per §5; Handbook tab link works (`ui-smoke.mjs` +1 check)                                                                                                           |
 | No detector / authorship wording | grep over new code, report templates and fixtures: no `Pangram`, `GPTZero`, `AI-generated`, `AI-written`, `human-written`, `detector` outside comments citing this rule (excluded from the grep: `copy-rules.json`, `fork/skills/`, `fork/research/`, this file)       |
 | Session-end checks               | green vs `fork/BASELINE.md`                                                                                                                                                                                                                                            |
+
+## 9. v2 changes (2026-11-20) and app sync
+
+Cause: guide v3 (2026-11-20 09:10). Rule diff v1 → v3 (M4 step 1); the changed and added rows are in `fork/research/human-writing-guide-v3-changes-2026-11-20.md`:
+
+- Added: W18–W23, E23, E24, Q13–Q16.
+- Value changed: W14, E12 (no-sample em-dash limit ≤ 3 → ≤ 1 per 1,000 words; guide §12 #57) · W4, E16 (no count set → 0 headings and 0 bold in body prose, ≤ 3 bullet lists per 10,000 words; guide §12 #59) · E20 (fewer than 5 samples → ≥ 2).
+- Wording or basis only: W1, W2, W12, W13, W17, X9, X11, E2, E19, E22, Q4, C7.
+- Removed: none.
+
+| Where                                  | v1                                               | v2                                                                                       |
+| -------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| §4.3 E12 threshold                     | > 3                                              | > 1                                                                                      |
+| Pack, Write: em dashes without samples | ≤ 3 per 1,000 words                              | ≤ 1 per 1,000 words                                                                      |
+| Pack, check table: em dashes           | ≤ 3 per 1,000 words (no samples)                 | ≤ 1 per 1,000 words (no samples)                                                         |
+| Pack, Before writing                   | no line                                          | W18 line (fewer than 5 samples); W19 line (bylined page)                                 |
+| Pack, Write                            | no line                                          | W22 line (product and e-commerce copy)                                                   |
+| Pack, Never do, X9                     | sampling tweaks aimed at detectors               | sampling tweaks or model switches aimed at detectors                                     |
+| Pack, Hand-off note                    | whether owner samples were used [W1]             | adds how many; bylined page: whether the named person's samples were used [W1, W18, W19] |
+| Pack, H1 and Source line               | v1 · 2026-11-18; master guide v1; emails W8, E18 | v2 · 2026-11-20; guide v3; emails W8, W21, E18                                           |
+| §2 rows                                | W3, W6, W9–W16 · W8, E18 · C10–C13               | W18, W22 · W21 · E24 joined to them; new rows W19 · W20, W23, E23 · Q13–Q16              |
+| Header, Research                       | v1 excerpts                                      | v1 excerpts + v3 changes file                                                            |
+| §5 Canonical file line                 | written 2026-11-18                               | adds v2 2026-11-20                                                                       |
+
+Skip reasons (§2 row W20, W23, E23):
+
+- W20: edit-priority order from one correlational study (guide ⚠ §12 #57, #58). Report order stays as the §13 rows set it: E12 last.
+- W23: human-editing priority; no measurable threshold.
+- E23: closing summary already banned (W3) and closing paragraph checked (E17); evidence `STALE?` (older generators).
+
+No effect on verdicts or thresholds:
+
+- W4, E16: the handbook sets page structure; E16 stays the markdown-character proxy.
+- E20: covered by the W18 and W19 pack lines.
+- W13 named a readability rule (guide §12 #55); W10, W11, E9, E10 kept as quality rules (guide §12 #56).
+- W1, W2, W12, W17, X11, E2, E19, E22, Q4, C7: wording or basis only. X9: pack wording extended (table above).
+
+App sync: the E12 code threshold (`engine/copy-metrics.ts`), the pack file and `copy-rules.json` change only in a MAINTENANCE M4 run. The M4 row in the `fork/MAINTENANCE.md` loop log shows whether that run happened.

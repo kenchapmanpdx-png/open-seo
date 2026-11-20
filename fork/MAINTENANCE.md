@@ -11,7 +11,7 @@ Rules from `fork/FORK.md` still apply: never ask Ken, record decisions, never op
 | M1 Upstream rebase  | weekly                                       | LIGHT                    | `ken/main` on top of `upstream/main`, checks green            |
 | M2 Handbook update  | new handbook version                         | HEAVY → LIGHT (1 switch) | registry, checks, fixtures on the new version                 |
 | M3 New golden audit | each manual field audit                      | HEAVY                    | `fork/fixtures/expected/<site>.expected.yaml`, triage         |
-| M4 Guide refresh    | by 2027-05-18 or a new writing-guide version | HEAVY                    | excerpts, copy-quality thresholds, copy-rules pack re-checked |
+| M4 Guide refresh    | by 2027-05-20 or a new writing-guide version | HEAVY                    | excerpts, copy-quality thresholds, copy-rules pack re-checked |
 
 Log every loop run as one row in the table at the end of this file.
 
@@ -71,7 +71,7 @@ Ken adds a manual audit to `fork/fixtures/audits/` (verbatim).
 6. Every new check, SUPP rule or escalation gets a BadGEO page (`fork/fixtures/badgeo/`, `badgeo-expect` meta, linked from `/about/`, listed in `sitemap.xml`); `pnpm exec tsx fork/scripts/badgeo-run.ts` must end `missing 0 · unexpected 0`.
 7. Write the triage into `fork/reports/` and the WOs into `fork/queue.md`; commit and push.
 
-## M4 — Guide refresh (by 2027-05-18 or a new guide version, HEAVY)
+## M4 — Guide refresh (by 2027-05-20 or a new guide version, HEAVY)
 
 Source: the writing guide excerpts in `fork/research/` (Ken replaces them; never edit their content) and `fork/SCALED-COPY.md` §2 verdicts.
 
@@ -90,7 +90,8 @@ Source: the writing guide excerpts in `fork/research/` (Ken replaces them; never
 
 ## Loop log
 
-| Date       | Loop | Model    | Result                                                  |
-| ---------- | ---- | -------- | ------------------------------------------------------- |
-| 2026-11-14 | M1   | Opus 5.5 | drill: 0 upstream commits, merge-tree clean             |
-| 2026-11-14 | M2   | Opus 5.5 | drill: v4.6 0 diffs; injected change detected as 1 diff |
+| Date       | Loop | Model     | Result                                                                                                                  |
+| ---------- | ---- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-14 | M1   | Opus 5.5  | drill: 0 upstream commits, merge-tree clean                                                                             |
+| 2026-11-14 | M2   | Opus 5.5  | drill: v4.6 0 diffs; injected change detected as 1 diff                                                                 |
+| 2026-11-20 | M4   | Fable 5.2 | guide v3: E12 > 3 → > 1, pack v2, SCALED-COPY v2; BadGEO SUPP-17 / 19 to run at merge (`fork/reports/M4-2026-11-20.md`) |

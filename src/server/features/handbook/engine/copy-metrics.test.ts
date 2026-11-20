@@ -154,12 +154,20 @@ describe("copy metrics", () => {
     });
   });
 
-  it("E12 flags more than 3 em dashes per 1,000 words", () => {
+  it("E12 flags more than 1 em dash per 1,000 words", () => {
     expect(metric([p(`one — two ${filler(98)}`)], "E12")).toEqual({
       value: 10,
       over: true,
     });
     expect(metric([p(`one - two ${filler(98)}`)], "E12").over).toBe(false);
+    expect(metric([p(`one — two ${filler(998)}`)], "E12")).toEqual({
+      value: 1,
+      over: false,
+    });
+    expect(metric([p(`one — two — three ${filler(997)}`)], "E12")).toEqual({
+      value: 2,
+      over: true,
+    });
   });
 });
 
