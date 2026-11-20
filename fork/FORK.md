@@ -8,13 +8,14 @@ Upstream `AGENTS.md` still applies in full. This file adds fork rules on top.
 - Command: `Read fork/STATE.md and continue the build.` (normally sent by `fork/scripts/autopilot.sh`).
 - Autonomy (BLUEPRINT §1.7): never ask Ken, never wait. Decide with documented defaults; record decisions. Missing credential/access → `BLOCKED-KEN` on dependent steps only; continue.
 - Model protocol (HEAVY/LIGHT batches, runs, switch banner, model guard, escalation): `fork/BLUEPRINT.md` §1. It overrides any habit of asking Ken to switch models mid-batch.
+- Once `fork/scripts/ops/ops.sh` exists: first command of every run `bash fork/scripts/run-local.sh ops maint on` (the watchdog stands down during builds; the flag expires after 12 h).
 
 ## Layout
 
 - `fork/` — fork-only: build plan, handbook, fixtures, scripts, baselines, logs. Never sent upstream.
 - `fork/BLUEPRINT.md` — architecture, work packages, batch schedule, model protocol.
 - `fork/STATE.md` — current batch, required model, next action, run log.
-- `fork/batches/` — one file per batch (B1–B12). Specs: `fork/FULL-READ.md` (B8–B10), `fork/SCALED-COPY.md` (B11).
+- `fork/batches/` — one file per batch (B1–B14). Specs: `fork/FULL-READ.md` (B8–B10), `fork/SCALED-COPY.md` (B11), `fork/DEPENDABILITY.md` (B13), `fork/NOVICE-UI.md` (B14).
 - `fork/research/` — research excerpts the batches rely on (read-only; replaced only by Ken).
 - `fork/skills/` — fork skills served by the app and usable as Claude Code skills (`copy-rules`).
 - `fork/queue.md`, `fork/work-orders/` — LIGHT work queue written by HEAVY batches.
