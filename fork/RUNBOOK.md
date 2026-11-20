@@ -111,6 +111,17 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 - No key, budget reached, or credits exhausted → LLM items are `BLOCKED` with a note; deterministic checks and the grade are unaffected (LLM findings never cap the grade).
 - Cost per run: `handbook_llm_call` rows (tokens + USD); eval: `pnpm exec tsx fork/scripts/llm-eval.ts run`.
 
+## Health and watchdog (B13 WO-B13-011, WO-B13-013)
+
+- `curl -s http://127.0.0.1:3001/api/fork-health` (local installs only): `ok` = database and sidecar both work. `checks`: `db` (query time, server connections on the pooler, short error), `sidecar` (`reason` names the fault: token not set, unreachable, contracts mismatch, token rejected), `llm.configured`, `cron` (`stale` = no 5-minute tick for 15 min; `unknown` = none since the app started), `handbook` (lease holder, heartbeat age, interrupted runs in 24 h), `audits.running`, `testMode`; `watchdog` = the watchdog's last report.
+- The watchdog runs every 2 min (`openseo-watchdog.timer`; one pass: `systemctl --user start openseo-watchdog.service`). Files in `fork/runs/_ops/`: `status.json` (level, note, actions), `watchdog-state.json` (counters, restart budget), `watchdog.log` (rotates at 1 MB, keeps 3). `ops status` prints `watchdog_level=`.
+- What it fixes by itself: health route down 2 passes → restart app · app DB check failing 3 passes while its own ping works, or pool-exhaustion errors 2 passes → restart app · sidecar down → `sidecar-up.sh`, then unpause + restart, then rebuild · render probe (every 30 min, no Handbook run) failing twice → restart the sidecar container · cron stale → restart `openseo-tick.timer` · idle with > 120 pooler sockets → restart app. At most 3 app and 3 sidecar restarts per hour. It never restarts the app while a Handbook heartbeat is under 2 min old (pool and DB-check restarts excepted). While `ops maint on` (12 h) or a build runs it only probes and logs.
+- Levels: **ok** = all checks pass. **warn** = something was fixed, is being fixed, or needs a look: test mode on, newest backup over 36 h, disk under 5 GB, last build failed (old build served). **fail** = the watchdog stopped trying or cannot help.
+- When it is red (Windows toast; email when `RESEND_API_KEY` and `HEALTH_ALERT_EMAIL` are in `.env.local`), read the `note` in `fork/runs/_ops/status.json`:
+  - `database unreachable (Supabase down or paused, or no internet)`: check the internet connection and the Supabase dashboard (resume a paused project). No restart helps; the watchdog clears it once its ping works.
+  - `… restart budget spent (3/h)`: something keeps failing. `bash fork/scripts/run-local.sh ops logs "-1h" now` and `journalctl --user -u openseo-app.service -n 100`; fix the cause, then `ops restart app` or `ops sidecar start`. The budget refills after an hour.
+  - `health route unreachable on 2 passes` with a spent budget: `systemctl --user status openseo-app.service`; a failed build is in `fork/runs/_ops/build-failed`.
+
 ## Survives reboot
 
 - Inside WSL the app, tick, backup and watchdog are systemd user units (`ops units` installs them; `loginctl enable-linger` keeps them without a shell). WSL itself still stops the distro when no session process is left.
