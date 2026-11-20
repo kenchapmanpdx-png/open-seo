@@ -1,7 +1,7 @@
-import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { executeInBatches } from "@/db/runBatch";
-import { auditPages } from "@/db/schema";
+import { auditPages, audits } from "@/db/schema";
 import {
   handbookBotFetches,
   handbookEvidence,
@@ -235,6 +235,26 @@ async function listCrawledUrls(auditId: string) {
   return rows.map((r) => r.url);
 }
 
+/**
+ * Runs not yet finished, across projects, with their audit's workflow
+ * instance (B13 recovery reconciler, ADR-027). System job only: callers act
+ * on the run's own `projectId`.
+ */
+async function listActiveRuns() {
+  return db
+    .select({
+      id: handbookRuns.id,
+      projectId: handbookRuns.projectId,
+      auditId: handbookRuns.auditId,
+      status: handbookRuns.status,
+      startedAt: handbookRuns.startedAt,
+      workflowInstanceId: audits.workflowInstanceId,
+    })
+    .from(handbookRuns)
+    .leftJoin(audits, eq(audits.id, handbookRuns.auditId))
+    .where(inArray(handbookRuns.status, ["running", "queued"]));
+}
+
 /** Persist one run's engine output (idempotent). */
 async function saveRunResult(runId: string, result: RunResult) {
   const { intake, collected } = result;
@@ -421,6 +441,7 @@ export const HandbookRepository = {
   listEvidence,
   getEvidence,
   listCrawledUrls,
+  listActiveRuns,
   saveRunResult,
   saveLlmCalls,
 } as const;

@@ -37,6 +37,16 @@ import { RunProgress } from "./RunProgress";
 import { ScoreCard } from "./ScoreCard";
 import { handbookRunQuery } from "./queries";
 
+/** Run page line for a run the reconciler marked interrupted (ADR-027). */
+function interruptedNote(
+  rerun: { newAuditId: string; at: string } | { blockedBy: string } | null,
+) {
+  if (!rerun) return "Interrupted";
+  if ("blockedBy" in rerun)
+    return `Interrupted — not re-run: ${rerun.blockedBy}`;
+  return `Interrupted — re-run started automatically ${new Date(rerun.at).toLocaleString()}`;
+}
+
 /** One handbook run (ADR-010): grade, findings and checklist item statuses. */
 export function HandbookRunPage({
   projectId,
@@ -64,6 +74,11 @@ export function HandbookRunPage({
                 />
                 {detail.run.status === "completed" ? (
                   <ScoreCard report={detail.report} />
+                ) : null}
+                {detail.run.errorCode === "interrupted" ? (
+                  <p className="text-sm text-muted-foreground">
+                    {interruptedNote(detail.rerun)}
+                  </p>
                 ) : null}
                 {detail.run.status === "queued" ||
                 detail.run.status === "running" ? (

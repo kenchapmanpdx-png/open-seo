@@ -6,6 +6,7 @@ import {
   type ReportRows,
 } from "./HandbookScore";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
+import { HandbookKv } from "@/server/features/handbook/ops/kv";
 import {
   getReportRows,
   getRunItemEvidence,
@@ -75,7 +76,13 @@ async function updateSettings(input: {
 async function getRunDetail(projectId: string, runId: string) {
   const rows = await getReportRows(projectId, runId);
   if (!rows) return null;
-  return { run: rows.run, report: await withSections(rows) };
+  const { run } = rows;
+  // Interrupted runs (ADR-027): what the reconciler did about a re-run.
+  const rerun =
+    run.errorCode === "interrupted" && run.auditId
+      ? await HandbookKv.getRerunNote(run.auditId)
+      : null;
+  return { run, rerun, report: await withSections(rows) };
 }
 
 /**
