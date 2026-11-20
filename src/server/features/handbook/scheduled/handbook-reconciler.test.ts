@@ -152,7 +152,9 @@ beforeEach(() => {
   `);
   vi.mocked(readWorkflowStatus).mockResolvedValue({ status: "running" });
   vi.mocked(getOptionalEnvValue).mockResolvedValue(undefined);
-  vi.mocked(AuditService.startAudit).mockResolvedValue({ auditId: "00000000-0000-4000-8000-000000000001" });
+  vi.mocked(AuditService.startAudit).mockResolvedValue({
+    auditId: "00000000-0000-4000-8000-000000000001",
+  });
   vi.mocked(AuditService.resolveAuditLimitTier).mockResolvedValue(
     "self_hosted",
   );
