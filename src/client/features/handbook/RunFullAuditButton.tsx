@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { QueryError } from "@/client/components/QueryState";
 import { Button } from "@/client/components/ui/button";
-import { getDashboardActivation } from "@/serverFunctions/dashboard";
+import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
 import { startAudit } from "@/serverFunctions/audit";
 import { runButtonView } from "./forkHealthView";
 import { forkHealthQuery } from "./queries";
@@ -26,11 +26,9 @@ export function RunFullAuditButton({
 }) {
   const queryClient = useQueryClient();
   const healthQuery = useQuery(forkHealthQuery());
-  const activationQuery = useQuery({
-    queryKey: ["dashboardActivation", projectId],
-    queryFn: () => getDashboardActivation({ data: { projectId } }),
-  });
-  const domain = activationQuery.data?.domain ?? null;
+  const projectsQuery = useQuery(projectsQueryOptions());
+  const domain =
+    projectsQuery.data?.find((p) => p.id === projectId)?.domain ?? null;
   const run = useMutation({
     mutationFn: async () => {
       const health = await queryClient.fetchQuery({
@@ -56,7 +54,7 @@ export function RunFullAuditButton({
   });
   const view = runButtonView(healthQuery.data ?? null);
 
-  if (activationQuery.isSuccess && !domain)
+  if (projectsQuery.isSuccess && !domain)
     return (
       <Button
         variant="outline"

@@ -31,6 +31,7 @@ import { AI_JUDGED, SEVERITY_LABELS, STATUS_LABELS } from "./labels";
 import { RunFullAuditButton } from "./RunFullAuditButton";
 
 const PAGE_PREVIEW = 20;
+const DETAIL_PREVIEW = 5;
 const FILTERS: CategoryFilter[] = ["all", ...HANDBOOK_CATEGORIES];
 
 /** `window.localStorage` itself throws in some sandboxed frames. */
@@ -258,12 +259,23 @@ function FixRow({
 
 function FixDetail({ finding: f }: { finding: Finding }) {
   const [allPages, setAllPages] = useState(false);
+  const [allDetail, setAllDetail] = useState(false);
   const pages = allPages ? f.urls : f.urls.slice(0, PAGE_PREVIEW);
+  // `detail` often lists one line per page; keep the row short.
+  const detailLines = f.detail.split("\n");
+  const detail = allDetail
+    ? f.detail
+    : detailLines.slice(0, DETAIL_PREVIEW).join("\n");
   return (
     <div className="mt-3 space-y-3 pl-7 text-sm">
       <div>
         <div className="font-medium">Why it matters</div>
-        <p className="whitespace-pre-line text-muted-foreground">{f.detail}</p>
+        <p className="whitespace-pre-line text-muted-foreground">{detail}</p>
+        {detailLines.length > DETAIL_PREVIEW && !allDetail ? (
+          <Button size="sm" variant="link" onClick={() => setAllDetail(true)}>
+            Show all {detailLines.length} lines
+          </Button>
+        ) : null}
       </div>
       <div>
         <div className="font-medium">How to fix</div>

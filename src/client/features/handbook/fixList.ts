@@ -13,7 +13,7 @@ import { SEVERITY_LABELS } from "./labels";
 export type Finding = ReportJson["findings"][number];
 export type CategoryFilter = "all" | HandbookCategory;
 
-export const FIX_GROUPS = [
+const FIX_GROUPS = [
   { key: "must", severities: ["S1"] },
   { key: "should", severities: ["S2"] },
   { key: "nice", severities: ["S3", "S4"] },
