@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run OpenSEO locally against Supabase Postgres (ADR-003 / ADR-009 defaults).
-# Usage: bash fork/scripts/run-local.sh {dev|migrate|sql <file.sql>|prod}
+# Usage: bash fork/scripts/run-local.sh {dev|migrate|sql <file.sql>|prod|ops <verb>}
 # Sources .env.local into this process only; never prints any variable.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -18,8 +18,21 @@ export DATABASE_PROVIDER=postgres
 # the exported DATABASE_PROVIDER through without editing .env.local.
 export CLOUDFLARE_INCLUDE_PROCESS_ENV=true
 
+# Test mode (B13, ADR-028): `ops testmode on` writes this file; it applies to
+# prod / dev only while it is younger than 12 h, so a forgotten flag expires.
+load_testmode() {
+  local f=fork/runs/_ops/testmode.env
+  [ -f "$f" ] || return 0
+  [ $(($(date +%s) - $(stat -c %Y "$f"))) -lt 43200 ] || return 0
+  set -a
+  # shellcheck disable=SC1090
+  . "./$f"
+  set +a
+}
+
 case "${1:-}" in
   dev)
+    load_testmode
     mkdir -p .logs
     exec pnpm dev:agents
     ;;
@@ -37,11 +50,15 @@ case "${1:-}" in
     pnpm exec tsx fork/scripts/supabase-check.ts
     ;;
   prod)
+    load_testmode
     pnpm build
     exec pnpm exec vite preview --port "${PORT:-3001}"
     ;;
+  ops)
+    exec bash fork/scripts/ops/ops.sh "${@:2}"
+    ;;
   *)
-    echo "usage: $0 {dev|migrate|sql <file>|prod}" >&2
+    echo "usage: $0 {dev|migrate|sql <file>|prod|ops <verb>}" >&2
     exit 2
     ;;
 esac
