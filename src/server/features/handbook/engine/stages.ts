@@ -157,7 +157,11 @@ export function planBatches(
   };
 }
 
-export type StageRow = { status: StageStatus; attempt: number };
+export type StageRow = {
+  status: StageStatus;
+  attempt: number;
+  error?: string | null;
+};
 
 export type StageTracker = {
   get: (stage: StageName, batch: number) => Promise<StageRow | null>;
@@ -301,6 +305,11 @@ export type StageContext = {
   maxMinutes: number;
   /** `HANDBOOK_LIGHTHOUSE`; `all` adds Lighthouse batches and raises the cap. */
   lighthouse?: LighthouseScope;
+  /**
+   * In-app runs (WO-B13-007): null = sidecar usable, else the skip reason.
+   * Called once, at `render` batch 0; later browser units follow that row.
+   */
+  sidecarProbe?: () => Promise<string | null>;
   now?: () => Date;
 };
 
@@ -346,10 +355,10 @@ export async function runStageUnit(
   if (CAPPABLE.has(stage) && elapsedMin >= ctx.maxMinutes) {
     // A later batch re-emits the earlier ones' pages, so a capped later
     // batch saves nothing and the measured pages stand.
-    await ctx.store.save(stage, batch, batch > 0 ? {} : capped(stage));
-    await ctx.tracker.skip(stage, batch, RUN_TIME_CAP_REASON);
-    return "skipped";
+    return skipUnit(stage, batch, ctx, RUN_TIME_CAP_REASON);
   }
+  const sidecarSkip = await sidecarSkipReason(stage, batch, ctx);
+  if (sidecarSkip) return skipUnit(stage, batch, ctx, sidecarSkip);
   await ctx.tracker.start(stage, batch);
   try {
     const items = await runWork(stage, batch, batches, engine, ctx.store);
@@ -361,11 +370,49 @@ export async function runStageUnit(
   }
 }
 
+async function skipUnit(
+  stage: StageName,
+  batch: number,
+  ctx: StageContext,
+  reason: string,
+): Promise<UnitOutcome> {
+  // A later batch re-emits the earlier ones' pages, so a skipped later
+  // batch saves nothing and the measured pages stand.
+  await ctx.store.save(
+    stage,
+    batch,
+    batch > 0 ? {} : unavailable(stage, reason),
+  );
+  await ctx.tracker.skip(stage, batch, reason);
+  return "skipped";
+}
+
+const BROWSER_STAGES = new Set<StageName>(["render", "axe", "lighthouse"]);
+
+/**
+ * Why a browser unit is skipped before it starts (WO-B13-007), or null.
+ * `render` batch 0 probes the sidecar; every later browser unit follows
+ * that row: `skipped` → same reason, otherwise run (later outages are
+ * handled per URL by the sidecar gate). No probe (CLI) → never skipped.
+ */
+async function sidecarSkipReason(
+  stage: StageName,
+  batch: number,
+  ctx: StageContext,
+): Promise<string | null> {
+  if (!ctx.sidecarProbe || !BROWSER_STAGES.has(stage)) return null;
+  if (stage === "render" && batch === 0) return ctx.sidecarProbe();
+  const first = await ctx.tracker.get("render", 0);
+  return first?.status === "skipped"
+    ? (first.error ?? "sidecar unavailable")
+    : null;
+}
+
 /** Unavailable output for every collector a skipped stage owns. */
-function capped(stage: StageName): Partial<CollectedData> {
+function unavailable(stage: StageName, reason: string): Partial<CollectedData> {
   const out: Partial<CollectedData> = {};
   for (const key of STAGE_COLLECTORS[stage] ?? [])
-    out[key] = { status: "unavailable", reason: RUN_TIME_CAP_REASON };
+    out[key] = { status: "unavailable", reason };
   return out;
 }
 

@@ -80,6 +80,11 @@ function ProgressCard({ progress }: { progress: HandbookRunProgress }) {
                     >
                       {s.status}
                     </Badge>
+                    {s.status === "skipped" && s.error ? (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {s.error}
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     {s.batchesDone} / {s.batches}

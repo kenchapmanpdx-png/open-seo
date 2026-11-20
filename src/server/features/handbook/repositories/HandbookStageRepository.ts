@@ -51,6 +51,7 @@ function forRun(runId: string): StageTracker {
       .select({
         status: handbookRunStages.status,
         attempt: handbookRunStages.attempt,
+        error: handbookRunStages.error,
       })
       .from(handbookRunStages)
       .where(where(stage, batch))

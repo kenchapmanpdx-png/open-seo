@@ -115,4 +115,32 @@ describe("staged run", () => {
       [0, 1, 2].map((b) => tracker.rows.get(`lighthouse:${b}`)?.status),
     ).toEqual(["done", "done", "done"]);
   });
+
+  it("a sidecar probe reason skips every browser unit with that reason; other stages run", async () => {
+    const tracker = createMemoryStageTracker();
+    const run = engine();
+    const sidecarProbe = vi.fn(async () => "sidecar unreachable: ECONNREFUSED");
+    await runStagedHandbook(run, context({ tracker, sidecarProbe }));
+    for (const stage of ["render", "axe", "lighthouse"])
+      expect(tracker.rows.get(`${stage}:0`)).toMatchObject({
+        status: "skipped",
+        error: "sidecar unreachable: ECONNREFUSED",
+      });
+    for (const stage of ["crawl", "map", "checks"])
+      expect(tracker.rows.get(`${stage}:0`)?.status).toBe("done");
+    expect(sidecarProbe).toHaveBeenCalledTimes(1);
+    expect(run.seen[0]?.render).toEqual({
+      status: "unavailable",
+      reason: "sidecar unreachable: ECONNREFUSED",
+    });
+  });
+
+  it("a usable sidecar at render batch 0 runs every browser unit and probes once", async () => {
+    const tracker = createMemoryStageTracker();
+    const sidecarProbe = vi.fn(async () => null);
+    await runStagedHandbook(engine(), context({ tracker, sidecarProbe }));
+    for (const stage of ["render", "axe", "lighthouse"])
+      expect(tracker.rows.get(`${stage}:0`)?.status).toBe("done");
+    expect(sidecarProbe).toHaveBeenCalledTimes(1);
+  });
 });
