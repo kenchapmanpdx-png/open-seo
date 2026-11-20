@@ -32,6 +32,7 @@ import { CopyQualityPanel } from "./CopyQualityPanel";
 import { ScaledContentPanel } from "./ScaledContentPanel";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { FindingsTable } from "./FindingsTable";
+import { FixList } from "./FixList";
 import { RunActions } from "./RunActions";
 import { RunProgress } from "./RunProgress";
 import { ScoreCard } from "./ScoreCard";
@@ -74,14 +75,6 @@ export function HandbookRunPage({
                     ) : null
                   }
                 />
-                {detail.run.status === "completed" ? (
-                  <ScoreCard report={detail.report} />
-                ) : null}
-                {detail.capNotes.map((note) => (
-                  <p key={note} className="text-sm text-muted-foreground">
-                    {note}
-                  </p>
-                ))}
                 {detail.run.errorCode === "interrupted" ? (
                   <p className="text-sm text-muted-foreground">
                     {interruptedNote(detail.rerun)}
@@ -91,60 +84,98 @@ export function HandbookRunPage({
                 detail.run.status === "running" ? (
                   <RunProgress projectId={projectId} runId={runId} />
                 ) : null}
-                <Tabs defaultValue="findings">
+                <Tabs
+                  // Re-mount when a live run completes so it opens on the Fix list.
+                  key={detail.run.status}
+                  defaultValue={
+                    detail.run.status === "completed" ? "fix" : "details"
+                  }
+                >
                   <TabsList>
-                    <TabsTrigger value="findings">
-                      Findings (
-                      {detail.report.findings.length +
-                        (detail.report.additionalFindings?.length ?? 0)}
-                      )
-                    </TabsTrigger>
-                    <TabsTrigger value="items">
-                      Checklist ({detail.report.items.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="evidence">Evidence</TabsTrigger>
-                    {detail.report.scaledContent ? (
-                      <TabsTrigger value="scaled">Scaled content</TabsTrigger>
+                    {detail.run.status === "completed" ? (
+                      <TabsTrigger value="fix">Fix list</TabsTrigger>
                     ) : null}
-                    {detail.report.copyQuality ? (
-                      <TabsTrigger value="copy">Copy quality</TabsTrigger>
-                    ) : null}
+                    <TabsTrigger value="details">Details</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="findings">
-                    <FindingsTable findings={detail.report.findings} />
-                    {detail.report.additionalFindings?.length ? (
-                      <div className="mt-6 space-y-2">
-                        <h3 className="text-sm font-medium">
-                          Additional findings (not scored)
-                        </h3>
-                        <FindingsTable
-                          findings={detail.report.additionalFindings}
-                        />
-                      </div>
-                    ) : null}
-                  </TabsContent>
-                  <TabsContent value="items">
-                    <p className="mb-2 text-xs text-muted-foreground">
-                      {MODE_LABEL}: {detail.run.mode} · {TIER_LABEL}:{" "}
-                      {detail.run.tier ?? "?"}
-                    </p>
-                    <ItemsTable items={detail.report.items} />
-                  </TabsContent>
-                  <TabsContent value="evidence">
-                    <EvidenceViewer projectId={projectId} runId={runId} />
-                  </TabsContent>
-                  {detail.report.scaledContent ? (
-                    <TabsContent value="scaled">
-                      <ScaledContentPanel
-                        summary={detail.report.scaledContent}
+                  {detail.run.status === "completed" ? (
+                    <TabsContent value="fix">
+                      <FixList
+                        projectId={projectId}
+                        runId={runId}
+                        report={detail.report}
+                        notes={detail.capNotes}
                       />
                     </TabsContent>
                   ) : null}
-                  {detail.report.copyQuality ? (
-                    <TabsContent value="copy">
-                      <CopyQualityPanel section={detail.report.copyQuality} />
-                    </TabsContent>
-                  ) : null}
+                  <TabsContent value="details" className="space-y-4">
+                    {detail.run.status === "completed" ? (
+                      <ScoreCard report={detail.report} />
+                    ) : null}
+                    {detail.capNotes.map((note) => (
+                      <p key={note} className="text-sm text-muted-foreground">
+                        {note}
+                      </p>
+                    ))}
+                    <Tabs defaultValue="findings">
+                      <TabsList>
+                        <TabsTrigger value="findings">
+                          Findings (
+                          {detail.report.findings.length +
+                            (detail.report.additionalFindings?.length ?? 0)}
+                          )
+                        </TabsTrigger>
+                        <TabsTrigger value="items">
+                          Checklist ({detail.report.items.length})
+                        </TabsTrigger>
+                        <TabsTrigger value="evidence">Evidence</TabsTrigger>
+                        {detail.report.scaledContent ? (
+                          <TabsTrigger value="scaled">
+                            Scaled content
+                          </TabsTrigger>
+                        ) : null}
+                        {detail.report.copyQuality ? (
+                          <TabsTrigger value="copy">Copy quality</TabsTrigger>
+                        ) : null}
+                      </TabsList>
+                      <TabsContent value="findings">
+                        <FindingsTable findings={detail.report.findings} />
+                        {detail.report.additionalFindings?.length ? (
+                          <div className="mt-6 space-y-2">
+                            <h3 className="text-sm font-medium">
+                              Additional findings (not scored)
+                            </h3>
+                            <FindingsTable
+                              findings={detail.report.additionalFindings}
+                            />
+                          </div>
+                        ) : null}
+                      </TabsContent>
+                      <TabsContent value="items">
+                        <p className="mb-2 text-xs text-muted-foreground">
+                          {MODE_LABEL}: {detail.run.mode} · {TIER_LABEL}:{" "}
+                          {detail.run.tier ?? "?"}
+                        </p>
+                        <ItemsTable items={detail.report.items} />
+                      </TabsContent>
+                      <TabsContent value="evidence">
+                        <EvidenceViewer projectId={projectId} runId={runId} />
+                      </TabsContent>
+                      {detail.report.scaledContent ? (
+                        <TabsContent value="scaled">
+                          <ScaledContentPanel
+                            summary={detail.report.scaledContent}
+                          />
+                        </TabsContent>
+                      ) : null}
+                      {detail.report.copyQuality ? (
+                        <TabsContent value="copy">
+                          <CopyQualityPanel
+                            section={detail.report.copyQuality}
+                          />
+                        </TabsContent>
+                      ) : null}
+                    </Tabs>
+                  </TabsContent>
                 </Tabs>
               </>
             ) : (

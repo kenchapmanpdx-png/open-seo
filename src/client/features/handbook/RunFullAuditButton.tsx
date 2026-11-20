@@ -17,7 +17,13 @@ const FULL_AUDIT_PAGES = 500;
  * browser helper. Health is re-read before starting: a database failure
  * blocks the start, a missing helper / key / test mode warns.
  */
-export function RunFullAuditButton({ projectId }: { projectId: string }) {
+export function RunFullAuditButton({
+  projectId,
+  label = "Run full audit",
+}: {
+  projectId: string;
+  label?: string;
+}) {
   const queryClient = useQueryClient();
   const healthQuery = useQuery(forkHealthQuery());
   const activationQuery = useQuery({
@@ -72,7 +78,7 @@ export function RunFullAuditButton({ projectId }: { projectId: string }) {
           }
           onClick={() => run.mutate()}
         >
-          {run.isPending ? "Starting…" : "Run full audit"}
+          {run.isPending ? "Starting…" : label}
         </Button>
         {run.isSuccess ? (
           <span className="text-sm text-muted-foreground">

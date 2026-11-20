@@ -20,6 +20,7 @@ import {
 } from "@/client/components/ui/table";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { findingAnchor } from "./FindingsTable";
+import { provisionalReason } from "./fixList";
 
 type Score = NonNullable<ReportJson["score"]>;
 
@@ -31,15 +32,10 @@ type Score = NonNullable<ReportJson["score"]>;
 export function ScoreCard({ report }: { report: ReportJson }) {
   const { score } = report;
   if (!score) return null;
-  const renderNote = report.items.find((i) =>
-    i.note?.startsWith("render unavailable"),
-  )?.note;
-  const reason =
-    renderNote?.replace(/^render unavailable:?\s*/, "").replace(/\.$/, "") ||
-    "render unavailable";
+  const reason = provisionalReason(report);
   return (
     <div className="space-y-3">
-      {renderNote ? (
+      {reason ? (
         <Alert variant="warning">
           <AlertTitle>Grade provisional</AlertTitle>
           <AlertDescription>
