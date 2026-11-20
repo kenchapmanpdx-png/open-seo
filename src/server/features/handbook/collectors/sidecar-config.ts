@@ -41,7 +41,7 @@ const HEALTH_TIMEOUT_MS = 3_000;
  */
 export async function probeSidecar(
   config: SidecarConfig | null,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: (url: string, init: RequestInit) => Promise<Response> = fetch,
 ): Promise<string | null> {
   if (!config) return "sidecar token not set";
   const base = config.url.replace(/\/$/, "");
