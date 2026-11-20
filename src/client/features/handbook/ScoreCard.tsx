@@ -43,8 +43,8 @@ export function ScoreCard({ report }: { report: ReportJson }) {
         <Alert variant="warning">
           <AlertTitle>Grade provisional</AlertTitle>
           <AlertDescription>
-            Browser checks skipped: {reason}. JS-only content and S1 render
-            defects are not counted yet.
+            Browser checks skipped: {reason}. Content that only appears with
+            JavaScript and must-fix display problems are not counted yet.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -59,8 +59,12 @@ export function ScoreCard({ report }: { report: ReportJson }) {
               <span className="text-lg">{score.final} / 100</span>
             </div>
             {score.capReason ? (
-              <p className="text-sm text-muted-foreground">
-                Capped from {score.uncapped}: {score.capReason}
+              <p
+                className="text-sm text-muted-foreground"
+                title={score.capReason}
+              >
+                Capped from {score.uncapped}: a must-fix problem limits the
+                grade.
               </p>
             ) : null}
             <p className="text-xs text-muted-foreground">

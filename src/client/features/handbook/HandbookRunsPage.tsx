@@ -152,8 +152,6 @@ function RunsTable({ projectId, runs }: { projectId: string; runs: Runs }) {
         <TableHeader>
           <TableRow>
             <TableHead>Started</TableHead>
-            <TableHead>Mode</TableHead>
-            <TableHead>Tier</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Findings</TableHead>
             <TableHead>Grade</TableHead>
@@ -171,8 +169,6 @@ function RunsTable({ projectId, runs }: { projectId: string; runs: Runs }) {
                   {formatRelativeTime(run.startedAt)}
                 </Link>
               </TableCell>
-              <TableCell>{run.mode}</TableCell>
-              <TableCell>{run.tier ?? "—"}</TableCell>
               <TableCell>
                 <Badge
                   variant={
