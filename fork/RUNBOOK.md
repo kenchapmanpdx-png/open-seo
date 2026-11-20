@@ -131,6 +131,32 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 - `ok` = BadGEO 0 missing / 0 unexpected, audit and Handbook completed, a grade, not provisional. The watchdog warns when it is false or older than 8 days. Verdict for any E2E result: `ops selftest --evaluate fork/runs/_ops/e2e-<label>.json`.
 - Cost: one 50-page site audit and one Handbook run (LLM ≈ $0.15–0.25) per week.
 
+## Fix List (B14, fork/NOVICE-UI.md)
+
+- Start a check: sidebar **Check & Fix → Check a site** (`/p/<project>/handbook/check`). Website, size (Whole site 500 pages / Quick 50), "Include the full SEO / GEO / AEO check". The page shows step 1 (reading the site) and step 2 (full check), then opens the run's **Fix list** tab. Test mode caps the full check at 25 pages whatever the size.
+- The Fix List groups open findings by priority, done rows sink, the checkbox state lives in the browser only (`localStorage` `fork:fix-done:<runId>`), "Download CSV" exports the list, the category buttons filter it. The old views (score card, Findings, Checklist, Evidence, Scaled, Copy) are under **Details**, with the codes.
+- Labels (one map, `src/client/features/handbook/labels.ts`):
+
+| Shown as                      | Code              | Meaning                                                  |
+| ----------------------------- | ----------------- | -------------------------------------------------------- |
+| Must fix                      | S1                | Hurts rankings or AI visibility now.                     |
+| Should fix                    | S2                | Clear improvement; fix after the must-fixes.             |
+| Nice to have                  | S3, S4            | Small gain.                                              |
+| Needs fixing                  | OPEN              | The check found a problem on the site.                   |
+| Partly done                   | PARTIAL           | Some pages pass, some don't.                             |
+| Limited fix                   | LIMITED           | Only partly fixable from the site itself (reason shown). |
+| Couldn't check                | BLOCKED           | The app could not run this check; reason shown.          |
+| Doesn't apply                 | NA                | Not relevant to this kind of site.                       |
+| Later                         | DEFERRED          | Checked in a later step.                                 |
+| OK                            | PASS              | No problem found.                                        |
+| AI-judged                     | LLM-sourced       | Found by the AI reviewer; never lowers the grade.        |
+| Site size / type · Check type | Tier T1–T4 · Mode | Details tab only.                                        |
+
+- SEO / GEO / AEO scores: mean item score of the applicable items carrying the tag (PASS 1, PARTIAL / LIMITED 0.5, OPEN 0), × 100; capped at 39 when an open non-AI S1 finding carries the tag; "—" with no applicable item. The overall score and grade do not change.
+- Change a tag: edit `OVERRIDES` in `fork/scripts/registry-tags-draft.ts` (one line, with the reason), run `pnpm exec tsx fork/scripts/registry-tags-draft.ts` (rewrites `src/server/features/handbook/registry-tags.json`; `--check` exits 1 when the JSON is stale, `--table` prints the report table), `pnpm test`, commit both files. Stored runs pick it up on the next read (scores are computed on read).
+- Sidebar: `src/client/navigation/forkNav.ts`. A new upstream page lands in "More" until it is placed there. `VITE_FORK_NAV=0` at build time brings back the upstream sidebar.
+- Live check from the shell: `bash fork/scripts/run-local.sh ops e2e <label> --via check-page` (test project, Quick; PASS also needs the check page to land on the Fix List).
+
 ## Survives reboot
 
 - Inside WSL the app, tick, backup and watchdog are systemd user units (`ops units` installs them; `loginctl enable-linger` keeps them without a shell). WSL itself still stops the distro when no session process is left.

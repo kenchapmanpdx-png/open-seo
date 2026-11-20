@@ -2,7 +2,7 @@
 // Started detached through `bash fork/scripts/run-local.sh ops e2e <label> …`.
 //
 //   --base http://127.0.0.1:3001  --url https://salonvata.com/  --max-pages <n>
-//   --label <name>  [--project <id>]  [--via button|form]  [--no-wait-handbook]
+//   --label <name>  [--project <id>]  [--via button|form|check-page]  [--no-wait-handbook]
 //   [--timeout-min 60]  [--audit <id>]
 //
 // Resolves the B13 test project (A11; created once through the UI, id kept in
@@ -10,7 +10,10 @@
 // settings card, starts the audit through the fork "Run full audit" button on
 // the Handbook page (default; 500 pages, the project's website, which the
 // harness sets in project settings when empty) or, with `--via form` (implied
-// by `--max-pages`), through the upstream Site Audit form, and polls database truth (`ops e2e-read --json`)
+// by `--max-pages`), through the upstream Site Audit form, or, with
+// `--via check-page` (B14 WO-B14-090), through the "Check a site" page
+// (Quick, 50 pages; the page must land on the Fix List when the run is
+// done), and polls database truth (`ops e2e-read --json`)
 // until the audit and the Handbook run finish or the timeout hits. Then reads
 // what the UI shows (runs list findings count, run page findings tab count,
 // provisional banner) and writes fork/runs/_ops/e2e-<label>.json (E2EResult).
@@ -69,9 +72,10 @@ function parseArgs(argv) {
   if (!opts.label || !/^[\w-]+$/.test(opts.label)) usage("--label <name>");
   // Default button (WO-B13-014); a page count only fits the upstream form.
   opts.via ??= opts.maxPages ? "form" : "button";
-  if (!["form", "button"].includes(opts.via)) usage("--via button|form");
-  if (opts.via === "button" && opts.maxPages)
-    usage("--max-pages needs --via form (the button always uses 500)");
+  if (!["form", "button", "check-page"].includes(opts.via))
+    usage("--via button|form|check-page");
+  if (opts.via !== "form" && opts.maxPages)
+    usage("--max-pages needs --via form (button 500, check-page 50)");
   if (!opts.audit && opts.via === "form" && !(opts.maxPages > 0))
     usage("--max-pages <n>");
   if (!(opts.timeoutMin > 0)) usage("--timeout-min <minutes>");
@@ -82,7 +86,7 @@ function parseArgs(argv) {
 function usage(msg) {
   console.error(`inapp-audit: ${msg}`);
   console.error(
-    "usage: inapp-audit.mjs --label <name> [--max-pages <n> (implies --via form)] [--base URL] [--url URL] [--project ID] [--via button|form] [--no-wait-handbook] [--timeout-min 60] [--audit ID]",
+    "usage: inapp-audit.mjs --label <name> [--max-pages <n> (implies --via form)] [--base URL] [--url URL] [--project ID] [--via button|form|check-page] [--no-wait-handbook] [--timeout-min 60] [--audit ID]",
   );
   process.exit(2);
 }
@@ -302,6 +306,43 @@ async function startAuditViaButton(projectId) {
   return auditId;
 }
 
+/** "Check a site" page (WO-B14-004), Quick size; audit id from the progress URL. */
+async function startAuditViaCheckPage(projectId) {
+  await visit(`/p/${projectId}/handbook/check`);
+  const site = page.getByLabel("Website");
+  await site.waitFor({ timeout: 60_000 });
+  await site.fill(new URL(opts.url).hostname);
+  await page.getByRole("radio", { name: "Quick (50 pages)" }).click();
+  const full = page.getByRole("checkbox", {
+    name: "Include the full SEO / GEO / AEO check",
+  });
+  if ((await full.getAttribute("aria-checked")) !== "true") await full.click();
+  const button = page.getByRole("button", { name: "Check", exact: true });
+  for (let i = 0; i < 30 && (await button.isDisabled()); i++) await sleep(1000);
+  if (await button.isDisabled())
+    throw new Error("Check button stayed disabled");
+  await button.click();
+  await page.waitForURL(/\/handbook\/check\?.*auditId=/, { timeout: 120_000 });
+  const auditId = new URL(page.url()).searchParams.get("auditId");
+  if (!auditId) throw new Error("no auditId in the check page URL");
+  return auditId;
+}
+
+/** The check page's progress view must open the Fix List of a finished run. */
+async function checkLandsOnFixList(projectId, auditId, runId) {
+  await visit(`/p/${projectId}/handbook/check?auditId=${auditId}`);
+  try {
+    await page.waitForURL(new RegExp(`/handbook/${runId}(\\?|$)`), {
+      timeout: 60_000,
+    });
+    await page.getByRole("tab", { name: /Fix list/i }).waitFor({
+      timeout: 30_000,
+    });
+  } catch {
+    note(`check page: did not land on the Fix List of run ${runId}`);
+  }
+}
+
 // ------------------------------------------------------------------- poll
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -414,7 +455,9 @@ try {
     auditId =
       opts.via === "button"
         ? await startAuditViaButton(projectId)
-        : await startAudit(projectId);
+        : opts.via === "check-page"
+          ? await startAuditViaCheckPage(projectId)
+          : await startAudit(projectId);
     log(`audit started ${auditId}`);
   }
   // Polling only reads the database; leave the browser idle meanwhile.
@@ -436,6 +479,8 @@ if (truth?.audit && truth.handbook) {
   try {
     const projectId = truth.audit.projectId;
     const { runId } = truth.handbook;
+    if (opts.via === "check-page" && truth.handbook.status === "completed")
+      await checkLandsOnFixList(projectId, auditId, runId);
     ui.findingsListCount = await readRunsList(projectId, runId);
     ui = { ...ui, ...(await readRunPage(projectId, runId)) };
     // The UI was read after polling; re-read truth so counts compare at rest.
