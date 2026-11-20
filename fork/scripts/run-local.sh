@@ -28,6 +28,63 @@ load_testmode() {
   # shellcheck disable=SC1090
   . "./$f"
   set +a
+  TESTMODE_LOADED=1
+}
+
+# Restart without rebuild (B13 WO-B13-006, ADR-028). The build stamp hashes
+# everything a build reads: HEAD, the tracked diff and untracked files under the
+# build inputs, .env.local and the test-mode overrides (the Cloudflare plugin
+# bakes env into dist/server/.dev.vars, so a test-mode switch needs a rebuild).
+# Only the combined hash is stored; nothing is printed.
+BUILD_INPUTS=(src public package.json pnpm-lock.yaml vite.config.ts wrangler.jsonc wrangler.audit.jsonc)
+OPS_DIR=fork/runs/_ops
+
+build_stamp() {
+  {
+    git rev-parse HEAD
+    git diff HEAD --binary -- "${BUILD_INPUTS[@]}"
+    git ls-files --others --exclude-standard -z -- "${BUILD_INPUTS[@]}" |
+      sort -z | xargs -0 -r sha256sum
+    cat .env.local
+    if [ "${TESTMODE_LOADED:-0}" = 1 ]; then cat "$OPS_DIR/testmode.env"; fi
+  } | sha256sum | cut -d' ' -f1
+}
+
+# Builds only when the stamp changed (FORCE_BUILD=1 forces). The previous build
+# is kept in fork/runs/_ops/dist.prev (ignored path) and restored when the
+# build fails; fork/runs/_ops/build-failed then records time + exit code and the
+# old build is served. fork/runs/_ops/building exists while a build runs so the
+# watchdog leaves it alone. OPENSEO_BUILD_CMD overrides `pnpm build` (test hook).
+build_if_needed() {
+  mkdir -p "$OPS_DIR"
+  local stamp rc
+  stamp=$(build_stamp)
+  if [ "${FORCE_BUILD:-0}" != 1 ] && [ -d dist ] &&
+    [ "$(cat "$OPS_DIR/build-stamp" 2>/dev/null)" = "$stamp" ]; then
+    echo "build: inputs unchanged, serving the existing build"
+    return 0
+  fi
+  touch "$OPS_DIR/building"
+  trap 'rm -f "$OPS_DIR/building"' EXIT
+  rm -rf "$OPS_DIR/dist.prev"
+  if [ -d dist ]; then cp -a dist "$OPS_DIR/dist.prev"; fi
+  set +e
+  ${OPENSEO_BUILD_CMD:-pnpm build}
+  rc=$?
+  set -e
+  rm -f "$OPS_DIR/building"
+  trap - EXIT
+  if [ "$rc" -ne 0 ]; then
+    if [ -d "$OPS_DIR/dist.prev" ]; then
+      rm -rf dist
+      cp -a "$OPS_DIR/dist.prev" dist
+    fi
+    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) exit=$rc" >"$OPS_DIR/build-failed"
+    echo "build: failed (exit $rc), serving the previous build" >&2
+    return 0
+  fi
+  rm -f "$OPS_DIR/build-failed"
+  echo "$stamp" >"$OPS_DIR/build-stamp"
 }
 
 case "${1:-}" in
@@ -51,7 +108,7 @@ case "${1:-}" in
     ;;
   prod)
     load_testmode
-    pnpm build
+    build_if_needed
     exec pnpm exec vite preview --port "${PORT:-3001}"
     ;;
   ops)

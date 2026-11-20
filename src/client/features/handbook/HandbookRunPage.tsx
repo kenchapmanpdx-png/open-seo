@@ -72,7 +72,10 @@ export function HandbookRunPage({
                 <Tabs defaultValue="findings">
                   <TabsList>
                     <TabsTrigger value="findings">
-                      Findings ({detail.report.findings.length})
+                      Findings (
+                      {detail.report.findings.length +
+                        (detail.report.additionalFindings?.length ?? 0)}
+                      )
                     </TabsTrigger>
                     <TabsTrigger value="items">
                       Checklist ({detail.report.items.length})
@@ -87,6 +90,16 @@ export function HandbookRunPage({
                   </TabsList>
                   <TabsContent value="findings">
                     <FindingsTable findings={detail.report.findings} />
+                    {detail.report.additionalFindings?.length ? (
+                      <div className="mt-6 space-y-2">
+                        <h3 className="text-sm font-medium">
+                          Additional findings (not scored)
+                        </h3>
+                        <FindingsTable
+                          findings={detail.report.additionalFindings}
+                        />
+                      </div>
+                    ) : null}
                   </TabsContent>
                   <TabsContent value="items">
                     <ItemsTable items={detail.report.items} />

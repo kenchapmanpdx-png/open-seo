@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { scoreRun } from "./HandbookScore";
 import { z } from "zod";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
@@ -377,12 +378,14 @@ async function runStage(
         const summary = runSummarySchema.parse(
           await stageStore.load("report", batch),
         );
+        const score = await scoreRun(input.projectId, input.runId);
         await HandbookRepository.finishRun({
           projectId: input.projectId,
           runId: input.runId,
           status: "completed",
           tier: summary.tier,
           coverage: summary.coverage ?? undefined,
+          score: score ?? undefined,
         });
       },
     },

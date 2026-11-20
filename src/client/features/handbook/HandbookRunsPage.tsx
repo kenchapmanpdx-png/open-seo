@@ -187,7 +187,6 @@ function RunsTable({ projectId, runs }: { projectId: string; runs: Runs }) {
               <TableCell className="text-right tabular-nums">
                 {run.findingsCount}
               </TableCell>
-              {/* Grade is computed in B3 (scoring); placeholder until then. */}
               <TableCell className="text-muted-foreground">
                 {run.grade ?? "—"}
               </TableCell>

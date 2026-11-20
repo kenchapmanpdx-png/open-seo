@@ -192,7 +192,17 @@ cmd_wait() {
 
 cmd_restart() {
   case "${1:-}" in
-    app) systemctl --user restart "$APP_UNIT" && echo "restarted $APP_UNIT" ;;
+    app)
+      # FORCE_BUILD / OPENSEO_BUILD_CMD (test hook) reach the unit for this
+      # start only: set in the user manager, restart, unset.
+      local vars=()
+      [ -n "${FORCE_BUILD:-}" ] && vars+=("FORCE_BUILD=$FORCE_BUILD")
+      [ -n "${OPENSEO_BUILD_CMD:-}" ] && vars+=("OPENSEO_BUILD_CMD=$OPENSEO_BUILD_CMD")
+      [ ${#vars[@]} -gt 0 ] && systemctl --user set-environment "${vars[@]}"
+      systemctl --user restart "$APP_UNIT" && echo "restarted $APP_UNIT"
+      [ ${#vars[@]} -gt 0 ] && systemctl --user unset-environment FORCE_BUILD OPENSEO_BUILD_CMD
+      return 0
+      ;;
     tick) systemctl --user restart openseo-tick.timer && echo "restarted openseo-tick.timer" ;;
     sidecar) "$(docker_bin)" restart "$SIDECAR" >/dev/null && echo "restarted $SIDECAR" ;;
     *) usage ;;
@@ -334,7 +344,7 @@ case "$verb" in
       echo "backfill-grades not built yet (WO-B13-008)"
       exit 1
     }
-    run_tsx fork/scripts/ops/backfill-grades.ts "$@"
+    run_tsx --import ./fork/scripts/ops/cf-env-shim.mjs fork/scripts/ops/backfill-grades.ts "$@"
     ;;
   *) usage ;;
 esac 2>&1 | redact
