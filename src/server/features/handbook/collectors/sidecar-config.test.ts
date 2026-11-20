@@ -15,11 +15,11 @@ const health = (contractsVersion = CONTRACTS_VERSION) =>
 
 /** fetch stub: /health → `healthRes`, /token-check → `tokenStatus`. */
 function stub(healthRes: () => Promise<Response>, tokenStatus = 404) {
-  return vi.fn(async (url: string | URL | Request) =>
-    String(url).endsWith("/health")
+  return vi.fn(async (url: string) =>
+    url.endsWith("/health")
       ? healthRes()
       : new Response(null, { status: tokenStatus }),
-  ) as unknown as typeof fetch;
+  );
 }
 
 describe("sidecarConfigFromEnv", () => {
