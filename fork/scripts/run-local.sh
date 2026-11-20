@@ -38,6 +38,7 @@ load_testmode() {
 # Only the combined hash is stored; nothing is printed.
 BUILD_INPUTS=(src public package.json pnpm-lock.yaml vite.config.ts wrangler.jsonc wrangler.audit.jsonc)
 OPS_DIR=fork/runs/_ops
+PREV_DIST="$OPS_DIR/prev/dist"
 
 build_stamp() {
   {
@@ -51,7 +52,8 @@ build_stamp() {
 }
 
 # Builds only when the stamp changed (FORCE_BUILD=1 forces). The previous build
-# is kept in fork/runs/_ops/dist.prev (ignored path) and restored when the
+# is kept in fork/runs/_ops/prev/dist (git-ignored; prettier skips any dist/
+# directory) and restored when the
 # build fails; fork/runs/_ops/build-failed then records time + exit code and the
 # old build is served. fork/runs/_ops/building exists while a build runs so the
 # watchdog leaves it alone. OPENSEO_BUILD_CMD overrides `pnpm build` (test hook).
@@ -62,12 +64,15 @@ build_if_needed() {
   if [ "${FORCE_BUILD:-0}" != 1 ] && [ -d dist ] &&
     [ "$(cat "$OPS_DIR/build-stamp" 2>/dev/null)" = "$stamp" ]; then
     echo "build: inputs unchanged, serving the existing build"
+    # The served build matches the inputs, so an older failure is stale.
+    rm -f "$OPS_DIR/build-failed"
     return 0
   fi
   touch "$OPS_DIR/building"
   trap 'rm -f "$OPS_DIR/building"' EXIT
-  rm -rf "$OPS_DIR/dist.prev"
-  if [ -d dist ]; then cp -a dist "$OPS_DIR/dist.prev"; fi
+  rm -rf "$PREV_DIST"
+  mkdir -p "$(dirname "$PREV_DIST")"
+  if [ -d dist ]; then cp -a dist "$PREV_DIST"; fi
   set +e
   ${OPENSEO_BUILD_CMD:-pnpm build}
   rc=$?
@@ -75,9 +80,9 @@ build_if_needed() {
   rm -f "$OPS_DIR/building"
   trap - EXIT
   if [ "$rc" -ne 0 ]; then
-    if [ -d "$OPS_DIR/dist.prev" ]; then
+    if [ -d "$PREV_DIST" ]; then
       rm -rf dist
-      cp -a "$OPS_DIR/dist.prev" dist
+      cp -a "$PREV_DIST" dist
     fi
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) exit=$rc" >"$OPS_DIR/build-failed"
     echo "build: failed (exit $rc), serving the previous build" >&2

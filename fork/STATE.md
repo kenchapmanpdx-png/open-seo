@@ -7,8 +7,8 @@ needs_ken: (optional, nothing blocks maintenance) WO-B6-012 AI traffic receiver 
 current_batch: B13
 batch_file: fork/batches/B13-heavy-dependability.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 68
-next_action: B13 R2 — WO-B13-003 steps 2–4 (e2e-read run-3 audit b634ee10…, `ops measure base 45` with two 25-page test audits), fill-in WO-B13-006 + WO-B13-008. First command: `bash fork/scripts/run-local.sh ops maint on`. Test mode is ON (expires 12 h after 2026-11-20 ~15:50 UTC). Test project id in fork/runs/\_ops/test-project-id. Rebase BLOCKED-KEN: rebased tree on branch ken/rebase-v0.1.31 (force-push denied).
+current_run: 69
+next_action: B13 R3 — WO-B13-004 (transaction pooler; WO-003 outcome C1) with gate G1 (`ops testmode off` first), then WO-B13-005 only where its triggers fire; fill-in WO-B13-012, WO-B13-015. First command: `bash fork/scripts/run-local.sh ops maint on`. Test mode is ON until ~03:50 UTC 2026-11-21 (12 h after 15:50 UTC). `run-local.sh prod` now skips the build when inputs are unchanged (WO-006). Rebase BLOCKED-KEN: rebased tree on branch ken/rebase-v0.1.31 (force-push denied).
 contracts_version: 1.7.0 (B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -35,22 +35,22 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                          | Model (SPLIT) | Status |
-| ----- | --------------------------------------------- | ------------- | ------ |
-| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done   |
-| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done   |
-| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done   |
-| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done   |
-| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done   |
-| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done   |
-| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done   |
-| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | done   |
-| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | done   |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done   |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | done   |
-| B12   | fork/batches/B12-light-rebase-reliability.md  | LIGHT         | done   |
-| B13   | fork/batches/B13-heavy-dependability.md       | HEAVY         | todo   |
-| B14   | fork/batches/B14-heavy-novice-ui.md           | HEAVY         | todo   |
+| Batch | File                                          | Model (SPLIT) | Status      |
+| ----- | --------------------------------------------- | ------------- | ----------- |
+| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done        |
+| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done        |
+| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done        |
+| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done        |
+| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done        |
+| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done        |
+| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done        |
+| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | done        |
+| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | done        |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done        |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | done        |
+| B12   | fork/batches/B12-light-rebase-reliability.md  | LIGHT         | done        |
+| B13   | fork/batches/B13-heavy-dependability.md       | HEAVY         | in-progress |
+| B14   | fork/batches/B14-heavy-novice-ui.md           | HEAVY         | todo        |
 
 ## Run log
 
@@ -124,6 +124,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 66  | 2026-11-19 | Opus 5.5        | B12 exit (WO-B12-090): goldens full + sidecar Δ 0 (why / ryan no LLM: deterministic verdicts identical; bluetree --llm identical to B11 r63c), BadGEO quick 0 / 0, upstream diff check (4 unlisted B7 overview files logged), checks green, tag handbook-v3.1.1, STATE → MAINT                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | MAINT M1 (2026-11-26)         |
 | 67  | 2026-11-20 | Opus 5.5 (chat) | Ken approved B13 dependability (`fork/DEPENDABILITY.md`, blueprint v3: transaction pooler, browser helper in in-app runs, Handbook after finalize, heartbeat + reconciler + re-run, health route, watchdog, Windows kit, in-app E2E harness, weekly self-test; authorisations A1–A11) and B14 novice layout (`fork/NOVICE-UI.md`: Check a site, Fix List, SEO / GEO / AEO tags + scores, plain words, sidebar, dashboard card; A12–A17). Added batch files, STATE → B13.                                                                                                                                                                                                                                                                                                                                                                                                                 | B13 R1                        |
 | 68  | 2026-11-20 | Opus 5.5        | B13 R1 (AUTOPILOT run 1): M1 rebase onto v0.1.31 done locally (migrations renumbered pg 0052–0055 / sqlite 0074–0077, server.ts hook kept; checks green; upstream pg 0051 applied to Supabase, 111 tables) but force-push denied → pushed as branch `ken/rebase-v0.1.31`, ken/main kept on 32da778f (BLOCKED-KEN row M1-2026-11-20). Facts E2–E30 re-verified. ADR-025…028, WO-B13-001…016 + 090, queue rows. WO-B13-001 ops verbs + test mode (ops-test.sh 13/13); backup.sh prune bug fixed (backup unit failed nightly). Evidence V1: EMAXCONNSESSION ×112 in the run-3 window. WO-B13-002 harness + test project af75f6d0; e2e-first exit 1 as expected (grade null, findings 52 DB / 0 list / 47 page, provisional). Live audits 1, LLM $0.091.                                                                                                                                     | B13 R2                        |
+| 69  | 2026-11-20 | Opus 5.5        | B13 R2 (AUTOPILOT run 2): WO-B13-003 done — V3 run-3 audit `db_error` in `finalizing` (Drizzle failed audit lookup); V4 `ops measure base 45`: serverConns 11 → 13 → 15 (= session pool_size) per 25-page audit, EMAXCONNSESSION at A1 end, A2 UI failed → restart → **C1** (pinned slots confirmed). WO-B13-006 done — build stamp (incl. test-mode overrides, baked into dist), prev build restore + `build-failed` marker, `RestartSec=30`; restart 4–5 s without rebuild, 33–35 s with. WO-B13-008 done — grade persisted at report stage via leaf `HandbookScore.ts`, `listRuns` join count (tests both dialects), SUPP-only findings shown on run page, `ops backfill-grades` 7/7; E2E `base-a2r` PASS (grade F, 54/54/54). Live audits 4 total, LLM $0.2606. Checks: types 0, lint 0, tests 413 / 2555, format clean.                                                             | B13 R3                        |
 
 ## Batch history
 
