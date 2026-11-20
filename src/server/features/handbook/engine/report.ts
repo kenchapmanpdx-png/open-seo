@@ -16,6 +16,7 @@ import {
 import { collectEscalations } from "./escalations";
 import { buildScaledContent } from "./scaled-summary";
 import { scoreItems } from "./scoring";
+import { withCategories } from "./categories";
 import { isSuppOnly } from "../registry-supp";
 import { indexablePages, snippetBlockers } from "../checks/supp-aeo";
 import { INFORMATIONAL_PAGE_TYPES } from "@/server/features/handbook/contracts/page-profile";
@@ -120,7 +121,7 @@ export function buildReportJson(input: {
     );
   const scored = { ...report, score: scoreReport(report) };
   const confirmed = confirmExports(scored, input.registry);
-  return { ...confirmed, score: scoreReport(confirmed) };
+  return withCategories({ ...confirmed, score: scoreReport(confirmed) });
 }
 
 const share = (n: number, of: number) =>
