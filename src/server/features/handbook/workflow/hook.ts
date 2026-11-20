@@ -1,7 +1,6 @@
 import type { WorkflowStep, WorkflowStepConfig } from "cloudflare:workers";
-import { db } from "@/db";
-import { getDatabaseProvider } from "@/db/provider";
 import { pgStep } from "@/server/workflows/pgStep";
+import { releasePgConnection } from "./pgRelease";
 import { HandbookLeaseRepository } from "@/server/features/handbook/repositories/HandbookLeaseRepository";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import {
@@ -35,23 +34,6 @@ function hbStep<T extends Rpc.Serializable<T>>(
       await releasePgConnection();
     }
   });
-}
-
-async function releasePgConnection() {
-  if (getDatabaseProvider() !== "postgres") return;
-  const client: unknown = Reflect.get(db, "$client");
-  if (isEndable(client)) await client.end({ timeout: 5 }).catch(() => {});
-}
-
-/** postgres.js `Sql.end`. */
-function isEndable(
-  value: unknown,
-): value is { end: (options: { timeout: number }) => Promise<void> } {
-  return (
-    typeof value === "function" &&
-    "end" in value &&
-    typeof value.end === "function"
-  );
 }
 
 /** 30-s polls past the 2-h lease expiry, so a dead holder is always taken over. */
