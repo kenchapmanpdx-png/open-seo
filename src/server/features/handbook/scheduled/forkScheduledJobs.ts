@@ -11,6 +11,7 @@ import {
 import { categorizeSourcesJob } from "@/server/features/ai-visibility/citations/categorizeUpstreamSources";
 import { byokScheduleJob } from "@/server/features/ai-visibility/providers/byok/byokRunService";
 import { bingDailySyncJob } from "@/server/features/bing/bingSync";
+import { healthTickJob } from "@/server/features/handbook/ops/health";
 import { evidenceRetentionJob } from "./evidence-retention";
 import { handbookReconcilerJob } from "./handbook-reconciler";
 
@@ -21,6 +22,7 @@ type ForkJob = { name: string; run: () => Promise<unknown> };
 
 const FORK_SCHEDULED_JOBS: Record<string, ForkJob[]> = {
   [EVERY_FIVE_MINUTES]: [
+    healthTickJob,
     aiTrafficTickJob,
     categorizeSourcesJob,
     byokScheduleJob,
