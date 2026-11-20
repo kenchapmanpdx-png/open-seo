@@ -63,7 +63,7 @@ const THRESHOLDS: Record<CopyMetricId, string | null> = {
   E11: "> 2",
   E10: null,
   E15: null,
-  E12: "> 3",
+  E12: "> 1",
 };
 
 const E7A = [
@@ -337,7 +337,7 @@ function e15(c: Ctx): Measured {
 
 function e12(c: Ctx): Measured {
   const value = per(countMatches(c.joined, /—/g), c.wordCount, 1000);
-  return { value, over: value > 3 };
+  return { value, over: value > 1 };
 }
 
 const METRICS: [CopyMetricId, (c: Ctx) => Measured][] = [
