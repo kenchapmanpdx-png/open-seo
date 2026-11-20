@@ -37,6 +37,7 @@ const probe = (over = {}) => ({
   buildFailed: false,
   poolerSockets: 4,
   deep: null,
+  selftest: null,
   ...over,
 });
 const state = (over = {}) => ({ ...initialState(), ...over });
@@ -254,6 +255,36 @@ const cases = [
     "W9 build failed: warn only",
     state(),
     probe({ buildFailed: true }),
+    "warn",
+    ["notify", "post-health"],
+  ],
+  [
+    "W8 self-test failed: warn only",
+    state(),
+    probe({
+      selftest: { at: new Date(NOW - HOUR_MS).toISOString(), ok: false },
+    }),
+    "warn",
+    ["notify", "post-health"],
+  ],
+  [
+    "W8 self-test passed this week: ok",
+    state(),
+    probe({
+      selftest: { at: new Date(NOW - HOUR_MS).toISOString(), ok: true },
+    }),
+    "ok",
+    ["post-health"],
+  ],
+  [
+    "W8 self-test older than 8 days: warn only",
+    state(),
+    probe({
+      selftest: {
+        at: new Date(NOW - 9 * 24 * HOUR_MS).toISOString(),
+        ok: true,
+      },
+    }),
     "warn",
     ["notify", "post-health"],
   ],

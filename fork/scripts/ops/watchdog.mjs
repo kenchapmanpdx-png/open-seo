@@ -31,6 +31,7 @@ const POOLER_SOCKET_LIMIT = 120; // client cap 200 (E5)
 const APP_UP_FOR_CRON_S = 15 * 60;
 const BACKUP_MAX_H = 36;
 const DISK_MIN_GB = 5;
+const SELFTEST_MAX_AGE_MS = 8 * 24 * HOUR_MS;
 export const P1_RE =
   /EMAXCONN|max client|MaxClientsInSessionMode|too many clients|remaining connection slots/i;
 const DB_DOWN_NOTE =
@@ -60,7 +61,7 @@ export function deepProbeDue(prev, health, now, everyMs) {
  * probe: { maintenance, building, health (ForkHealth | null = unreachable),
  *   ping: { ok: true } | { ok: false, kind: "pool" | "connection" | "skipped" },
  *   p1Lines, appUpSec, backupAgeH, diskFreeGb, buildFailed, poolerSockets,
- *   deep: null | { ok } }
+ *   deep: null | { ok }, selftest: null | { at, ok } }
  * Returns { actions, next, level, note }. Actions: restart-app, sidecar-heal,
  * restart-sidecar, restart-tick, notify, post-health.
  */
@@ -164,6 +165,11 @@ export function decide(prev, probe, now) {
   if (probe.diskFreeGb !== null && probe.diskFreeGb < DISK_MIN_GB)
     warns.push(`disk free ${probe.diskFreeGb} GB`);
   if (probe.buildFailed) warns.push("last build failed (old build served)");
+  // W8 (WO-B13-016): weekly self-test failed or missed its weekly run.
+  const st = probe.selftest;
+  if (st && !st.ok) warns.push(`weekly self-test failed (${st.at})`);
+  else if (st && now - Date.parse(st.at) > SELFTEST_MAX_AGE_MS)
+    warns.push(`weekly self-test last ran ${st.at}`);
 
   const actions = [];
   if (restartApp) {
@@ -547,6 +553,7 @@ async function main() {
     buildFailed: existsSync(join(OPS_DIR, "build-failed")),
     poolerSockets: sockets,
     deep,
+    selftest: readSelftest(),
   };
   const { actions, next, level, note } = decide(prev, probe, now);
   const at = new Date(now).toISOString();
@@ -554,7 +561,7 @@ async function main() {
     at,
     level,
     note: note.slice(0, 400),
-    selftest: readSelftest(),
+    selftest: probe.selftest,
     backupAgeH: probe.backupAgeH,
     diskFreeGb: probe.diskFreeGb,
     buildFailed: probe.buildFailed,

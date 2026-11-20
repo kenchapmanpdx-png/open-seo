@@ -1,0 +1,11 @@
+[Unit]
+Description=OpenSEO weekly self-test (BadGEO + in-app 50-page E2E)
+After=openseo-app.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO@
+# No Playwright build for this distro id; the E2E harness needs it.
+Environment=PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64
+TimeoutStartSec=2h
+ExecStart=/usr/bin/env bash fork/scripts/ops/selftest.sh
