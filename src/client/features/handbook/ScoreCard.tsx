@@ -35,7 +35,8 @@ export function ScoreCard({ report }: { report: ReportJson }) {
     i.note?.startsWith("render unavailable"),
   )?.note;
   const reason =
-    renderNote?.replace(/^render unavailable:?\s*/, "") || "render unavailable";
+    renderNote?.replace(/^render unavailable:?\s*/, "").replace(/\.$/, "") ||
+    "render unavailable";
   return (
     <div className="space-y-3">
       {renderNote ? (
