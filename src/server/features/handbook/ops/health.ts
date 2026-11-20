@@ -26,6 +26,7 @@ import { getOptionalEnvValue, getWorkersEnv } from "@/server/lib/runtime-env";
 
 const CHECK_TIMEOUT_MS = 5_000;
 const CRON_STALE_AFTER_S = 900;
+const AUDIT_STALE_AFTER_MS = 12 * 3600 * 1000;
 const TICK_KEY = "fork:health:tick";
 const WATCHDOG_KEY = "fork:health:watchdog";
 const WATCHDOG_TTL_S = 7 * 24 * 3600;
@@ -66,7 +67,7 @@ export type ForkHealth = {
       beatAgeSec: number | null;
       interrupted24h: number;
     };
-    audits: { running: number };
+    audits: { running: number; stale: number };
   };
   watchdog: WatchdogReport | null;
 };
@@ -193,13 +194,27 @@ async function checkHandbook(
   };
 }
 
-async function countRunningAudits(): Promise<number> {
+/**
+ * Audits with status `running`. One started more than 12 h ago is `stale`
+ * (an upstream audit left running, e.g. one stuck since 2026-11-18): it does
+ * not count as activity, so the self-test and the idle checks are not
+ * blocked forever.
+ */
+async function countRunningAudits(
+  now: number,
+): Promise<ForkHealth["checks"]["audits"]> {
   const rows = await soft(
     "audits",
-    db.select({ n: count() }).from(audits).where(eq(audits.status, "running")),
+    db
+      .select({ startedAt: audits.startedAt })
+      .from(audits)
+      .where(eq(audits.status, "running")),
     [],
   );
-  return rows[0]?.n ?? 0;
+  const stale = rows.filter(
+    (r) => now - Date.parse(r.startedAt) > AUDIT_STALE_AFTER_MS,
+  ).length;
+  return { running: rows.length - stale, stale };
 }
 
 async function readWatchdog(): Promise<WatchdogReport | null> {
@@ -222,11 +237,11 @@ export async function getForkHealth(now = Date.now()): Promise<ForkHealth> {
       return {
         dbCheck,
         handbook: { leaseHolder: null, beatAgeSec: null, interrupted24h: 0 },
-        running: 0,
+        running: { running: 0, stale: 0 },
       };
     }
     const handbook = await checkHandbook(now);
-    const running = await countRunningAudits();
+    const running = await countRunningAudits(now);
     return { dbCheck, handbook, running };
   };
   const [{ dbCheck, handbook, running }, sidecar, cron, watchdog, testMode] =
@@ -253,7 +268,7 @@ export async function getForkHealth(now = Date.now()): Promise<ForkHealth> {
       llm: { configured: llmConfigured },
       cron,
       handbook,
-      audits: { running },
+      audits: running,
     },
     watchdog,
   };

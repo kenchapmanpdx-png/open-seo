@@ -15,7 +15,7 @@ function health(over = {}) {
       llm: { configured: true },
       cron: { state: "ok", lastTickAt: null, ageSec: 60 },
       handbook: { leaseHolder: null, beatAgeSec: null, interrupted24h: 0 },
-      audits: { running: 0 },
+      audits: { running: 0, stale: 0 },
     },
   };
   return {

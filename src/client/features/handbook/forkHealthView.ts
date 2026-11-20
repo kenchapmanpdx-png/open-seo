@@ -42,6 +42,12 @@ export function chipView(health: ForkHealth): ChipView {
     );
   if (cron.state === "stale")
     return view("amber", "Scheduled jobs stopped", RESTART_FIX);
+  if (health.checks.audits.stale > 0)
+    return view(
+      "amber",
+      "A site audit has been stuck for over 12 hours",
+      "Open Site Audit and delete the stuck audit.",
+    );
   if (health.watchdog?.selftest && !health.watchdog.selftest.ok)
     return view(
       "amber",

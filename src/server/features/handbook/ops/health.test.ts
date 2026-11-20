@@ -76,7 +76,7 @@ beforeEach(() => {
   state.database = new DatabaseSync(":memory:");
   state.database.exec(`
     CREATE TABLE projects (id text PRIMARY KEY);
-    CREATE TABLE audits (id text PRIMARY KEY, status text);
+    CREATE TABLE audits (id text PRIMARY KEY, status text, started_at text);
     CREATE TABLE handbook_run (
       id text PRIMARY KEY, status text, error_code text, finished_at text
     );
@@ -90,7 +90,12 @@ beforeEach(() => {
 
 describe("getForkHealth", () => {
   it("reports every check and never echoes an env value", async () => {
-    exec(`INSERT INTO audits VALUES ('a1', 'running'), ('a2', 'completed')`);
+    exec(
+      `INSERT INTO audits VALUES ('a1', 'running', ?), ('a2', 'completed', ?), ('a3', 'running', ?)`,
+      ago(600),
+      ago(600),
+      ago(48 * 3600),
+    );
     exec(
       `INSERT INTO handbook_run VALUES ('r1', 'failed', 'interrupted', ?), ('r2', 'failed', 'interrupted', ?), ('r3', 'running', NULL, NULL)`,
       ago(3600),
@@ -118,7 +123,7 @@ describe("getForkHealth", () => {
         llm: { configured: true },
         cron: { state: "ok", ageSec: 120 },
         handbook: { leaseHolder: "r3", beatAgeSec: 40, interrupted24h: 1 },
-        audits: { running: 1 },
+        audits: { running: 1, stale: 1 },
       },
       watchdog: null,
     });
