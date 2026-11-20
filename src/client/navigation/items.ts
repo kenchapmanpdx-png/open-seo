@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { linkOptions } from "@tanstack/react-router";
 import { GoogleGlyphMuted } from "@/client/features/gsc/GoogleGlyph";
+import { getForkNavGroups } from "@/client/navigation/forkNav"; // fork: A12
 
 const projectNavItems = [
   {
@@ -127,6 +128,8 @@ function getProjectNavItems(projectId: string) {
 // "Research" is point-at-anything lookup tools.
 export function getProjectNavGroups(projectId: string) {
   const all = getProjectNavItems(projectId);
+  const fork = getForkNavGroups(projectId, all, aiNavItem); // fork: A12
+  if (fork) return fork; // fork: A12
   const byPath = (path: (typeof projectNavItems)[number]["to"]) =>
     all.find((i) => i.to === path)!;
 
