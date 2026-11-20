@@ -75,9 +75,20 @@ describe("runHandbookPhase", () => {
   });
 
   it("does nothing when the project flag is off", async () => {
-    vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue(null);
+    vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue({
+      ...enabled,
+      enabled: false,
+    });
     await runHandbookPhase(step, params);
     expect(HandbookRunService.startRun).not.toHaveBeenCalled();
+  });
+
+  it("runs a project without a settings row in AUDIT mode (default on)", async () => {
+    vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue(null);
+    await runHandbookPhase(step, params);
+    expect(HandbookRunService.startRun).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "AUDIT", tierOverride: null }),
+    );
   });
 
   it("runs with a per-audit run id and swallows engine failures", async () => {

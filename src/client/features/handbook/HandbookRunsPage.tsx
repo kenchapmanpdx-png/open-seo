@@ -18,6 +18,7 @@ import {
 import { formatRelativeTime } from "@/client/lib/relative-time";
 import { CopyRulesDialog } from "./CopyRulesDialog";
 import { HandbookSettingsCard } from "./HandbookSettingsCard";
+import { RunFullAuditButton } from "./RunFullAuditButton";
 import { handbookRunsQuery, handbookSettingsQuery } from "./queries";
 
 type Runs = Awaited<
@@ -119,6 +120,7 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
             </>
           }
         />
+        <RunFullAuditButton projectId={projectId} />
         <QueryState
           query={settingsQuery}
           errorFallback="Failed to load handbook settings"
@@ -183,6 +185,14 @@ function RunsTable({ projectId, runs }: { projectId: string; runs: Runs }) {
                 >
                   {run.status}
                 </Badge>
+                {run.capNotes.map((note) => (
+                  <p
+                    key={note}
+                    className="mt-1 max-w-sm text-xs text-muted-foreground"
+                  >
+                    {note}
+                  </p>
+                ))}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {run.findingsCount}

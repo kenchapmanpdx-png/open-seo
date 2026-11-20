@@ -12,6 +12,7 @@ import { Sidebar } from "@/client/components/Sidebar";
 import { BILLING_ROUTE } from "@/shared/billing";
 import { getSeoApiKeyStatus } from "@/serverFunctions/config";
 import { getLastProjectId } from "@/client/lib/active-project";
+import { ForkHealthChip } from "@/client/features/handbook/ForkHealthChip";
 import { dataforseoHelpLinkOptions } from "@/client/navigation/items";
 import {
   SidebarInset,
@@ -118,6 +119,7 @@ export function AuthenticatedAppLayout({
           shouldShowSeoApiWarning={shouldShowSeoApiWarning}
           seoApiKeyStatusError={seoApiKeyStatusError}
         />
+        <ForkHealthChip />
         <LegacyDockerBanner />
         {banner}
         <div className="min-h-0 flex-1 overflow-auto">{children}</div>
