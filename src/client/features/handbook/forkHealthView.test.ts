@@ -15,7 +15,7 @@ const health = (
     llm: { configured: true },
     cron: { state: "ok", lastTickAt: null, ageSec: 10 },
     handbook: { leaseHolder: null, beatAgeSec: null, interrupted24h: 0 },
-    audits: { running: 0 },
+    audits: { running: 0, stale: 0 },
     ...checks,
   },
   watchdog: null,
@@ -52,6 +52,12 @@ describe("chipView", () => {
       label: "Browser helper is off",
     });
     expect(view.fix).toContain("ops sidecar start");
+  });
+
+  it("is amber while an audit has been stuck for over 12 hours", () => {
+    expect(chipView(health({ audits: { running: 0, stale: 1 } })).label).toBe(
+      "A site audit has been stuck for over 12 hours",
+    );
   });
 });
 

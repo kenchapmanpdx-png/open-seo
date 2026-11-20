@@ -3,7 +3,7 @@
 // (`inapp-audit.mjs`): the audit row, its 403/429 share, the Handbook run
 // linked to it (`handbook_run.audit_id`), stage rows, findings count and LLM
 // cost. `ops e2e-read --projects [--json]` lists live projects with their
-// Handbook settings (test-project lookup). One connection, closed at the end.
+// Handbook settings (test-project lookup); `--running` lists running audits. One connection, closed at the end.
 // Never prints the connection string.
 import postgres from "postgres";
 
@@ -11,9 +11,12 @@ const args = process.argv.slice(2);
 const json = args.includes("--json");
 const positional = args.filter((a) => !a.startsWith("--"));
 const listProjects = args.includes("--projects");
+const listRunning = args.includes("--running");
 const auditId = positional[0];
-if (!listProjects && (!auditId || !/^[\w-]+$/.test(auditId))) {
-  console.error("usage: e2e-read.ts <auditId> [--json] | --projects [--json]");
+if (!listProjects && !listRunning && (!auditId || !/^[\w-]+$/.test(auditId))) {
+  console.error(
+    "usage: e2e-read.ts <auditId> [--json] | --projects [--json] | --running [--json]",
+  );
   process.exit(2);
 }
 const url = process.env.SUPABASE_DB_URL;
@@ -71,6 +74,21 @@ async function readProjects() {
     left join handbook_project_setting s on s.project_id = p.id
     where p.archived_at is null
     order by p.created_at`;
+}
+
+/** Audits with status `running` (what the health route counts). */
+async function readRunning() {
+  return sql<
+    {
+      id: string;
+      projectId: string;
+      startedAt: string;
+      currentPhase: string | null;
+    }[]
+  >`
+    select id, project_id as "projectId", started_at::text as "startedAt",
+      current_phase as "currentPhase"
+    from audits where status = 'running' order by started_at`;
 }
 
 async function readAudit(id: string) {
@@ -182,7 +200,15 @@ async function readAudit(id: string) {
 
 let exitCode = 0;
 try {
-  if (listProjects) {
+  if (listRunning) {
+    const rows = await readRunning();
+    if (json) console.log(JSON.stringify({ running: rows }));
+    else
+      for (const a of rows)
+        console.log(
+          `${a.id}  project=${a.projectId} started=${a.startedAt} phase=${a.currentPhase ?? "-"}`,
+        );
+  } else if (listProjects) {
     const rows = await readProjects();
     if (json) console.log(JSON.stringify({ projects: rows }));
     else
