@@ -33,6 +33,7 @@ import {
 } from "@/serverFunctions/dashboard";
 import { Skeleton } from "@/client/components/ui/skeleton";
 import { usesBetterAuthClient } from "@/lib/auth-mode";
+import { TopFixesCard } from "@/client/features/handbook/TopFixesCard"; // fork: A13 (card below)
 
 export function DashboardPage({
   projectId,
@@ -156,6 +157,7 @@ export function DashboardPage({
           activation={activation}
         />
 
+        <TopFixesCard projectId={projectId} />
         <Tabs
           value={tab}
           onValueChange={(value) => {

@@ -21,6 +21,7 @@ import {
   buildFixGroups,
   fixFindings,
   fixListCsv,
+  browserStorage,
   loadDone,
   provisionalReason,
   saveDone,
@@ -33,15 +34,6 @@ import { RunFullAuditButton } from "./RunFullAuditButton";
 const PAGE_PREVIEW = 20;
 const DETAIL_PREVIEW = 5;
 const FILTERS: CategoryFilter[] = ["all", ...HANDBOOK_CATEGORIES];
-
-/** `window.localStorage` itself throws in some sandboxed frames. */
-function browserStorage(): Storage | null {
-  try {
-    return typeof window === "undefined" ? null : window.localStorage;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Fix List (B14 WO-B14-003): a completed run as a prioritised to-do list.

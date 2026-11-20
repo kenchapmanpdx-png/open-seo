@@ -256,15 +256,15 @@ function RenderingOptions({
       )}
       {canRenderJavaScript === false && !isEveryAppClientAuthMode() && (
         <FieldDescription>
-          This deployment has no browser, so rendering needs a Context.dev API
-          key. Set <code>CONTEXT_API_KEY</code>, restart OpenSEO, then reload
-          this page.{" "}
+          Site Audit can't run JavaScript on this install. You don't need it for
+          the full check: the Fix List check opens every page in the browser
+          helper on this PC.{" "}
           <a
             href="https://github.com/every-app/open-seo/blob/main/docs/SELF_HOSTING_CLOUDFLARE_OPERATIONS.md#render-javascript-in-site-audits"
             target="_blank"
             rel="noreferrer"
           >
-            Setup guide
+            Optional: set up Context.dev
           </a>
         </FieldDescription>
       )}

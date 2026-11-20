@@ -31,6 +31,8 @@ page.on(
   "requestfailed",
   (r) =>
     !ignore(r.url()) &&
+    // Leaving a page cancels its in-flight requests (dashboard reads take ~2 s).
+    r.failure()?.errorText !== "net::ERR_ABORTED" &&
     problems.push(`requestfailed: ${r.url()} ${r.failure()?.errorText}`),
 );
 
@@ -53,6 +55,8 @@ if (!projectId) throw new Error("no project found; pass a projectId");
 
 let runId = process.argv[4];
 const paths = [
+  // B14 WO-B14-006 dashboard ("Your top 5 fixes" card) + fork sidebar.
+  "",
   "handbook",
   // B14 WO-B14-004 "Check a site".
   "handbook/check",

@@ -52,6 +52,16 @@ export function buildFixGroups(
   }));
 }
 
+const TOP_FIXES = 5;
+
+/** Dashboard card (WO-B14-006): first open Must, then Should fixes, ≤ 5. */
+export function topFixes(findings: Finding[], done: ReadonlySet<string>) {
+  const [must, should] = buildFixGroups(findings, "all", done);
+  return [...must.findings, ...should.findings]
+    .filter((f) => !done.has(f.code))
+    .slice(0, TOP_FIXES);
+}
+
 /** Checklist items the app could not check, with their reason. */
 export function blockedItems(report: ReportJson) {
   return report.items.filter((i) => i.status === "BLOCKED");
@@ -75,6 +85,15 @@ export function fixListCsv(findings: Finding[]): string {
     ["priority", "categories", "title", "how_to_fix", "pages_count", "pages"],
     rows,
   );
+}
+
+/** `window.localStorage` itself throws in some sandboxed frames. */
+export function browserStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 /** Done checkboxes live in the browser only; storage failures are ignored. */
