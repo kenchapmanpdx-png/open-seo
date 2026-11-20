@@ -105,6 +105,9 @@ fi
 
 result=$(node "$EVAL" "$e2e_file" "${missing:-x}" "${unexpected:-x}")
 code=$?
-printf '%s\n' "$result" >"$OUT.tmp" && mv "$OUT.tmp" "$OUT"
+# Pretty-printed: fork/runs is inside prettier's scope (format:check).
+printf '%s' "$result" |
+  node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.stringify(JSON.parse(s),null,2)))' \
+    >"$OUT.tmp" && mv "$OUT.tmp" "$OUT"
 log "wrote $OUT: $result"
 exit "$code"
