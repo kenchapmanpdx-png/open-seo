@@ -275,13 +275,17 @@ describe("handbook phase order", () => {
     } as unknown as ReturnType<typeof getAuditScratchpad>);
     const names: string[] = [];
     pgStepMock.mockImplementation(
-      async (_step: unknown, name: string, _config: unknown, callback) => {
+      async (
+        _step: unknown,
+        name: string,
+        _config: unknown,
+        callback: () => Promise<unknown>,
+      ) => {
         names.push(name);
         if (name === "discover-urls-v2")
           return { robotsText: "", seededCount: 1 };
         // Handbook flag off: the hook returns after its first step.
         if (name === "handbook-setting-v1") return null;
-        // oxlint-disable-next-line typescript-eslint/no-unsafe-call
         return callback();
       },
     );

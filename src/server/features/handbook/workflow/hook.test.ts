@@ -15,7 +15,11 @@ vi.mock("@/server/workflows/pgStep", () => ({
   ) => fn(),
 }));
 vi.mock("@/server/features/handbook/repositories/HandbookRepository", () => ({
-  HandbookRepository: { getProjectSetting: vi.fn(), listCrawledUrls: vi.fn() },
+  HandbookRepository: {
+    getProjectSetting: vi.fn(),
+    listCrawledUrls: vi.fn(),
+    getRun: vi.fn(),
+  },
 }));
 vi.mock(
   "@/server/features/handbook/repositories/HandbookLeaseRepository",
@@ -48,6 +52,9 @@ const enabled = {
   serpOriginality: false,
   updatedAt: "",
 };
+// Only `status` is read by the run-status guard.
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion
+const run = (status: string) => ({ status }) as never;
 const params = {
   auditId: "a1",
   projectId: "p1",
@@ -64,6 +71,7 @@ describe("runHandbookPhase", () => {
     );
     vi.mocked(HandbookRunService.runStage).mockResolvedValue("done");
     vi.mocked(HandbookLeaseRepository.acquire).mockResolvedValue(true);
+    vi.mocked(HandbookRepository.getRun).mockResolvedValue(run("running"));
   });
 
   it("does nothing when the project flag is off", async () => {
@@ -99,5 +107,16 @@ describe("runHandbookPhase", () => {
     expect(sleep).toHaveBeenCalledTimes(2);
     expect(HandbookRunService.runStage).toHaveBeenCalled();
     expect(HandbookLeaseRepository.release).toHaveBeenCalledWith("hb-a1");
+  });
+
+  it("stops a run the reconciler already finished, without writing", async () => {
+    vi.mocked(HandbookRepository.getProjectSetting).mockResolvedValue(enabled);
+    vi.mocked(HandbookRepository.getRun)
+      .mockResolvedValueOnce(run("running"))
+      .mockResolvedValue(run("failed"));
+    await expect(runHandbookPhase(step, params)).resolves.toBeUndefined();
+    expect(HandbookLeaseRepository.acquire).toHaveBeenCalledTimes(1);
+    expect(HandbookRunService.runStage).not.toHaveBeenCalled();
+    expect(HandbookRunService.failRun).not.toHaveBeenCalled();
   });
 });

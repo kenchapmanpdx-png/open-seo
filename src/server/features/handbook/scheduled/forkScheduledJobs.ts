@@ -12,6 +12,7 @@ import { categorizeSourcesJob } from "@/server/features/ai-visibility/citations/
 import { byokScheduleJob } from "@/server/features/ai-visibility/providers/byok/byokRunService";
 import { bingDailySyncJob } from "@/server/features/bing/bingSync";
 import { evidenceRetentionJob } from "./evidence-retention";
+import { handbookReconcilerJob } from "./handbook-reconciler";
 
 const EVERY_FIVE_MINUTES = "*/5 * * * *";
 const DAILY = "17 3 * * *";
@@ -24,6 +25,7 @@ const FORK_SCHEDULED_JOBS: Record<string, ForkJob[]> = {
     categorizeSourcesJob,
     byokScheduleJob,
     outcomeDueCheckJob,
+    handbookReconcilerJob,
   ],
   [DAILY]: [aiTrafficDailyJob, bingDailySyncJob, evidenceRetentionJob],
 };
