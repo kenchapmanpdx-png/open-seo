@@ -3,7 +3,8 @@ import { getTableColumns } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { beforeEach, expect, it, vi } from "vitest";
 import { handbookFindings, handbookRuns } from "@/db/handbook-tables";
-import { HandbookRepository } from "./HandbookRepository";
+import { audits } from "@/db/schema";
+import { listRuns } from "./HandbookReportRepository";
 
 // SQLite dialect; HandbookRepository.listRuns.pg.test.ts runs the same case
 // with the Postgres dialect's SQL.
@@ -37,16 +38,20 @@ beforeEach(() => {
   state.database.exec(`
     CREATE TABLE handbook_run (${columns(handbookRuns)});
     CREATE TABLE handbook_finding (${columns(handbookFindings)});
-    INSERT INTO handbook_run (id, project_id, started_at) VALUES
-      ('run-a', 'p1', '2026-11-20T02:00:00Z'), ('run-b', 'p1', '2026-11-20T01:00:00Z');
+    CREATE TABLE audits (${columns(audits)});
+    INSERT INTO audits (id, pages_crawled, config) VALUES ('a1', 50, '{"maxPages":50}');
+    INSERT INTO handbook_run (id, project_id, audit_id, started_at) VALUES
+      ('run-a', 'p1', 'a1', '2026-11-20T02:00:00Z'), ('run-b', 'p1', NULL, '2026-11-20T01:00:00Z');
     INSERT INTO handbook_finding (id, run_id) VALUES ('f1', 'run-a'), ('f2', 'run-a'), ('f3', 'run-a');
   `);
 });
 
 it("counts each run's findings (B13 E25: not always 0)", async () => {
-  const runs = await HandbookRepository.listRuns("p1");
-  expect(runs.map((r) => [r.id, r.findingsCount])).toEqual([
-    ["run-a", 3],
-    ["run-b", 0],
-  ]);
+  const runs = await listRuns("p1");
+  expect(runs.map((r) => [r.id, r.findingsCount, r.auditPagesCrawled])).toEqual(
+    [
+      ["run-a", 3, 50],
+      ["run-b", 0, null],
+    ],
+  );
 });

@@ -1,4 +1,4 @@
-import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { executeInBatches } from "@/db/runBatch";
 import { auditPages, audits } from "@/db/schema";
@@ -137,20 +137,6 @@ async function finishRun(input: {
  * subquery: Drizzle drops table names inside `sql` fields of single-table
  * selects, so the subquery compared `run_id = id` inside itself (B13 E25).
  */
-async function listRuns(projectId: string, limit = 20) {
-  return db
-    .select({
-      ...getTableColumns(handbookRuns),
-      findingsCount: sql<number>`count(${handbookFindings.id})`.mapWith(Number),
-    })
-    .from(handbookRuns)
-    .leftJoin(handbookFindings, eq(handbookFindings.runId, handbookRuns.id))
-    .where(eq(handbookRuns.projectId, projectId))
-    .groupBy(handbookRuns.id)
-    .orderBy(desc(handbookRuns.startedAt))
-    .limit(limit);
-}
-
 async function getRun(projectId: string, runId: string) {
   const rows = await db
     .select()
@@ -435,7 +421,6 @@ export const HandbookRepository = {
   upsertProjectSetting,
   createRun,
   finishRun,
-  listRuns,
   getRun,
   listItemStatuses,
   listEvidence,

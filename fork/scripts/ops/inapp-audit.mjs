@@ -2,13 +2,15 @@
 // Started detached through `bash fork/scripts/run-local.sh ops e2e <label> …`.
 //
 //   --base http://127.0.0.1:3001  --url https://salonvata.com/  --max-pages <n>
-//   --label <name>  [--project <id>]  [--via form|button]  [--no-wait-handbook]
+//   --label <name>  [--project <id>]  [--via button|form]  [--no-wait-handbook]
 //   [--timeout-min 60]  [--audit <id>]
 //
 // Resolves the B13 test project (A11; created once through the UI, id kept in
 // fork/runs/_ops/test-project-id), turns its Handbook on through the Handbook
-// settings card, starts the audit through the upstream Site Audit form, takes
-// the audit id from the URL and polls database truth (`ops e2e-read --json`)
+// settings card, starts the audit through the fork "Run full audit" button on
+// the Handbook page (default; 500 pages, the project's website, which the
+// harness sets in project settings when empty) or, with `--via form` (implied
+// by `--max-pages`), through the upstream Site Audit form, and polls database truth (`ops e2e-read --json`)
 // until the audit and the Handbook run finish or the timeout hits. Then reads
 // what the UI shows (runs list findings count, run page findings tab count,
 // provisional banner) and writes fork/runs/_ops/e2e-<label>.json (E2EResult).
@@ -41,7 +43,7 @@ function parseArgs(argv) {
     maxPages: null,
     label: null,
     project: null,
-    via: "form",
+    via: null,
     waitHandbook: true,
     timeoutMin: 60,
     audit: null,
@@ -65,8 +67,13 @@ function parseArgs(argv) {
     else usage(`unknown argument ${a}`);
   }
   if (!opts.label || !/^[\w-]+$/.test(opts.label)) usage("--label <name>");
-  if (!["form", "button"].includes(opts.via)) usage("--via form|button");
-  if (!opts.audit && !(opts.maxPages > 0)) usage("--max-pages <n>");
+  // Default button (WO-B13-014); a page count only fits the upstream form.
+  opts.via ??= opts.maxPages ? "form" : "button";
+  if (!["form", "button"].includes(opts.via)) usage("--via button|form");
+  if (opts.via === "button" && opts.maxPages)
+    usage("--max-pages needs --via form (the button always uses 500)");
+  if (!opts.audit && opts.via === "form" && !(opts.maxPages > 0))
+    usage("--max-pages <n>");
   if (!(opts.timeoutMin > 0)) usage("--timeout-min <minutes>");
   if (opts.audit && !/^[\w-]+$/.test(opts.audit)) usage("--audit <id>");
   return opts;
@@ -75,7 +82,7 @@ function parseArgs(argv) {
 function usage(msg) {
   console.error(`inapp-audit: ${msg}`);
   console.error(
-    "usage: inapp-audit.mjs --label <name> --max-pages <n> [--base URL] [--url URL] [--project ID] [--via form|button] [--no-wait-handbook] [--timeout-min 60] [--audit ID]",
+    "usage: inapp-audit.mjs --label <name> [--max-pages <n> (implies --via form)] [--base URL] [--url URL] [--project ID] [--via button|form] [--no-wait-handbook] [--timeout-min 60] [--audit ID]",
   );
   process.exit(2);
 }
@@ -103,10 +110,6 @@ function e2eRead(args) {
 }
 
 const opts = parseArgs(process.argv.slice(2));
-if (opts.via === "button") {
-  console.error("inapp-audit: --via button not built yet (WO-B13-014)");
-  process.exit(2);
-}
 if (existsSync(`${OPS}/build-failed`)) {
   console.error(
     "inapp-audit: refusing to start, fork/runs/_ops/build-failed exists",
@@ -259,6 +262,46 @@ async function startAudit(projectId) {
   return auditId;
 }
 
+/** Project website = the audit URL's host (settings form; no auto-audit, E33). */
+async function ensureProjectDomain(projectId) {
+  const host = new URL(opts.url).hostname;
+  const current = projects().find((p) => p.id === projectId);
+  if (current?.domain === host) return;
+  await visit(`/p/${projectId}/settings`);
+  const field = page.getByLabel(/^Domain/);
+  await field.waitFor({ timeout: 60_000 });
+  await field.fill(host);
+  await page.getByRole("button", { name: "Save changes" }).click();
+  for (let i = 0; i < 20; i++) {
+    await sleep(1000);
+    if (projects().find((p) => p.id === projectId)?.domain === host) {
+      log(`project website set to ${host}`);
+      return;
+    }
+  }
+  throw new Error(`project website did not save (${host})`);
+}
+
+/** Fork "Run full audit" button (WO-B13-014); audit id from its result link. */
+async function startAuditViaButton(projectId) {
+  await ensureProjectDomain(projectId);
+  await visit(`/p/${projectId}/handbook`);
+  const button = page.getByRole("button", { name: "Run full audit" });
+  await button.waitFor({ timeout: 60_000 });
+  for (let i = 0; i < 30 && (await button.isDisabled()); i++) await sleep(1000);
+  if (await button.isDisabled())
+    throw new Error("Run full audit button stayed disabled");
+  await button.click();
+  const link = page.getByRole("link", { name: "View site audit" });
+  await link.waitFor({ timeout: 120_000 });
+  const href = await link.getAttribute("href");
+  const auditId = href
+    ? new URL(href, opts.base).searchParams.get("auditId")
+    : null;
+  if (!auditId) throw new Error("no auditId on the View site audit link");
+  return auditId;
+}
+
 // ------------------------------------------------------------------- poll
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -368,7 +411,10 @@ try {
     const projectId = await resolveProject();
     log(`project ${projectId}`);
     await ensureHandbookSettings(projectId);
-    auditId = await startAudit(projectId);
+    auditId =
+      opts.via === "button"
+        ? await startAuditViaButton(projectId)
+        : await startAudit(projectId);
     log(`audit started ${auditId}`);
   }
   // Polling only reads the database; leave the browser idle meanwhile.

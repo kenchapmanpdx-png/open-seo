@@ -9,7 +9,9 @@ import { HandbookRepository } from "@/server/features/handbook/repositories/Hand
 import { HandbookKv } from "@/server/features/handbook/ops/kv";
 import {
   getReportRows,
+  getRunAudit,
   getRunItemEvidence,
+  listRuns,
 } from "@/server/features/handbook/repositories/HandbookReportRepository";
 import type {
   HandbookMode,
@@ -36,6 +38,8 @@ import { OutcomeService } from "@/server/features/agency/outcomeService";
 import { ReportService } from "@/server/features/reports/services/ReportService";
 import { AppError } from "@/server/lib/errors";
 import { supabaseConfig } from "./HandbookRunService";
+import { handbookEnabled } from "./handbookDefaults";
+import { capNotes } from "./capNotes";
 import { HandbookStageRepository } from "@/server/features/handbook/repositories/HandbookStageRepository";
 import { HandbookLeaseRepository } from "@/server/features/handbook/repositories/HandbookLeaseRepository";
 import {
@@ -49,7 +53,7 @@ const SIGNED_URL_SECONDS = 300;
 async function getSettings(projectId: string) {
   const row = await HandbookRepository.getProjectSetting(projectId);
   return {
-    enabled: row?.enabled ?? false,
+    enabled: await handbookEnabled(row),
     mode: row?.mode ?? ("AUDIT" as const),
     tierOverride: row?.tierOverride ?? null,
     copyQuality: row?.copyQuality ?? false,
@@ -82,7 +86,13 @@ async function getRunDetail(projectId: string, runId: string) {
     run.errorCode === "interrupted" && run.auditId
       ? await HandbookKv.getRerunNote(run.auditId)
       : null;
-  return { run, rerun, report: await withSections(rows) };
+  const audit = run.auditId ? await getRunAudit(projectId, run.auditId) : null;
+  return {
+    run,
+    rerun,
+    capNotes: capNotes(run, audit),
+    report: await withSections(rows),
+  };
 }
 
 /**
@@ -293,7 +303,18 @@ export const HandbookService = {
   getRunProgress,
   getSettings,
   updateSettings,
-  listRuns: (projectId: string) => HandbookRepository.listRuns(projectId),
+  listRuns: async (projectId: string) =>
+    (await listRuns(projectId)).map(
+      ({ auditPagesCrawled, auditConfig, ...run }) => ({
+        ...run,
+        capNotes: capNotes(
+          run,
+          auditConfig === null
+            ? null
+            : { pagesCrawled: auditPagesCrawled ?? 0, config: auditConfig },
+        ),
+      }),
+    ),
   getRunDetail,
   scoreRun,
   backfillGrades,

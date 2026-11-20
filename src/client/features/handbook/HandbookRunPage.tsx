@@ -75,6 +75,11 @@ export function HandbookRunPage({
                 {detail.run.status === "completed" ? (
                   <ScoreCard report={detail.report} />
                 ) : null}
+                {detail.capNotes.map((note) => (
+                  <p key={note} className="text-sm text-muted-foreground">
+                    {note}
+                  </p>
+                ))}
                 {detail.run.errorCode === "interrupted" ? (
                   <p className="text-sm text-muted-foreground">
                     {interruptedNote(detail.rerun)}

@@ -1,5 +1,5 @@
 import { AiTrafficService } from "@/server/features/ai-traffic/aiTrafficService";
-import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
+import { listRuns } from "@/server/features/handbook/repositories/HandbookReportRepository";
 import { HandbookService } from "@/server/features/handbook/services/HandbookService";
 import {
   getByokIntervalDays,
@@ -23,7 +23,7 @@ const rate = (m: { answers: number; mentioned: number } | null) =>
   m && m.answers > 0 ? { ...m, rate: m.mentioned / m.answers } : null;
 
 async function latestHandbook(projectId: string) {
-  const runs = await HandbookRepository.listRuns(projectId, 20);
+  const runs = await listRuns(projectId, 20);
   const latest = runs.find((r) => r.status === "completed");
   if (!latest) return null;
   const detail = await HandbookService.getRunDetail(projectId, latest.id);

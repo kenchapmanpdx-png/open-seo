@@ -4,6 +4,7 @@ import { releasePgConnection } from "./pgRelease";
 import { withHeartbeat } from "@/server/features/handbook/ops/heartbeat";
 import { HandbookLeaseRepository } from "@/server/features/handbook/repositories/HandbookLeaseRepository";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
+import { handbookEnabled } from "@/server/features/handbook/services/handbookDefaults";
 import {
   planBatches,
   STAGES,
@@ -117,9 +118,11 @@ export async function runHandbookPhase(
         const row = await HandbookRepository.getProjectSetting(
           params.projectId,
         );
-        return row?.enabled
-          ? { mode: row.mode, tierOverride: row.tierOverride }
-          : null;
+        if (!(await handbookEnabled(row))) return null;
+        return {
+          mode: row?.mode ?? ("AUDIT" as const),
+          tierOverride: row?.tierOverride ?? null,
+        };
       },
     );
     if (!setting) return;
