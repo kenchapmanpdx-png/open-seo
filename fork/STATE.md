@@ -3,12 +3,12 @@
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: (optional, nothing blocks maintenance) WO-B6-012 AI traffic receiver + drain; BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; live MCP run with an OAuth client; CRUX_API_KEY (P7-10); K1 Windows keepalive install (`fork/scripts/windows/README.md`); M1 force-push of `ken/rebase-v0.1.31`
-current_batch: B13
-batch_file: fork/batches/B13-heavy-dependability.md
+needs_ken: (optional, nothing blocks B14) K1 Windows keepalive install (`fork/scripts/windows/README.md`, D7); M1 force-push of `ken/rebase-v0.1.31`; K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; live MCP run with an OAuth client; CRUX_API_KEY (P7-10)
+current_batch: B14
+batch_file: fork/batches/B14-heavy-novice-ui.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 74
-next_action: B13 R8 — WO-B13-090 (exit: D1–D9, report, BASELINE refresh, tag handbook-v3.2.0, push). First command: `bash fork/scripts/run-local.sh ops maint on`. R7 done: status chip + Run full audit button + Handbook default on + cap notes (E2E r7-button via the button PASS, ui-smoke 0); weekly self-test installed (timer Sunday 05:10) and accepted (`selftest.json` ok true 21:39 UTC). F-R7-1: upstream audit 4c7485fe… stuck `running` since 2026-11-18 (Ken's project) → health now counts audits > 12 h as `stale`. Test mode ON (re-run off) until ~08:10 UTC 2026-11-21. B13 live audits 15 / 20 (full-site 3 / 5), LLM $1.6212 / $4. Rebase BLOCKED-KEN: rebased tree on branch ken/rebase-v0.1.31 (force-push denied).
+current_run: 75
+next_action: B14 R1 — verify N1–N6, ADR-029, contracts 1.8.0, WO-B14-001…006 + 090 (`fork/batches/B14-heavy-novice-ui.md`, spec `fork/NOVICE-UI.md`). B13 done run 75 (report `fork/reports/B13.md`, tag `handbook-v3.2.0`): D1–D6, D8, D9 PASS; D7 BLOCKED-KEN (K1). Test mode OFF, maintenance OFF; watchdog ok. Rebase still BLOCKED-KEN (`ken/rebase-v0.1.31`, upstream 11 commits ahead): B14 R1 starts on the v0.1.30 base unless Ken has force-pushed. Loop M5 (Ops review) added to MAINTENANCE; B15 needs one clean M5 ≥ 24 h after B14.
 contracts_version: 1.7.0 (B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -49,8 +49,8 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done        |
 | B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | done        |
 | B12   | fork/batches/B12-light-rebase-reliability.md  | LIGHT         | done        |
-| B13   | fork/batches/B13-heavy-dependability.md       | HEAVY         | in-progress |
-| B14   | fork/batches/B14-heavy-novice-ui.md           | HEAVY         | todo        |
+| B13   | fork/batches/B13-heavy-dependability.md       | HEAVY         | done        |
+| B14   | fork/batches/B14-heavy-novice-ui.md           | HEAVY         | in-progress |
 
 ## Run log
 
@@ -130,6 +130,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 72  | 2026-11-20 | Opus 5.5        | B13 R5 (AUTOPILOT run 5): WO-B13-009 done — hook moved after `finalizeAudit` (A1), order test, E2E PASS (audit completed 19:20:03Z, Handbook finished 19:29:24Z). WO-B13-010 done — KV beat + heartbeat, run-status guard, `listActiveRuns`, `handbook-reconciler` (stale → terminate + `interrupted`, orphan lease, one automatic re-run), run page note; tests +16; fault test path = interrupted (+14.6 min) + re-run graded (+26.6 min); first tick also closed a run stuck since 2026-11-18. Live audits 13, LLM $1.3123. Checks green                                                                                                                                                                                                                                                                                                                                              | B13 R6                        |
 | 73  | 2026-11-20 | Opus 5.5        | B13 R6 (AUTOPILOT run 6): WO-B13-011 done — `hb/ops/health.ts` + `/api/fork-health` (A3; GET every key, POST 403/400/413/204, sidecar stop → ok false) + server fn + 5-min health tick; DB checks serialized after parallel queries stalled (F-R6-1). WO-B13-013 done — `watchdog.mjs` (pure decide W0–W9, 28 node tests), units installed; fault tests via systemctl: F1 13 s, F2a 18 s, F2b W4 restart, F3 38 s, F4 fail + notify no restart, F5 W2b no restart — all PASS. RUNBOOK section. Live audits 0 this run (13 total), LLM $1.3123. Checks green (417 files / 2585 tests)                                                                                                                                                                                                                                                                                                     | B13 R7                        |
 | 74  | 2026-11-20 | Opus 5.5        | B13 R7 (AUTOPILOT run 7): WO-B13-014 done — `ForkHealthChip` (A2), `forkHealthView`, `RunFullAuditButton` (500 pages, health re-read; DB → disabled), Handbook default on (`handbookDefaults.ts`, `HANDBOOK_DEFAULT_ENABLED`), cap notes (runs list + run page), `inapp-audit.mjs --via button` default; ui-smoke 0; E2E r7-button PASS (155 pages, grade D, 72/72/72, Handbook cap note shown). WO-B13-016 done — `selftest.sh` + evaluator (9 tests) + units + watchdog W8 warn; acceptance `ok: true`. F-R7-1 stale audit → 12-h rule in health. Live audits 15, LLM $1.6212. Checks green                                                                                                                                                                                                                                                                                            | B13 R8                        |
+| 75  | 2026-11-20 | Opus 5.5        | B13 R8 (AUTOPILOT run 8): WO-B13-090 exit — types/lint 0, tests 420/2600, sidecar 10, ops 18 + 40; BadGEO 0/0 quick + sidecar; goldens why/ryan/blue no-LLM caught Δ 0 (verdicts identical to B12); overlap test (test mode off) PASS: X2 Handbook queued behind X1 lease 7 min, both graded 71/71/71, P1–P6 0, serverConns peak 12, smoke 10/10 during + after; MAINTENANCE M5; testmode + maint off, watchdog ok; BASELINE refreshed; B13 report done; tag handbook-v3.2.0. Live audits 17/20, LLM $1.7604                                                                                                                                                                                                                                                                                                                                                                             | B14 R1                        |
 
 ## Batch history
 
@@ -146,3 +147,4 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B9    | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B9.md  |
 | B10   | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B10.md |
 | B11   | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B11.md |
+| B13   | Opus 5.5 | 2026-11-20 | 2026-11-20 | fork/reports/B13.md |

@@ -12,6 +12,7 @@ Rules from `fork/FORK.md` still apply: never ask Ken, record decisions, never op
 | M2 Handbook update  | new handbook version                         | HEAVY → LIGHT (1 switch) | registry, checks, fixtures on the new version                 |
 | M3 New golden audit | each manual field audit                      | HEAVY                    | `fork/fixtures/expected/<site>.expected.yaml`, triage         |
 | M4 Guide refresh    | by 2027-05-18 or a new writing-guide version | HEAVY                    | excerpts, copy-quality thresholds, copy-rules pack re-checked |
+| M5 Ops review       | weekly                                       | LIGHT                    | ops status, watchdog and self-test reviewed; findings queued  |
 
 Log every loop run as one row in the table at the end of this file.
 
@@ -81,6 +82,17 @@ Source: the writing guide excerpts in `fork/research/` (Ken replaces them; never
 4. After any pack edit: `pnpm exec tsx fork/scripts/copy-rules-sync.ts`, then `--check`; commit the regenerated `copy-rules.json`.
 5. Re-run the copy-quality fixtures (`fork/fixtures/copy-quality/`) and BadGEO SUPP-17 / SUPP-19 pages (`badgeo-run.ts --only SUPP-17,SUPP-19`); session-end checks green.
 6. Set the next due date (+6 months) in the table above and log the run below.
+
+## M5 — Ops review (weekly, LIGHT)
+
+Reads only; changes nothing unless a step says so. Database, systemd, Docker and journal access only through `bash fork/scripts/run-local.sh ops …`.
+
+1. `bash fork/scripts/run-local.sh ops status`. Expected: `app_unit`, `tick_timer`, `watchdog_timer` `active`; `sidecar_container=running`; `pool_mode=transaction`; `build_failed=no`; `test_mode=off`; `maintenance=off`; `backup_age_h` ≤ 36; `backup_unit` not `failed`; `disk_free_gb` ≥ 5; `health_ok=true`; `watchdog_level=ok`. Note every value that differs.
+2. Watchdog log summary for the last 7 days: `fork/runs/_ops/watchdog.log` (one line per pass and action; `fork/runs/_ops/status.json` holds the latest report, `watchdog-state.json` the restart counts). List level changes and actions (`W1`–`W9`); count restarts per target (app, sidecar). More than 3 in a week → queue row with the times. App errors: `bash fork/scripts/run-local.sh ops logs <since> <until>`.
+3. Self-test: `fork/runs/_ops/selftest.json`. `ok: true` and `at` within 8 days; else read `fork/runs/_ops/job-selftest*.log`, add a queue row with the failing part (BadGEO, audit, Handbook, grade, provisional).
+4. Stuck rows: health `audits.stale` > 0 → name the audit ids in the queue row (Ken's data; never delete a row in this loop).
+5. Follow-up: `fork/scripts/start-build.sh` should call `fork/scripts/ops/sidecar-up.sh` for the production sidecar instead of its own steps 1–5 (B13 did not edit `start-build.sh`). Do it in the next HEAVY session that may edit that script; remove this step afterwards.
+6. Log the run below (date, M5, levels seen, rows added).
 
 ## Drill results (B7 R2, 2026-11-14)
 
