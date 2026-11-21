@@ -556,6 +556,8 @@ export type ForkHealth = {
 
 [2026-11-21, delegated decision] B16 novice cleanup + visual restyle (`fork/NOVICE-CLEANUP.md`) runs before B15. B15 scope and start rule below are unchanged.
 
+[Ken 2026-11-21] Accuracy before restyle: B15 runs before B16, limited to items #0–#4 (spec `fork/ACCURACY.md`); the M5-review start rule is waived. Items #5–#12 move to a later batch.
+
 | #        | Item (backlog id)                   | Change                                                                                                                                                                                                                            | Needs                                            |
 | -------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | 0 `[v3]` | Coverage gap                        | Handbook read 80 URLs; the site audit crawled 155 (runs 3, 4). Seeds are status-200 rows only (E27). List the 75, classify (redirect, 404, attachment, non-HTML, unseen), fix any missing 200 page                                | first                                            |

@@ -107,7 +107,7 @@ Order: 005 (screenshots go to Ken first, so the pick can arrive while the rest b
 3. Live: `ops testmode on`; browser helper up; one check through "Check a site" (25 pages, test project) by the harness → Fix list: no "not final" note, "Couldn't check" shows causes without ids, repeated titles merged, CSV row count = finding count; `ops testmode off`.
 4. axe on Dashboard, Check a site, Fix list, Handbook page in the chosen look, light and dark: 0 contrast violations.
 5. `ui-smoke.mjs`: 0 problems. Screenshots after → `fork/runs/b16/after/`.
-6. `fork/reports/B16.md`; `fork/RUNBOOK.md` § "Pick a look" and § "Couldn't check" (cause table); tag `handbook-v3.4.0`; STATE → `status: done`, `current_batch: MAINT`.
+6. `fork/reports/B16.md`; `fork/RUNBOOK.md` § "Pick a look" and § "Couldn't check" (cause table); tag `handbook-v3.5.0` (B15 took v3.4.0); STATE → `status: done`, `current_batch: MAINT`.
 
 ## 3. Words used in the UI
 

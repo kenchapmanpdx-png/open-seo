@@ -52,4 +52,4 @@ Checkpoint.
 
 ## R5 — Exit
 
-WO-B16-090. Then: B15 accuracy stays queued (`fork/DEPENDABILITY.md` §9: starts after loop M5 has one clean review ≥ 24 h after B14 green; B15 gets its own spec then).
+WO-B16-090 (tag handbook-v3.5.0: B15 took v3.4.0). [Ken 2026-11-21] B16 runs after B15; R0 was done by M1 on 2026-11-21 (`fork/reports/M1-2026-11-21-prep.md` § Local gates). Run-81 WIP (theme layer, ADR-030, WO-B16-001…090) is parked on local branch `wip/b16-run81`: restore it at R1 instead of rewriting.
