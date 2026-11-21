@@ -11,6 +11,18 @@ Rules:
 - B13 rules still apply: `ops maint on` at the start of every run, secrets, test mode, ops verbs.
 - Live checks: ≤ 2 test-mode audits, LLM ≤ $0.50 (A19).
 
+## R0 — M1 local gates (before R1; never push)
+
+Ken's PC only. Purpose: finish the checks `fork/reports/M1-2026-11-21-prep.md` could not run in the cloud.
+
+1. `git fetch origin`; `git worktree add ../open-seo-m1 origin/ken/rebase-v0.1.31-m1` (reuse if present; `git -C ../open-seo-m1 checkout --detach origin/ken/rebase-v0.1.31-m1`). `pnpm install --frozen-lockfile` there. Symlink nothing; never copy or open `.env*`.
+2. In the worktree: `pnpm types:check`, `pnpm lint`, `pnpm test`, `pnpm format:check`; CLI goldens ×3 no LLM (caught Δ 0 vs `fork/BASELINE.md` / B14 report); BadGEO quick (0 / 0). Checks that need `.env.local` or the running app (`ops-test.sh`, `ui-smoke.mjs`, `ops e2e`): run from the main checkout against the current app and record them as "current app, v0.1.30 base"; they do not gate the prep branch.
+3. Append a section "Local gates (date)" to `fork/reports/M1-2026-11-21-prep.md` with each result. All green → `needs_ken` M1 text gains "local gates green <date>". Any failure → queue row `M1-2026-11-21-F<n>` with the failing check; continue to R1 either way.
+4. Never run `git push --force…`, never move `ken/main`. The force-push stays Ken's ("push").
+5. Commits made on `ken/main` during B16 are not ported here; the session that hears "push" ports them first (report § Push, step 2).
+
+Checkpoint.
+
 ## R1 — Verify, decide, write work orders
 
 1. Re-verify spec §1 G1–G5 against the current code; adjust WOs, record.
