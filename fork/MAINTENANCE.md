@@ -102,8 +102,8 @@ Reads only; changes nothing unless a step says so. Database, systemd, Docker and
 
 ## Loop log
 
-| Date       | Loop | Model     | Result                                                                                                                  |
-| ---------- | ---- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 2026-11-14 | M1   | Opus 5.5  | drill: 0 upstream commits, merge-tree clean                                                                             |
-| 2026-11-14 | M2   | Opus 5.5  | drill: v4.6 0 diffs; injected change detected as 1 diff                                                                 |
-| 2026-11-20 | M4   | Fable 5.2 | guide v3: E12 > 3 → > 1, pack v2, SCALED-COPY v2; BadGEO SUPP-17 / 19 to run at merge (`fork/reports/M4-2026-11-20.md`) |
+| Date       | Loop | Model     | Result                                                                                                                           |
+| ---------- | ---- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-14 | M1   | Opus 5.5  | drill: 0 upstream commits, merge-tree clean                                                                                      |
+| 2026-11-14 | M2   | Opus 5.5  | drill: v4.6 0 diffs; injected change detected as 1 diff                                                                          |
+| 2026-11-20 | M4   | Fable 5.2 | guide v3: E12 > 3 → > 1, pack v2, SCALED-COPY v2; merged `00683b43`, BadGEO SUPP-17 / 19 0 / 0 (`fork/reports/M4-2026-11-20.md`) |
