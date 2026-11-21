@@ -35,4 +35,4 @@ Checkpoint.
 
 ## R5 — Exit
 
-WO-B15-090: AT5, AT6, `fork/reports/B15.md`, `fork/BASELINE.md`, tag handbook-v3.4.0, STATE → B16.
+WO-B15-090: AT5, AT6, `fork/reports/B15.md`, `fork/BASELINE.md`, tag handbook-v3.4.0, STATE → `done`; B16 stays on `hold` until Ken says go [Ken 2026-11-21].

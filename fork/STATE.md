@@ -8,7 +8,7 @@ current_batch: B15
 batch_file: fork/batches/B15-heavy-accuracy.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 81
-next_action: B15 R2 (`fork/batches/B15-heavy-accuracy.md`, spec `fork/ACCURACY.md`): salonvata baseline CLI run (WO-B15-001 step 3; source file pushed 2026-11-21 `8df0b0e`, golden via M3 after the baseline), then R3 ADR-031 (#0 report table + #2–#4, contract 1.9.0). R1 done run 81: no missing 200 HTML page (`fork/reports/B15.md` § R1), WOs written. [Ken 2026-11-21] accuracy before restyle: B15 (`fork/DEPENDABILITY.md` §9 items #0–#4 only; M5-review start rule waived) runs first, then B16 (`fork/batches/B16-heavy-novice-cleanup-restyle.md`; R0 done by M1 2026-11-21; run-81 WIP parked on local branch `wip/b16-run81`). §9 items #5–#12 = later batch. M1 done 2026-11-21 (`ken/main` = v0.1.31, backup tag `backup/pre-m1-2026-11-21`); M1 next due 2026-11-28, M5 weekly. Previous: B1–B14 done (B14 exit run 79, tag handbook-v3.3.0).
+next_action: B15 R2 (`fork/batches/B15-heavy-accuracy.md`, spec `fork/ACCURACY.md`): salonvata baseline CLI run (WO-B15-001 step 3; source file pushed 2026-11-21 `8df0b0e`, golden via M3 after the baseline), then R3 ADR-031 (#0 report table + #2–#4, contract 1.9.0). R1 done run 81: no missing 200 HTML page (`fork/reports/B15.md` § R1), WOs written. [Ken 2026-11-21] accuracy before restyle: B15 (`fork/DEPENDABILITY.md` §9 items #0–#4 only; M5-review start rule waived) runs first, then B16, ON HOLD after B15 [Ken 2026-11-21: test on a real site first; resume only on Ken's go] (`fork/batches/B16-heavy-novice-cleanup-restyle.md`; R0 done by M1 2026-11-21; run-81 WIP parked on local branch `wip/b16-run81`). §9 items #5–#12 = later batch. M1 done 2026-11-21 (`ken/main` = v0.1.31, backup tag `backup/pre-m1-2026-11-21`); M1 next due 2026-11-28, M5 weekly. Previous: B1–B14 done (B14 exit run 79, tag handbook-v3.3.0).
 contracts_version: 1.8.0 (B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -29,7 +29,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 3. Set `status: in-progress`. Open `batch_file`; resume at `next_action`.
 4. Missing credential or access (run `bash fork/scripts/preflight.sh`; never read `.env*`) → mark only the dependent WOs/steps `BLOCKED-KEN` and continue everything else.
 5. End of run scope or ~70% context: commit (every run must produce ≥1 commit; it is the autopilot progress signal), update this file (run log, next_action). AUTOPILOT → exit. INTERACTIVE → keep going (auto-compact handles context).
-6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
+6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch, skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
 7. Last batch in the sequence with a batch file (B16) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
 8. `status: needs-ken` only when no remaining work in the current or any later batch can proceed without Ken.
 9. Ken switches to SPLIT (weekly usage low) → follow SPLIT rules from the next run. Weekly limit fully reached → autopilot stops; resume later with the same command.
@@ -53,7 +53,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done             |
 | B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done             |
 | B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | in-progress      |
-| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | queued after B15 |
+| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | hold (Ken 11-21) |
 
 ## Run log
 
