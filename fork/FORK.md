@@ -15,9 +15,9 @@ Upstream `AGENTS.md` still applies in full. This file adds fork rules on top.
 - `fork/` — fork-only: build plan, handbook, fixtures, scripts, baselines, logs. Never sent upstream.
 - `fork/BLUEPRINT.md` — architecture, work packages, batch schedule, model protocol.
 - `fork/STATE.md` — current batch, required model, next action, run log.
-- `fork/batches/` — one file per batch (B1–B14). Specs: `fork/FULL-READ.md` (B8–B10), `fork/SCALED-COPY.md` (B11), `fork/DEPENDABILITY.md` (B13), `fork/NOVICE-UI.md` (B14).
+- `fork/batches/` — one file per batch (B1–B14, B16). Specs: `fork/FULL-READ.md` (B8–B10), `fork/SCALED-COPY.md` (B11), `fork/DEPENDABILITY.md` (B13; §9 = B15 accuracy items), `fork/NOVICE-UI.md` (B14), `fork/NOVICE-CLEANUP.md` (B16).
 - `fork/research/` — research excerpts the batches rely on (read-only; replaced only by Ken).
-- `fork/project-docs/` — docs copied from the old claude.ai project (AEO research, handbook archive); `fork/HANDOFF-*.md` = bootstrap for a new project.
+- `fork/project-docs/` — docs copied from the old claude.ai project (AEO research, handbook archive, handoff supplement, `handbook_lint.py`); `fork/HANDOFF-*.md` = bootstrap for a new project.
 - `fork/skills/` — fork skills served by the app and usable as Claude Code skills (`copy-rules`).
 - `fork/queue.md`, `fork/work-orders/` — LIGHT work queue written by HEAVY batches.
 - `fork/adr/`, `fork/reports/`, `fork/templates/`, `fork/agents/`, `fork/evals/`, `fork/sidecar/`.
