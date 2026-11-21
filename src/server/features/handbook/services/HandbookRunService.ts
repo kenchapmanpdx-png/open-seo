@@ -23,6 +23,14 @@ import {
   llmVerdictSchema,
 } from "@/server/features/handbook/contracts/llm";
 import { createDefaultCollectors } from "@/server/features/handbook/collectors";
+import {
+  probeSidecar,
+  sidecarConfigFromEnv,
+} from "@/server/features/handbook/collectors/sidecar-config";
+import {
+  SIDECAR_TOKEN_ENV,
+  SIDECAR_URL_ENV,
+} from "@/server/features/handbook/contracts/sidecar";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import {
   collectorContext,
@@ -49,6 +57,7 @@ import { createMemoryEvidenceStore } from "@/server/features/handbook/engine/mem
 import { createSupabaseEvidenceStore } from "@/server/features/handbook/engine/supabase-evidence-store";
 import {
   DEPTH_ENV,
+  LIGHTHOUSE_ENV,
   MAX_PAGES_ENV,
   resolveDepth,
   resolveMaxPages,
@@ -280,17 +289,29 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
       })
     : null;
   const options = await runOptions(input.projectId);
+  const sidecar = sidecarConfigFromEnv(
+    {
+      token: await getOptionalEnvValue(SIDECAR_TOKEN_ENV),
+      url: await getOptionalEnvValue(SIDECAR_URL_ENV),
+      lighthouse: await getOptionalEnvValue(LIGHTHOUSE_ENV),
+      concurrency: await getOptionalEnvValue("HANDBOOK_RENDER_CONCURRENCY"),
+    },
+    depth,
+  );
   const runInput: RunInput = {
     runId: input.runId,
     origin: input.origin,
     mode: input.mode,
     tierOverride: input.tierOverride,
     registry: REGISTRY,
-    collectors: createDefaultCollectors({
-      seedUrls: input.seedUrls,
-      followLinks: true,
-      maxPages,
-    }),
+    collectors: createDefaultCollectors(
+      {
+        seedUrls: input.seedUrls,
+        followLinks: true,
+        maxPages,
+      },
+      sidecar,
+    ),
     checks: HANDBOOK_CHECKS,
     maxPages,
     judge,
@@ -323,6 +344,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     maxMinutes: resolveRunMaxMinutes(
       await getOptionalEnvValue(RUN_MAX_MINUTES_ENV),
     ),
+    sidecarProbe: () => probeSidecar(sidecar),
   };
   return { runInput, runtime, stageStore, ctx, llmCalls };
 }

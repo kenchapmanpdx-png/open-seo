@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
+  getForkHealth,
   getHandbookRun,
   getHandbookRunProgress,
   getHandbookSettings,
@@ -48,4 +49,13 @@ export const handbookEvidenceQuery = (projectId: string, runId: string) =>
   queryOptions({
     queryKey: ["handbook", projectId, "runs", runId, "evidence"],
     queryFn: () => listHandbookEvidence({ data: { projectId, runId } }),
+  });
+
+/** Fork status (WO-B13-011); null in hosted mode. Polled once a minute. */
+export const forkHealthQuery = () =>
+  queryOptions({
+    queryKey: ["fork-health"],
+    queryFn: () => getForkHealth(),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });

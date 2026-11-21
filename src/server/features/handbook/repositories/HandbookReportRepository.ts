@@ -1,5 +1,6 @@
-import { and, eq, getTableColumns } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { audits } from "@/db/schema";
 import {
   handbookEvidence,
   handbookFindingItems,
@@ -91,4 +92,33 @@ export async function getRunItemEvidence(
     )
     .limit(1);
   return rows[0] ?? null;
+}
+
+/** The run's linked site audit (page count + config), scoped to the project. */
+export async function getRunAudit(projectId: string, auditId: string) {
+  const rows = await db
+    .select({ pagesCrawled: audits.pagesCrawled, config: audits.config })
+    .from(audits)
+    .where(and(eq(audits.id, auditId), eq(audits.projectId, projectId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Recent runs with finding counts and the linked audit (cap notes). */
+export async function listRuns(projectId: string, limit = 20) {
+  return db
+    .select({
+      ...getTableColumns(handbookRuns),
+      findingsCount: sql<number>`count(${handbookFindings.id})`.mapWith(Number),
+      // Linked site audit, for the cap note (WO-B13-014).
+      auditPagesCrawled: audits.pagesCrawled,
+      auditConfig: audits.config,
+    })
+    .from(handbookRuns)
+    .leftJoin(handbookFindings, eq(handbookFindings.runId, handbookRuns.id))
+    .leftJoin(audits, eq(audits.id, handbookRuns.auditId))
+    .where(eq(handbookRuns.projectId, projectId))
+    .groupBy(handbookRuns.id, audits.pagesCrawled, audits.config)
+    .orderBy(desc(handbookRuns.startedAt))
+    .limit(limit);
 }

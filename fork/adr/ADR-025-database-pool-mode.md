@@ -37,3 +37,9 @@
 ## Verification
 
 - Gate G1 (WO-B13-004): three real audits back to back (full → full → 25) with `ops measure`; 0 `db_error`, 0 P1 / P4 log lines, serverConns peak ≤ 12, `ui-smoke.mjs` 0 problems during and 10 min after.
+
+## Notes (B13 R3, run 70)
+
+- Gate G1 passed on the first attempt (transaction pooler, test mode off): A3 / A4 full-site (155 pages each) and A5 (25) completed back to back with their Handbook runs; 0 `db_error`; app log P1 = 0, P4 = 0; serverConns peak 8 (pool 15); `ui-smoke.mjs` 0 problems during A5 and 10 min after.
+- WO-B13-005 step a (`prepare: false`): not triggered (P4 = 0); no edit.
+- WO-B13-005 step b: triggered. Local sockets to :6543 stayed at 21 ten minutes after the last audit (idle baseline 5). Leaked step clients cost no server connection in transaction mode, but they accumulate toward the 200-client cap. Applied: `pgStep` runs each step body inside `withStepRelease` (`src/server/features/handbook/workflow/pgRelease.ts`), which ends the step client in `finally`; `PG_STEP_RELEASE=0` disables it. `hook.ts` shares the same release function.

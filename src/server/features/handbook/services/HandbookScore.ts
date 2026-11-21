@@ -6,6 +6,7 @@ import {
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
 import { scoreReport } from "@/server/features/handbook/engine/report";
+import { withCategories } from "@/server/features/handbook/engine/categories";
 import { isSuppOnly } from "../registry-supp";
 import { HandbookGradeRepository } from "@/server/features/handbook/repositories/HandbookGradeRepository";
 
@@ -121,7 +122,7 @@ export function buildReport(rows: ReportRows): ReportJson {
     checkerErrors: [],
     outsideScope: [],
   });
-  return { ...report, score: scoreReport(report) };
+  return withCategories({ ...report, score: scoreReport(report) });
 }
 
 /**

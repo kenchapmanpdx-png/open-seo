@@ -35,6 +35,11 @@ export const escalationSchema = z.object({
 });
 export type Escalation = z.infer<typeof escalationSchema>;
 
+/** SEO / GEO / AEO tag of a registry item (ADR-029). 1.8.0 */
+export const HANDBOOK_CATEGORIES = ["SEO", "GEO", "AEO"] as const;
+export const handbookCategorySchema = z.enum(HANDBOOK_CATEGORIES);
+export type HandbookCategory = z.infer<typeof handbookCategorySchema>;
+
 const findingSchema = z.object({
   code: z.string().regex(/^F\d{2,3}$/),
   severity: severitySchema,
@@ -52,6 +57,8 @@ const findingSchema = z.object({
   evidence: z.array(
     z.object({ kind: z.string(), url: z.string(), excerpt: z.string() }),
   ),
+  /** Union of the finding's items' tags (ADR-029). 1.8.0 */
+  categories: z.array(handbookCategorySchema).optional(),
 });
 
 /**
@@ -122,6 +129,14 @@ export const reportJsonSchema = z.object({
   /** Copy quality (ADR-023), not scored; only when the gate is on. 1.7.0 */
   copyQuality: copyQualitySchema.optional(),
   escalations: z.array(escalationSchema).optional(),
+  /** Pass share per category, S1-capped; null = no applicable item (ADR-029). 1.8.0 */
+  categoryScores: z
+    .object({
+      SEO: z.number().nullable(),
+      GEO: z.number().nullable(),
+      AEO: z.number().nullable(),
+    })
+    .optional(),
   items: z.array(
     z.object({
       itemId: z.string(),

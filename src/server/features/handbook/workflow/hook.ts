@@ -1,9 +1,10 @@
 import type { WorkflowStep, WorkflowStepConfig } from "cloudflare:workers";
-import { db } from "@/db";
-import { getDatabaseProvider } from "@/db/provider";
 import { pgStep } from "@/server/workflows/pgStep";
+import { releasePgConnection } from "./pgRelease";
+import { withHeartbeat } from "@/server/features/handbook/ops/heartbeat";
 import { HandbookLeaseRepository } from "@/server/features/handbook/repositories/HandbookLeaseRepository";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
+import { handbookEnabled } from "@/server/features/handbook/services/handbookDefaults";
 import {
   planBatches,
   STAGES,
@@ -16,42 +17,45 @@ const UNIT_STEP: WorkflowStepConfig = {
   timeout: "30 minutes",
 };
 
+type BeatLabel = { runId: string; stage: string; batch: number };
+
 /**
  * `pgStep` that closes the step's Postgres connection when the body ends.
  * Upstream leaves it open for Hyperdrive to pool; on the direct Supabase
  * session pooler (pool 15, `run-local.sh`) each open step client holds a
  * slot, and a staged run has one step per unit (RUNBOOK `EMAXCONNSESSION`).
+ * With `beat`, the body runs under the run's heartbeat (ADR-027).
  */
 function hbStep<T extends Rpc.Serializable<T>>(
   step: WorkflowStep,
   name: string,
   config: WorkflowStepConfig | undefined,
   fn: () => Promise<T>,
+  beat?: BeatLabel,
 ): Promise<T> {
   return pgStep(step, name, config, async () => {
     try {
-      return await fn();
+      return await (beat ? withHeartbeat(beat, fn) : fn());
     } finally {
       await releasePgConnection();
     }
   });
 }
 
-async function releasePgConnection() {
-  if (getDatabaseProvider() !== "postgres") return;
-  const client: unknown = Reflect.get(db, "$client");
-  if (isEndable(client)) await client.end({ timeout: 5 }).catch(() => {});
-}
+/** Step result when the run row was finished by someone else (reconciler). */
+const SUPERSEDED = "superseded";
 
-/** postgres.js `Sql.end`. */
-function isEndable(
-  value: unknown,
-): value is { end: (options: { timeout: number }) => Promise<void> } {
-  return (
-    typeof value === "function" &&
-    "end" in value &&
-    typeof value.end === "function"
-  );
+/** Thrown out of the staged run when the guard finds the run finished. */
+class SupersededError extends Error {}
+
+/**
+ * Run-status guard (ADR-027): a run the reconciler already marked
+ * `failed / interrupted` must not be written again by a late-resuming
+ * instance (no stage rows, no `finishRun`, no lease re-acquire).
+ */
+async function isRunLive(projectId: string, runId: string) {
+  const run = await HandbookRepository.getRun(projectId, runId);
+  return run?.status === "running" || run?.status === "queued";
 }
 
 /** 30-s polls past the 2-h lease expiry, so a dead holder is always taken over. */
@@ -62,17 +66,25 @@ const LEASE_POLLS = 300;
  * Returns the acquire time; the run cap counts from it, not from the queued
  * start, so waiting never eats the 90-min budget.
  */
-async function waitForLease(step: WorkflowStep, runId: string) {
+async function waitForLease(
+  step: WorkflowStep,
+  projectId: string,
+  runId: string,
+) {
   for (let poll = 0; ; poll++) {
     const at = await hbStep(
       step,
       `${runId}:lease:${poll}`,
       undefined,
-      async () =>
-        (await HandbookLeaseRepository.acquire(runId))
+      async () => {
+        if (!(await isRunLive(projectId, runId))) return SUPERSEDED;
+        return (await HandbookLeaseRepository.acquire(runId))
           ? new Date().toISOString()
-          : null,
+          : null;
+      },
+      { runId, stage: "queued", batch: poll },
     );
+    if (at === SUPERSEDED) throw new SupersededError();
     if (at) return at;
     if (poll >= LEASE_POLLS) throw new Error("handbook: queue wait timed out");
     await step.sleep(`${runId}:queued:${poll}`, "30 seconds");
@@ -106,9 +118,11 @@ export async function runHandbookPhase(
         const row = await HandbookRepository.getProjectSetting(
           params.projectId,
         );
-        return row?.enabled
-          ? { mode: row.mode, tierOverride: row.tierOverride }
-          : null;
+        if (!(await handbookEnabled(row))) return null;
+        return {
+          mode: row?.mode ?? ("AUDIT" as const),
+          tierOverride: row?.tierOverride ?? null,
+        };
       },
     );
     if (!setting) return;
@@ -126,17 +140,30 @@ export async function runHandbookPhase(
       return { ...run, startedAt: await (await service()).startRun(run) };
     });
     try {
-      const leased = { ...start, startedAt: await waitForLease(step, runId) };
-      // Each unit renews the lease first, so a long run keeps the machine.
-      const unit = (
+      const leased = {
+        ...start,
+        startedAt: await waitForLease(step, params.projectId, runId),
+      };
+      // Each unit checks the run is still live, then renews the lease, so a
+      // long run keeps the machine.
+      const unit = async (
         stage: StageName,
         batch: number,
         batches: Record<StageName, number>,
-      ) =>
-        hbStep(step, `${runId}:${stage}:${batch}`, UNIT_STEP, async () => {
-          await HandbookLeaseRepository.renew(runId);
-          return (await service()).runStage(leased, stage, batch, batches);
-        });
+      ) => {
+        const outcome = await hbStep(
+          step,
+          `${runId}:${stage}:${batch}`,
+          UNIT_STEP,
+          async () => {
+            if (!(await isRunLive(params.projectId, runId))) return SUPERSEDED;
+            await HandbookLeaseRepository.renew(runId);
+            return (await service()).runStage(leased, stage, batch, batches);
+          },
+          { runId, stage, batch },
+        );
+        if (outcome === SUPERSEDED) throw new SupersededError();
+      };
       await unit("crawl", 0, planBatches({}));
       const batches = await hbStep(step, `${runId}:plan`, undefined, async () =>
         (await service()).planRun(leased, leased.startedAt),
@@ -147,10 +174,12 @@ export async function runHandbookPhase(
         }
       }
     } catch (error) {
-      await hbStep(step, `${runId}:failed`, undefined, async () => {
-        await (await service()).failRun(start, error);
-        return null;
-      });
+      if (!(error instanceof SupersededError)) {
+        await hbStep(step, `${runId}:failed`, undefined, async () => {
+          await (await service()).failRun(start, error);
+          return null;
+        });
+      }
       throw error;
     } finally {
       await hbStep(step, `${runId}:release`, undefined, async () => {
@@ -159,6 +188,10 @@ export async function runHandbookPhase(
       });
     }
   } catch (error) {
+    if (error instanceof SupersededError) {
+      console.warn("handbook.phase.superseded", { auditId: params.auditId });
+      return;
+    }
     console.error("handbook.phase.failed", {
       auditId: params.auditId,
       error: String(error),

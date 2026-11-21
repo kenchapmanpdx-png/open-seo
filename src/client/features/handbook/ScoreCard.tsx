@@ -20,27 +20,27 @@ import {
 } from "@/client/components/ui/table";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { findingAnchor } from "./FindingsTable";
+import { provisionalReason } from "./fixList";
 
 type Score = NonNullable<ReportJson["score"]>;
 
 /**
  * Grade card + phase table (WO-B4-010). Provisional follows the exports
- * (WO-B4-006): the runner notes "render unavailable" on BLOCKED items.
+ * (WO-B4-006): the runner notes "render unavailable: <reason>" on BLOCKED
+ * items; the reason (e.g. the in-app sidecar probe, WO-B13-007) is shown.
  */
 export function ScoreCard({ report }: { report: ReportJson }) {
   const { score } = report;
   if (!score) return null;
-  const provisional = report.items.some((i) =>
-    i.note?.startsWith("render unavailable"),
-  );
+  const reason = provisionalReason(report);
   return (
     <div className="space-y-3">
-      {provisional ? (
+      {reason ? (
         <Alert variant="warning">
           <AlertTitle>Grade provisional</AlertTitle>
           <AlertDescription>
-            Render evidence is missing, so JS-only content and S1 render defects
-            are not counted yet.
+            Browser checks skipped: {reason}. Content that only appears with
+            JavaScript and must-fix display problems are not counted yet.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -55,8 +55,12 @@ export function ScoreCard({ report }: { report: ReportJson }) {
               <span className="text-lg">{score.final} / 100</span>
             </div>
             {score.capReason ? (
-              <p className="text-sm text-muted-foreground">
-                Capped from {score.uncapped}: {score.capReason}
+              <p
+                className="text-sm text-muted-foreground"
+                title={score.capReason}
+              >
+                Capped from {score.uncapped}: a must-fix problem limits the
+                grade.
               </p>
             ) : null}
             <p className="text-xs text-muted-foreground">

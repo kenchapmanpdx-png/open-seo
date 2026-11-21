@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireProjectContext } from "@/serverFunctions/middleware";
+import { env } from "cloudflare:workers";
+import { isHostedAuthMode } from "@/lib/auth-mode";
+import {
+  requireAuthenticatedContext,
+  requireProjectContext,
+} from "@/serverFunctions/middleware";
 import { HandbookService } from "@/server/features/handbook/services/HandbookService";
 import { renderStatusMd } from "@/server/features/handbook/export/markdown";
 import { REGISTRY } from "@/server/features/handbook/registry";
@@ -123,4 +128,13 @@ export const getHandbookRunProgress = createServerFn({ method: "POST" })
     );
     if (!progress) throw new AppError("NOT_FOUND", "Handbook run not found");
     return progress;
+  });
+
+/** Fork status chip (WO-B13-011): null in hosted mode, like the route. */
+export const getForkHealth = createServerFn({ method: "POST" })
+  .middleware(requireAuthenticatedContext)
+  .handler(async () => {
+    if (isHostedAuthMode(env.AUTH_MODE)) return null;
+    const health = await import("@/server/features/handbook/ops/health");
+    return health.getForkHealth();
   });

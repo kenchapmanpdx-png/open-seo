@@ -17,6 +17,7 @@ import {
 } from "@/client/components/ui/table";
 import type { HandbookRunProgress } from "@/server/features/handbook/services/HandbookService";
 import { handbookRunProgressQuery } from "./queries";
+import { stageLabel } from "./labels";
 
 /** Live stage, pages, escalations and LLM spend of a queued or running run (FULL-READ §7.5). */
 export function RunProgress({
@@ -45,15 +46,15 @@ function ProgressCard({ progress }: { progress: HandbookRunProgress }) {
         <CardTitle>
           {progress.status === "queued"
             ? queuedText(progress.queuedBehind)
-            : `Running · ${progress.currentStage ?? "starting"}`}
+            : `Running · ${progress.currentStage ? stageLabel(progress.currentStage) : "starting"}`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <dl className="grid grid-cols-3 gap-2 text-sm">
           <Stat label="Pages (current stage)" value={pages} />
-          <Stat label="Escalations" value={String(progress.escalations)} />
+          <Stat label="Extra checks" value={String(progress.escalations)} />
           <Stat
-            label="LLM spend"
+            label="AI review cost"
             value={`$${progress.llmCostUsd.toFixed(2)}`}
           />
         </dl>
@@ -61,16 +62,16 @@ function ProgressCard({ progress }: { progress: HandbookRunProgress }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Stage</TableHead>
+                <TableHead>Step</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Batches</TableHead>
+                <TableHead>Parts</TableHead>
                 <TableHead>Items</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {progress.stages.map((s) => (
                 <TableRow key={s.stage}>
-                  <TableCell className="font-mono text-xs">{s.stage}</TableCell>
+                  <TableCell>{stageLabel(s.stage)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
@@ -80,6 +81,11 @@ function ProgressCard({ progress }: { progress: HandbookRunProgress }) {
                     >
                       {s.status}
                     </Badge>
+                    {s.status === "skipped" && s.error ? (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {s.error}
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     {s.batchesDone} / {s.batches}

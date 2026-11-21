@@ -18,7 +18,13 @@ import {
 import { formatRelativeTime } from "@/client/lib/relative-time";
 import { CopyRulesDialog } from "./CopyRulesDialog";
 import { HandbookSettingsCard } from "./HandbookSettingsCard";
-import { handbookRunsQuery, handbookSettingsQuery } from "./queries";
+import { RunFullAuditButton } from "./RunFullAuditButton";
+import { FixList } from "./FixList";
+import {
+  handbookRunQuery,
+  handbookRunsQuery,
+  handbookSettingsQuery,
+} from "./queries";
 
 type Runs = Awaited<
   ReturnType<NonNullable<ReturnType<typeof handbookRunsQuery>["queryFn"]>>
@@ -119,6 +125,22 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
             </>
           }
         />
+        <QueryState query={runsQuery} errorFallback="Failed to load runs">
+          {(runs) => {
+            const latest = runs.find((r) => r.status === "completed");
+            return (
+              <>
+                {latest ? (
+                  <LatestFixList projectId={projectId} runId={latest.id} />
+                ) : (
+                  <RunFullAuditButton projectId={projectId} />
+                )}
+                <h2 className="pt-2 text-lg font-semibold">Past checks</h2>
+                <RunsTable projectId={projectId} runs={runs} />
+              </>
+            );
+          }}
+        </QueryState>
         <QueryState
           query={settingsQuery}
           errorFallback="Failed to load handbook settings"
@@ -127,11 +149,48 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
             <HandbookSettingsCard projectId={projectId} settings={settings} />
           )}
         </QueryState>
-        <QueryState query={runsQuery} errorFallback="Failed to load runs">
-          {(runs) => <RunsTable projectId={projectId} runs={runs} />}
-        </QueryState>
       </div>
     </div>
+  );
+}
+
+/** The latest completed run's Fix List (WO-B14-003) above the run history. */
+function LatestFixList({
+  projectId,
+  runId,
+}: {
+  projectId: string;
+  runId: string;
+}) {
+  const runQuery = useQuery(handbookRunQuery(projectId, runId));
+  return (
+    <QueryState query={runQuery} errorFallback="Failed to load the fix list">
+      {(detail) =>
+        detail ? (
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-lg font-semibold">
+                Fix list · {detail.run.origin}
+              </h2>
+              <Link
+                to="/p/$projectId/handbook/$runId"
+                params={{ projectId, runId }}
+                className="text-sm underline"
+              >
+                {new Date(detail.run.startedAt).toLocaleString()} · open full
+                results
+              </Link>
+            </div>
+            <FixList
+              projectId={projectId}
+              runId={runId}
+              report={detail.report}
+              notes={detail.capNotes}
+            />
+          </section>
+        ) : null
+      }
+    </QueryState>
   );
 }
 
@@ -150,8 +209,6 @@ function RunsTable({ projectId, runs }: { projectId: string; runs: Runs }) {
         <TableHeader>
           <TableRow>
             <TableHead>Started</TableHead>
-            <TableHead>Mode</TableHead>
-            <TableHead>Tier</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Findings</TableHead>
             <TableHead>Grade</TableHead>
@@ -169,8 +226,6 @@ function RunsTable({ projectId, runs }: { projectId: string; runs: Runs }) {
                   {formatRelativeTime(run.startedAt)}
                 </Link>
               </TableCell>
-              <TableCell>{run.mode}</TableCell>
-              <TableCell>{run.tier ?? "—"}</TableCell>
               <TableCell>
                 <Badge
                   variant={
@@ -183,6 +238,14 @@ function RunsTable({ projectId, runs }: { projectId: string; runs: Runs }) {
                 >
                   {run.status}
                 </Badge>
+                {run.capNotes.map((note) => (
+                  <p
+                    key={note}
+                    className="mt-1 max-w-sm text-xs text-muted-foreground"
+                  >
+                    {note}
+                  </p>
+                ))}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {run.findingsCount}

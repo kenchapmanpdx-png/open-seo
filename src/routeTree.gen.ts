@@ -31,6 +31,7 @@ import { Route as AuthenticatedOauthConsentRouteImport } from './routes/_authent
 import { Route as AuthenticatedSubscribeRouteImport } from './routes/_authenticated.subscribe'
 import { Route as AcceptInvitationIdRouteImport } from './routes/accept-invitation.$id'
 import { Route as ApiCspReportRouteImport } from './routes/api/csp-report'
+import { Route as ApiForkHealthRouteImport } from './routes/api/fork-health'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiPrivacyRegionRouteImport } from './routes/api/privacy-region'
 import { Route as ApiSignUpStatusRouteImport } from './routes/api/sign-up-status'
@@ -78,6 +79,7 @@ import { Route as AppPProjectIdHandbookAiTrafficRouteImport } from './routes/_ap
 import { Route as AppPProjectIdHandbookAiVisibilityByokRouteImport } from './routes/_app/p/$projectId/handbook/ai-visibility-byok'
 import { Route as AppPProjectIdHandbookBacklinksCcRouteImport } from './routes/_app/p/$projectId/handbook/backlinks-cc'
 import { Route as AppPProjectIdHandbookBingRouteImport } from './routes/_app/p/$projectId/handbook/bing'
+import { Route as AppPProjectIdHandbookCheckRouteImport } from './routes/_app/p/$projectId/handbook/check'
 import { Route as AppPProjectIdHandbookOverviewRouteImport } from './routes/_app/p/$projectId/handbook/overview'
 import { Route as AppPProjectIdLocalSeoIndexRouteImport } from './routes/_app/p/$projectId/local-seo/index'
 import { Route as AppPProjectIdLocalSeoTrackerIdRouteImport } from './routes/_app/p/$projectId/local-seo/$trackerId'
@@ -202,6 +204,11 @@ const AcceptInvitationIdRoute = AcceptInvitationIdRouteImport.update({
 const ApiCspReportRoute = ApiCspReportRouteImport.update({
   id: '/api/csp-report',
   path: '/api/csp-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiForkHealthRoute = ApiForkHealthRouteImport.update({
+  id: '/api/fork-health',
+  path: '/api/fork-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -454,6 +461,12 @@ const AppPProjectIdHandbookBingRoute =
     path: '/handbook/bing',
     getParentRoute: () => AppPProjectIdRouteRoute,
   } as any)
+const AppPProjectIdHandbookCheckRoute =
+  AppPProjectIdHandbookCheckRouteImport.update({
+    id: '/handbook/check',
+    path: '/handbook/check',
+    getParentRoute: () => AppPProjectIdRouteRoute,
+  } as any)
 const AppPProjectIdHandbookOverviewRoute =
   AppPProjectIdHandbookOverviewRouteImport.update({
     id: '/handbook/overview',
@@ -564,6 +577,7 @@ export interface FileRoutesByFullPath {
   '/subscribe': typeof AuthenticatedSubscribeRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/csp-report': typeof ApiCspReportRoute
+  '/api/fork-health': typeof ApiForkHealthRoute
   '/api/health': typeof ApiHealthRoute
   '/api/privacy-region': typeof ApiPrivacyRegionRoute
   '/api/sign-up-status': typeof ApiSignUpStatusRoute
@@ -608,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
   '/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
+  '/p/$projectId/handbook/check': typeof AppPProjectIdHandbookCheckRoute
   '/p/$projectId/handbook/overview': typeof AppPProjectIdHandbookOverviewRoute
   '/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
@@ -646,6 +661,7 @@ export interface FileRoutesByTo {
   '/subscribe': typeof AuthenticatedSubscribeRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/csp-report': typeof ApiCspReportRoute
+  '/api/fork-health': typeof ApiForkHealthRoute
   '/api/health': typeof ApiHealthRoute
   '/api/privacy-region': typeof ApiPrivacyRegionRoute
   '/api/sign-up-status': typeof ApiSignUpStatusRoute
@@ -685,6 +701,7 @@ export interface FileRoutesByTo {
   '/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
   '/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
+  '/p/$projectId/handbook/check': typeof AppPProjectIdHandbookCheckRoute
   '/p/$projectId/handbook/overview': typeof AppPProjectIdHandbookOverviewRoute
   '/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
@@ -727,6 +744,7 @@ export interface FileRoutesById {
   '/_authenticated/subscribe': typeof AuthenticatedSubscribeRoute
   '/accept-invitation/$id': typeof AcceptInvitationIdRoute
   '/api/csp-report': typeof ApiCspReportRoute
+  '/api/fork-health': typeof ApiForkHealthRoute
   '/api/health': typeof ApiHealthRoute
   '/api/privacy-region': typeof ApiPrivacyRegionRoute
   '/api/sign-up-status': typeof ApiSignUpStatusRoute
@@ -772,6 +790,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/handbook/ai-visibility-byok': typeof AppPProjectIdHandbookAiVisibilityByokRoute
   '/_app/p/$projectId/handbook/backlinks-cc': typeof AppPProjectIdHandbookBacklinksCcRoute
   '/_app/p/$projectId/handbook/bing': typeof AppPProjectIdHandbookBingRoute
+  '/_app/p/$projectId/handbook/check': typeof AppPProjectIdHandbookCheckRoute
   '/_app/p/$projectId/handbook/overview': typeof AppPProjectIdHandbookOverviewRoute
   '/_app/p/$projectId/local-seo/$trackerId': typeof AppPProjectIdLocalSeoTrackerIdRoute
   '/_app/p/$projectId/rank-tracking/$configId': typeof AppPProjectIdRankTrackingConfigIdRoute
@@ -813,6 +832,7 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/accept-invitation/$id'
     | '/api/csp-report'
+    | '/api/fork-health'
     | '/api/health'
     | '/api/privacy-region'
     | '/api/sign-up-status'
@@ -857,6 +877,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/handbook/ai-visibility-byok'
     | '/p/$projectId/handbook/backlinks-cc'
     | '/p/$projectId/handbook/bing'
+    | '/p/$projectId/handbook/check'
     | '/p/$projectId/handbook/overview'
     | '/p/$projectId/local-seo/$trackerId'
     | '/p/$projectId/rank-tracking/$configId'
@@ -895,6 +916,7 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/accept-invitation/$id'
     | '/api/csp-report'
+    | '/api/fork-health'
     | '/api/health'
     | '/api/privacy-region'
     | '/api/sign-up-status'
@@ -934,6 +956,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/handbook/ai-visibility-byok'
     | '/p/$projectId/handbook/backlinks-cc'
     | '/p/$projectId/handbook/bing'
+    | '/p/$projectId/handbook/check'
     | '/p/$projectId/handbook/overview'
     | '/p/$projectId/local-seo/$trackerId'
     | '/p/$projectId/rank-tracking/$configId'
@@ -975,6 +998,7 @@ export interface FileRouteTypes {
     | '/_authenticated/subscribe'
     | '/accept-invitation/$id'
     | '/api/csp-report'
+    | '/api/fork-health'
     | '/api/health'
     | '/api/privacy-region'
     | '/api/sign-up-status'
@@ -1020,6 +1044,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/handbook/ai-visibility-byok'
     | '/_app/p/$projectId/handbook/backlinks-cc'
     | '/_app/p/$projectId/handbook/bing'
+    | '/_app/p/$projectId/handbook/check'
     | '/_app/p/$projectId/handbook/overview'
     | '/_app/p/$projectId/local-seo/$trackerId'
     | '/_app/p/$projectId/rank-tracking/$configId'
@@ -1053,6 +1078,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OpenaiAppsChallengeRoute: typeof Char91DotwellKnownChar93OpenaiAppsChallengeRoute
   AcceptInvitationIdRoute: typeof AcceptInvitationIdRoute
   ApiCspReportRoute: typeof ApiCspReportRoute
+  ApiForkHealthRoute: typeof ApiForkHealthRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiPrivacyRegionRoute: typeof ApiPrivacyRegionRoute
   ApiSignUpStatusRoute: typeof ApiSignUpStatusRoute
@@ -1227,6 +1253,13 @@ declare module '@tanstack/react-router' {
       path: '/api/csp-report'
       fullPath: '/api/csp-report'
       preLoaderRoute: typeof ApiCspReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fork-health': {
+      id: '/api/fork-health'
+      path: '/api/fork-health'
+      fullPath: '/api/fork-health'
+      preLoaderRoute: typeof ApiForkHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -1558,6 +1591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdHandbookBingRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/handbook/check': {
+      id: '/_app/p/$projectId/handbook/check'
+      path: '/handbook/check'
+      fullPath: '/p/$projectId/handbook/check'
+      preLoaderRoute: typeof AppPProjectIdHandbookCheckRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/handbook/overview': {
       id: '/_app/p/$projectId/handbook/overview'
       path: '/handbook/overview'
@@ -1771,6 +1811,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdHandbookAiVisibilityByokRoute: typeof AppPProjectIdHandbookAiVisibilityByokRoute
   AppPProjectIdHandbookBacklinksCcRoute: typeof AppPProjectIdHandbookBacklinksCcRoute
   AppPProjectIdHandbookBingRoute: typeof AppPProjectIdHandbookBingRoute
+  AppPProjectIdHandbookCheckRoute: typeof AppPProjectIdHandbookCheckRoute
   AppPProjectIdHandbookOverviewRoute: typeof AppPProjectIdHandbookOverviewRoute
   AppPProjectIdReportsReportIdRoute: typeof AppPProjectIdReportsReportIdRoute
   AppPProjectIdReportsTemplatesRoute: typeof AppPProjectIdReportsTemplatesRoute
@@ -1802,6 +1843,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
     AppPProjectIdHandbookAiVisibilityByokRoute,
   AppPProjectIdHandbookBacklinksCcRoute: AppPProjectIdHandbookBacklinksCcRoute,
   AppPProjectIdHandbookBingRoute: AppPProjectIdHandbookBingRoute,
+  AppPProjectIdHandbookCheckRoute: AppPProjectIdHandbookCheckRoute,
   AppPProjectIdHandbookOverviewRoute: AppPProjectIdHandbookOverviewRoute,
   AppPProjectIdReportsReportIdRoute: AppPProjectIdReportsReportIdRoute,
   AppPProjectIdReportsTemplatesRoute: AppPProjectIdReportsTemplatesRoute,
@@ -1887,6 +1929,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OpenaiAppsChallengeRoute,
   AcceptInvitationIdRoute: AcceptInvitationIdRoute,
   ApiCspReportRoute: ApiCspReportRoute,
+  ApiForkHealthRoute: ApiForkHealthRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiPrivacyRegionRoute: ApiPrivacyRegionRoute,
   ApiSignUpStatusRoute: ApiSignUpStatusRoute,

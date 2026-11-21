@@ -1,6 +1,7 @@
 import { sort } from "remeda";
 import { ListChecks } from "lucide-react";
 import { EmptyState } from "@/client/components/EmptyState";
+import { HelpLabel } from "@/client/components/HelpLabel";
 import { Badge } from "@/client/components/ui/badge";
 import {
   Table,
@@ -12,6 +13,7 @@ import {
   TableRow,
 } from "@/client/components/ui/table";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
+import { AI_JUDGED, SEVERITY_LABELS, STATUS_LABELS } from "./labels";
 
 type Finding = ReportJson["findings"][number];
 
@@ -41,7 +43,10 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
         return (
           <section key={severity} className="space-y-2">
             <h3 className="text-sm font-semibold">
-              {severity} · {group.length}
+              <HelpLabel
+                label={`${SEVERITY_LABELS[severity].label} · ${group.length}`}
+                helpText={SEVERITY_LABELS[severity].help}
+              />
             </h3>
             <FindingRows findings={group} />
           </section>
@@ -57,7 +62,7 @@ function FindingRows({ findings }: { findings: Finding[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Code</TableHead>
+            <TableHead>Details</TableHead>
             <TableHead>Finding</TableHead>
             <TableHead>Fix</TableHead>
             <TableHead>Effort</TableHead>
@@ -75,18 +80,20 @@ function FindingRows({ findings }: { findings: Finding[] }) {
                 <Badge
                   variant={f.severity === "S1" ? "destructive" : "outline"}
                 >
-                  {f.severity}
+                  {SEVERITY_LABELS[f.severity].label}
                 </Badge>
               </TableCell>
               <TableCell className="max-w-[420px] align-top">
                 <div className="font-medium">{f.title}</div>
                 <div className="flex flex-wrap gap-1 py-1">
                   {f.source === "llm" ? (
-                    <Badge variant="secondary">AI-reviewed</Badge>
+                    <Badge variant="secondary" title={AI_JUDGED.help}>
+                      {AI_JUDGED.label}
+                    </Badge>
                   ) : null}
                   {f.fixability === "LIMITED" ? (
                     <Badge variant="outline" title={f.limitedReason ?? ""}>
-                      platform limit
+                      {STATUS_LABELS.LIMITED.label}
                     </Badge>
                   ) : null}
                 </div>
