@@ -554,6 +554,8 @@ export type ForkHealth = {
 
 [Ken 2026-11-20] B14 = novice layout (`fork/NOVICE-UI.md`), straight after B13. The accuracy items below are B15: start after B14 is green and loop M5 has one clean review ≥ 24 h later; B15 gets its own spec.
 
+[2026-11-21, delegated decision] B16 novice cleanup + visual restyle (`fork/NOVICE-CLEANUP.md`) runs before B15. B15 scope and start rule below are unchanged.
+
 | #        | Item (backlog id)                   | Change                                                                                                                                                                                                                            | Needs                                            |
 | -------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | 0 `[v3]` | Coverage gap                        | Handbook read 80 URLs; the site audit crawled 155 (runs 3, 4). Seeds are status-200 rows only (E27). List the 75, classify (redirect, 404, attachment, non-HTML, unseen), fix any missing 200 page                                | first                                            |
