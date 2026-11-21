@@ -416,6 +416,12 @@ async function readRunsList(projectId, runId) {
 
 async function readRunPage(projectId, runId) {
   await visit(`/p/${projectId}/handbook/${runId}`);
+  // B14: a finished run opens on "Fix list"; the findings tab and the
+  // provisional banner sit under "Details".
+  const details = page.getByRole("tab", { name: "Details", exact: true });
+  await details
+    .click({ timeout: 30_000 })
+    .catch(() => note("run page: Details tab not found"));
   let findingsPageCount = -1;
   const tab = page.getByRole("tab", { name: /^Findings \(\d+\)/ });
   try {
