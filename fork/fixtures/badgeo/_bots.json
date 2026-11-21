@@ -4,5 +4,6 @@
   "/gate/challenge.html": {
     "challenge200": ["PerplexityBot"],
     "every": 2
-  }
+  },
+  "/assets/hotlink-guard.js": ["OpenSEO-Handbook"]
 }

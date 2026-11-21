@@ -146,5 +146,6 @@
   "SUPP-16": ["GEO", "AEO"],
   "SUPP-17": ["SEO"],
   "SUPP-18": ["SEO"],
-  "SUPP-19": ["GEO"]
+  "SUPP-19": ["GEO"],
+  "SUPP-20": ["SEO"]
 }

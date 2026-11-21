@@ -14,6 +14,8 @@ export const COLLECTOR_KEYS = [
   "variants",
   "botFetch",
   "outbound",
+  "linkTargets",
+  "resources",
   "jsonld",
   "templates",
   "render",
@@ -417,6 +419,42 @@ export type OutboundData = {
   }>;
 };
 
+/**
+ * One HTTP probe (ADR-031): HEAD, GET when HEAD is refused (405 / 501) or
+ * fails; one retry on a transient status; a 403 is retried with a browser
+ * user-agent and `browserRetest` keeps that answer. `null` = no HTTP answer
+ * (DNS, connect or timeout failure). 1.9.0
+ */
+export type LinkProbe = {
+  status: number;
+  finalUrl: string;
+  method: "HEAD" | "GET";
+  browserRetest?: { status: number; finalUrl: string } | null;
+} | null;
+
+/** Internal link targets the crawl did not fetch, probed for P3-08 (ADR-031). 1.9.0 */
+export type LinkTargetsData = {
+  targets: ReadonlyArray<{
+    url: string;
+    sourceUrls: readonly string[];
+    probe: LinkProbe;
+  }>;
+  /** Un-crawled internal targets found; `targets.length` ≤ cap (200). */
+  found: number;
+};
+
+/** `<img>`, stylesheet and script URLs on read pages, probed once each (SUPP-20, ADR-031). 1.9.0 */
+export type ResourcesData = {
+  resources: ReadonlyArray<{
+    url: string;
+    kind: "img" | "css" | "js";
+    sourceUrls: readonly string[];
+    probe: LinkProbe;
+  }>;
+  /** Unique resource URLs found; `resources.length` ≤ cap (300). */
+  found: number;
+};
+
 export type JsonLdNode = {
   id: string | null;
   types: readonly string[];
@@ -473,6 +511,10 @@ export type CollectedData = {
   variants: Collected<VariantsData>;
   botFetch: Collected<BotFetchData>;
   outbound: Collected<OutboundData>;
+  /** 1.9.0 */
+  linkTargets: Collected<LinkTargetsData>;
+  /** 1.9.0 */
+  resources: Collected<ResourcesData>;
   jsonld: Collected<JsonLdData>;
   templates: Collected<TemplatesData>;
   render: Collected<RenderData>;

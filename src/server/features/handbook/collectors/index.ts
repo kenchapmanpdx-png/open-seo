@@ -11,7 +11,9 @@ import {
   variantsCollector,
 } from "./fetch-collectors";
 import { headersCollector } from "./headers-collector";
+import { linkTargetsCollector } from "./link-targets";
 import { outboundCollector } from "./outbound";
+import { resourcesCollector } from "./resources";
 import {
   createSidecarCollectors,
   type SidecarConfig,
@@ -38,6 +40,8 @@ export function createDefaultCollectors(
     variantsCollector,
     botFetchCollector,
     outboundCollector,
+    linkTargetsCollector,
+    resourcesCollector,
     ...(sidecar ? createSidecarCollectors(sidecar) : []),
   ];
 }

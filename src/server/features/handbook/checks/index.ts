@@ -32,6 +32,7 @@ import { pageStructureCheck } from "./page-structure";
 import { platformCheck } from "./platform";
 import { rawCopyCheck } from "./raw-copy";
 import { redirectedLinksCheck } from "./redirected-links";
+import { resourceStatusCheck } from "./resource-status";
 import { renderParityCheck } from "./render-parity";
 import { renderResourcesCheck } from "./render-resources";
 import { robotsGroupsCheck } from "./robots-groups";
@@ -72,6 +73,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   canonicalFormCheck,
   notFoundCheck,
   redirectedLinksCheck,
+  resourceStatusCheck,
   crawlCoverageCheck,
   hiddenPagesCheck,
   listNavigationCheck,

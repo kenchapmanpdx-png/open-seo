@@ -1,5 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import { MAX_TARGETS } from "@/server/features/handbook/collectors/link-targets";
+import { effectiveStatus } from "@/server/features/handbook/collectors/probe";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -8,14 +10,43 @@ import { createResult, normalizeUrl } from "./support";
  * closest relevant page, never the homepage (P3-05); retired items still
  * linked are listed with their 404/410 status (P3-07 — the "closest
  * equivalent" judgment is LLM work in B3). Only links between crawled pages
- * are judged; un-crawled targets are skipped.
+ * are judged by their crawl fetch; un-crawled internal targets by the
+ * `linkTargets` probe (ADR-031, cap 200); targets with no answer are counted,
+ * not flagged.
  */
 const ITEMS = ["P3-08", "P3-05", "P3-07"];
 
+type Target = Pick<PageSnapshot, "url" | "finalUrl" | "status"> & {
+  sources: string[];
+};
+
 const pathOf = (url: string) => new URL(url).pathname;
-const redirected = (s: PageSnapshot) =>
+const redirected = (s: Pick<PageSnapshot, "url" | "finalUrl">) =>
   normalizeUrl(s.finalUrl) !== normalizeUrl(s.url);
-const retired = (s: PageSnapshot) => s.status === 404 || s.status === 410;
+const retired = (s: Pick<PageSnapshot, "status">) =>
+  s.status === 404 || s.status === 410;
+
+/**
+ * One row per bad target; targets sharing a final URL and status collapse
+ * into one row (a site-wide relative link resolves to a new URL per page).
+ */
+function groupRows(targets: Target[], describe: (t: Target) => string) {
+  const groups = new Map<string, Target[]>();
+  for (const t of targets) {
+    const key = `${normalizeUrl(t.finalUrl)} ${t.status}`;
+    groups.set(key, [...(groups.get(key) ?? []), t]);
+  }
+  return [...groups.values()].map((g) => {
+    const sources = [...new Set(g.flatMap((t) => t.sources))];
+    const from = `linked from ${sources.length} page(s), e.g. ${sources.slice(0, 3).join(", ")}`;
+    if (g.length === 1) return `${describe(g[0])} — ${from}`;
+    const [first] = g;
+    return `${g.length} URLs → ${first.finalUrl} (${first.status}), e.g. ${g
+      .slice(0, 3)
+      .map((t) => t.url)
+      .join(", ")} — ${from}`;
+  });
+}
 
 export const redirectedLinksCheck: HandbookCheck = {
   id: "crawl.redirected-links",
@@ -24,7 +55,7 @@ export const redirectedLinksCheck: HandbookCheck = {
   requires: ["pages"],
   run(ctx) {
     const out = createResult(ITEMS);
-    const { pages } = ctx.collected;
+    const { pages, linkTargets } = ctx.collected;
     if (pages.status !== "ok") return out.build();
     const byUrl = new Map(pages.snapshots.map((s) => [normalizeUrl(s.url), s]));
 
@@ -39,35 +70,51 @@ export const redirectedLinksCheck: HandbookCheck = {
         linkedFrom.set(target, set);
       }
     }
-    const describe = (t: PageSnapshot) =>
+    const describe = (t: Target) =>
       redirected(t)
         ? `${t.url} → ${t.finalUrl} (${t.status})`
         : `${t.url} → ${t.status}`;
-    const evidenceFor = (t: PageSnapshot) => {
-      const sources = [...(linkedFrom.get(normalizeUrl(t.url)) ?? [])];
-      return out.evidence(
+    const evidenceFor = (t: Target) =>
+      out.evidence(
         "status",
         t.url,
-        `${describe(t)}\nlinked from:\n${sources.slice(0, 20).join("\n")}`,
+        `${describe(t)}\nlinked from:\n${t.sources.slice(0, 20).join("\n")}`,
       );
-    };
 
-    const badTargets = [...linkedFrom.keys()].flatMap((url) => {
+    const crawledTargets: Target[] = [...linkedFrom].flatMap(([url, from]) => {
       const t = byUrl.get(url);
-      return t && (redirected(t) || retired(t)) ? [t] : [];
+      return t ? [{ ...t, sources: [...from] }] : [];
     });
+    // Un-crawled internal targets probed by the linkTargets collector (ADR-031).
+    const probed = linkTargets.status === "ok" ? linkTargets.targets : [];
+    const probedTargets: Target[] = probed.flatMap((p) =>
+      p.probe
+        ? [
+            {
+              url: p.url,
+              finalUrl: p.probe.browserRetest?.finalUrl ?? p.probe.finalUrl,
+              status: effectiveStatus(p.probe) ?? p.probe.status,
+              sources: [...p.sourceUrls],
+            },
+          ]
+        : [],
+    );
+    const unanswered = probed.length - probedTargets.length;
+    const probeNote =
+      linkTargets.status === "ok"
+        ? `; ${probed.length} un-crawled internal target(s) probed (found ${linkTargets.found}, cap ${MAX_TARGETS}), ${unanswered} without an answer`
+        : "";
+
+    const badTargets = [...crawledTargets, ...probedTargets].filter(
+      (t) => redirected(t) || retired(t),
+    );
     if (badTargets.length > 0) {
       out.finding({
         itemIds: ["P3-08"],
         severity: "S3",
         title: "Internal links point at redirected or retired URLs",
-        detail: badTargets
-          .map(
-            (t) =>
-              `${describe(t)} — linked from ${[...(linkedFrom.get(normalizeUrl(t.url)) ?? [])].slice(0, 5).join(", ")}`,
-          )
-          .join("\n"),
-        fix: "Update each internal link to the final 200 URL (or remove links to retired pages).",
+        detail: `${groupRows(badTargets, describe).join("\n")}${probeNote}`,
+        fix: "Update each internal link to the final 200 URL (or remove links to retired pages). A row covering many URLs is usually one link in a shared template (header, footer, menu).",
         fixability: "FIXABLE",
         effort: "S",
         urls: badTargets.map((t) => t.url),
@@ -76,7 +123,7 @@ export const redirectedLinksCheck: HandbookCheck = {
     } else {
       out.pass(
         "P3-08",
-        `${linkedFrom.size} internal link targets among crawled pages; none redirect or 404`,
+        `${linkedFrom.size} internal link targets among crawled pages; none redirect or 404${probeNote}`,
         [
           out.evidence(
             "url",
@@ -88,7 +135,12 @@ export const redirectedLinksCheck: HandbookCheck = {
     }
 
     // P3-05 — any crawled non-root URL that redirects to the homepage.
-    const moved = pages.snapshots.filter((s) => redirected(s));
+    const moved: Target[] = pages.snapshots
+      .filter((s) => redirected(s))
+      .map((s) => ({
+        ...s,
+        sources: [...(linkedFrom.get(normalizeUrl(s.url)) ?? [])],
+      }));
     const toHome = moved.filter(
       (s) => pathOf(s.finalUrl) === "/" && pathOf(s.url) !== "/",
     );

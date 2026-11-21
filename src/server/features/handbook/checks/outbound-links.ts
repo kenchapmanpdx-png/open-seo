@@ -4,8 +4,8 @@ import { createResult, normalizeUrl } from "./support";
 
 /**
  * BOTFETCH/CRAWL (handbook §12): outbound and third-party conversion links
- * answer 200 for browsers, point at their final URL, and bot-only blocks are
- * recorded (P5-13); `target="_blank"` links carry noopener (noreferrer
+ * are not dead (P5-13; ADR-031: no answer, 404, 410 = finding; redirects,
+ * bot or platform blocks and other statuses = info only); `target="_blank"` links carry noopener (noreferrer
  * implies it; noreferrer alone on internal links is by intent) (P4-12).
  */
 const ITEMS = ["P5-13", "P4-12"];
@@ -13,12 +13,24 @@ const ITEMS = ["P5-13", "P4-12"];
 type Link = OutboundData["links"][number];
 
 const BLOCKED = new Set([401, 403, 429, 503]);
+const DEAD = new Set([404, 410]);
 
-function linkProblem(link: Link): string | null {
-  if (!link.browser) return "unreachable for browsers";
+/** Dead = no answer (DNS / connect / timeout), 404 or 410 (ADR-031). */
+function deadReason(link: Link): string | null {
+  if (!link.browser) return "no answer (DNS or connection failure)";
+  if (DEAD.has(link.browser.status))
+    return `browser gets ${link.browser.status}`;
+  return null;
+}
+
+/** Info only, never a finding: redirects, bot / platform blocks, other statuses. */
+function infoReason(link: Link): string | null {
+  if (!link.browser || DEAD.has(link.browser.status)) return null;
   if (link.browser.status !== 200) return `browser gets ${link.browser.status}`;
   if (normalizeUrl(link.browser.finalUrl) !== normalizeUrl(link.url))
     return `redirects to ${link.browser.finalUrl}`;
+  if (link.bot && BLOCKED.has(link.bot.status))
+    return `${link.bot.name} gets ${link.bot.status}`;
   return null;
 }
 
@@ -95,35 +107,37 @@ export const outboundLinksCheck: HandbookCheck = {
       out.na("P5-13", "no outbound links on crawled pages");
       return out.build();
     }
-    const broken = outbound.links.flatMap((l) => {
-      const why = linkProblem(l);
+    const dead = outbound.links.flatMap((l) => {
+      const why = deadReason(l);
       return why ? [{ l, why }] : [];
     });
-    const botOnly = outbound.links.filter(
-      (l) => l.browser?.status === 200 && l.bot && BLOCKED.has(l.bot.status),
-    );
+    const info = outbound.links.flatMap((l) => {
+      const why = infoReason(l);
+      return why ? [`${l.url} — ${why}`] : [];
+    });
+    const infoNote = `info, not findings (redirects, bot or platform blocks, other statuses): ${info.length ? info.slice(0, 20).join("; ") : "none"}`;
     const ref = (l: Link) => out.evidence("botFetch", l.url, status(l));
-    if (broken.length > 0) {
+    if (dead.length > 0) {
       out.finding({
         itemIds: ["P5-13"],
         severity: "S4",
-        title: "Outbound links are broken or point at redirects",
-        detail: broken
+        title: "Outbound links are dead",
+        detail: `${dead
           .map(
             ({ l, why }) =>
               `${l.url} — ${why} (on ${l.sourceUrls.slice(0, 3).join(", ")})`,
           )
-          .join("\n"),
-        fix: "Fix or remove broken outbound links and update redirected ones to their final URL.",
+          .join("\n")}\n${infoNote}`,
+        fix: "Fix or remove dead outbound links (the target is gone or its domain no longer answers).",
         fixability: "FIXABLE",
         effort: "S",
-        urls: [...new Set(broken.flatMap(({ l }) => l.sourceUrls))],
-        evidenceRefs: broken.slice(0, 20).map(({ l }) => ref(l)),
+        urls: [...new Set(dead.flatMap(({ l }) => l.sourceUrls))],
+        evidenceRefs: dead.slice(0, 20).map(({ l }) => ref(l)),
       });
     } else {
       out.pass(
         "P5-13",
-        `${outbound.links.length} outbound link(s) 200 at their final URL for browsers; bot-only blocks: ${botOnly.length ? botOnly.map((l) => `${l.url} (${l.bot?.status})`).join(", ") : "none"}`,
+        `${outbound.links.length} outbound link(s), none dead; ${infoNote}`,
         outbound.links.slice(0, 10).map(ref),
       );
     }

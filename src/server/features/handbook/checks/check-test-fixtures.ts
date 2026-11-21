@@ -36,6 +36,8 @@ export function context(collected: Partial<CollectedData>): CheckContext {
       variants: off,
       botFetch: off,
       outbound: off,
+      linkTargets: off,
+      resources: off,
       jsonld: off,
       templates: off,
       render: off,

@@ -4,7 +4,7 @@
  * tokens `_bots.json` lists for a path (bot-parity fixtures; `{ challenge200 }`
  * entries get a 200 openresty-style bot-check page instead; with `every: N`
  * only the 1st, N+1th, … matching request is challenged), answers the
- * redirects `_redirects.json` lists (path → [status, location]), substitutes
+ * redirects `_redirects.json` lists (path or path?query → [status, location]), substitutes
  * `{{ORIGIN}}` in text files, 404 for anything missing. `{{OFFSITE}}` names
  * a second stub host (WO-B9-012): `/gone/*` → 404, anything else → 200.
  *
@@ -205,7 +205,8 @@ export async function startBadgeo(
       );
       return;
     }
-    const redirect = redirectMap[pathname];
+    const search = new URL(req.url ?? "/", origin).search;
+    const redirect = redirectMap[pathname + search] ?? redirectMap[pathname];
     if (redirect) {
       res.writeHead(redirect[0], {
         location: redirect[1].replaceAll("{{ORIGIN}}", origin),

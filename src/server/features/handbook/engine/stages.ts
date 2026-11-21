@@ -107,6 +107,8 @@ export function completeCollected(
     variants: collected.variants ?? off,
     botFetch: collected.botFetch ?? off,
     outbound: collected.outbound ?? off,
+    linkTargets: collected.linkTargets ?? off,
+    resources: collected.resources ?? off,
     jsonld: collected.jsonld ?? off,
     templates: collected.templates ?? off,
     render: collected.render ?? off,

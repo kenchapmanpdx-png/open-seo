@@ -182,6 +182,15 @@ export const SUPP_REGISTRY = z.array(suppEntrySchema).parse([
     effect: "GEO",
     evidence: ["rawHtml"],
   },
+  {
+    id: "SUPP-20",
+    title: "Images, stylesheets or scripts that return an error",
+    refs: [10, 14],
+    class: "deterministic",
+    severityDefault: "S2",
+    effect: "SEO",
+    evidence: ["status", "url"],
+  },
 ]);
 
 export const SUPP_BY_ID: ReadonlyMap<string, (typeof SUPP_REGISTRY)[number]> =

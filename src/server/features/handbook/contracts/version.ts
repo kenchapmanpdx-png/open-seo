@@ -31,6 +31,9 @@
  * `scaledContent` / `copyQuality`, SERP originality record, SUPP-17…19,
  * MCP `handbook_copy_rules_get` + findings `copyRules` hint. No K3 change;
  * 1.8.0, B14: novice layout (ADR-029) — report `categoryScores`
- * (SEO / GEO / AEO) and finding `categories`. No K3 change.
+ * (SEO / GEO / AEO) and finding `categories`. No K3 change;
+ * 1.9.0, B15: accuracy (ADR-031) — collectors `linkTargets` (P3-08
+ * un-crawled internal targets) and `resources` (SUPP-20), `LinkProbe`.
+ * No K3 change.
  */
-export const CONTRACTS_VERSION = "1.8.0";
+export const CONTRACTS_VERSION = "1.9.0";
