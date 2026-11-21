@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: (optional, nothing blocks B14) K1 Windows keepalive install (`fork/scripts/windows/README.md`, D7); M1 force-push of `ken/rebase-v0.1.31`; K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; live MCP run with an OAuth client; CRUX_API_KEY (P7-10)
-current_batch: B14
-batch_file: fork/batches/B14-heavy-novice-ui.md
+status: done (not-started | in-progress | needs-ken | done)
+needs_ken: (optional, nothing blocks maintenance) M1-2026-11-20 force-push of `ken/rebase-v0.1.31` onto `ken/main` (upstream v0.1.31); K1 Windows keepalive install (`fork/scripts/windows/README.md`, WO-B13-015); K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; WO-B6-021 BING_WEBMASTER_API_KEY; WO-B6-031 BYOK OpenAI / Gemini / Perplexity keys; WO-B9-029 CRUX_API_KEY (P7-10); WO-B4-001 / 002 / 004 / 015 + WO-B6-090 LLM eval runs; WO-B9-026 in-app perf half; live MCP run with an OAuth client
+current_batch: MAINT
+batch_file: fork/MAINTENANCE.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 78
-next_action: B14 R5 — WO-B14-090 exit (`fork/NOVICE-UI.md` §2 WO-B14-090): session-end checks + BASELINE refresh; BadGEO quick 0 / 0; goldens ×3 no LLM Δ 0; `ops testmode on` → one check via "Check a site" (harness `--via check-page`, 25 pages, salonvata test project; ≤ 2 audits, LLM ≤ $0.50) → Fix List scores / groups / export / checkbox verified in the browser → `ops testmode off`; screenshots (dashboard, check form + progress, Fix List top + expanded, Details, sidebar) → `fork/runs/b14/`; RUNBOOK § "Fix List"; finish `fork/reports/B14.md`; tag `handbook-v3.3.0`; STATE → done / MAINT. R4 done run 78 (WO-B14-005 sidebar, AI Search all-fallback, no `ai-search.tsx`; WO-B14-006 top-5 card above dashboard tabs + A14 text). Sidecar already rebuilt to contracts 1.8.0 (health ok). Check `ops status` `backup_unit` after the 03:30 run (last failure predates the B13 prune fix). Rebase still BLOCKED-KEN (`ken/rebase-v0.1.31`).
+current_run: 79
+next_action: Build sequence B1–B14 done (B14 exit run 79, fork/reports/B14.md; tag handbook-v3.3.0). Maintenance: `Read fork/MAINTENANCE.md and run loop M<n>.` — M1 upstream rebase weekly (due 2026-11-26; v0.1.31 rebase already on `ken/rebase-v0.1.31`, waits on Ken force-push), M5 ops review weekly. Next timer backup run should show `backup_unit` not failed (manual run 79 passed). Weekly self-test Sunday uses the fixed harness (Details tab).
 contracts_version: 1.8.0 (B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -35,22 +35,22 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                          | Model (SPLIT) | Status      |
-| ----- | --------------------------------------------- | ------------- | ----------- |
-| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done        |
-| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done        |
-| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done        |
-| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done        |
-| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done        |
-| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done        |
-| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done        |
-| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | done        |
-| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | done        |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done        |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | done        |
-| B12   | fork/batches/B12-light-rebase-reliability.md  | LIGHT         | done        |
-| B13   | fork/batches/B13-heavy-dependability.md       | HEAVY         | done        |
-| B14   | fork/batches/B14-heavy-novice-ui.md           | HEAVY         | in-progress |
+| Batch | File                                          | Model (SPLIT) | Status |
+| ----- | --------------------------------------------- | ------------- | ------ |
+| B1    | fork/batches/B1-heavy-foundation.md           | HEAVY         | done   |
+| B2    | fork/batches/B2-light-deterministic.md        | LIGHT         | done   |
+| B3    | fork/batches/B3-heavy-judgment.md             | HEAVY         | done   |
+| B4    | fork/batches/B4-light-product-deploy.md       | LIGHT         | done   |
+| B5    | fork/batches/B5-heavy-v1-signoff.md           | HEAVY (Opus)  | done   |
+| B6    | fork/batches/B6-light-integrations.md         | LIGHT         | done   |
+| B7    | fork/batches/B7-heavy-v2.md                   | HEAVY         | done   |
+| B8    | fork/batches/B8-heavy-full-read-design.md     | HEAVY         | done   |
+| B9    | fork/batches/B9-light-full-read-build.md      | LIGHT         | done   |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md   | HEAVY         | done   |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md | HEAVY         | done   |
+| B12   | fork/batches/B12-light-rebase-reliability.md  | LIGHT         | done   |
+| B13   | fork/batches/B13-heavy-dependability.md       | HEAVY         | done   |
+| B14   | fork/batches/B14-heavy-novice-ui.md           | HEAVY         | done   |
 
 ## Run log
 
@@ -134,6 +134,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 76  | 2026-11-20 | Opus 5.5        | B14 R1: N1–N6 re-verified, ADR-029, contracts 1.8.0, WO-B14-001…006 + 090 + queue rows. R2: WO-B14-001 tags (148 items, draft script `--check` / `--table`, SUPP base from `effect`) + `withCategories` category scores in both report builders; WO-B14-002 `labels.ts` + HelpLabel glossary. Checks green (423 files / 2605 tests)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | B14 R3                        |
 | 77  | 2026-11-20 | Opus 5.5        | B14 R3 (AUTOPILOT run 10): WO-B14-003 Fix List (`fixList.ts` groups / order / AEO filter / CSV via `buildCsv` / done state + 4 tests; `FixList.tsx`; run page tabs Fix list / Details; Handbook index latest Fix List + Past checks; detail capped to 5 lines). WO-B14-004 Check a site (route A15 + route tree, `checkSite.ts` + 4 tests: new domain → project without domain, audit, then domain so upstream first audit skips; progress steps → run page). `RunFullAuditButton` domain from projects list. UI smoke + check route 11/11 OK; browser probe tick/sink/filter OK. Checks green (425 files / 2613 tests). Live audits 0                                                                                                                                                                                                                                                   | B14 R4                        |
 | 78  | 2026-11-20 | Opus 5.5        | B14 R4 (AUTOPILOT run 11): WO-B14-005 sidebar (`forkNav.ts` + A12 hook; 6 groups, plain labels, unknown → More, `VITE_FORK_NAV=0` escape; AI Search tabs all fall back per ADR-029 §8, no `ai-search.tsx`). WO-B14-006 `TopFixesCard` (`topFixes` selector, above dashboard tabs, A13) + A14 rendering text. Sidecar rebuilt 1.7.0 → contracts 1.8.0 (health was `ok: false` since run 76) → ok. ui-smoke 12 / 12 (dashboard added, ERR_ABORTED ignored). Checks green (426 files / 2616 tests). Live audits 0                                                                                                                                                                                                                                                                                                                                                                           |
+| 79  | 2026-11-20 | Opus 5.5        | B14 R5 (AUTOPILOT run 12): WO-B14-090 exit — types/lint 0, tests 426/2616, sidecar 10, ops 18 + 40, format clean; BadGEO quick 0/0; goldens why/ryan/blue no-LLM caught Δ 0 (verdicts identical to B13); harness `--via check-page` + `b14-shots.mjs`; live check via Check a site (test mode, Quick 50 / Handbook 25) PASS: grade D 47.5, 59/59/59, lands on Fix List, CSV 59 rows, done tick survives reload, LLM $0.0876; harness fixed for Findings under Details (would have failed the weekly self-test); ui-smoke 12/12; screenshots fork/runs/b14; RUNBOOK § Fix List; backup unit manual run OK; BASELINE refreshed; tag handbook-v3.3.0; STATE → MAINT                                                                                                                                                                                                                         | MAINT                         |
 
 ## Batch history
 
@@ -151,3 +152,4 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B10   | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B10.md |
 | B11   | Opus 5.5 | 2026-11-19 | 2026-11-19 | fork/reports/B11.md |
 | B13   | Opus 5.5 | 2026-11-20 | 2026-11-20 | fork/reports/B13.md |
+| B14   | Opus 5.5 | 2026-11-20 | 2026-11-21 | fork/reports/B14.md |
