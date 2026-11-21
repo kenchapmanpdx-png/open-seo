@@ -3,7 +3,7 @@
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: not-started (not-started | in-progress | needs-ken | done)
-needs_ken: (optional, nothing blocks B16 R1–R3) look_choice for B16 (A / B / C / upstream; `fork/NOVICE-CLEANUP.md` §4) — blocks WO-B16-006 only; M1 force-push, prep done 2026-11-21 on `ken/rebase-v0.1.31-m1` (`fork/reports/M1-2026-11-21-prep.md`): `git push --force-with-lease origin ken/rebase-v0.1.31-m1:ken/main` on Ken's "push"; K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; WO-B6-021 BING_WEBMASTER_API_KEY; WO-B6-031 BYOK OpenAI / Gemini / Perplexity keys; WO-B9-029 CRUX_API_KEY (P7-10); WO-B4-001 / 002 / 004 / 015 + WO-B6-090 LLM eval runs; WO-B9-026 in-app perf half; live MCP run with an OAuth client. Done since run 79: K1 Windows keepalive (installed by Ken 2026-11-20)
+needs_ken: (optional, nothing blocks B16) M1 force-push, prep done 2026-11-21 on `ken/rebase-v0.1.31-m1` (`fork/reports/M1-2026-11-21-prep.md`): `git push --force-with-lease origin ken/rebase-v0.1.31-m1:ken/main` on Ken's "push"; K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; WO-B6-021 BING_WEBMASTER_API_KEY; WO-B6-031 BYOK OpenAI / Gemini / Perplexity keys; WO-B9-029 CRUX_API_KEY (P7-10); WO-B4-001 / 002 / 004 / 015 + WO-B6-090 LLM eval runs; WO-B9-026 in-app perf half; live MCP run with an OAuth client. Done since run 79: K1 Windows keepalive (installed by Ken 2026-11-20)
 current_batch: B16
 batch_file: fork/batches/B16-heavy-novice-cleanup-restyle.md
 required_model: Opus 5.5 (SINGLE)
@@ -12,7 +12,7 @@ next_action: B16 R1 (`fork/batches/B16-heavy-novice-cleanup-restyle.md`, spec `f
 contracts_version: 1.8.0 (B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
-look_choice: (empty = not picked; A | B | C | upstream; B16, `fork/NOVICE-CLEANUP.md` §4)
+look_choice: C (Ken, 2026-11-21 00:43, picked from chat mock-ups; A | B | C | upstream; B16, `fork/NOVICE-CLEANUP.md` §4)
 
 Optional BLOCKED-KEN items (do not block B8–B11):
 
