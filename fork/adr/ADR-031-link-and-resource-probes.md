@@ -11,10 +11,10 @@
 
 ## Decision
 
-1. One probe helper (`collectors/probe.ts`, moved out of `outbound.ts`): HEAD → GET on 405 / 501 / failure, one retry after 2 s on 429 / 502 / 503 / 504, a 403 retried with a browser user-agent (`browserRetest`). `null` = no HTTP answer.
-2. Collector `linkTargets` (crawl stage, after `pages`): internal targets of `<a href>` not fetched by the crawl, most-linked first, cap 200, own-site `ctx.fetch` (its pacing). P3-08 reads them with the crawled ones; one finding, rows grouped by final URL.
-3. Collector `resources`: unique `<img src>`, stylesheet `<link href>`, `<script src>` URLs on read pages, cap 300 (most pages first); own host `ctx.fetch`, other hosts `ctx.fetchOffsite` at 1 request / s / host; 4 workers. New SUPP-20 (deterministic, S2): broken = no answer, 404, 410 or 5xx after the browser retest; a 403 that a browser gets as 2xx is not broken. One finding per broken URL, with page count.
-4. P5-13 classes: dead = no answer, 404, 410 → finding. Redirects, bot-only blocks and any other status → pass note (info), never a finding.
+1. One probe helper (`collectors/probe.ts`, moved out of `outbound.ts`): HEAD, confirmed by GET when HEAD fails or answers ≥ 400 (Google Maps JS answers HEAD 404), one retry after 2 s on 429 / 502 / 503 / 504, a 403 retried with a browser user-agent (`browserRetest`). `null` = no HTTP answer.
+2. Collector `linkTargets` (crawl stage, after `pages`): internal targets of `<a href>` not fetched by the crawl, most-linked first, cap 200, own-site `ctx.fetch` at 1 request / s (parallel probes drew 429s on salonvata). P3-08 reads them with the crawled ones; one finding, rows grouped by final URL.
+3. Collector `resources`: unique `<img src>`, stylesheet `<link href>`, `<script src>` URLs on read pages, cap 300 (most pages first); own host `ctx.fetch`, other hosts `ctx.fetchOffsite`; 1 request / s per host; 4 workers. New SUPP-20 (deterministic, S2): broken = no answer, 404, 410 or 5xx after the browser retest; a 403 that a browser gets as 2xx is not broken. One finding per broken URL, with page count.
+4. P5-13 classes: dead = no answer, 404, 410 → finding. Redirects → one separate S4 "(info)" finding (the golden audits why F29 and ryan S01 expect P5-13 for redirecting outbound links; §9 #4 calls them info — kept visible at the lowest severity, flagged to Ken). Bot-only blocks and any other status → pass note, never a finding.
 5. Caps reached → logged and stated in the pass / finding text (found vs probed).
 6. Contracts 1.9.0: additive collector keys `linkTargets`, `resources`, type `LinkProbe`. Sidecars rebuilt for the version check.
 

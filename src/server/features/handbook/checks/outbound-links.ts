@@ -5,7 +5,8 @@ import { createResult, normalizeUrl } from "./support";
 /**
  * BOTFETCH/CRAWL (handbook §12): outbound and third-party conversion links
  * are not dead (P5-13; ADR-031: no answer, 404, 410 = finding; redirects,
- * bot or platform blocks and other statuses = info only); `target="_blank"` links carry noopener (noreferrer
+ * redirects = one S4 "(info)" finding; bot or platform blocks and
+ * other statuses = info only); `target="_blank"` links carry noopener (noreferrer
  * implies it; noreferrer alone on internal links is by intent) (P4-12).
  */
 const ITEMS = ["P5-13", "P4-12"];
@@ -15,6 +16,10 @@ type Link = OutboundData["links"][number];
 const BLOCKED = new Set([401, 403, 429, 503]);
 const DEAD = new Set([404, 410]);
 
+const moved = (link: Link) =>
+  link.browser?.status === 200 &&
+  normalizeUrl(link.browser.finalUrl) !== normalizeUrl(link.url);
+
 /** Dead = no answer (DNS / connect / timeout), 404 or 410 (ADR-031). */
 function deadReason(link: Link): string | null {
   if (!link.browser) return "no answer (DNS or connection failure)";
@@ -23,12 +28,10 @@ function deadReason(link: Link): string | null {
   return null;
 }
 
-/** Info only, never a finding: redirects, bot / platform blocks, other statuses. */
+/** Info only, never a finding: bot / platform blocks, other statuses. */
 function infoReason(link: Link): string | null {
   if (!link.browser || DEAD.has(link.browser.status)) return null;
   if (link.browser.status !== 200) return `browser gets ${link.browser.status}`;
-  if (normalizeUrl(link.browser.finalUrl) !== normalizeUrl(link.url))
-    return `redirects to ${link.browser.finalUrl}`;
   if (link.bot && BLOCKED.has(link.bot.status))
     return `${link.bot.name} gets ${link.bot.status}`;
   return null;
@@ -115,8 +118,30 @@ export const outboundLinksCheck: HandbookCheck = {
       const why = infoReason(l);
       return why ? [`${l.url} — ${why}`] : [];
     });
-    const infoNote = `info, not findings (redirects, bot or platform blocks, other statuses): ${info.length ? info.slice(0, 20).join("; ") : "none"}`;
+    const infoNote = `info, not findings (bot or platform blocks, other statuses): ${info.length ? info.slice(0, 20).join("; ") : "none"}`;
     const ref = (l: Link) => out.evidence("botFetch", l.url, status(l));
+    // Redirecting links: a low-priority S4 "(info)" finding of their own, so
+    // the golden audits' "points at redirects" entries stay caught (ADR-031).
+    const redirects = outbound.links.filter(moved);
+    if (redirects.length > 0) {
+      out.finding({
+        itemIds: ["P5-13"],
+        severity: "S4",
+        title: "Outbound links point at redirected URLs (info)",
+        detail: redirects
+          .slice(0, 50)
+          .map(
+            (l) =>
+              `${l.url} → ${l.browser?.finalUrl} (on ${l.sourceUrls.slice(0, 3).join(", ")})`,
+          )
+          .join("\n"),
+        fix: "Low priority: update each link to its final URL.",
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: [...new Set(redirects.flatMap((l) => l.sourceUrls))],
+        evidenceRefs: redirects.slice(0, 20).map(ref),
+      });
+    }
     if (dead.length > 0) {
       out.finding({
         itemIds: ["P5-13"],
@@ -134,7 +159,7 @@ export const outboundLinksCheck: HandbookCheck = {
         urls: [...new Set(dead.flatMap(({ l }) => l.sourceUrls))],
         evidenceRefs: dead.slice(0, 20).map(({ l }) => ref(l)),
       });
-    } else {
+    } else if (redirects.length === 0) {
       out.pass(
         "P5-13",
         `${outbound.links.length} outbound link(s), none dead; ${infoNote}`,

@@ -4,13 +4,13 @@ import type {
   LinkTargetsData,
 } from "@/server/features/handbook/contracts/collectors";
 import { normalizeUrl } from "@/server/features/handbook/checks/support";
-import { noPace, pool, probeUrl } from "./probe";
+import { hostPacer, pool, probeUrl } from "./probe";
 
 /**
  * Internal link targets the crawl did not fetch (ADR-031, P3-08): every
  * same-host `<a href>` on crawled pages whose URL is neither a crawled URL
  * nor a crawled final URL, most-linked first, capped at 200. Probed through
- * `ctx.fetch` (site scope and pacing) with the Handbook user-agent.
+ * `ctx.fetch` (site scope) with the Handbook user-agent, 1 request / s.
  */
 export const MAX_TARGETS = 200;
 const WORKERS = 4;
@@ -55,13 +55,15 @@ export const linkTargetsCollector: Collector<"linkTargets"> = {
         found: found.size,
         probed: MAX_TARGETS,
       });
+    // 1 request / s on the site: parallel probes drew 429s (salonvata, B15 R4).
+    const pace = hostPacer();
     const targets: LinkTargetsData["targets"][number][] = await pool(
       picked,
       WORKERS,
       async ([url, sourceUrls]) => ({
         url,
         sourceUrls,
-        probe: await probeUrl(ctx, ctx.fetch, noPace, url),
+        probe: await probeUrl(ctx, ctx.fetch, pace, url),
       }),
     );
     return { status: "ok", targets, found: found.size };

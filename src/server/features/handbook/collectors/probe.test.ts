@@ -4,7 +4,7 @@ import type {
   SafeFetch,
   SafeFetchResult,
 } from "@/server/features/handbook/contracts/collectors";
-import { BROWSER_UA, noPace, probeUrl } from "./probe";
+import { BROWSER_UA, hostPacer, probeUrl } from "./probe";
 
 const ctx: CollectorContext = {
   runId: "r1",
@@ -36,7 +36,7 @@ const fetcher =
   };
 
 const probe = (reply: (method: string, ua?: string) => number | null) =>
-  probeUrl(ctx, fetcher(reply), noPace, "https://example.com/a");
+  probeUrl(ctx, fetcher(reply), hostPacer(0), "https://example.com/a");
 
 describe("probeUrl", () => {
   it("falls back to GET when HEAD is refused", async () => {

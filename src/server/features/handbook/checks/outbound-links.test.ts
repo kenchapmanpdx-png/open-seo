@@ -60,8 +60,17 @@ describe("botfetch.outbound-links", () => {
     expect(statusOf(await outbound(browser), "P5-13")).toBe("OPEN");
   });
 
+  it("reports redirects as a separate S4 info finding", async () => {
+    const result = await outbound({
+      status: 200,
+      finalUrl: "https://example.org/new",
+    });
+    expect(result.findings.map((f) => f.title)).toEqual([
+      "Outbound links point at redirected URLs (info)",
+    ]);
+  });
+
   it.each([
-    ["redirect", { status: 200, finalUrl: "https://example.org/new" }],
     ["platform block", { status: 403, finalUrl: "https://example.org/" }],
     ["other status", { status: 400, finalUrl: "https://example.org/" }],
   ])("keeps P5-13 passing on a %s (info only)", async (_, browser) => {

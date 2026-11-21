@@ -6,14 +6,12 @@ import type {
 
 /**
  * Shared URL probe (ADR-031) for outbound links, un-crawled internal link
- * targets and page resources: HEAD, GET when HEAD is refused (405 / 501) or
- * fails, one retry after 2 s on a transient status. A 403 for a non-browser
+ * targets and page resources: HEAD, GET when HEAD fails or answers ≥ 400, one retry after 2 s on a transient status. A 403 for a non-browser
  * user-agent is retried once as a browser (`browserRetest`). `null` = no
  * HTTP answer (DNS, connect or timeout failure).
  */
 export const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-const HEAD_UNSUPPORTED = new Set([405, 501]);
 const TRANSIENT = new Set([429, 502, 503, 504]);
 const RETRY_DELAY_MS = 2000;
 
@@ -21,8 +19,6 @@ const sleep = (ms: number) =>
   new Promise<void>((done) => setTimeout(done, Math.max(0, ms)));
 
 type Pace = (url: string) => Promise<void>;
-
-export const noPace: Pace = async () => {};
 
 /** Per-host pacer: each request on a host waits for its own slot. */
 export function hostPacer(intervalMs = 1000): Pace {
@@ -68,7 +64,9 @@ async function attempt(
 ): Promise<Answer | null> {
   const once = async () => {
     const head = await fetchOnce(ctx, target, userAgent, "HEAD");
-    if (head && !HEAD_UNSUPPORTED.has(head.status)) return head;
+    // HEAD is trusted only for success / redirect; some servers answer
+    // HEAD with 404 or 405 for a URL GET serves (Google Maps JS).
+    if (head && head.status < 400) return head;
     return fetchOnce(ctx, target, userAgent, "GET");
   };
   const first = await once();

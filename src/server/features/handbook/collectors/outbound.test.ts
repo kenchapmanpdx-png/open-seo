@@ -59,7 +59,7 @@ describe("outbound collector", () => {
     expect(links[0].url).toBe(shared);
   });
 
-  it("falls back from HEAD 405 to GET and asks Googlebot only after a non-2xx", async () => {
+  it("confirms a HEAD ≥ 400 with GET and asks Googlebot only after a non-2xx", async () => {
     calls.length = 0;
     const links = await collect([
       snapshot("/", {
@@ -72,6 +72,7 @@ describe("outbound collector", () => {
     ]);
     expect(sort(calls, (a, b) => a.localeCompare(b))).toEqual([
       "GET https://404-404.test/ bot",
+      "GET https://404-404.test/ browser",
       "GET https://405-200.test/ browser",
       "HEAD https://404-404.test/ browser",
       "HEAD https://405-200.test/ browser",

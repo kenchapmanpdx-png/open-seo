@@ -27,13 +27,15 @@ const retired = (s: Pick<PageSnapshot, "status">) =>
   s.status === 404 || s.status === 410;
 
 /**
- * One row per bad target; targets sharing a final URL and status collapse
- * into one row (a site-wide relative link resolves to a new URL per page).
+ * One row per bad target; redirects sharing a final URL collapse into one
+ * row (a site-wide relative link resolves to a new URL per page).
  */
 function groupRows(targets: Target[], describe: (t: Target) => string) {
   const groups = new Map<string, Target[]>();
   for (const t of targets) {
-    const key = `${normalizeUrl(t.finalUrl)} ${t.status}`;
+    const key = redirected(t)
+      ? normalizeUrl(t.finalUrl)
+      : `${normalizeUrl(t.url)} ${t.status}`;
     groups.set(key, [...(groups.get(key) ?? []), t]);
   }
   return [...groups.values()].map((g) => {

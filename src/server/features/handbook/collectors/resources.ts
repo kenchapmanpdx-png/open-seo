@@ -3,13 +3,13 @@ import type {
   Collector,
   ResourcesData,
 } from "@/server/features/handbook/contracts/collectors";
-import { hostPacer, noPace, pool, probeUrl } from "./probe";
+import { hostPacer, pool, probeUrl } from "./probe";
 
 /**
  * Page resources (ADR-031, SUPP-20): unique `<img src>` (else `data-src`),
  * stylesheet `<link href>` and `<script src>` URLs on read pages, most pages
- * first, capped at 300. Own-host URLs go through `ctx.fetch`; other hosts
- * through `ctx.fetchOffsite` at 1 request / s / host.
+ * first, capped at 300. Own-host URLs go through `ctx.fetch`, other hosts
+ * through `ctx.fetchOffsite`; 1 request / s per host.
  */
 export const MAX_RESOURCES = 300;
 const WORKERS = 4;
@@ -60,15 +60,15 @@ export const resourcesCollector: Collector<"resources"> = {
         found: found.size,
         probed: MAX_RESOURCES,
       });
-    const offsitePace = hostPacer();
+    const pace = hostPacer();
     const resources: ResourcesData["resources"][number][] = await pool(
       picked,
       WORKERS,
       async ([url, { kind, sources }]) => {
         const own = new URL(url).hostname.toLowerCase() === host;
         const probe = own
-          ? await probeUrl(ctx, ctx.fetch, noPace, url)
-          : await probeUrl(ctx, ctx.fetchOffsite, offsitePace, url);
+          ? await probeUrl(ctx, ctx.fetch, pace, url)
+          : await probeUrl(ctx, ctx.fetchOffsite, pace, url);
         return { url, kind, sourceUrls: sources, probe };
       },
     );
