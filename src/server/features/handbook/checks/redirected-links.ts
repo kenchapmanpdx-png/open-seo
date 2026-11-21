@@ -43,7 +43,7 @@ function groupRows(targets: Target[], describe: (t: Target) => string) {
     const from = `linked from ${sources.length} page(s), e.g. ${sources.slice(0, 3).join(", ")}`;
     if (g.length === 1) return `${describe(g[0])} — ${from}`;
     const [first] = g;
-    return `${g.length} URLs → ${first.finalUrl} (${first.status}), e.g. ${g
+    return `${g.length} URLs → ${first.finalUrl}, e.g. ${g
       .slice(0, 3)
       .map((t) => t.url)
       .join(", ")} — ${from}`;
@@ -74,7 +74,7 @@ export const redirectedLinksCheck: HandbookCheck = {
     }
     const describe = (t: Target) =>
       redirected(t)
-        ? `${t.url} → ${t.finalUrl} (${t.status})`
+        ? `${t.url} → ${t.finalUrl}${t.status === 200 ? "" : ` (final answer ${t.status})`}`
         : `${t.url} → ${t.status}`;
     const evidenceFor = (t: Target) =>
       out.evidence(

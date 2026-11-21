@@ -16,9 +16,14 @@ type Link = OutboundData["links"][number];
 const BLOCKED = new Set([401, 403, 429, 503]);
 const DEAD = new Set([404, 410]);
 
+const isRedirect = (status: number) => status >= 300 && status < 400;
+
+/** A redirect answer (offsite fetches stop at the 3xx) or a 200 at another URL. */
 const moved = (link: Link) =>
-  link.browser?.status === 200 &&
-  normalizeUrl(link.browser.finalUrl) !== normalizeUrl(link.url);
+  link.browser !== null &&
+  (isRedirect(link.browser.status) ||
+    (link.browser.status === 200 &&
+      normalizeUrl(link.browser.finalUrl) !== normalizeUrl(link.url)));
 
 /** Dead = no answer (DNS / connect / timeout), 404 or 410 (ADR-031). */
 function deadReason(link: Link): string | null {
@@ -30,7 +35,8 @@ function deadReason(link: Link): string | null {
 
 /** Info only, never a finding: bot / platform blocks, other statuses. */
 function infoReason(link: Link): string | null {
-  if (!link.browser || DEAD.has(link.browser.status)) return null;
+  if (!link.browser || DEAD.has(link.browser.status) || moved(link))
+    return null;
   if (link.browser.status !== 200) return `browser gets ${link.browser.status}`;
   if (link.bot && BLOCKED.has(link.bot.status))
     return `${link.bot.name} gets ${link.bot.status}`;
@@ -132,7 +138,7 @@ export const outboundLinksCheck: HandbookCheck = {
           .slice(0, 50)
           .map(
             (l) =>
-              `${l.url} → ${l.browser?.finalUrl} (on ${l.sourceUrls.slice(0, 3).join(", ")})`,
+              `${l.url} → ${l.browser && isRedirect(l.browser.status) ? l.browser.status : l.browser?.finalUrl} (on ${l.sourceUrls.slice(0, 3).join(", ")})`,
           )
           .join("\n"),
         fix: "Low priority: update each link to its final URL.",

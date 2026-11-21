@@ -66,7 +66,7 @@ describe("crawl.redirected-links", () => {
     expect(statusOf(result, "P3-08")).toBe("OPEN");
     const finding = result.findings.find((f) => f.itemIds.includes("P3-08"));
     expect(finding?.detail).toMatch(
-      /^2 URLs → https:\/\/example\.com\/privacy\/ \(301\)/,
+      /^2 URLs → https:\/\/example\.com\/privacy\/, e\.g\./,
     );
   });
 
