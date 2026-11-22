@@ -4,8 +4,8 @@ Spec: `fork/ACCURACY.md` (read fully first). Also read: `fork/DEPENDABILITY.md` 
 
 Rules:
 
-- [Ken 2026-11-21] Runs before B16; the M5-review start rule is waived. Items #5–#12 are a later batch.
-- `fork/fixtures/audits/salonvata.com-app-vs-semrush-2026-11-19.md` missing → WO for #1 is `BLOCKED-KEN`; continue every other WO.
+- [Ken 2026-11-21] Runs before B16; the M5-review start rule is waived. Items #5–#12 are B17 (`fork/batches/B17-heavy-accuracy-2.md`), which runs right after B15.
+- `fork/fixtures/audits/salonvata.com-app-vs-semrush-2026-11-19.md` is present (`8df0b0e`); WO-B15-001 builds the golden from it. Only if it goes missing: WO for #1 is `BLOCKED-KEN`; continue every other WO.
 - B13 rules still apply: `ops maint on` at the start of every run, secrets, test mode, ops verbs.
 
 ## R1 — Coverage gap (#0) + work orders
@@ -35,4 +35,4 @@ Checkpoint.
 
 ## R5 — Exit
 
-WO-B15-090: AT5, AT6, `fork/reports/B15.md`, `fork/BASELINE.md`, tag handbook-v3.4.0, STATE → `done`; B16 stays on `hold` until Ken says go [Ken 2026-11-21].
+WO-B15-090: AT5, AT6, `fork/reports/B15.md`, `fork/BASELINE.md`, tag handbook-v3.4.0, STATE → B17, then B16 (no hold) [Ken 2026-11-21].

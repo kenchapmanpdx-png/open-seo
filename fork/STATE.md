@@ -3,12 +3,12 @@
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: none required (salonvata source file pushed 2026-11-21, `8df0b0e`). Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; WO-B6-021 BING_WEBMASTER_API_KEY; WO-B6-031 BYOK OpenAI / Gemini / Perplexity keys; WO-B9-029 CRUX_API_KEY (P7-10); WO-B4-001 / 002 / 004 / 015 + WO-B6-090 LLM eval runs; WO-B9-026 in-app perf half; live MCP run with an OAuth client. Done since run 79: K1 Windows keepalive (installed by Ken 2026-11-20)
+needs_ken: none required (salonvata source file pushed 2026-11-21, `8df0b0e`). B17 field-test step only: Semrush export of a new site in `fork/fixtures/audits/` (that step is `BLOCKED-KEN`, the rest runs). Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; WO-B6-021 BING_WEBMASTER_API_KEY; WO-B6-031 BYOK OpenAI / Gemini / Perplexity keys; WO-B9-029 CRUX_API_KEY (P7-10); WO-B4-001 / 002 / 004 / 015 + WO-B6-090 LLM eval runs; WO-B9-026 in-app perf half; live MCP run with an OAuth client. Done since run 79: K1 Windows keepalive (installed by Ken 2026-11-20)
 current_batch: B15
 batch_file: fork/batches/B15-heavy-accuracy.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 82
-next_action: B15 — WO-B15-000 (#0 "pages not read" report table, contract addition) is the last buildable WO; then R5 exit (WO-B15-090) once WO-B15-001's golden exists (`BLOCKED-KEN`: Ken's salonvata source file). Run 82 done: R2 baseline, R3 ADR-031 + contracts 1.9.0, R4 WO-B15-003 / 002 / 004 (`fork/reports/B15.md` § R4). Ken to confirm: P5-13 outbound redirects as S4 "(info)" finding (goldens why F29 / ryan S01) vs §9 #4 "info". B16 on hold [Ken 2026-11-21].
+next_action: B15 — WO-B15-000 (#0 "pages not read" report table, contract addition), then WO-B15-001 (salonvata golden via M3 from `fork/fixtures/audits/salonvata.com-app-vs-semrush-2026-11-19.md`, present since `8df0b0e`), then R5 exit (WO-B15-090, tag handbook-v3.4.0). Then B17 (§9 #5–#12), then B16 (look C). Run 82 done: R2 baseline, R3 ADR-031 + contracts 1.9.0, R4 WO-B15-003 / 002 / 004 (`fork/reports/B15.md` § R4). Default (no Ken answer needed, keeps goldens at Δ 0): keep P5-13 outbound redirects as a separate S4 "(info)" finding. [Ken 2026-11-21] build everything on the accuracy list, no deferral; B16 no longer on hold.
 contracts_version: 1.9.0 (B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -29,31 +29,32 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 3. Set `status: in-progress`. Open `batch_file`; resume at `next_action`.
 4. Missing credential or access (run `bash fork/scripts/preflight.sh`; never read `.env*`) → mark only the dependent WOs/steps `BLOCKED-KEN` and continue everything else.
 5. End of run scope or ~70% context: commit (every run must produce ≥1 commit; it is the autopilot progress signal), update this file (run log, next_action). AUTOPILOT → exit. INTERACTIVE → keep going (auto-compact handles context).
-6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch, skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
+6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch in table order (B15 → B17 → B16), skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
 7. Last batch in the sequence with a batch file (B16) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
 8. `status: needs-ken` only when no remaining work in the current or any later batch can proceed without Ken.
 9. Ken switches to SPLIT (weekly usage low) → follow SPLIT rules from the next run. Weekly limit fully reached → autopilot stops; resume later with the same command.
 
 ## Batch sequence
 
-| Batch | File                                             | Model (SPLIT) | Status           |
-| ----- | ------------------------------------------------ | ------------- | ---------------- |
-| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done             |
-| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done             |
-| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done             |
-| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done             |
-| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done             |
-| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done             |
-| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done             |
-| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done             |
-| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done             |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done             |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done             |
-| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done             |
-| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done             |
-| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done             |
-| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | in-progress      |
-| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | hold (Ken 11-21) |
+| Batch | File                                             | Model (SPLIT) | Status             |
+| ----- | ------------------------------------------------ | ------------- | ------------------ |
+| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done               |
+| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done               |
+| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done               |
+| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done               |
+| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done               |
+| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done               |
+| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done               |
+| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done               |
+| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done               |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done               |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done               |
+| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done               |
+| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done               |
+| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done               |
+| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | in-progress        |
+| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | queued (after B15) |
+| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | queued (after B17) |
 
 ## Run log
 
