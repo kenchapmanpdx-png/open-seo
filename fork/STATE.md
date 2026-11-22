@@ -3,12 +3,12 @@
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: none required (salonvata source file pushed 2026-11-21, `8df0b0e`). B17 field-test step only: Semrush export of a new site in `fork/fixtures/audits/` (that step is `BLOCKED-KEN`, the rest runs). Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; WO-B6-021 BING_WEBMASTER_API_KEY; WO-B6-031 BYOK OpenAI / Gemini / Perplexity keys; WO-B9-029 CRUX_API_KEY (P7-10); WO-B4-001 / 002 / 004 / 015 + WO-B6-090 LLM eval runs; WO-B9-026 in-app perf half; live MCP run with an OAuth client. Done since run 79: K1 Windows keepalive (installed by Ken 2026-11-20)
-current_batch: B17
-batch_file: fork/batches/B17-heavy-accuracy-2.md
+needs_ken: none required. BLOCKED-KEN (non-blocking): B17 field test — add a Semrush export (xlsx/csv) of a new site to `fork/fixtures/audits/`, then loop M6 runs `import-external-audit.ts`; the salonvata Semrush pages XLSX would also let #9 (one-inlink pages, S13) be checked by URL. Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); WO-B6-012 AI traffic receiver + drain; WO-B6-021 BING_WEBMASTER_API_KEY; WO-B6-031 BYOK OpenAI / Gemini / Perplexity keys; WO-B9-029 CRUX_API_KEY (P7-10); WO-B4-001 / 002 / 004 / 015 + WO-B6-090 LLM eval runs; WO-B9-026 in-app perf half; live MCP run with an OAuth client. M1 force-push of `ken/rebase-v0.1.31-m1` stays Ken's ("push"); B15/B17 commits on `ken/main` must be ported first
+current_batch: B16
+batch_file: fork/batches/B16-heavy-novice-cleanup-restyle.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 84
-next_action: B17 R1 cont. — (1) goldens on the final run-84 code: salonvata (`--depth full --sidecar :4777`, out `fork/runs/b17/salon-r85`, caught ≥ 28) + why / ryan / bluetree caught Δ ≥ 0 (20 · 23 · 23) and triage of the P7-02 merge (golden S26); BadGEO with `--sidecar http://127.0.0.1:4778`; (2) WO-B17-011 importer `fork/scripts/import-external-audit.ts` (xlsx = zip: hand-rolled reader with node:zlib, no new dependency; CSV too) + loop M6 in `fork/MAINTENANCE.md`; (3) WO-B17-012 optional; (4) WO-B17-090 exit (in-app `ops e2e … --via check-page`, field test BLOCKED-KEN without a new Semrush export, tag handbook-v3.5.0, STATE → B16). Built run 84: WO-B17-005…010, ADR-032, contracts 1.10.0 (sidecars rebuilt). Then B16 (look C). [Ken 2026-11-21] build everything on the accuracy list, no deferral.
+current_run: 85
+next_action: B16 R1 (R0 M1 local gates done run 81, `fork/reports/M1-2026-11-21-prep.md` § Local gates). Read `fork/NOVICE-CLEANUP.md` fully; inspect parked WIP branch `wip/b16-run81` (run 81, died 00:52; local only) and reuse what still applies; re-verify spec §1 G1–G5, blocked-note prefix table, ADR-030, WO-B16-00n rows; look_choice = C. B17 closed run 85 (tag handbook-v3.5.0; WO-B17-012 deferred; field test BLOCKED-KEN).
 contracts_version: 1.10.0 (B17 run 84: ADR-032 PageSnapshot `redirectChain` + `doctype`, SUPP-21…26; 1.9.0 B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -36,25 +36,25 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                             | Model (SPLIT) | Status             |
-| ----- | ------------------------------------------------ | ------------- | ------------------ |
-| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done               |
-| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done               |
-| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done               |
-| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done               |
-| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done               |
-| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done               |
-| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done               |
-| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done               |
-| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done               |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done               |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done               |
-| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done               |
-| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done               |
-| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done               |
-| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done               |
-| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | in-progress        |
-| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | queued (after B17) |
+| Batch | File                                             | Model (SPLIT) | Status      |
+| ----- | ------------------------------------------------ | ------------- | ----------- |
+| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done        |
+| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done        |
+| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done        |
+| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done        |
+| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done        |
+| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done        |
+| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done        |
+| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done        |
+| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done        |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done        |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done        |
+| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done        |
+| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done        |
+| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done        |
+| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done        |
+| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | done        |
+| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | in-progress |
 
 ## Run log
 
@@ -144,6 +144,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 82  | 2026-11-21 | Opus 5.5 (Ken, live) | B15 R2: salonvata baseline (F 38.3, 55 findings). R3: ADR-031, contracts 1.9.0, sidecars 4777 + 4778 rebuilt. R4: WO-B15-003 (P3-08 un-crawled targets, 31 `?page_id` URLs → 1 row), 002 (SUPP-20: logo 404 × 80 pages = 1 finding), 004 (P5-13 dead vs info; redirects = S4 "(info)" finding to keep goldens). 3 live-run fixes (HEAD ≥ 400 → GET, site probes 1 req/s, unfollowed 3xx). Goldens Δ 0 (20 · 23 · 23), BadGEO 0 / 0, tests 430 / 2650                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | WO-B15-000, then R5 (golden BLOCKED-KEN) |
 | 83  | 2026-11-21 | Opus 5.5 (autopilot) | B15 WO-000: report `coverage.unread` "Pages not read" (classifier, in-app audit vs snapshots, CLI leftovers, Details table, markdown line); AT0 0 unclassified. WO-001: salonvata golden via M3 (30 + 3 passes), scorer query-string match; baseline 25 → r5 27 caught. Golden found a check defect: variants probes 429 after the crawl (Crawl-delay 10) → one Retry-After retry (S20 `/page/2/` back). R5: goldens Δ 0 (20 · 23 · 23), BadGEO 0 / 0, tests 431 / 2652, ops-test 18 / 18, e2e PASS (62 / 62 / 62, $0.08); tag handbook-v3.4.0; STATE → B17                                                                                                                                                                                                                                                                                                                                                                                | B17 R1                                   |
 | 84  | 2026-11-21 | Opus 5.5 (autopilot) | B17 R1: WOs 005…012 + 090, ADR-032, contracts 1.10.0 (sidecars 4777 + 4778 rebuilt, app restarted, health ok). Built #8 root causes (attachment pages, theme demo content, placeholder text P5-04; P3-08 self-redirect fold), #5 P7-02 one finding, #6 empty / external generic anchors, #7 entity nodes P6-03, #9 one-inlink pages, #10 SUPP-21…26 (13 of 19 GAP rows built, 6 cap notes). salonvata r84a (#8 only) caught 28 · 1 · 1 (≥ 27). BadGEO 89 pages 0 / 0 (hub `/all.html`, cap 150). Tests 434 / 2663                                                                                                                                                                                                                                                                                                                                                                                                                          | goldens on final code, WO-B17-011        |
+| 85  | 2026-11-21 | Opus 5.5 (autopilot) | B17 R1 cont. + exit: WO-B17-011 importer (`import-external-audit.ts`, xlsx via node:zlib / csv, SEMRUSH_MAP 101 checks, misses both ways) + loop M6; WO-B17-012 deferred. Goldens on final code (sequential reruns): salonvata 28 · 1 · 1 (≥ 27; all #5–#11 expectations caught, S13 coarse only), why 20, ryan 23, bluetree 23 (Δ 0); BadGEO sidecar 89 pages 0 / 0; in-app e2e b17-exit PASS (D, 51 / 51 / 51, LLM $0.015). Parallel goldens lose Lighthouse calls (sidecar stall-guard restarts). Checks green (434 / 2663, sidecar 10, ops 18 + 40). Tag handbook-v3.5.0. Field test BLOCKED-KEN                                                                                                                                                                                                                                                                                                                                       | B16 R1                                   |
 
 ## Batch history
 
@@ -163,3 +164,4 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B13   | Opus 5.5 | 2026-11-20 | 2026-11-20 | fork/reports/B13.md |
 | B14   | Opus 5.5 | 2026-11-20 | 2026-11-21 | fork/reports/B14.md |
 | B15   | Opus 5.5 | 2026-11-21 | 2026-11-21 | fork/reports/B15.md |
+| B17   | Opus 5.5 | 2026-11-21 | 2026-11-21 | fork/reports/B17.md |
