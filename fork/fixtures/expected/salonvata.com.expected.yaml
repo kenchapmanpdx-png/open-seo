@@ -1,0 +1,284 @@
+# Golden expectations derived from fork/fixtures/audits/salonvata.com-app-vs-semrush-2026-11-19.md (read-only source; M3, B15 WO-B15-001).
+# urls: paths relative to origin; `*` = any segment; a pattern with `?` also matches the query string. items: registry ids.
+# detectableBy: deterministic | render | llm | data | owner. severity: the source's Handbook (v3) severity; Semrush-only
+# findings map Error → S2, Warning → S3, Notice → S4. supp: SUPP rule ids (ADR-020).
+# Kept: findings the source verified (browser check, Semrush export, or "winner" = a real defect) and the T-backlog
+# targets (T5–T20). Left out: Semrush noise the source rates "Skip" / "Noise" (text-HTML ratio, unminified counts,
+# underscores, llms.txt, nofollow, AMP, URL length) and Site Audit-only counts with no page list (noindex 2).
+# note "B17 §9 #n": the dedicated rule is built in B17; today's symptom findings may already match.
+site: salonvata.com
+origin: https://salonvata.com
+audit: fork/fixtures/audits/salonvata.com-app-vs-semrush-2026-11-19.md
+auditHandbookVersion: "4.6"
+registryHandbookVersion: "4.6"
+mode: AUDIT
+tier: T3 # intake tier of the B15 runs; the source does not state one
+grade: { final: 34.5, uncapped: 34.5 }
+
+findings:
+  - id: S01
+    title: "Internal links to dead targets: /specials/, /eyelash-extensions/, /about/careers/, /nail-services/, /hair-services/, /contact-vata-salon/, /about-vata-salon/stylists/"
+    items: [P3-08]
+    urls:
+      - /specials/
+      - /eyelash-extensions/
+      - /about/careers/
+      - /nail-services/
+      - /hair-services/
+      - /contact-vata-salon/
+      - /about-vata-salon/stylists/
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "4 of 8 dead targets browser-verified; Site Audit and Handbook F15 agree"
+  - id: S02
+    title: "Sitewide Careers menu item links to /?page_id=15790 (404) — query-string target (T14)"
+    items: [P3-08]
+    urls: ["/?page_id=15790"]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "§9 #3 (B15). Browser-verified href on home"
+  - id: S03
+    title: "Broken logo image /wp-content/uploads/2016/07/vata-logo.png (404) on every template (T1, T20)"
+    items: []
+    supp: [SUPP-20]
+    urls: [/, /about/, /services/]
+    class: HEADERS
+    detectableBy: deterministic
+    severity: S2
+    note: "§9 #2 (B15). Semrush 64 pages; browser naturalWidth 0"
+  - id: S04
+    title: "Dead external links: http://myhairgirlmichele (/meet-the-staff/), pureprivilege.com/templates/home/?SET_LOCALE=us (/why-aveda/pure-privilege/) (T15)"
+    items: [P5-13]
+    urls: [/meet-the-staff/, /why-aveda/pure-privilege/]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S4
+    note: "§9 #4 (B15). Dead only; platform 400/403 and redirects are info"
+  - id: S05
+    title: "Links with no anchor text (4) and non-descriptive anchor text (4) (T7)"
+    items: []
+    supp: [SUPP-01]
+    urls: ["/*"]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "B17 §9 #6 (empty anchors). Semrush gives counts only, no page list"
+  - id: S06
+    title: "Security headers missing incl. HSTS (2 hosts)"
+    items: [P8-01, P8-05]
+    urls: [/]
+    class: HEADERS
+    detectableBy: deterministic
+    severity: S4
+  - id: S07
+    title: "Duplicate titles, meta descriptions or H1s (one description on 36 pages, another on 11)"
+    items: [P4-01]
+    urls: ["/*"]
+    class: PAGE
+    detectableBy: deterministic
+    severity: S2
+  - id: S08
+    title: "Missing H1 on 7 pages incl. home"
+    items: [P4-01]
+    urls: [/]
+    class: PAGE
+    detectableBy: deterministic
+    severity: S2
+  - id: S09
+    title: "Indexable pages without meta description (tag / category archives, staff CPT)"
+    items: [P4-03]
+    urls: [/cpt_staff_lst/meet-the-staff/, /category/*, /tag/*]
+    class: PAGE
+    detectableBy: deterministic
+    severity: S2
+  - id: S10
+    title: "Viewport blocks zoom (user-scalable=no) on 71 pages"
+    items: [P4-04]
+    urls: [/]
+    class: PAGE
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush missed ('Viewport not configured' 0)"
+  - id: S11
+    title: "Heading order / landmarks: no <main>, nav/footer labels as headings, skips"
+    items: [P4-08]
+    urls: [/]
+    class: PAGE
+    detectableBy: deterministic
+    severity: S2
+  - id: S12
+    title: "Sitemap URLs with 0 incoming internal links (37: attachments under /about/, /home/, /teeth-whitening/, /services/cavitation*, staff CPT)"
+    items: [P3-12]
+    urls:
+      - /cpt_staff_lst/meet-the-staff/
+      - /home/*
+      - /teeth-whitening/*
+      - /about/location/*
+      - /meet-the-staff-2/bookonlinebutton/
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush pages export: 37; Handbook F16 37"
+  - id: S13
+    title: "Sitemap URLs with exactly one incoming internal link (6) (T9)"
+    items: [P3-12]
+    urls: ["/*"]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "B17 §9 #9. Semrush 'Pages with only one internal link' 6; page list not in the source"
+  - id: S14
+    title: "Business entity conflict: BeautySalon 'Vata Salon + Spa', LocalBusiness 'Vata Salon', microdata BeautySalon; 2 WebSite nodes with different names (T10)"
+    items: [P6-03, P5-07]
+    urls: [/]
+    class: SCHEMA
+    detectableBy: deterministic
+    severity: S2
+    note: "B17 §9 #7 (deterministic node-count / name-diff rule). Browser-verified on home; P6-03 stable-@id finding matches today"
+  - id: S15
+    title: "Empty JSON-LD values (@id, contactPoint email / contactOption / areaServed)"
+    items: [P6-02]
+    urls: [/]
+    class: SCHEMA
+    detectableBy: deterministic
+    severity: S2
+  - id: S16
+    title: "WordPress attachment pages indexed (~35 URLs, filename titles, attachment-sitemap.xml) — root cause of thin / duplicate / orphan counts (T5)"
+    items: [P3-12]
+    supp: [SUPP-05]
+    urls: [/about/location/*, /teeth-whitening/*, /home/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "B17 §9 #8 (one root-cause finding). Symptom findings (thin, orphan, near-duplicate) match today"
+  - id: S17
+    title: "Theme demo leftovers indexed: demo posts, /services/hair-style-*, /services/cavitation*, default categories, /author/imaginal-admin/ (T6)"
+    items: [P3-12]
+    urls:
+      - /portugal-2013-road-trip-gallery/
+      - /recent-trends-in-storytelling/
+      - /supernatural-fx-showreel/
+      - /services/hair-style-*/
+      - /category/*
+      - /author/imaginal-admin/
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "B17 §9 #8 (root-cause rule). Thin / near-duplicate findings match today"
+  - id: S18
+    title: "Demo lorem ipsum text in headings ('Far far away, behind the word mountains…') (T17)"
+    items: [P5-04]
+    urls: ["/*"]
+    class: CONTENT
+    detectableBy: deterministic
+    severity: S3
+    note: "B17 §9 #8. Source saw it only inside the heading-structure evidence; page not named"
+  - id: S19
+    title: "http / www variants reach the canonical origin in 2 hops"
+    items: [P3-01]
+    urls: [http://www.salonvata.com/, http://salonvata.com/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+  - id: S20
+    title: "/page/2/ serves the homepage (200, same text)"
+    items: [P3-12]
+    urls: [/page/2/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+  - id: S21
+    title: "AI-bot policy split: robots.txt allows Bytespider, server returns 403"
+    items: [P9-01]
+    urls: [/]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S4
+  - id: S22
+    title: "Test / draft URL in the sitemap: /home/67-st15_2234_r3_crop-copy-copy/"
+    items: [P3-12]
+    urls: [/home/67-st15_2234_r3_crop-copy-copy/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+  - id: S23
+    title: "Indexable tag archives missing from the sitemap (9)"
+    items: [P3-12]
+    urls: [/tag/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+  - id: S24
+    title: "Thin pages (< 50 main-content words) and duplicate content (10 pages)"
+    items: [P3-12]
+    urls: [/about/location/*, /gallery/, /teeth-whitening/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+  - id: S25
+    title: "Images missing alt (124 images)"
+    items: [P8-04]
+    urls: ["/*"]
+    class: A11Y
+    detectableBy: deterministic
+    severity: S2
+  - id: S26
+    title: "Images without dimensions / hero not prioritised — one finding with page groups, not 15 (T16)"
+    items: [P7-02]
+    urls: [/]
+    class: PERF
+    detectableBy: deterministic
+    severity: S3
+    note: "B17 §9 #5 merges F33–F47; any P7-02 row on / matches today"
+  - id: S27
+    title: "Render-blocking scripts / font CSS in <head>; ~131 JS/CSS files (~957 KB) on every template, reported once per template (T12)"
+    items: [P7-05]
+    urls: [/]
+    class: PERF
+    detectableBy: deterministic
+    severity: S3
+  - id: S28
+    title: "Cache policy: hashed assets not immutable / HTML not revalidated"
+    items: [P7-07]
+    urls: [/]
+    class: HEADERS
+    detectableBy: deterministic
+    severity: S3
+  - id: S29
+    title: "Slow page: /privacy-policy/ HTML load 5.7 s (server response)"
+    items: [P7-09]
+    urls: [/privacy-policy/]
+    class: PERF
+    detectableBy: render
+    severity: S2
+    note: "Semrush 1 / Site Audit slow-response 1; one measurement, may not repeat"
+  - id: S30
+    title: "Brand spelled more than one way: 'Vata Salon + Spa', 'Vata Salon & Spa', 'Vata Hair Salon & Spa'"
+    items: [P5-07]
+    urls: [/]
+    class: CONTENT
+    detectableBy: llm
+    severity: S3
+    note: "AI judge F25 in the source run; CLI goldens run without LLM (partial at best)"
+
+passes:
+  - id: PASS-01
+    title: "Sitemap <loc> host = canonical host; robots.txt names the sitemap"
+    items: [P3-19]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+  - id: PASS-02
+    title: "Every JSON-LD block parses (Semrush 0 markup errors of 315)"
+    items: [P6-08]
+    urls: [/]
+    class: SCHEMA
+    detectableBy: deterministic
+  - id: PASS-03
+    title: "No disallowed internal render resources (Semrush 0 of 8,110)"
+    items: [P3-20]
+    urls: [/]
+    class: CRAWL
+    detectableBy: render

@@ -25,6 +25,7 @@ export const COLLECTOR_KEYS = [
 export type CollectorKey = (typeof COLLECTOR_KEYS)[number];
 
 import type { AxeData, LighthouseData, RenderData } from "./render-data";
+import type { UnreadCoverage } from "./exports";
 
 export type Unavailable = { status: "unavailable"; reason: string };
 export type Collected<T> = ({ status: "ok" } & T) | Unavailable;
@@ -501,30 +502,6 @@ export type Coverage = {
   capped: boolean;
   /** URLs the crawl saw and the run did not read, classified (ACCURACY #0). 1.9.0 */
   unread?: UnreadCoverage;
-};
-
-/** Why a crawled URL was not read (ACCURACY #0). 1.9.0 */
-export type UnreadClass =
-  | "redirect"
-  | "404"
-  | "attachment"
-  | "non-HTML"
-  | "unseen";
-
-export type UnreadUrl = {
-  url: string;
-  class: UnreadClass;
-  /** HTTP status the site crawl saw; null = not fetched (cap, fetch error). */
-  status: number | null;
-  /** Redirect target, when known. */
-  target?: string | null;
-};
-
-/** `rows` is capped (200); `total` and `byClass` count every unread URL. */
-export type UnreadCoverage = {
-  total: number;
-  byClass: Partial<Record<UnreadClass, number>>;
-  rows: UnreadUrl[];
 };
 
 export type CollectedData = {

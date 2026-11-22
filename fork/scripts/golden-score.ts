@@ -3,7 +3,8 @@
  * golden expectation file (fork/fixtures/expected/*.expected.yaml).
  *
  * Expected finding → caught (a report finding shares ≥1 item id AND ≥1 URL
- * path, `*` = one segment wildcard) · partial (shares an item but no URL, or
+ * path, `*` = one segment wildcard; a pattern with `?` also matches the
+ * query string) · partial (shares an item but no URL, or
  * an item is OPEN/PARTIAL without a finding) · missed. A missed finding is
  * `site-changed` when its `note` says so, or when a direct re-fetch of one of
  * its concrete URLs returns a status different from the run's crawl
@@ -87,11 +88,13 @@ export function pathMatches(pattern: string, path: string): boolean {
  */
 function urlMatches(report: ReportJson, pattern: string, reportUrl: string) {
   const url = new URL(reportUrl, report.site.origin);
-  if (!/^https?:\/\//.test(pattern)) return pathMatches(pattern, url.pathname);
+  // A pattern with a query string (`/?page_id=1`) also matches the query.
+  const path = pattern.includes("?") ? url.pathname + url.search : url.pathname;
+  if (!/^https?:\/\//.test(pattern)) return pathMatches(pattern, path);
   const expected = new URL(pattern);
   return (
     expected.origin === url.origin &&
-    pathMatches(expected.pathname, url.pathname)
+    pathMatches(expected.pathname + expected.search, path)
   );
 }
 

@@ -19,6 +19,14 @@ const CLASS_LABEL: Record<Unread["rows"][number]["class"], string> = {
   unseen: "Not reached",
 };
 
+const CLASS_ORDER = [
+  "unseen",
+  "404",
+  "redirect",
+  "attachment",
+  "non-HTML",
+] as const;
+
 /** "Pages not read" (ACCURACY #0): crawled URLs this run did not read, collapsed. */
 export function UnreadPagesTable({
   unread,
@@ -28,8 +36,8 @@ export function UnreadPagesTable({
   capped: boolean;
 }) {
   if (unread.total === 0) return null;
-  const counts = Object.entries(unread.byClass)
-    .map(([cls, n]) => `${CLASS_LABEL[cls as keyof typeof CLASS_LABEL]} ${n}`)
+  const counts = CLASS_ORDER.filter((c) => unread.byClass[c])
+    .map((c) => `${CLASS_LABEL[c]} ${unread.byClass[c]}`)
     .join(" · ");
   return (
     <details className="text-sm">

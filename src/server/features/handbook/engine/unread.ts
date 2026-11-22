@@ -2,7 +2,7 @@ import type {
   UnreadClass,
   UnreadCoverage,
   UnreadUrl,
-} from "@/server/features/handbook/contracts/collectors";
+} from "@/server/features/handbook/contracts/exports";
 
 /**
  * "Pages not read" (ACCURACY #0, ADR-031): every URL the site crawl saw that

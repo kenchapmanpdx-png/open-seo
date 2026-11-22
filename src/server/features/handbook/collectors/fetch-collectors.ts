@@ -284,6 +284,17 @@ export const llmsCollector: Collector<"llms"> = {
   },
 };
 
+const VARIANT_RETRY_DEFAULT_MS = 10_000;
+const VARIANT_RETRY_MAX_MS = 15_000;
+
+/** `Retry-After` in seconds (capped), else 10 s (a common Crawl-delay). */
+function retryAfterMs(res: SafeFetchResult): number {
+  const seconds = Number(header(res, "retry-after"));
+  return Number.isFinite(seconds) && seconds > 0
+    ? Math.min(seconds * 1000, VARIANT_RETRY_MAX_MS)
+    : VARIANT_RETRY_DEFAULT_MS;
+}
+
 export const variantsCollector: Collector<"variants"> = {
   key: "variants",
   dependsOn: ["pages"],
@@ -326,7 +337,14 @@ export const variantsCollector: Collector<"variants"> = {
     }
     const out: VariantsData["probes"][number][] = [];
     for (const [kind, url] of probes) {
-      const res = await tryFetch(ctx, url);
+      let res = await tryFetch(ctx, url);
+      // One retry on 429: the probes run right after the crawl, and a
+      // throttled answer says nothing about the variant (salonvata, B15).
+      if (res?.status === 429) {
+        const wait = retryAfterMs(res);
+        await new Promise((r) => setTimeout(r, wait));
+        res = await tryFetch(ctx, url);
+      }
       if (res) {
         const facts = extractHtmlFacts(res.body, res.finalUrl);
         out.push({

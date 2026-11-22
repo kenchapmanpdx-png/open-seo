@@ -6,6 +6,7 @@ import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
 import { scanAiAddressed } from "@/server/features/handbook/engine/ai-addressed";
 import { parseBlock } from "./jsonld-parse";
 import { unreadCoverage } from "@/server/features/handbook/engine/unread";
+import { emptyHead, emptyMarkup } from "./empty-page";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
 import {
@@ -177,10 +178,7 @@ async function crawl(
       read: snapshots.length,
       capped: left.length > 0,
       // CLI view of ACCURACY #0: cap leftovers and failed fetches (status unknown).
-      unread: unreadCoverage(
-        [...left, ...failed].map((url) => ({ url, status: null })),
-        snapshots,
-      ),
+      unread: unreadCoverage([...left, ...failed].map(nullStatus), snapshots),
     },
   };
 }
@@ -238,9 +236,6 @@ export async function crawlSecondPass(
     capped: false,
   };
   const unread = guarded.length - snapshots.length;
-  const readNow = new Set(snapshots.map((s) => s.url));
-  const leftover = wave.filter((u) => !readNow.has(u));
-  const skipped = guarded.filter((u) => !wave.includes(u));
   return {
     snapshots,
     jsonld,
@@ -250,15 +245,14 @@ export async function crawlSecondPass(
       read: before.read + snapshots.length,
       capped: before.capped || unread > 0,
       unread: unreadCoverage(
-        [
-          ...(before.unread?.rows ?? []),
-          ...[...leftover, ...skipped].map((url) => ({ url, status: null })),
-        ],
+        [...(before.unread?.rows ?? []), ...guarded.map(nullStatus)],
         snapshots,
       ),
     },
   };
 }
+
+const nullStatus = (url: string) => ({ url, status: null });
 
 /** Robots verdict for `OpenSEO-Handbook`; hosts without a robots.txt read allowed. */
 function robotsAllowed(collected: Partial<CollectedData>, url: string) {
@@ -377,35 +371,6 @@ function normalize(url: string): string | null {
   } catch {
     return null;
   }
-}
-
-function emptyMarkup(): PageSnapshot["markup"] {
-  return {
-    headings: [],
-    mainCount: 0,
-    navLabels: [],
-    scripts: [],
-    headLinks: [],
-    buttons: [],
-    videos: [],
-    counts: { tables: 0, lists: 0, forms: 0, iframes: 0, videos: 0 },
-    text: "",
-  };
-}
-
-function emptyHead(): PageSnapshot["head"] {
-  return {
-    title: null,
-    metaDescription: null,
-    canonical: null,
-    robotsMeta: null,
-    lang: null,
-    viewport: null,
-    og: {},
-    twitter: {},
-    meta: {},
-    hreflang: [],
-  };
 }
 
 // ---------------------------------------------------------------------------

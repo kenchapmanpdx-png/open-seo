@@ -95,6 +95,10 @@ export const unreadCoverageSchema = z.object({
   ),
 });
 
+export type UnreadCoverage = z.infer<typeof unreadCoverageSchema>;
+export type UnreadUrl = UnreadCoverage["rows"][number];
+export type UnreadClass = UnreadUrl["class"];
+
 export const reportJsonSchema = z.object({
   reportVersion: z.literal(REPORT_JSON_VERSION),
   contractsVersion: z.string(),
