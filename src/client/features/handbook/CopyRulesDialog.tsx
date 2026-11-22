@@ -7,7 +7,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/client/components/ui/dialog";
 import { useCopy } from "@/client/hooks/useCopy";
 import copyRules from "@/server/features/handbook/copy-rules.json";
@@ -16,16 +15,19 @@ import copyRules from "@/server/features/handbook/copy-rules.json";
  * Copy rules pack (fork/skills/copy-rules, ADR-024): the rules to give a
  * writer or model before rewriting page copy for content findings.
  */
-export function CopyRulesDialog() {
+export function CopyRulesDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const { copied, copy } = useCopy();
   return (
-    <Dialog>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        Copy rules
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Copy rules ({copyRules.version})</DialogTitle>
+          <DialogTitle>Writing rules ({copyRules.version})</DialogTitle>
           <DialogDescription>
             Give these to the writer or AI assistant before rewriting page copy
             for content findings.

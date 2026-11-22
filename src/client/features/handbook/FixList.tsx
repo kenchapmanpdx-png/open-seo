@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { ListChecks } from "lucide-react";
 import { EmptyState } from "@/client/components/EmptyState";
 import { HelpLabel } from "@/client/components/HelpLabel";
@@ -7,32 +8,31 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/client/components/ui/alert";
-import { Badge } from "@/client/components/ui/badge";
 import { Button } from "@/client/components/ui/button";
 import { Card, CardContent } from "@/client/components/ui/card";
-import { Checkbox } from "@/client/components/ui/checkbox";
 import { downloadFile } from "@/client/lib/download";
 import {
   HANDBOOK_CATEGORIES,
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
 import {
+  blockedCauses,
   blockedItems,
   buildFixGroups,
+  checksCount,
   fixFindings,
   fixListCsv,
   browserStorage,
   loadDone,
+  notFinalNote,
   provisionalReason,
   saveDone,
   type CategoryFilter,
-  type Finding,
 } from "./fixList";
-import { AI_JUDGED, SEVERITY_LABELS, STATUS_LABELS } from "./labels";
+import { STATUS_LABELS } from "./labels";
+import { FixRow, MergedFixRow } from "./FixRows";
 import { RunFullAuditButton } from "./RunFullAuditButton";
 
-const PAGE_PREVIEW = 20;
-const DETAIL_PREVIEW = 5;
 const FILTERS: CategoryFilter[] = ["all", ...HANDBOOK_CATEGORIES];
 
 /**
@@ -44,12 +44,18 @@ export function FixList({
   runId,
   report,
   notes,
+  runDate,
+  newerRunId = null,
 }: {
   projectId: string;
   runId: string;
   report: ReportJson;
   /** Cap notes and similar run notes shown under the header. */
   notes: string[];
+  /** When the run started (the "not final" note names it). */
+  runDate: string;
+  /** A newer completed check of the same site, if any. */
+  newerRunId?: string | null;
 }) {
   const [filter, setFilter] = useState<CategoryFilter>("all");
   const [done, setDone] = useState<Set<string>>(() => new Set());
@@ -60,13 +66,21 @@ export function FixList({
   }, [runId]);
   const findings = fixFindings(report);
   const groups = buildFixGroups(findings, filter, done);
-  const blocked = blockedItems(report);
-  const provisional = provisionalReason(report);
+  const blockedCount = blockedItems(report).length;
+  const causes = blockedCauses(report);
+  const notFinal = notFinalNote({
+    reason: provisionalReason(report),
+    runDate,
+    newerRunId,
+  });
 
-  const toggle = (code: string, checked: boolean) => {
+  /** Merged rows toggle all their findings at once. */
+  const toggle = (codes: string[], checked: boolean) => {
     const next = new Set(done);
-    if (checked) next.add(code);
-    else next.delete(code);
+    for (const code of codes) {
+      if (checked) next.add(code);
+      else next.delete(code);
+    }
     setDone(next);
     const storage = browserStorage();
     if (storage) saveDone(runId, next, storage);
@@ -75,11 +89,23 @@ export function FixList({
   return (
     <div className="space-y-4">
       <FixListHeader report={report} />
-      {provisional ? (
+      {notFinal ? (
         <Alert variant="warning">
-          <AlertTitle>Grade provisional</AlertTitle>
-          <AlertDescription>
-            Browser checks skipped: {provisional}.
+          <AlertTitle>{notFinal.title}</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>{notFinal.body}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <RunFullAuditButton projectId={projectId} label="Check again" />
+              {notFinal.newerRunId ? (
+                <Link
+                  to="/p/$projectId/handbook/$runId"
+                  params={{ projectId, runId: notFinal.newerRunId }}
+                  className="text-sm underline"
+                >
+                  A newer check exists
+                </Link>
+              ) : null}
+            </div>
           </AlertDescription>
         </Alert>
       ) : null}
@@ -123,39 +149,63 @@ export function FixList({
         />
       ) : (
         groups.map((group) => (
-          <section key={group.key} className="space-y-2">
-            <h3 className="text-sm font-semibold">
+          <section key={group.key} className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <span
+                aria-hidden
+                className={`size-2.5 rounded-full ${GROUP_MARKER[group.key]}`}
+              />
               <HelpLabel
-                label={`${group.label} (${group.findings.length})`}
+                label={`${group.label} (${group.rows.length})`}
                 helpText={group.help}
               />
             </h3>
-            {group.findings.map((f) => (
-              <FixRow
-                key={f.code}
-                finding={f}
-                done={done.has(f.code)}
-                onDone={(checked) => toggle(f.code, checked)}
-              />
-            ))}
+            {group.rows.map((row) =>
+              row.findings.length === 1 ? (
+                <FixRow
+                  key={row.findings[0].code}
+                  finding={row.findings[0]}
+                  done={row.done}
+                  onDone={(checked) => toggle([row.findings[0].code], checked)}
+                />
+              ) : (
+                <MergedFixRow
+                  key={row.findings[0].code}
+                  row={row}
+                  doneCodes={done}
+                  onDone={toggle}
+                />
+              ),
+            )}
           </section>
         ))
       )}
-      {blocked.length ? (
+      {blockedCount ? (
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">
             <HelpLabel
-              label={`${STATUS_LABELS.BLOCKED.label} (${blocked.length})`}
+              label={`${STATUS_LABELS.BLOCKED.label} (${blockedCount})`}
               helpText={STATUS_LABELS.BLOCKED.help}
             />
           </h3>
-          <ul className="space-y-1 text-sm">
-            {blocked.map((item) => (
-              <li key={item.itemId}>
-                <span className="font-mono text-xs text-muted-foreground">
-                  {item.itemId}
-                </span>{" "}
-                {item.note ?? "No reason recorded."}
+          <ul className="space-y-2 text-sm">
+            {causes.map((cause) => (
+              <li key={cause.key}>
+                <span className="font-medium">{cause.label}</span> —{" "}
+                {checksCount(cause.items.length)}. {cause.action}
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-xs text-muted-foreground">
+                    Details
+                  </summary>
+                  <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                    {cause.items.map((item) => (
+                      <li key={item.itemId}>
+                        <span className="font-mono">{item.itemId}</span>{" "}
+                        {item.note ?? "No reason recorded."}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               </li>
             ))}
           </ul>
@@ -197,138 +247,9 @@ function ScoreTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function FixRow({
-  finding: f,
-  done,
-  onDone,
-}: {
-  finding: Finding;
-  done: boolean;
-  onDone: (checked: boolean) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-lg border p-3">
-      <div className="flex items-start gap-3">
-        <Checkbox
-          className="mt-1"
-          checked={done}
-          onCheckedChange={(checked) => onDone(checked)}
-          aria-label={`Mark "${f.title}" done`}
-        />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap items-center gap-1">
-            {(f.categories ?? []).map((c) => (
-              <Badge key={c} variant="outline">
-                {c}
-              </Badge>
-            ))}
-            {f.source === "llm" ? (
-              <Badge variant="secondary" title={AI_JUDGED.help}>
-                {AI_JUDGED.label}
-              </Badge>
-            ) : null}
-          </div>
-          <div
-            className={
-              done ? "text-muted-foreground line-through" : "font-medium"
-            }
-          >
-            {f.title}
-          </div>
-        </div>
-        <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-          {f.urls.length === 1 ? "1 page" : `${f.urls.length} pages`}
-        </span>
-        <Button size="sm" variant="ghost" onClick={() => setOpen(!open)}>
-          {open ? "Hide" : "Show"}
-        </Button>
-      </div>
-      {open ? <FixDetail finding={f} /> : null}
-    </div>
-  );
-}
-
-function FixDetail({ finding: f }: { finding: Finding }) {
-  const [allPages, setAllPages] = useState(false);
-  const [allDetail, setAllDetail] = useState(false);
-  const pages = allPages ? f.urls : f.urls.slice(0, PAGE_PREVIEW);
-  // `detail` often lists one line per page; keep the row short.
-  const detailLines = f.detail.split("\n");
-  const detail = allDetail
-    ? f.detail
-    : detailLines.slice(0, DETAIL_PREVIEW).join("\n");
-  return (
-    <div className="mt-3 space-y-3 pl-7 text-sm">
-      <div>
-        <div className="font-medium">Why it matters</div>
-        <p className="whitespace-pre-line text-muted-foreground">{detail}</p>
-        {detailLines.length > DETAIL_PREVIEW && !allDetail ? (
-          <Button size="sm" variant="link" onClick={() => setAllDetail(true)}>
-            Show all {detailLines.length} lines
-          </Button>
-        ) : null}
-      </div>
-      <div>
-        <div className="font-medium">How to fix</div>
-        <p className="whitespace-pre-line">{f.fix}</p>
-        {f.limitedReason ? (
-          <p className="text-muted-foreground">
-            {STATUS_LABELS.LIMITED.label}: {f.limitedReason}
-          </p>
-        ) : null}
-      </div>
-      {f.urls.length ? (
-        <div>
-          <div className="font-medium">Pages</div>
-          <ul className="space-y-0.5">
-            {pages.map((url) => (
-              <li key={url} className="truncate">
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline"
-                >
-                  {url}
-                </a>
-              </li>
-            ))}
-          </ul>
-          {f.urls.length > PAGE_PREVIEW && !allPages ? (
-            <Button size="sm" variant="link" onClick={() => setAllPages(true)}>
-              Show all {f.urls.length}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      <details>
-        <summary className="cursor-pointer text-muted-foreground">
-          Details
-        </summary>
-        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-          <div>
-            <span className="font-mono">{f.code}</span> ·{" "}
-            {SEVERITY_LABELS[f.severity].label} ({f.severity}) · effort{" "}
-            {f.effort} · items{" "}
-            <span className="font-mono">{f.itemIds.join(", ")}</span>
-          </div>
-          {f.evidence.map((e, i) => (
-            <div key={`${e.url}-${i}`}>
-              {e.kind}:{" "}
-              <a
-                href={e.url}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                {e.url}
-              </a>
-              {e.excerpt ? ` — ${e.excerpt}` : null}
-            </div>
-          ))}
-        </div>
-      </details>
-    </div>
-  );
-}
+/** Group header marker: Must red, Should amber, Nice neutral (WO-B16-006). */
+const GROUP_MARKER: Record<string, string> = {
+  must: "bg-destructive",
+  should: "bg-warning",
+  nice: "bg-muted-foreground/50",
+};

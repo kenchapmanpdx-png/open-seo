@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
+import { applyForkLook } from "./forkTheme";
 import { chipView, RESTART_FIX, type ChipView } from "./forkHealthView";
 import { forkHealthQuery } from "./queries";
 
@@ -23,6 +25,9 @@ const UNREACHABLE: ChipView = {
  */
 
 export function ForkHealthChip() {
+  // The chip is in every app-shell page, so it also mounts the fork look
+  // (B16 WO-B16-005, ADR-030) without an upstream edit.
+  useEffect(applyForkLook, []);
   const { data: health, isError } = useQuery(forkHealthQuery());
   if (!health) return null;
   // A later health call failing (app or database down) is red too; the

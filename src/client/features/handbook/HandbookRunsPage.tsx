@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ClipboardCheck } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, ClipboardCheck } from "lucide-react";
 import { EmptyState } from "@/client/components/EmptyState";
 import { PageHeader } from "@/client/components/PageHeader";
 import { QueryState } from "@/client/components/QueryState";
 import { Badge } from "@/client/components/ui/badge";
 import { Button } from "@/client/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/client/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -20,6 +27,7 @@ import { CopyRulesDialog } from "./CopyRulesDialog";
 import { HandbookSettingsCard } from "./HandbookSettingsCard";
 import { RunFullAuditButton } from "./RunFullAuditButton";
 import { FixList } from "./FixList";
+import { MORE_TOOLS } from "./labels";
 import {
   handbookRunQuery,
   handbookRunsQuery,
@@ -41,89 +49,7 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
         <PageHeader
           title="Handbook"
           description="SEO/GEO handbook checks with evidence for every finding."
-          actions={
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/p/$projectId/handbook/overview"
-                    params={{ projectId }}
-                  />
-                }
-              >
-                Overview
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/p/$projectId/handbook/ai-traffic"
-                    params={{ projectId }}
-                  />
-                }
-              >
-                AI traffic
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/p/$projectId/handbook/bing"
-                    params={{ projectId }}
-                  />
-                }
-              >
-                Bing
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/p/$projectId/handbook/ai-visibility-byok"
-                    params={{ projectId }}
-                  />
-                }
-              >
-                AI visibility (own keys)
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/p/$projectId/handbook/backlinks-cc"
-                    params={{ projectId }}
-                  />
-                }
-              >
-                Backlinks (Common Crawl)
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/p/$projectId/handbook/agency"
-                    params={{ projectId }}
-                  />
-                }
-              >
-                Agency
-              </Button>
-              <CopyRulesDialog />
-            </>
-          }
+          actions={<MoreToolsMenu projectId={projectId} />}
         />
         <QueryState query={runsQuery} errorFallback="Failed to load runs">
           {(runs) => {
@@ -151,6 +77,56 @@ export function HandbookRunsPage({ projectId }: { projectId: string }) {
         </QueryState>
       </div>
     </div>
+  );
+}
+
+/**
+ * One "More tools" menu instead of a row of route-named buttons (B16
+ * WO-B16-001): same routes, plain names, one line on what each does.
+ */
+function MoreToolsMenu({ projectId }: { projectId: string }) {
+  const [rulesOpen, setRulesOpen] = useState(false);
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+          More tools <ChevronDown className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-80">
+          {MORE_TOOLS.map((tool) => {
+            const text = (
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium">{tool.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {tool.help}
+                </span>
+              </div>
+            );
+            return tool.to === null ? (
+              <DropdownMenuItem
+                key={tool.label}
+                onClick={() => setRulesOpen(true)}
+              >
+                {text}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                key={tool.label}
+                render={
+                  <Link
+                    to={`/p/$projectId/handbook/${tool.to}`}
+                    params={{ projectId }}
+                  />
+                }
+              >
+                {text}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <CopyRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
+    </>
   );
 }
 
@@ -186,6 +162,7 @@ function LatestFixList({
               runId={runId}
               report={detail.report}
               notes={detail.capNotes}
+              runDate={detail.run.startedAt}
             />
           </section>
         ) : null

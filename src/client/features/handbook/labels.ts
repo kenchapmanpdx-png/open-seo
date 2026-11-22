@@ -61,3 +61,46 @@ export function stageLabel(stage: string): string {
   const labels: Record<string, string> = STAGE_LABELS;
   return Object.hasOwn(labels, stage) ? labels[stage] : stage;
 }
+
+/**
+ * Handbook page "More tools" menu (B16 WO-B16-001): plain names for the
+ * fork pages, named after what each page does. `to` is the route under
+ * `/p/$projectId/handbook/`; null = the writing-rules dialog.
+ */
+export const MORE_TOOLS = [
+  {
+    to: "overview",
+    label: "Everything at a glance",
+    help: "Site check results, AI visitors and AI answers on one page.",
+  },
+  {
+    to: "ai-traffic",
+    label: "AI visitors",
+    help: "Which AI bots read your site and which AI answers send people to it.",
+  },
+  {
+    to: "bing",
+    label: "Bing data",
+    help: "Bing's view of your site: crawl problems, searches and Copilot mentions.",
+  },
+  {
+    to: "ai-visibility-byok",
+    label: "AI answers with your own keys",
+    help: "Ask ChatGPT, Claude, Gemini and Perplexity directly, billed to your own accounts.",
+  },
+  {
+    to: "backlinks-cc",
+    label: "Who links to you (free)",
+    help: "Sites that link to yours, from a free public web index.",
+  },
+  {
+    to: "agency",
+    label: "Your brand on reports",
+    help: "Your logo and your client's name on the reports you share.",
+  },
+  {
+    to: null,
+    label: "Writing rules",
+    help: "Rules to give whoever rewrites your page text, person or AI.",
+  },
+] as const;

@@ -100,9 +100,11 @@ async function visit(path) {
     fullPage: true,
   });
 }
-// WO-B11-006: the handbook tab's "Copy rules" dialog opens with the pack text.
+// WO-B11-006: the handbook tab's copy rules dialog opens with the pack text
+// (B16 WO-B16-001: now "More tools" → "Writing rules").
 async function checkCopyRules() {
-  await page.getByRole("button", { name: "Copy rules" }).click();
+  await page.getByRole("button", { name: "More tools" }).click();
+  await page.getByRole("menuitem", { name: /Writing rules/ }).click();
   const text = await page
     .getByTestId("copy-rules-text")
     .textContent({ timeout: 5000 })

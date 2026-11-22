@@ -37,10 +37,11 @@ export function ScoreCard({ report }: { report: ReportJson }) {
     <div className="space-y-3">
       {reason ? (
         <Alert variant="warning">
-          <AlertTitle>Grade provisional</AlertTitle>
+          <AlertTitle>This grade is not final</AlertTitle>
           <AlertDescription>
-            Browser checks skipped: {reason}. Content that only appears with
-            JavaScript and must-fix display problems are not counted yet.
+            Checked without the browser helper ({reason}). Content that only
+            appears with JavaScript and must-fix display problems are not
+            counted yet.
           </AlertDescription>
         </Alert>
       ) : null}

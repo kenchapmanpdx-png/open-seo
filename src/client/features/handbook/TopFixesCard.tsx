@@ -85,7 +85,7 @@ function LatestTopFixes({
         </p>
       ) : (
         <ol className="space-y-2">
-          {rows.map((f) => (
+          {rows.map(({ title, findings: [f] }) => (
             <li key={f.code} className="flex flex-wrap items-center gap-1.5">
               <Badge
                 variant={f.severity === "S1" ? "destructive" : "secondary"}
@@ -97,7 +97,7 @@ function LatestTopFixes({
                   {c}
                 </Badge>
               ))}
-              <span className="text-sm font-medium">{f.title}</span>
+              <span className="text-sm font-medium">{title}</span>
             </li>
           ))}
         </ol>

@@ -37,7 +37,8 @@ import { FixList } from "./FixList";
 import { RunActions } from "./RunActions";
 import { RunProgress } from "./RunProgress";
 import { ScoreCard } from "./ScoreCard";
-import { handbookRunQuery } from "./queries";
+import { newerCompletedRun } from "./fixList";
+import { handbookRunQuery, handbookRunsQuery } from "./queries";
 import { HelpLabel } from "@/client/components/HelpLabel";
 import { MODE_LABEL, STATUS_LABELS, TIER_LABEL } from "./labels";
 
@@ -60,6 +61,8 @@ export function HandbookRunPage({
   runId: string;
 }) {
   const runQuery = useQuery(handbookRunQuery(projectId, runId));
+  // For the "A newer check exists" link on a not-final grade (WO-B16-003).
+  const runsQuery = useQuery(handbookRunsQuery(projectId));
   return (
     <div className="overflow-auto px-4 py-4 pb-24 md:px-6 md:py-6 md:pb-8">
       <div className="mx-auto max-w-7xl space-y-4">
@@ -105,6 +108,12 @@ export function HandbookRunPage({
                         runId={runId}
                         report={detail.report}
                         notes={detail.capNotes}
+                        runDate={detail.run.startedAt}
+                        newerRunId={
+                          runsQuery.data
+                            ? newerCompletedRun(runsQuery.data, detail.run)
+                            : null
+                        }
                       />
                     </TabsContent>
                   ) : null}
