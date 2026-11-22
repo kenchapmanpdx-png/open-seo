@@ -221,24 +221,45 @@ function FixListHeader({ report }: { report: ReportJson }) {
     <div className="grid gap-3 sm:grid-cols-4">
       <ScoreTile
         label="Overall"
+        score={report.score?.final ?? null}
         value={
           report.score ? `${report.score.grade} · ${report.score.final}` : "—"
         }
       />
-      {HANDBOOK_CATEGORIES.map((c) => (
-        <ScoreTile
-          key={c}
-          label={c}
-          value={String(report.categoryScores?.[c] ?? "—")}
-        />
-      ))}
+      {HANDBOOK_CATEGORIES.map((c) => {
+        const score = report.categoryScores?.[c] ?? null;
+        return (
+          <ScoreTile
+            key={c}
+            label={c}
+            score={score}
+            value={score === null ? "—" : String(score)}
+          />
+        );
+      })}
     </div>
   );
 }
 
-function ScoreTile({ label, value }: { label: string; value: string }) {
+/** Score tile edge by grade band (WO-B16-006): green ≥ 80, amber ≥ 50, red. */
+function bandEdge(score: number | null) {
+  if (score === null) return "";
+  if (score >= 80) return "border-l-4 border-l-success";
+  if (score >= 50) return "border-l-4 border-l-warning";
+  return "border-l-4 border-l-destructive";
+}
+
+function ScoreTile({
+  label,
+  value,
+  score,
+}: {
+  label: string;
+  value: string;
+  score: number | null;
+}) {
   return (
-    <Card>
+    <Card className={bandEdge(score)}>
       <CardContent className="space-y-1">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-2xl font-bold tabular-nums">{value}</div>

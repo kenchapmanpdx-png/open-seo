@@ -254,3 +254,15 @@
   --sidebar: oklch(13.5% 0.02 255);
   --sidebar-border: oklch(26% 0.025 255);
 }
+
+/*
+ * Look C's sidebar is dark in both modes: cards inside it (the project
+ * switcher) take dark tokens too, or their inherited light text vanishes.
+ */
+:root[data-fork-look="c"] [data-sidebar="sidebar"] {
+  --card: oklch(30% 0.03 255);
+  --card-foreground: oklch(94% 0.01 255);
+  --accent: oklch(100% 0 0 / 10%);
+  --accent-foreground: oklch(97% 0.005 255);
+  --muted-foreground: oklch(78% 0.02 255);
+}

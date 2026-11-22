@@ -157,6 +157,49 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 - Sidebar: `src/client/navigation/forkNav.ts`. A new upstream page lands in "More" until it is placed there. `VITE_FORK_NAV=0` at build time brings back the upstream sidebar.
 - Live check from the shell: `bash fork/scripts/run-local.sh ops e2e <label> --via check-page` (test project, Quick; PASS also needs the check page to land on the Fix List).
 
+## Novice cleanup (B16, fork/NOVICE-CLEANUP.md)
+
+- Handbook page header: one **More tools** menu (`MORE_TOOLS` in `labels.ts`). Routes unchanged under `/p/<project>/handbook/`:
+
+| Menu name                     | Route                | What it does                                                     |
+| ----------------------------- | -------------------- | ---------------------------------------------------------------- |
+| Everything at a glance        | `overview`           | Site check results, AI visitors and AI answers on one page       |
+| AI visitors                   | `ai-traffic`         | AI bots and AI-answer referrals from the Vercel drain            |
+| Bing data                     | `bing`               | Bing Webmaster crawl problems, searches, Copilot mentions        |
+| AI answers with your own keys | `ai-visibility-byok` | Tracked prompts against OpenAI / Anthropic / Gemini / Perplexity |
+| Who links to you (free)       | `backlinks-cc`       | Common Crawl domain graph                                        |
+| Your brand on reports         | `agency`             | Agency brand + client record                                     |
+| Writing rules                 | (dialog)             | The copy-rules pack (`fork/skills/copy-rules`)                   |
+
+- Same-title rows: findings in one priority group with the same title show as one row ("N page groups"); each finding stays a sub-row with its own checkbox; the row's checkbox ticks all of them. Display only: the CSV keeps one row per finding. Since B17 #5 new runs rarely repeat a title; older stored runs still do.
+- "This grade is not final" (was "Grade provisional"): shown when a run's checks needed the browser helper and it was not set up / not running. Names the run date, has **Check again**, and links **A newer check exists** when a later completed run of the same site exists. Exports keep the word "provisional".
+
+### Couldn't check
+
+The Fix List shows one line per cause with a count; ids and raw notes are under "Details". First matching rule wins (`BLOCKED_CAUSES` in `fixList.ts`); an unknown note → "Could not be checked (other)".
+
+| Runner note (start / contains)                                               | Shown as                                   | What to do                                       |
+| ---------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------ |
+| `render unavailable`, `render` / `axe` / `lighthouse unavailable`, `sidecar` | Needs the browser helper                   | Start it, then Check again                       |
+| `llm budget`, `llm credits`, `… requires more credits`                       | The AI review ran out of budget or credits | Add credits or raise the AI budget               |
+| `no llm key`, `… LLM map stage (not run)`                                    | Needs the AI review                        | Optional: add an AI key                          |
+| `llm unsure (…)`                                                             | The AI reviewer was not sure               | Look yourself (expected)                         |
+| `CRUX_API_KEY not set`, `CrUX API failed`                                    | Needs a free Google key (CrUX)             | Optional: `CRUX_API_KEY`                         |
+| `serp pages unavailable`, `dataforseo credit`                                | Needs search-results data                  | Add DataForSEO credit                            |
+| `gate "…" = ? (…)`                                                           | Needs a fact only you know                 | Expected; the question is under Details          |
+| `Owner to record the AI-bot decisions…`                                      | Needs your decision                        | Expected; decide which AI bots may read the site |
+| `operator: …`                                                                | Turned off in this app                     | Expected                                         |
+| `pages unavailable…`, `stats on fewer than two pages`                        | Not enough pages were read                 | Check again                                      |
+| `check error: …`, `check contract violation: …`                              | The check itself failed                    | Check again; a repeat is a bug                   |
+
+### Pick a look
+
+- Theme layer: `src/client/features/handbook/fork-theme.css` (token overrides only) + `forkTheme.ts`, mounted by `ForkHealthChip.tsx` (adds a `<style>` and `data-fork-look` on `<html>`). Share page and widgets keep the upstream look.
+- Current look: `FORK_LOOK` in `forkTheme.ts` = `c` (Ken, 2026-11-21). Rollback: set it to `"upstream"`, rebuild (`ops restart app`).
+- Preview another look in one tab: add `?look=a`, `?look=b`, `?look=c` or `?look=upstream` to any app URL (kept for that tab).
+- Screenshots of all four looks, light and dark: `node fork/scripts/b16-looks.mjs http://127.0.0.1:3001` → `fork/runs/b16/looks/` + contact sheet `looks.html`.
+- Contrast check: `node fork/scripts/b16-axe.mjs <axe.min.js> http://127.0.0.1:3001 "" c` (axe from the sidecar image; command in the script header).
+
 ## Survives reboot
 
 - Inside WSL the app, tick, backup and watchdog are systemd user units (`ops units` installs them; `loginctl enable-linger` keeps them without a shell). WSL itself still stops the distro when no session process is left.
