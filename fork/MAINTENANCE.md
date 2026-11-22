@@ -1,6 +1,6 @@
 # Maintenance (after B7)
 
-Four loops keep the fork current (BLUEPRINT §9). Each loop is a runnable checklist. Start a loop with:
+Six loops keep the fork current (BLUEPRINT §9). Each loop is a runnable checklist. Start a loop with:
 
 `Read fork/MAINTENANCE.md and run loop M<n>.`
 
@@ -13,6 +13,7 @@ Rules from `fork/FORK.md` still apply: never ask Ken, record decisions, never op
 | M3 New golden audit | each manual field audit                      | HEAVY                    | `fork/fixtures/expected/<site>.expected.yaml`, triage         |
 | M4 Guide refresh    | by 2027-05-20 or a new writing-guide version | HEAVY                    | excerpts, copy-quality thresholds, copy-rules pack re-checked |
 | M5 Ops review       | weekly                                       | LIGHT                    | ops status, watchdog and self-test reviewed; findings queued  |
+| M6 External export  | each new external audit export (Semrush …)   | HEAVY                    | importer misses both ways → backlog rows                      |
 
 Log every loop run as one row in the table at the end of this file.
 
@@ -93,6 +94,19 @@ Reads only; changes nothing unless a step says so. Database, systemd, Docker and
 4. Stuck rows: health `audits.stale` > 0 → name the audit ids in the queue row (Ken's data; never delete a row in this loop).
 5. Follow-up: `fork/scripts/start-build.sh` should call `fork/scripts/ops/sidecar-up.sh` for the production sidecar instead of its own steps 1–5 (B13 did not edit `start-build.sh`). Do it in the next HEAVY session that may edit that script; remove this step afterwards.
 6. Log the run below (date, M5, levels seen, rows added).
+
+## M6 — External audit export (each new Semrush / other tool export, HEAVY)
+
+Ken adds an external tool export (Semrush Site Audit xlsx or csv: issues sheet, pages sheet or the mega export) to `fork/fixtures/audits/` (verbatim, never edited).
+
+1. Run the engine on the same site at full depth (M3 step 3), or reuse a run from the same week.
+2. `pnpm exec tsx fork/scripts/import-external-audit.ts fork/fixtures/audits/<export>.xlsx --report fork/runs/<site>/<run>/report.json --out fork/runs/<site>/<run>-import.md`. The importer reads every sheet (long form: one row per issue or per issue × page; wide form: one column per issue), maps each Semrush check name through `SEMRUSH_MAP` (`fork/scripts/lib/external-audit.ts`) and lists three sets.
+3. "unknown check name": the tool added or renamed a check. Add it to `SEMRUSH_MAP` (Handbook ids, `skip` with the handbook reason, or `siteAudit`) and rerun; the map is the only place check names live.
+4. "Handbook item exists, no finding": triage as M3 step 5 (site changed · check defect → WO · rule gap · truth verification). The export's example URLs are the evidence to start from.
+5. "export issue, no Handbook item" with a `skip` reason: confirm the reason still holds; a check the handbook now values → SUPP candidate (M3 step 5).
+6. "Handbook findings with no export issue": the Handbook sees more than the tool. Spot-check two in a browser; a false positive → check defect WO.
+7. Write the misses both ways into `fork/reports/` as the next backlog (one queue row per WO); a new check gets a BadGEO page (M3 step 6). Commit and push.
+8. Importer tests: `pnpm exec vitest run --root fork/scripts lib/external-audit.test.ts`.
 
 ## Drill results (B7 R2, 2026-11-14)
 
