@@ -179,7 +179,8 @@ async function main() {
       "--depth",
       values.sidecar ? "full" : "quick",
       "--max-pages",
-      "100",
+      // 100 → 150 (B17): 90 fixture pages + 18 calendar pages reached 100.
+      "150",
       "--out",
       join("fork/runs/badgeo", date),
       ...(values.sidecar ? ["--sidecar", values.sidecar] : []),

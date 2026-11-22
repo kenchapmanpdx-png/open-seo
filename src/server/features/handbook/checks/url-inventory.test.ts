@@ -42,6 +42,7 @@ describe("crawl.url-inventory", () => {
     expect(byTitle).toEqual({
       "Sitemap <loc> canonicalises to another URL": [`${ORIGIN}/dup`],
       "Sitemap URLs without an internal link (orphans)": [`${ORIGIN}/orphan`],
+      "Sitemap URLs with only one internal link": [`${ORIGIN}/a`],
       "Indexable pages missing from the sitemap": [`${ORIGIN}/b`],
     });
   });

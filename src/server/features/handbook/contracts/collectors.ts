@@ -159,6 +159,10 @@ export type PageSnapshot = {
    * ADR-022): location, hidden flag, matched text ≤ 200 chars. 1.7.0
    */
   aiAddressed?: ReadonlyArray<AiAddressedText>;
+  /** Redirect hops of the crawl fetch (url + status), when it was redirected (SUPP-25). 1.10.0 */
+  redirectChain?: ReadonlyArray<{ url: string; status: number }>;
+  /** `<!doctype …>` text of the raw HTML; null = none (SUPP-26). 1.10.0 */
+  doctype?: string | null;
 };
 
 /** Where a SUPP-19 text sits in the raw HTML (ADR-022). 1.7.0 */

@@ -93,22 +93,33 @@ export const imageMarkupCheck: HandbookCheck = {
         const key = templateOf.get(normalizeUrl(s.url)) ?? "";
         groups.set(key, [...(groups.get(key) ?? []), { s, why }]);
       }
-      for (const [key, hits] of groups) {
-        out.finding({
-          itemIds: [itemId],
-          severity: "S3",
-          title,
-          detail: hits
-            .map(({ s, why }) => `${s.url} — ${why.join("; ")}`)
-            .join("\n"),
-          fix,
-          fixability: "FIXABLE",
-          effort: "S",
-          urls: hits.map(({ s }) => s.url),
-          ...(key ? { templateKey: key } : {}),
-          evidenceRefs: hits.slice(0, 10).map(({ s }) => ref(s)),
-        });
-      }
+      if (groups.size === 0) return;
+      // One finding per rule; template groups are rows (B17 §9 #5).
+      const all = [...groups.values()].flat();
+      const perGroup = Math.max(1, Math.floor(20 / groups.size));
+      out.finding({
+        itemIds: [itemId],
+        severity: "S3",
+        title: `${title} (${all.length} page${all.length === 1 ? "" : "s"}, ${groups.size} template group${groups.size === 1 ? "" : "s"})`,
+        detail: [...groups]
+          .map(
+            ([key, hits]) =>
+              `${key || "other pages"} (${hits.length} page${hits.length === 1 ? "" : "s"}):\n${hits
+                .map(({ s, why }) => `  ${s.url} — ${why.join("; ")}`)
+                .join("\n")}`,
+          )
+          .join("\n"),
+        fix: `${fix} Fix it once per template group below.`,
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: all.map(({ s }) => s.url),
+        ...(groups.size === 1 && [...groups.keys()][0]
+          ? { templateKey: [...groups.keys()][0] }
+          : {}),
+        evidenceRefs: [...groups.values()].flatMap((hits) =>
+          hits.slice(0, perGroup).map(({ s }) => ref(s)),
+        ),
+      });
     };
     perTemplate(
       "P7-02",

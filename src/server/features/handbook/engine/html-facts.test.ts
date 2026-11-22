@@ -42,6 +42,17 @@ describe("extractHtmlFacts markup", () => {
     expect(facts.markup.text).not.toContain("not text");
   });
 
+  it("records the doctype and http-equiv metas", () => {
+    const html = `<head><meta http-equiv="Refresh" content="0;url=/b/"></head><body></body>`;
+    const withDoctype = extractHtmlFacts(
+      `<!DOCTYPE html>${html}`,
+      "https://example.com/a",
+    );
+    expect(withDoctype.doctype).toBe("!DOCTYPE html");
+    expect(withDoctype.head.meta["http-equiv:refresh"]).toBe("0;url=/b/");
+    expect(extractHtmlFacts(html, "https://example.com/a").doctype).toBeNull();
+  });
+
   it("collects prose paragraphs with the preceding H2, skipping landmarks, lists and quotes", () => {
     const facts = extractHtmlFacts(
       `<body><header><p>Header</p></header><main>

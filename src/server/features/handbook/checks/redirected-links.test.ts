@@ -70,6 +70,23 @@ describe("crawl.redirected-links", () => {
     );
   });
 
+  it("folds targets that redirect to themselves without the same query into one row", async () => {
+    const self = (path: string) =>
+      target(`${path}?page_id=7`, {
+        status: 301,
+        finalUrl: new URL(path, ORIGIN).href,
+        method: "HEAD",
+      });
+    const result = await probed(
+      [snapshot("/", { links: ["/a/?page_id=7", "/b/?page_id=7"] })],
+      [self("/a/"), self("/b/")],
+    );
+    const finding = result.findings.find((f) => f.itemIds.includes("P3-08"));
+    expect(finding?.detail).toMatch(
+      /^2 URLs drop the query \?page_id=7 and redirect to the same page/,
+    );
+  });
+
   it("counts un-crawled targets with no answer without flagging them", async () => {
     const result = await probed(
       [snapshot("/", { links: ["/gone"] })],

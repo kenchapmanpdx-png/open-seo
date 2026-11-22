@@ -336,6 +336,10 @@ async function fetchPage(
       discoveredBy,
       ...main,
       ...(isHtml ? { aiAddressed: scanAiAddressed(res.body) } : {}),
+      ...(res.redirectChain.length > 0
+        ? { redirectChain: res.redirectChain }
+        : {}),
+      ...(facts ? { doctype: facts.doctype } : {}),
     },
     extra: {
       jsonLdBlocks: facts?.jsonLdBlocks ?? [],

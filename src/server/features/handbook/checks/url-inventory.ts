@@ -18,7 +18,10 @@ const noindex = (s: PageSnapshot) =>
 
 type Issue = { kind: string; url: string; why: string };
 
-const KINDS: Record<string, { title: string; fix: string }> = {
+const KINDS: Record<
+  string,
+  { title: string; fix: string; severity?: "S4"; severityReason?: string }
+> = {
   status: {
     title: "Sitemap lists URLs that redirect or do not return 200",
     fix: "List only final 200 URLs; update or drop redirected and broken <loc> entries.",
@@ -35,6 +38,13 @@ const KINDS: Record<string, { title: string; fix: string }> = {
     title: "Sitemap URLs without an internal link (orphans)",
     fix: "Link each page from a relevant crawlable page, or retire it (404/410 or redirect) and drop it from the sitemap.",
   },
+  weak: {
+    title: "Sitemap URLs with only one internal link",
+    fix: "Link each page from more relevant pages (its hub or service index, related pages), so it is not one link away from being an orphan.",
+    severity: "S4",
+    severityReason:
+      "one inlink still makes the page reachable; weaker than an orphan (B17 §9 #9)",
+  },
   test: {
     title: "Test / draft URLs published in the sitemap",
     fix: "Unpublish test and draft pages (404/410 or noindex) and drop them from the sitemap.",
@@ -50,11 +60,12 @@ function inventoryIssues(
   snapshots: readonly PageSnapshot[],
 ): Issue[] {
   const byUrl = new Map(snapshots.map((s) => [normalizeUrl(s.url), s]));
-  const inlinks = new Map<string, number>();
+  const inlinks = new Map<string, string[]>();
   for (const s of snapshots) {
     const self = normalizeUrl(s.finalUrl);
     for (const target of new Set(s.links.map((l) => normalizeUrl(l.href)))) {
-      if (target !== self) inlinks.set(target, (inlinks.get(target) ?? 0) + 1);
+      if (target !== self)
+        inlinks.set(target, [...(inlinks.get(target) ?? []), s.url]);
     }
   }
   const issues: Issue[] = [];
@@ -84,9 +95,16 @@ function inventoryIssues(
       });
       continue;
     }
-    if (!inlinks.get(loc) && new URL(loc).pathname !== "/") {
+    const from = inlinks.get(loc) ?? [];
+    if (new URL(loc).pathname === "/") continue;
+    if (from.length === 0)
       issues.push({ kind: "orphan", url: loc, why: "0 internal inlinks" });
-    }
+    if (from.length === 1)
+      issues.push({
+        kind: "weak",
+        url: loc,
+        why: `1 internal inlink, from ${from[0]}`,
+      });
   }
   for (const s of snapshots) {
     const url = normalizeUrl(s.url);
@@ -132,7 +150,8 @@ export const urlInventoryCheck: HandbookCheck = {
       if (hits.length === 0) continue;
       out.finding({
         itemIds: ["P3-12"],
-        severity: "S3",
+        severity: meta.severity ?? "S3",
+        ...(meta.severityReason ? { severityReason: meta.severityReason } : {}),
         title: meta.title,
         detail: hits.map((h) => `${h.url} — ${h.why}`).join("\n"),
         fix: meta.fix,

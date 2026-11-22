@@ -34,6 +34,8 @@
  * (SEO / GEO / AEO) and finding `categories`. No K3 change;
  * 1.9.0, B15: accuracy (ADR-031) — collectors `linkTargets` (P3-08
  * un-crawled internal targets) and `resources` (SUPP-20), `LinkProbe`,
- * coverage `unread` ("Pages not read", ACCURACY #0). No K3 change.
+ * coverage `unread` ("Pages not read", ACCURACY #0). No K3 change;
+ * 1.10.0, B17: accuracy part 2 (ADR-032) — PageSnapshot `redirectChain`
+ * (SUPP-25 temporary redirects) and `doctype` (SUPP-26). No K3 change.
  */
-export const CONTRACTS_VERSION = "1.9.0";
+export const CONTRACTS_VERSION = "1.10.0";

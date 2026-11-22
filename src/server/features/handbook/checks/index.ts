@@ -17,6 +17,8 @@ import { imageMarkupCheck } from "./image-markup";
 import { imageWeightCheck } from "./image-weight";
 import { hreflangCheck } from "./hreflang";
 import { jsonLdIntegrityCheck } from "./jsonld-integrity";
+import { linkHygieneCheck } from "./link-hygiene";
+import { entityNodesCheck } from "./entity-nodes";
 import { labMetricsCheck, pageWeightCheck } from "./lab-performance";
 import { resourceHintsCheck } from "./resource-hints";
 import { listNavigationCheck } from "./list-navigation";
@@ -33,6 +35,7 @@ import { platformCheck } from "./platform";
 import { rawCopyCheck } from "./raw-copy";
 import { redirectedLinksCheck } from "./redirected-links";
 import { resourceStatusCheck } from "./resource-status";
+import { rootCausesCheck } from "./root-causes";
 import { renderParityCheck } from "./render-parity";
 import { renderResourcesCheck } from "./render-resources";
 import { robotsGroupsCheck } from "./robots-groups";
@@ -66,6 +69,8 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   duplicatesCheck,
   securityHeadersCheck,
   jsonLdIntegrityCheck,
+  entityNodesCheck,
+  linkHygieneCheck,
   botParityCheck,
   interstitialCheck,
   aiBotPolicyCheck,
@@ -74,6 +79,7 @@ export const HANDBOOK_CHECKS: readonly HandbookCheck[] = [
   notFoundCheck,
   redirectedLinksCheck,
   resourceStatusCheck,
+  rootCausesCheck,
   crawlCoverageCheck,
   hiddenPagesCheck,
   listNavigationCheck,

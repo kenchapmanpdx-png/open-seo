@@ -27,15 +27,30 @@ const retired = (s: Pick<PageSnapshot, "status">) =>
   s.status === 404 || s.status === 410;
 
 /**
+ * The query a target drops when it redirects to itself without it
+ * (`/x/?page_id=1` → `/x/`, e.g. WordPress attachment pages), else null.
+ */
+function selfQuery(t: Target): string | null {
+  const from = new URL(t.url);
+  if (!from.search || !redirected(t)) return null;
+  const bare = `${from.origin}${from.pathname}`;
+  return normalizeUrl(bare) === normalizeUrl(t.finalUrl) ? from.search : null;
+}
+
+/**
  * One row per bad target; redirects sharing a final URL collapse into one
- * row (a site-wide relative link resolves to a new URL per page).
+ * row (a site-wide relative link resolves to a new URL per page), and so do
+ * targets that only drop the same query (B17 §9 #8).
  */
 function groupRows(targets: Target[], describe: (t: Target) => string) {
   const groups = new Map<string, Target[]>();
   for (const t of targets) {
-    const key = redirected(t)
-      ? normalizeUrl(t.finalUrl)
-      : `${normalizeUrl(t.url)} ${t.status}`;
+    const query = selfQuery(t);
+    const key = query
+      ? `self ${query}`
+      : redirected(t)
+        ? normalizeUrl(t.finalUrl)
+        : `${normalizeUrl(t.url)} ${t.status}`;
     groups.set(key, [...(groups.get(key) ?? []), t]);
   }
   return [...groups.values()].map((g) => {
@@ -43,6 +58,12 @@ function groupRows(targets: Target[], describe: (t: Target) => string) {
     const from = `linked from ${sources.length} page(s), e.g. ${sources.slice(0, 3).join(", ")}`;
     if (g.length === 1) return `${describe(g[0])} — ${from}`;
     const [first] = g;
+    const query = selfQuery(first);
+    if (query)
+      return `${g.length} URLs drop the query ${query} and redirect to the same page without it (one relative link resolved on each page), e.g. ${g
+        .slice(0, 3)
+        .map((t) => t.url)
+        .join(", ")} — ${from}`;
     return `${g.length} URLs → ${first.finalUrl}, e.g. ${g
       .slice(0, 3)
       .map((t) => t.url)

@@ -21,13 +21,13 @@ function page(
 const run = (snapshots: PageSnapshot[]) =>
   suppLinksCheck.run(context({ pages: { status: "ok", snapshots } }));
 
-const ids = async (snapshots: PageSnapshot[]) =>
-  (await run(snapshots)).findings.flatMap((f) => f.itemIds);
+const titles = async (snapshots: PageSnapshot[]) =>
+  (await run(snapshots)).findings.map((f) => f.title);
 
 describe("crawl.supp-links", () => {
-  it("flags generic anchors and new-tab targets on internal links only", async () => {
+  it("flags generic anchors (internal and external), unnamed links and internal new-tab targets", async () => {
     expect(
-      await ids([
+      await titles([
         page([
           { href: "https://example.com/pricing", text: "Read more »" },
           {
@@ -35,14 +35,21 @@ describe("crawl.supp-links", () => {
             text: "About",
             target: "_blank",
           },
+          { href: "https://other.org/", text: "Website", target: "_blank" },
+          { href: "https://example.com/contact", text: " " },
         ]),
       ]),
-    ).toEqual(["SUPP-01", "SUPP-02"]);
+    ).toEqual([
+      expect.stringMatching(/^Generic anchor text .* internal links$/),
+      expect.stringMatching(/^Generic anchor text .* external links$/),
+      expect.stringMatching(/^Links with no anchor text/),
+      expect.stringMatching(/^Internal links open a new tab/),
+    ]);
   });
 
-  it("ignores descriptive, aria-labelled and external links", async () => {
+  it("ignores descriptive and aria-labelled links, in-page controls and external new-tab links", async () => {
     expect(
-      await ids([
+      await titles([
         page([
           {
             href: "https://example.com/pricing",
@@ -53,7 +60,10 @@ describe("crawl.supp-links", () => {
             text: "Learn more",
             ariaLabel: "Learn more about refunds",
           },
-          { href: "https://other.org/", text: "Click here", target: "_blank" },
+          { href: "https://other.org/", text: "Aveda", target: "_blank" },
+          { href: "https://example.com/a#menu", text: "" },
+          { href: "javascript:void(0)", text: "" },
+          { href: "https://example.com/x", text: "", ariaLabel: "Instagram" },
         ]),
       ]),
     ).toEqual([]);

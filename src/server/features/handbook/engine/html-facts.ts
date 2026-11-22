@@ -8,6 +8,7 @@ import type {
 } from "@/server/features/handbook/contracts/collectors";
 import { aspectRatio, embedOf } from "./video-embeds";
 import { createProseReader } from "./prose-reader";
+import { readLink, readMeta } from "./html-head";
 
 /**
  * One streaming pass over raw HTML → the parsed facts every raw-HTML check
@@ -23,6 +24,8 @@ export type HtmlFacts = Pick<
   words: number;
   /** Sorted unique structural tag paths (ADR-006); repeat counts ignored. */
   skeleton: string;
+  /** `<!doctype …>` text, or null when the HTML has none (SUPP-26). 1.10.0 */
+  doctype: string | null;
 };
 
 const SKIP_TEXT = new Set(["script", "style", "noscript", "template", "svg"]);
@@ -79,6 +82,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   };
   const h1: string[] = [];
   const links: HtmlFacts["links"][number][] = [];
+  let doctype = null as string | null;
   const headings: PageMarkup["headings"][number][] = [];
   const navLabels: (string | null)[] = [];
   const scripts: PageMarkup["scripts"][number][] = [];
@@ -287,6 +291,10 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
           if (anchor && attrs.alt) anchor.text.push(attrs.alt);
         }
       },
+      onprocessinginstruction(name, data) {
+        if (name.toLowerCase() === "!doctype" && doctype === null)
+          doctype = data;
+      },
       ontext(text) {
         if (jsonLdBuf) jsonLdBuf.push(text);
         if (titleBuf) titleBuf.push(text);
@@ -382,33 +390,8 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     jsonLdBlocks,
     words,
     skeleton: sort([...skeletonParts], (a, b) => a.localeCompare(b)).join("|"),
+    doctype,
   };
-}
-
-function readMeta(head: HtmlFacts["head"], attrs: Record<string, string>) {
-  const key = (attrs.name ?? attrs.property ?? "").toLowerCase();
-  const content = attrs.content ?? "";
-  if (key === "description" && head.metaDescription === null)
-    head.metaDescription = content;
-  else if (key === "robots") head.robotsMeta = content;
-  else if (key === "viewport") head.viewport = content;
-  else if (key.startsWith("og:")) head.og[key.slice(3)] = content;
-  else if (key.startsWith("twitter:")) head.twitter[key.slice(8)] = content;
-  else if (key) head.meta[key] = content;
-}
-
-function readLink(
-  head: HtmlFacts["head"],
-  hreflang: { lang: string; href: string }[],
-  attrs: Record<string, string>,
-  resolve: (href: string) => string,
-) {
-  const href = attrs.href ?? "";
-  const rel = (attrs.rel ?? "").toLowerCase().split(/\s+/);
-  if (rel.includes("canonical") && head.canonical === null)
-    head.canonical = resolve(href);
-  if (rel.includes("alternate") && attrs.hreflang)
-    hreflang.push({ lang: attrs.hreflang, href: resolve(href) });
 }
 
 function collapse(text: string) {
