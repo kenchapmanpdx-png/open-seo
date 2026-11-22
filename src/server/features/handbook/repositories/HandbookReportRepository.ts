@@ -1,11 +1,12 @@
 import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { audits } from "@/db/schema";
+import { auditPages, audits } from "@/db/schema";
 import {
   handbookEvidence,
   handbookFindingItems,
   handbookFindings,
   handbookFindingUrls,
+  handbookPageSnapshots,
   handbookRuns,
   handbookSiteProfiles,
 } from "@/db/handbook-tables";
@@ -62,7 +63,35 @@ export async function getReportRows(projectId: string, runId: string) {
         .where(inRun),
       HandbookRepository.listEvidence(projectId, runId, 2_000),
     ]);
+  // ACCURACY #0: the upstream crawl's pages vs the pages this run read.
+  // The audit is the run's own (same project, joined through the run row).
+  const [crawled, read] = run.auditId
+    ? await Promise.all([
+        db
+          .select({
+            url: auditPages.url,
+            status: auditPages.statusCode,
+            redirectUrl: auditPages.redirectUrl,
+          })
+          .from(auditPages)
+          .innerJoin(handbookRuns, eq(handbookRuns.auditId, auditPages.auditId))
+          .where(inRun),
+        db
+          .select({
+            url: handbookPageSnapshots.url,
+            finalUrl: handbookPageSnapshots.finalUrl,
+          })
+          .from(handbookPageSnapshots)
+          .innerJoin(
+            handbookRuns,
+            eq(handbookRuns.id, handbookPageSnapshots.runId),
+          )
+          .where(inRun),
+      ])
+    : [[], []];
   return {
+    crawled,
+    read,
     run,
     siteProfile,
     items,

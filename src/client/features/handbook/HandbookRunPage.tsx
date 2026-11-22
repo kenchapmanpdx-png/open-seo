@@ -30,6 +30,7 @@ import { ITEM_STATUSES } from "@/server/features/handbook/contracts/status";
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { CopyQualityPanel } from "./CopyQualityPanel";
 import { ScaledContentPanel } from "./ScaledContentPanel";
+import { UnreadPagesTable } from "./UnreadPagesTable";
 import { EvidenceViewer } from "./EvidenceViewer";
 import { FindingsTable } from "./FindingsTable";
 import { FixList } from "./FixList";
@@ -116,6 +117,12 @@ export function HandbookRunPage({
                         {note}
                       </p>
                     ))}
+                    {detail.report.run.coverage?.unread ? (
+                      <UnreadPagesTable
+                        unread={detail.report.run.coverage.unread}
+                        capped={detail.report.run.coverage.capped}
+                      />
+                    ) : null}
                     <Tabs defaultValue="findings">
                       <TabsList>
                         <TabsTrigger value="findings">

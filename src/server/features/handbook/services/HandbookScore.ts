@@ -8,6 +8,7 @@ import {
 import { scoreReport } from "@/server/features/handbook/engine/report";
 import { withCategories } from "@/server/features/handbook/engine/categories";
 import { isSuppOnly } from "../registry-supp";
+import { unreadCoverage } from "@/server/features/handbook/engine/unread";
 import { HandbookGradeRepository } from "@/server/features/handbook/repositories/HandbookGradeRepository";
 
 /**
@@ -90,6 +91,9 @@ export function buildReport(rows: ReportRows): ReportJson {
               discovered: run.coverageDiscovered,
               read: run.coverageRead,
               capped: run.coverageCapped,
+              ...(rows.crawled.length
+                ? { unread: unreadCoverage(rows.crawled, rows.read) }
+                : {}),
             },
           }
         : {}),

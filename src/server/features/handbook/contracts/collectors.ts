@@ -499,6 +499,32 @@ export type Coverage = {
   discovered: number;
   read: number;
   capped: boolean;
+  /** URLs the crawl saw and the run did not read, classified (ACCURACY #0). 1.9.0 */
+  unread?: UnreadCoverage;
+};
+
+/** Why a crawled URL was not read (ACCURACY #0). 1.9.0 */
+export type UnreadClass =
+  | "redirect"
+  | "404"
+  | "attachment"
+  | "non-HTML"
+  | "unseen";
+
+export type UnreadUrl = {
+  url: string;
+  class: UnreadClass;
+  /** HTTP status the site crawl saw; null = not fetched (cap, fetch error). */
+  status: number | null;
+  /** Redirect target, when known. */
+  target?: string | null;
+};
+
+/** `rows` is capped (200); `total` and `byClass` count every unread URL. */
+export type UnreadCoverage = {
+  total: number;
+  byClass: Partial<Record<UnreadClass, number>>;
+  rows: UnreadUrl[];
 };
 
 export type CollectedData = {

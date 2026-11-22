@@ -33,7 +33,7 @@
  * 1.8.0, B14: novice layout (ADR-029) — report `categoryScores`
  * (SEO / GEO / AEO) and finding `categories`. No K3 change;
  * 1.9.0, B15: accuracy (ADR-031) — collectors `linkTargets` (P3-08
- * un-crawled internal targets) and `resources` (SUPP-20), `LinkProbe`.
- * No K3 change.
+ * un-crawled internal targets) and `resources` (SUPP-20), `LinkProbe`,
+ * coverage `unread` ("Pages not read", ACCURACY #0). No K3 change.
  */
 export const CONTRACTS_VERSION = "1.9.0";

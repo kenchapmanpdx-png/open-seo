@@ -73,6 +73,28 @@ export const answerEngineReadinessSchema = z.array(
   }),
 );
 
+const unreadClassSchema = z.enum([
+  "redirect",
+  "404",
+  "attachment",
+  "non-HTML",
+  "unseen",
+]);
+
+/** "Pages not read" (ACCURACY #0, ADR-031). 1.9.0 */
+export const unreadCoverageSchema = z.object({
+  total: z.number().int().nonnegative(),
+  byClass: z.partialRecord(unreadClassSchema, z.number().int().nonnegative()),
+  rows: z.array(
+    z.object({
+      url: z.string(),
+      class: unreadClassSchema,
+      status: z.number().int().nullable(),
+      target: z.string().nullable().optional(),
+    }),
+  ),
+});
+
 export const reportJsonSchema = z.object({
   reportVersion: z.literal(REPORT_JSON_VERSION),
   contractsVersion: z.string(),
@@ -93,6 +115,8 @@ export const reportJsonSchema = z.object({
         discovered: z.number().int().nonnegative(),
         read: z.number().int().nonnegative(),
         capped: z.boolean(),
+        /** ACCURACY #0: crawled URLs not read, classified. 1.9.0 */
+        unread: unreadCoverageSchema.optional(),
       })
       .optional(),
   }),

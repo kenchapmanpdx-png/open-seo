@@ -173,7 +173,7 @@ function isPartialCoverage(coverage: Coverage | undefined): boolean {
   return coverage.read / coverage.discovered < 0.9;
 }
 
-/** "Depth: full · read N of M discovered" (+ "· partial coverage"). */
+/** "Depth: full · read N of M discovered" (+ "· partial coverage", "· not read N (…)"). */
 export function depthLine(
   depth: HandbookDepth | undefined,
   coverage: Coverage | undefined,
@@ -182,6 +182,11 @@ export function depthLine(
   if (coverage)
     parts.push(`read ${coverage.read} of ${coverage.discovered} discovered`);
   if (isPartialCoverage(coverage)) parts.push("partial coverage");
+  const unread = coverage?.unread;
+  if (unread?.total) {
+    const byClass = Object.entries(unread.byClass).map(([c, n]) => `${c} ${n}`);
+    parts.push(`not read ${unread.total} (${byClass.join(", ")})`);
+  }
   return parts.join(" · ");
 }
 

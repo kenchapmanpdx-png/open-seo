@@ -5,6 +5,7 @@ import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
 import { scanAiAddressed } from "@/server/features/handbook/engine/ai-addressed";
 import { parseBlock } from "./jsonld-parse";
+import { unreadCoverage } from "@/server/features/handbook/engine/unread";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
 import {
@@ -118,6 +119,7 @@ async function crawl(
   const source = new Map<string, DiscoveredBy>();
   const attempted = new Set<string>();
   const snapshots: PageSnapshot[] = [];
+  const failed: string[] = [];
   const discover = (raw: string, by: DiscoveredBy) => {
     const url = normalize(raw);
     if (!url || source.has(url)) return;
@@ -142,7 +144,10 @@ async function crawl(
       if (snapshots.length >= options.maxPages) break;
       attempted.add(url);
       const page = await fetchPage(ctx, url, source.get(url) ?? "raw");
-      if (!page) continue;
+      if (!page) {
+        failed.push(url);
+        continue;
+      }
       const finalNorm = normalize(page.snapshot.finalUrl);
       if (finalNorm && finalNorm !== url && attempted.has(finalNorm)) {
         // Redirect to a page already crawled: keep a body-less stub so link
@@ -164,13 +169,18 @@ async function crawl(
       }
     }
   }
-  const unread = pending().length;
+  const left = pending();
   return {
     snapshots,
     coverage: {
-      discovered: snapshots.length + unread,
+      discovered: snapshots.length + left.length,
       read: snapshots.length,
-      capped: unread > 0,
+      capped: left.length > 0,
+      // CLI view of ACCURACY #0: cap leftovers and failed fetches (status unknown).
+      unread: unreadCoverage(
+        [...left, ...failed].map((url) => ({ url, status: null })),
+        snapshots,
+      ),
     },
   };
 }
@@ -228,6 +238,9 @@ export async function crawlSecondPass(
     capped: false,
   };
   const unread = guarded.length - snapshots.length;
+  const readNow = new Set(snapshots.map((s) => s.url));
+  const leftover = wave.filter((u) => !readNow.has(u));
+  const skipped = guarded.filter((u) => !wave.includes(u));
   return {
     snapshots,
     jsonld,
@@ -236,6 +249,13 @@ export async function crawlSecondPass(
       discovered: before.discovered + guarded.length,
       read: before.read + snapshots.length,
       capped: before.capped || unread > 0,
+      unread: unreadCoverage(
+        [
+          ...(before.unread?.rows ?? []),
+          ...[...leftover, ...skipped].map((url) => ({ url, status: null })),
+        ],
+        snapshots,
+      ),
     },
   };
 }
