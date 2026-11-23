@@ -9,18 +9,18 @@
 
 Failing tests on the clean checkout: none.
 
-## Current (B16 run 86, 2026-11-21, `ken/main` on upstream v0.1.31)
+## Current (B18 run 88, 2026-11-23, `ken/main` on upstream v0.1.31)
 
-| Check                                                                 | Result                                  |
-| --------------------------------------------------------------------- | --------------------------------------- |
-| `pnpm types:check`                                                    | pass (0 errors)                         |
-| `pnpm lint`                                                           | pass (0 warnings, 0 errors)             |
-| `pnpm test`                                                           | pass: 435 files, 2673 tests, 0 failures |
-| `pnpm format:check`                                                   | pass                                    |
-| `pnpm exec vitest run --root fork/sidecar`                            | pass: 2 files, 10 tests                 |
-| `bash fork/scripts/ops/ops-test.sh`                                   | pass: 18 / 18                           |
-| `node --test fork/scripts/ops/*.test.mjs`                             | pass: 40 tests                          |
-| `pnpm exec vitest run --root fork/scripts lib/external-audit.test.ts` | pass: 1 file, 2 tests                   |
+| Check                                                                                          | Result                                  |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `pnpm types:check`                                                                             | pass (0 errors)                         |
+| `pnpm lint`                                                                                    | pass (0 warnings, 0 errors)             |
+| `pnpm test`                                                                                    | pass: 436 files, 2682 tests, 0 failures |
+| `pnpm format:check`                                                                            | pass                                    |
+| `pnpm exec vitest run --root fork/sidecar`                                                     | pass: 2 files, 10 tests                 |
+| `bash fork/scripts/ops/ops-test.sh`                                                            | pass: 18 / 18                           |
+| `node --test fork/scripts/ops/*.test.mjs`                                                      | pass: 40 tests                          |
+| `pnpm exec vitest run --root fork/scripts lib/external-audit.test.ts lib/field-ledger.test.ts` | pass: 2 files, 4 tests                  |
 
 Compare session-end results with this section; the table above is the B1 clean-checkout record.
 
