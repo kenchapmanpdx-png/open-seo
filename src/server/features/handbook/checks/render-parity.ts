@@ -152,6 +152,11 @@ export const renderParityCheck: HandbookCheck = {
       out.finding({
         itemIds: ["P2-08"],
         severity: "S4",
+        // Severity scales (§17): a JS-only form hides an action, not page
+        // content. Without a reason the contract guard blocked P2-01…09
+        // (B18 WO-B18-017).
+        severityReason:
+          "only a form is missing from the server HTML; the page content is there",
         title: "Form exists only after JavaScript runs",
         detail: `${jsForms.map(formLine).join("\n")}\nCrawlers and visitors without JavaScript see no form (contact, booking or search).`,
         fix: "Put the <form> (fields, labels and a working action URL) in the server HTML; let JavaScript enhance it instead of creating it.",

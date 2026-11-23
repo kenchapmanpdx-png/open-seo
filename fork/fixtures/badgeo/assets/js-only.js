@@ -7,3 +7,9 @@ for (let i = 0; i < 6; i += 1) {
   p.textContent = text;
   app.append(p);
 }
+// B18 WO-B18-017: a sign-up form that exists only after JavaScript (P2-08).
+const form = document.createElement("form");
+form.action = "/contact.html";
+form.innerHTML =
+  '<label>Email <input type="email" name="email" autocomplete="email"></label> <button type="submit">Sign up for race news</button>';
+app.append(form);
