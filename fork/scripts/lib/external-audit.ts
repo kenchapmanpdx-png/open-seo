@@ -259,7 +259,8 @@ const SEMRUSH_MAP: Record<string, Mapping> = {
   "Insecure encryption algorithms": skip(NO_TLS),
   "Sitemap file too large": ids("P3-12"),
   "Malformed links": ids("SUPP-24"),
-  "Structured data that contains markup errors": ids("P6-08"),
+  // Semrush validates values too: empty / relative values are P6-02 (B18).
+  "Structured data that contains markup errors": ids("P6-08", "P6-02"),
   "Viewport width not set": ids("P4-04"),
   "Title element is too short": ids("P4-01"),
   "Title element is too long": ids("P4-01"),
@@ -280,7 +281,10 @@ const SEMRUSH_MAP: Record<string, Mapping> = {
   "Incompatible plugins used": skip("Flash / Java era"),
   "Frames used": skip("rare"),
   "Underscores in URL": skip("no ranking effect"),
-  "Nofollow attributes in internal links": ids("SUPP-01"),
+  // No handbook rule: §12 nofollow guidance covers outbound links (B18 field test 2).
+  "Nofollow attributes in internal links": skip(
+    "no handbook rule (§12 nofollow covers outbound links)",
+  ),
   "Sitemap.xml not specified in robots.txt": ids("P3-19"),
   "Sitemap.xml not found": ids("P3-12"),
   "HTTPS encryption not used": ids("P3-01"),
