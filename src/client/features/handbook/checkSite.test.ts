@@ -93,6 +93,23 @@ describe("checkSite", () => {
     expect(order).toEqual(["start", "domain"]);
   });
 
+  it("gives a project with no site this site instead of creating a second project", async () => {
+    const result = await checkSite(
+      {
+        currentProject: { id: "empty", domain: null },
+        website: "new.dev",
+        size: "quick",
+        fullCheck: true,
+        excludePaths: ["/blog/"],
+      },
+      deps,
+    );
+    expect(result.projectId).toBe("empty");
+    expect(deps.createProject).not.toHaveBeenCalled();
+    expect(deps.setProjectDomain).toHaveBeenCalledWith("empty", "new.dev");
+    expect(deps.startAudit.mock.calls[0][0].excludePaths).toEqual(["/blog/"]);
+  });
+
   it("rejects input that is not a website before calling the server", async () => {
     await expect(
       checkSite(

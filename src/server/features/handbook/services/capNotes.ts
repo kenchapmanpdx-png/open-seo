@@ -1,4 +1,5 @@
-// Page-cap notes for the runs list and run page (B13 WO-B13-014, E27).
+// Page-cap and scope notes for the runs list and run page (B13 WO-B13-014,
+// E27; B18 WO-B18-015).
 // Handbook reads pages on its own and stops at its own limit; the linked
 // site audit has a separate `maxPages`. Each note says which limit applied.
 import { parseAuditConfig } from "@/server/lib/audit/types";
@@ -14,11 +15,16 @@ export function capNotes(run: CapRun, audit: CapAudit): string[] {
       `Handbook stopped at its page or time limit: ${read} pages read; results are incomplete.`,
     );
   }
-  const maxPages = audit ? parseAuditConfig(audit.config)?.maxPages : null;
+  const config = audit ? parseAuditConfig(audit.config) : null;
+  const maxPages = config?.maxPages;
   if (audit && maxPages && audit.pagesCrawled >= maxPages) {
     notes.push(
-      `Site audit stopped at its ${maxPages}-page limit (Handbook read ${read} pages on its own).`,
+      `Site audit stopped at its ${maxPages}-page limit (Handbook read ${read} pages).`,
     );
+  }
+  // Scope the user chose on Check a site (B18 WO-B18-015).
+  if (config?.excludePaths?.length) {
+    notes.push(`Sections left out: ${config.excludePaths.join(", ")}.`);
   }
   return notes;
 }

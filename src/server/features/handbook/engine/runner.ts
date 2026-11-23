@@ -79,6 +79,8 @@ export type RunInput = {
   collectors: readonly Collector<CollectorKey>[];
   checks: readonly HandbookCheck[];
   maxPages: number;
+  /** Sections left out of the run (audit `excludePaths`, WO-B18-015). */
+  excludePaths?: readonly string[];
   /** K5 judge; absent (no OpenRouter access) → LLM items BLOCKED `no llm key`. */
   judge?: Judge | null;
   /** Map-stage extractor (ADR-019); absent → no PageProfiles (checks read `pageProfiles` undefined). */

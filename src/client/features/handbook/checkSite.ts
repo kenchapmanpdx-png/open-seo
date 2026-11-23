@@ -33,6 +33,7 @@ export type CheckSiteDeps = {
     startUrl: string;
     maxPages: number;
     renderJavaScript: false;
+    excludePaths?: string[];
   }) => Promise<{ auditId: string }>;
 };
 
@@ -58,17 +59,22 @@ export async function checkSite(
     website: string;
     size: CheckSize;
     fullCheck: boolean;
+    /** Sections to leave out (B18 WO-B18-015), upstream exclude-path syntax. */
+    excludePaths?: string[];
   },
   deps: CheckSiteDeps,
 ): Promise<{ projectId: string; auditId: string }> {
   const domain = siteDomain(input.website);
   if (!domain) throw new Error("Enter a website like example.com.");
 
-  let projectId: string | null =
-    input.currentProject.domain === domain ? input.currentProject.id : null;
+  const current = input.currentProject;
+  let projectId: string | null = current.domain === domain ? current.id : null;
   projectId ??=
     (await deps.listProjects()).find((p) => p.domain === domain)?.id ?? null;
   const isNew = projectId === null;
+  // A project with no site yet takes this one instead of a second project
+  // for the same site (B18 WO-B18-008).
+  if (projectId === null && current.domain === null) projectId = current.id;
   if (projectId === null) projectId = (await deps.createProject(domain)).id;
 
   const settings = await deps.getSettings(projectId);
@@ -83,6 +89,7 @@ export async function checkSite(
     startUrl: `https://${domain}`,
     maxPages: CHECK_SIZES[input.size].pages,
     renderJavaScript: false,
+    ...(input.excludePaths?.length ? { excludePaths: input.excludePaths } : {}),
   });
   if (isNew) await deps.setProjectDomain(projectId, domain);
   return { projectId, auditId };

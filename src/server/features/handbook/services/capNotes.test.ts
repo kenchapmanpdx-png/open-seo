@@ -19,8 +19,22 @@ describe("capNotes", () => {
     expect(
       capNotes({ coverageCapped: false, coverageRead: 80 }, audit(50, 50)),
     ).toEqual([
-      "Site audit stopped at its 50-page limit (Handbook read 80 pages on its own).",
+      "Site audit stopped at its 50-page limit (Handbook read 80 pages).",
     ]);
+  });
+
+  it("states the sections the user left out", () => {
+    const scoped = {
+      pagesCrawled: 10,
+      config: JSON.stringify({
+        maxPages: 500,
+        lighthouseStrategy: "auto",
+        excludePaths: ["/blog/", "/tag/"],
+      }),
+    };
+    expect(
+      capNotes({ coverageCapped: false, coverageRead: 10 }, scoped),
+    ).toEqual(["Sections left out: /blog/, /tag/."]);
   });
 
   it("adds no note when neither limit was reached or there is no audit", () => {

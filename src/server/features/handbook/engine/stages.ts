@@ -49,11 +49,13 @@ export function resolveRunMaxMinutes(env: string | undefined): number {
 /**
  * Page-loop budget inside the in-app `crawl` unit (B18 WO-B18-011): the unit
  * is one workflow step with a 30-min timeout, and robots, sitemap and the
- * link / resource probes run after the page loop in the same step. Default
- * 15 min; `HANDBOOK_CRAWL_MAX_MINUTES` overrides, clamped to 20.
+ * bot-fetch and header probes run after the page loop in the same step
+ * (link, outbound and resource probes are crawl batch 1). Default
+ * 20 min (about 500 pages at ~2 s each); `HANDBOOK_CRAWL_MAX_MINUTES`
+ * overrides, clamped to 20.
  */
 export const CRAWL_MAX_MINUTES_ENV = "HANDBOOK_CRAWL_MAX_MINUTES";
-const DEFAULT_CRAWL_MAX_MINUTES = 15;
+const DEFAULT_CRAWL_MAX_MINUTES = 20;
 const CRAWL_MAX_MINUTES_CLAMP = 20;
 
 export function resolveCrawlMaxMinutes(env: string | undefined): number {

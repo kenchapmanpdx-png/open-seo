@@ -9,6 +9,7 @@ import { unreadCoverage } from "@/server/features/handbook/engine/unread";
 import { emptyHead, emptyMarkup } from "./empty-page";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
+import { findExcludingPath } from "@/shared/audit-exclude-paths";
 import {
   groupByPattern,
   infiniteSpaceGuard,
@@ -37,13 +38,10 @@ export type CrawlOptions = {
   /** Follow same-host links from fetched pages (CLI frontier). */
   followLinks: boolean;
   maxPages: number;
-  /**
-   * Time budget for the page loop (B18 WO-B18-011). In-app runs read pages
-   * inside one workflow step with a 30-min timeout; past this budget the
-   * crawl stops, keeps what it read and reports `capped` coverage. Unset
-   * (CLI) = no time limit.
-   */
+  /** Page-loop budget (WO-B18-011): past it the crawl stops, `capped`. Unset (CLI) = none. */
   maxMinutes?: number;
+  /** Sections the user left out (audit `excludePaths`, WO-B18-015): never read. */
+  excludePaths?: readonly string[];
 };
 
 type PageExtra = {
@@ -132,6 +130,7 @@ async function crawl(
     const url = normalize(raw);
     if (!url || source.has(url)) return;
     source.set(url, by);
+    if (findExcludingPath(options.excludePaths ?? [], url)) return;
     if (robotsAllowed(collected, url)) discovered.push(url);
   };
   const pending = () =>
@@ -182,13 +181,8 @@ async function crawl(
     }
   }
   const left = pending();
-  if (outOfTime() && left.length > 0) {
-    ctx.log("handbook.crawl.timeCap", {
-      maxMinutes: options.maxMinutes,
-      read: snapshots.length,
-      left: left.length,
-    });
-  }
+  if (outOfTime() && left.length > 0)
+    ctx.log("handbook.crawl.timeCap", { read: snapshots.length });
   return {
     snapshots,
     coverage: {

@@ -125,4 +125,24 @@ describe("crawl time budget", () => {
     expect(out.snapshots).toHaveLength(3);
     expect(out.coverage).toMatchObject({ read: 3, capped: true });
   });
+
+  it("never reads a section the user left out", async () => {
+    fetched.length = 0;
+    const sitemap: CollectedData["sitemap"] = {
+      status: "ok",
+      sources: [],
+      urls: ["/services", "/blog/post-1"].map((p) => ({
+        loc: ORIGIN + p,
+        lastmod: null,
+        source: "fixture",
+      })),
+    };
+    const { pages } = createCrawlCollectors({
+      followLinks: false,
+      maxPages: 100,
+      excludePaths: ["/blog/"],
+    });
+    await pages.collect(ctx, { sitemap });
+    expect(fetched).toEqual([`${ORIGIN}/`, `${ORIGIN}/services`]);
+  });
 });

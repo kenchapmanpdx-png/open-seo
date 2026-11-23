@@ -13,11 +13,17 @@ import {
 import { Checkbox } from "@/client/components/ui/checkbox";
 import {
   Field,
+  FieldDescription,
   FieldLabel,
   FieldLegend,
   FieldSet,
 } from "@/client/components/ui/field";
 import { Input } from "@/client/components/ui/input";
+import { Textarea } from "@/client/components/ui/textarea";
+import {
+  excludePathsSchema,
+  splitExcludePathsInput,
+} from "@/shared/audit-exclude-paths";
 import { Progress } from "@/client/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/client/components/ui/radio-group";
 import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
@@ -78,6 +84,7 @@ function CheckForm({ projectId }: { projectId: string }) {
   const [website, setWebsite] = useState<string | null>(null);
   const [size, setSize] = useState<CheckSize>("whole");
   const [fullCheck, setFullCheck] = useState(true);
+  const [skip, setSkip] = useState("");
   const site = website ?? current?.domain ?? "";
 
   const run = useMutation({
@@ -89,12 +96,18 @@ function CheckForm({ projectId }: { projectId: string }) {
       });
       const blocked = runButtonView(health).disabledReason;
       if (blocked) throw new Error(blocked);
+      const excludePaths = excludePathsSchema.safeParse(
+        splitExcludePathsInput(skip),
+      );
+      if (!excludePaths.success)
+        throw new Error(excludePaths.error.issues[0]?.message);
       return checkSite(
         {
           currentProject: { id: projectId, domain: current?.domain ?? null },
           website: site,
           size,
           fullCheck,
+          excludePaths: excludePaths.data,
         },
         {
           listProjects: () => getProjects(queryClient),
@@ -159,6 +172,25 @@ function CheckForm({ projectId }: { projectId: string }) {
             ))}
           </RadioGroup>
         </FieldSet>
+        <Field>
+          <FieldLabel htmlFor={`${id}-skip`}>
+            Leave out sections (optional)
+          </FieldLabel>
+          <Textarea
+            id={`${id}-skip`}
+            rows={3}
+            className="font-mono"
+            placeholder={"/blog/\n/tag/\n/category/"}
+            value={skip}
+            onChange={(e) => setSkip(e.target.value)}
+          />
+          <FieldDescription>
+            One path per line: <code>/blog/</code> skips every page under
+            /blog/. On a big site, leave out blog posts, tags and categories to
+            check the core pages. Both the page reading and the full check skip
+            them.
+          </FieldDescription>
+        </Field>
         <Field orientation="horizontal" className="w-auto">
           <Checkbox
             id={`${id}-full`}

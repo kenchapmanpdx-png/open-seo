@@ -44,8 +44,6 @@ import {
   planBatches,
   resolveRunMaxMinutes,
   RUN_MAX_MINUTES_ENV,
-  CRAWL_MAX_MINUTES_ENV,
-  resolveCrawlMaxMinutes,
   runStageUnit,
   type StageContext,
   type StageName,
@@ -89,6 +87,7 @@ import type { SerpDeps } from "@/server/features/handbook/llm/serp-originality-c
 import type { OpenRouterAccess } from "@/server/lib/openrouter";
 import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 import { collectRunUnit } from "@/server/features/handbook/engine/map-stage";
+import { runScope } from "./runScope";
 import {
   COPY_QUALITY_ENV,
   copyQualityEnvOn,
@@ -258,11 +257,14 @@ async function serpDeps(
 /** Everything one stage unit needs; rebuilt per workflow step (cheap, no I/O but env and settings). */
 async function prepareStage(input: HandbookRunParams, startedAt: string) {
   const depth = resolveDepth(await getOptionalEnvValue(DEPTH_ENV));
-  const maxPages = resolveMaxPages({
-    depth,
-    env: await getOptionalEnvValue(MAX_PAGES_ENV),
-    quickDefault: QUICK_MAX_PAGES,
-  });
+  const scope = await runScope(
+    input,
+    resolveMaxPages({
+      depth,
+      env: await getOptionalEnvValue(MAX_PAGES_ENV),
+      quickDefault: QUICK_MAX_PAGES,
+    }),
+  );
   const llmCalls: LlmCallLog[] = [];
   const access = getOpenRouterAccess((await getWorkersEnv()) ?? {});
   const budget = createRunBudget(await getOptionalEnvValue(LLM_BUDGET_ENV));
@@ -307,18 +309,12 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     tierOverride: input.tierOverride,
     registry: REGISTRY,
     collectors: createDefaultCollectors(
-      {
-        seedUrls: input.seedUrls,
-        followLinks: true,
-        maxPages,
-        maxMinutes: resolveCrawlMaxMinutes(
-          await getOptionalEnvValue(CRAWL_MAX_MINUTES_ENV),
-        ),
-      },
+      { seedUrls: input.seedUrls, followLinks: true, ...scope },
       sidecar,
     ),
     checks: HANDBOOK_CHECKS,
-    maxPages,
+    maxPages: scope.maxPages,
+    excludePaths: scope.excludePaths,
     judge,
     mapper,
     budget,
