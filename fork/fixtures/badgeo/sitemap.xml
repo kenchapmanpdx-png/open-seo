@@ -77,4 +77,8 @@
   <url><loc>{{ORIGIN}}/two-websites.html</loc></url>
   <url><loc>{{ORIGIN}}/link-hygiene.html</loc></url>
   <url><loc>{{ORIGIN}}/all.html</loc></url>
+  <url><loc>{{ORIGIN}}/coffee-menu.html</loc></url>
+  <url><loc>{{ORIGIN}}/shop-links.html</loc></url>
+  <url><loc>{{ORIGIN}}/blocked-telemetry.html</loc></url>
+  <url><loc>{{ORIGIN}}/drawer-ok.html</loc></url>
 </urlset>

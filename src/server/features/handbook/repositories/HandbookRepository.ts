@@ -1,6 +1,7 @@
 import { and, eq, inArray, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { executeInBatches } from "@/db/runBatch";
+import { insertMany } from "./insertMany";
 import { auditPages, audits } from "@/db/schema";
 import {
   handbookBotFetches,
@@ -250,17 +251,16 @@ async function listActiveRuns() {
 /** Persist one run's engine output (idempotent). */
 async function saveRunResult(runId: string, result: RunResult) {
   const { intake, collected } = result;
-  await executeInBatches(intake.siteProfile, (tx, sp) =>
-    tx
-      .insert(handbookSiteProfiles)
-      .values({
-        runId,
-        spCode: sp.code,
-        value: sp.value,
-        evidence: sp.evidence,
-        confidence: sp.confidence,
-      })
-      .onConflictDoNothing(),
+  await insertMany(
+    intake.siteProfile.map((sp) => ({
+      runId,
+      spCode: sp.code,
+      value: sp.value,
+      evidence: sp.evidence,
+      confidence: sp.confidence,
+    })),
+    (tx, rows) =>
+      tx.insert(handbookSiteProfiles).values(rows).onConflictDoNothing(),
   );
 
   const templates =
@@ -268,24 +268,23 @@ async function saveRunResult(runId: string, result: RunResult) {
   const templateIds = new Map<string, string>();
   for (const t of templates)
     templateIds.set(t.key, await rowId(runId, "template", t.key));
-  await executeInBatches([...templates], (tx, t) =>
-    tx
-      .insert(handbookTemplates)
-      .values({
-        id: templateIds.get(t.key) ?? "",
-        runId,
-        templateKey: t.key,
-        urlPattern: t.urlPattern,
-        skeletonHash: t.skeletonHash,
-        pageCount: t.urls.length,
-      })
-      .onConflictDoNothing(),
+  await insertMany(
+    templates.map((t) => ({
+      id: templateIds.get(t.key) ?? "",
+      runId,
+      templateKey: t.key,
+      urlPattern: t.urlPattern,
+      skeletonHash: t.skeletonHash,
+      pageCount: t.urls.length,
+    })),
+    (tx, rows) =>
+      tx.insert(handbookTemplates).values(rows).onConflictDoNothing(),
   );
   const samples = templates.flatMap((t) =>
     t.samples.map((s) => ({ templateId: templateIds.get(t.key) ?? "", ...s })),
   );
-  await executeInBatches(samples, (tx, s) =>
-    tx.insert(handbookTemplateSamples).values(s).onConflictDoNothing(),
+  await insertMany(samples, (tx, rows) =>
+    tx.insert(handbookTemplateSamples).values(rows).onConflictDoNothing(),
   );
 
   const templateOf = new Map(
@@ -308,21 +307,20 @@ async function saveRunResult(runId: string, result: RunResult) {
       wordsRaw: s.wordsRaw,
     })),
   );
-  await executeInBatches(snapshotRows, (tx, row) =>
-    tx.insert(handbookPageSnapshots).values(row).onConflictDoNothing(),
+  await insertMany(snapshotRows, (tx, rows) =>
+    tx.insert(handbookPageSnapshots).values(rows).onConflictDoNothing(),
   );
 
-  await executeInBatches(result.statuses, (tx, s) =>
-    tx
-      .insert(handbookItemStatuses)
-      .values({
-        runId,
-        itemId: s.itemId,
-        status: s.status,
-        score: s.score,
-        note: s.note,
-      })
-      .onConflictDoNothing(),
+  await insertMany(
+    result.statuses.map((s) => ({
+      runId,
+      itemId: s.itemId,
+      status: s.status,
+      score: s.score,
+      note: s.note,
+    })),
+    (tx, rows) =>
+      tx.insert(handbookItemStatuses).values(rows).onConflictDoNothing(),
   );
 
   await saveFindings(runId, result);
@@ -346,28 +344,27 @@ async function saveFindings(runId: string, result: RunResult) {
   for (const f of result.findings)
     findingIds.set(f.code, await rowId(runId, "finding", f.code));
   const id = (code: string) => findingIds.get(code) ?? "";
-  await executeInBatches(result.findings, (tx, f) =>
-    tx
-      .insert(handbookFindings)
-      .values({
-        id: id(f.code),
-        runId,
-        code: f.code,
-        phase: f.phase,
-        sectionRef: f.sectionRef,
-        severity: f.severity,
-        severityReason: f.severityReason ?? null,
-        class: f.class,
-        title: f.title,
-        detail: f.detail,
-        fix: f.fix,
-        fixability: f.fixability,
-        limitedReason: f.limitedReason ?? null,
-        effort: f.effort,
-        templateKey: f.templateKey ?? null,
-        source: f.source,
-      })
-      .onConflictDoNothing(),
+  await insertMany(
+    result.findings.map((f) => ({
+      id: id(f.code),
+      runId,
+      code: f.code,
+      phase: f.phase,
+      sectionRef: f.sectionRef,
+      severity: f.severity,
+      severityReason: f.severityReason ?? null,
+      class: f.class,
+      title: f.title,
+      detail: f.detail,
+      fix: f.fix,
+      fixability: f.fixability,
+      limitedReason: f.limitedReason ?? null,
+      effort: f.effort,
+      templateKey: f.templateKey ?? null,
+      source: f.source,
+    })),
+    (tx, rows) =>
+      tx.insert(handbookFindings).values(rows).onConflictDoNothing(),
   );
   const items = result.findings.flatMap((f) =>
     [...new Set(f.itemIds)].map((itemId) => ({
@@ -375,32 +372,31 @@ async function saveFindings(runId: string, result: RunResult) {
       itemId,
     })),
   );
-  await executeInBatches(items, (tx, row) =>
-    tx.insert(handbookFindingItems).values(row).onConflictDoNothing(),
+  await insertMany(items, (tx, rows) =>
+    tx.insert(handbookFindingItems).values(rows).onConflictDoNothing(),
   );
   const urls = result.findings.flatMap((f) =>
     [...new Set(f.urls)].map((url) => ({ findingId: id(f.code), url })),
   );
-  await executeInBatches(urls, (tx, row) =>
-    tx.insert(handbookFindingUrls).values(row).onConflictDoNothing(),
+  await insertMany(urls, (tx, rows) =>
+    tx.insert(handbookFindingUrls).values(rows).onConflictDoNothing(),
   );
-  await executeInBatches(result.evidence, (tx, e) =>
-    tx
-      .insert(handbookEvidence)
-      .values({
-        id: e.id,
-        runId,
-        findingId: e.findingCode ? id(e.findingCode) : null,
-        itemId: e.itemId,
-        kind: e.kind,
-        url: e.url,
-        storageKey: e.storageKey,
-        excerpt: e.excerpt,
-        sha256: e.sha256,
-        byteSize: e.byteSize,
-        contentType: e.contentType,
-      })
-      .onConflictDoNothing(),
+  await insertMany(
+    result.evidence.map((e) => ({
+      id: e.id,
+      runId,
+      findingId: e.findingCode ? id(e.findingCode) : null,
+      itemId: e.itemId,
+      kind: e.kind,
+      url: e.url,
+      storageKey: e.storageKey,
+      excerpt: e.excerpt,
+      sha256: e.sha256,
+      byteSize: e.byteSize,
+      contentType: e.contentType,
+    })),
+    (tx, rows) =>
+      tx.insert(handbookEvidence).values(rows).onConflictDoNothing(),
   );
 }
 

@@ -215,6 +215,8 @@ export async function evaluateRun(
 
   const applies = appliesWithSupp(intake.applicable);
   let llmBlocked: string | null = input.judge ? null : "no llm key";
+  // WO-B19-009: per-check wall time, logged once (slowest first).
+  const checkMs: Array<[string, number]> = [];
   for (const check of input.checks) {
     const items = check.itemIds.filter(applies);
     if (items.length === 0) continue;
@@ -260,8 +262,10 @@ export async function evaluateRun(
       continue;
     }
     let result: CheckResult;
+    const startedAt = Date.now();
     try {
       result = await check.run(ctx);
+      checkMs.push([check.id, Date.now() - startedAt]);
     } catch (error) {
       if (error instanceof LlmBudgetError) {
         // ADR-019: stop LLM checks at the cap or a 402; the rest are BLOCKED too.
@@ -302,6 +306,12 @@ export async function evaluateRun(
       },
     });
   }
+  runtime.log("handbook.checks.timing", {
+    totalMs: checkMs.reduce((sum, [, ms]) => sum + ms, 0),
+    slowest: sort(checkMs, (a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([id, ms]) => `${id} ${ms}ms`),
+  });
 
   if (intake.applicable.has("P1-04")) {
     const verdict = checkerReproduction(collected, pending, checkerErrors);

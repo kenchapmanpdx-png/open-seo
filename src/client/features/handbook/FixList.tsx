@@ -225,6 +225,11 @@ function FixListHeader({ report }: { report: ReportJson }) {
         value={
           report.score ? `${report.score.grade} · ${report.score.final}` : "—"
         }
+        note={
+          report.score?.capReason
+            ? `${report.score.uncapped} before the must-fix cap`
+            : null
+        }
       />
       {HANDBOOK_CATEGORIES.map((c) => {
         const score = report.categoryScores?.[c] ?? null;
@@ -253,16 +258,22 @@ function ScoreTile({
   label,
   value,
   score,
+  note = null,
 }: {
   label: string;
   value: string;
   score: number | null;
+  /** WO-B19-011: the uncapped score next to a capped grade. */
+  note?: string | null;
 }) {
   return (
     <Card className={bandEdge(score)}>
       <CardContent className="space-y-1">
         <div className="text-xs text-muted-foreground">{label}</div>
         <div className="text-2xl font-bold tabular-nums">{value}</div>
+        {note ? (
+          <div className="text-xs text-muted-foreground">{note}</div>
+        ) : null}
       </CardContent>
     </Card>
   );

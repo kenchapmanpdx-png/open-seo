@@ -388,7 +388,9 @@ async function runStage(
         collectRunUnit(runInput, runtime, cctx, { stage: s, batch: b }, prior),
       evaluate: async (collected) => {
         const result = await evaluateRun(runInput, runtime, collected);
+        const saveStart = Date.now(); // WO-B19-009: save time of `checks`
         await HandbookRepository.saveRunResult(input.runId, result);
+        runtime.log("handbook.checks.save_ms", { ms: Date.now() - saveStart });
         await HandbookRepository.saveLlmCalls(input.runId, llmCalls);
         const pages = result.collected.pages;
         const summary: RunSummary = {

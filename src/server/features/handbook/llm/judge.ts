@@ -23,7 +23,7 @@ import {
  * K5 LLM judge (ADR-007, ADR-019). Page text is untrusted data: a fixed
  * rubric system prompt, the text as delimited JSON, no tools, Zod-validated
  * output with one retry. Quotes must be exact substrings of the cited page
- * (whitespace normalized only); an unverified quote, or a `fail` without
+ * (whitespace, case and typography normalized); an unverified quote, or a `fail` without
  * quotes, becomes `unsure`, which the runner maps to BLOCKED, never OPEN.
  * Stability: a verdict below 0.7 confidence is asked a second time; if the
  * second verdict differs, the result is `unsure`.
@@ -103,7 +103,21 @@ const SYSTEM = [
   "confidence is 0 to 1. rationale: at most three sentences, no advice beyond the rubric.",
 ].join("\n");
 
-const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
+/**
+ * Quote matching ignores whitespace, case and typography (WO-B19-014): pages
+ * print curly apostrophes and dashes, models quote them straight, and CSS
+ * may upper-case a heading the text stores in mixed case.
+ */
+const normalize = (s: string) =>
+  s
+    .normalize("NFKC")
+    .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/\u2026/g, "...")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 const clip = (s: string) => s.slice(0, 1_000);
 
 export const verifyQuote: QuoteVerifier = (quote, pages) => {

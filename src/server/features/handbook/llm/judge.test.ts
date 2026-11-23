@@ -85,6 +85,23 @@ describe("verifyQuote", () => {
   });
 });
 
+describe("verifyQuote typography (WO-B19-014)", () => {
+  it("matches straight quotes, dashes and case against the page's typography", () => {
+    const page = [
+      {
+        url,
+        text: "Why We\u2019re the Best \u2014 that\u2019s the #1 reason",
+      },
+    ];
+    expect(
+      verifyQuote({ url, text: "why we're the best - that's the #1" }, page),
+    ).toBe(true);
+    expect(verifyQuote({ url, text: "that's the #2 reason" }, page)).toBe(
+      false,
+    );
+  });
+});
+
 describe("createJudge", () => {
   it("keeps a fail with a verified quote and downgrades an invented quote to unsure", async () => {
     const verified = judgeWith(modelReturning(fail("the best race team")));

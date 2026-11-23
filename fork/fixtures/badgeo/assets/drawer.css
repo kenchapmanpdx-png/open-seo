@@ -1,0 +1,7 @@
+/* WO-B19-006 fixture: off-canvas drawer, hidden by opacity and visibility. */
+.drawer {
+  position: fixed;
+  inset: 0 40% 0 0;
+  opacity: 0;
+  visibility: hidden;
+}

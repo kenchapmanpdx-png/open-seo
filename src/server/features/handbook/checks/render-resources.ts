@@ -3,7 +3,12 @@ import {
   robotsBlockedRequests,
   STATIC_RENDER_TYPES,
 } from "@/server/features/handbook/engine/robots-blocked";
-import { createResult } from "./support";
+import type { RenderData } from "@/server/features/handbook/contracts/render-data";
+import { createResult, normalizeUrl } from "./support";
+
+type RobotsEffect = NonNullable<
+  RenderData["pages"][number]["js"]["robotsBlocked"]
+>;
 
 /**
  * ROBOTS render-resource guard (handbook §18, P3-20): no robots.txt Disallow
@@ -12,9 +17,10 @@ import { createResult } from "./support";
  * hosts are ignored (their robots.txt is not fetched).
  *
  * Severity by effect (WO-B19-004): the render collector re-renders each
- * template sample with the blocked requests aborted. Different main text →
- * S1 with the missing lines as evidence; same text on every measured sample
- * → S4 ("blocked resources do not change the rendered content"). No
+ * template sample with the blocked requests aborted; each page takes its
+ * own result, else its template sample's. Different text → S1 with the
+ * missing lines as evidence; same text → S4 ("blocked resources do not
+ * change the rendered content"); one finding per outcome. No
  * platform allow-list. Renders without that measurement (older runs) keep
  * the by-type rule: S1 for a script, stylesheet, image or font, S2 when
  * only XHR/fetch calls are blocked.
@@ -63,86 +69,123 @@ export const renderResourcesCheck: HandbookCheck = {
     };
 
     if (blocked.length > 0) {
-      const pages = [...new Set(blocked.map((b) => b.page))];
-      const measured = render.pages.filter((p) => p.js.robotsBlocked);
-      const changed = measured.filter((p) => !p.js.robotsBlocked?.sameContent);
-      const staticBlocked = blocked.some((b) =>
-        STATIC_RENDER_TYPES.has(b.type),
+      // Effect per page: its own re-render, else its template sample's.
+      const templateOf = new Map<string, string>();
+      if (ctx.collected.templates.status === "ok")
+        for (const t of ctx.collected.templates.templates)
+          for (const u of t.urls) templateOf.set(normalizeUrl(u), t.key);
+      const byTemplate = new Map<string, RobotsEffect>();
+      for (const p of render.pages) {
+        const key = templateOf.get(normalizeUrl(p.url));
+        if (key && p.js.robotsBlocked) byTemplate.set(key, p.js.robotsBlocked);
+      }
+      const effectOf = (url: string) => {
+        const own = render.pages.find((p) => p.url === url)?.js.robotsBlocked;
+        const key = templateOf.get(normalizeUrl(url));
+        return own ?? (key ? byTemplate.get(key) : undefined);
+      };
+      const groups = {
+        changed: [] as string[],
+        same: [] as string[],
+        unknown: [] as string[],
+      };
+      for (const page of new Set(blocked.map((b) => b.page))) {
+        const e = effectOf(page);
+        groups[!e ? "unknown" : e.sameContent ? "same" : "changed"].push(page);
+      }
+      const emit = (
+        pages: string[],
+        effect: { severity: "S1" | "S2" | "S4"; severityReason?: string },
+        title: string,
+        lines: string[],
+      ) => {
+        if (pages.length === 0) return;
+        const mine = blocked.filter((b) => pages.includes(b.page));
+        out.finding({
+          itemIds: ["P3-20"],
+          ...effect,
+          title,
+          detail: [
+            ...lines,
+            ...mine
+              .slice(0, 20)
+              .map((b) => `${b.page} loads ${b.type} ${b.url} — ${b.rule}`),
+          ].join("\n"),
+          fix: "Remove the Disallow rules that match scripts, styles, images, fonts or API calls used while rendering (or add a longer Allow rule for them).",
+          fixability: "FIXABLE",
+          effort: "S",
+          urls: pages,
+          evidenceRefs: [
+            robotsRef(),
+            ...render.pages
+              .filter((p) => pages.includes(p.url))
+              .slice(0, 5)
+              .map((p) => {
+                const e = effectOf(p.url);
+                return out.evidence(
+                  "renderedDom",
+                  p.url,
+                  [
+                    ...mine
+                      .filter((b) => b.page === p.url)
+                      .map((b) => `${b.type} ${b.url} — ${b.rule}`),
+                    ...(e
+                      ? [
+                          `re-render without them: ${e.wordsNormal} → ${e.wordsBlocked} words, same content ${e.sameContent}`,
+                          ...e.missing.map((m) => `missing: ${m}`),
+                        ]
+                      : []),
+                  ].join("\n"),
+                  p.js.renderedKey,
+                );
+              }),
+          ],
+        });
+      };
+      const effectLine = (url: string) => {
+        const e = effectOf(url);
+        const words = `${e?.wordsNormal} words rendered normally, ${e?.wordsBlocked} with the blocked requests aborted`;
+        return e?.sameContent
+          ? `${url} — same content without them (${words})`
+          : `${url} — content changes without them (${words}); missing: ${(e?.missing ?? []).join(" | ") || "word count only"}`;
+      };
+      emit(
+        groups.changed,
+        { severity: "S1" },
+        "robots.txt blocks resources needed to render the page",
+        groups.changed.map(effectLine),
       );
-      const effect =
-        measured.length === 0
-          ? staticBlocked
-            ? ({ severity: "S1" } as const)
-            : ({
-                severity: "S2",
-                severityReason:
-                  "only XHR/fetch calls are blocked; they may be telemetry rather than content",
-              } as const)
-          : changed.length > 0
-            ? ({ severity: "S1" } as const)
-            : ({
-                severity: "S4",
-                severityReason:
-                  "blocked resources do not change the rendered content",
-              } as const);
-      const effectLines =
-        measured.length === 0
-          ? staticBlocked
-            ? []
-            : [
-                "Only XHR/fetch calls are blocked: confirm whether their responses feed visible content (GSC URL Inspection → page resources).",
-              ]
-          : measured.map((p) => {
-              const r = p.js.robotsBlocked;
-              const words = `${r?.wordsNormal} words rendered normally, ${r?.wordsBlocked} with the blocked requests aborted`;
-              return r?.sameContent
-                ? `${p.url} — same content without them (${words})`
-                : `${p.url} — content changes without them (${words}); missing: ${(r?.missing ?? []).join(" | ") || "layout / word count only"}`;
-            });
-      out.finding({
-        itemIds: ["P3-20"],
-        ...effect,
-        title:
-          effect.severity === "S4"
-            ? "robots.txt blocks render requests (rendered content unchanged)"
-            : "robots.txt blocks resources needed to render the page",
-        detail: [
-          ...effectLines,
-          ...blocked
-            .slice(0, 20)
-            .map((b) => `${b.page} loads ${b.type} ${b.url} — ${b.rule}`),
-        ].join("\n"),
-        fix: "Remove the Disallow rules that match scripts, styles, images, fonts or API calls used while rendering (or add a longer Allow rule for them).",
-        fixability: "FIXABLE",
-        effort: "S",
-        urls: pages,
-        evidenceRefs: [
-          robotsRef(),
-          ...render.pages
-            .filter((p) => pages.includes(p.url))
-            .slice(0, 5)
-            .map((p) =>
-              out.evidence(
-                "renderedDom",
-                p.url,
-                [
-                  ...blocked
-                    .filter((b) => b.page === p.url)
-                    .map((b) => `${b.type} ${b.url} — ${b.rule}`),
-                  ...(p.js.robotsBlocked
-                    ? [
-                        `aborted re-render: ${p.js.robotsBlocked.wordsNormal} → ${p.js.robotsBlocked.wordsBlocked} words, same content ${p.js.robotsBlocked.sameContent}`,
-                        ...p.js.robotsBlocked.missing.map(
-                          (m) => `missing: ${m}`,
-                        ),
-                      ]
-                    : []),
-                ].join("\n"),
-                p.js.renderedKey,
-              ),
-            ),
-        ],
-      });
+      emit(
+        groups.same,
+        {
+          severity: "S4",
+          severityReason:
+            "blocked resources do not change the rendered content",
+        },
+        "robots.txt blocks render requests (rendered content unchanged)",
+        groups.same.map(effectLine),
+      );
+      // Not measured (older runs): by type.
+      const unknownStatic = blocked.some(
+        (b) =>
+          groups.unknown.includes(b.page) && STATIC_RENDER_TYPES.has(b.type),
+      );
+      emit(
+        groups.unknown,
+        unknownStatic
+          ? { severity: "S1" }
+          : {
+              severity: "S2",
+              severityReason:
+                "only XHR/fetch calls are blocked; they may be telemetry rather than content",
+            },
+        "robots.txt blocks resources needed to render the page",
+        unknownStatic
+          ? []
+          : [
+              "Only XHR/fetch calls are blocked: confirm whether their responses feed visible content (GSC URL Inspection → page resources).",
+            ],
+      );
     } else if (checked === 0) {
       out.na("P3-20", "rendered pages requested no same-host resources");
     } else {
