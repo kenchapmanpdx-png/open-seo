@@ -5,7 +5,7 @@ In-app Check a site (whole site, app `handbook-v3.7.0`, no page cap) vs Semrush 
 | #   | Site                     | Cell                                                            | App                                                                                         | Semrush                                                                     |
 | --- | ------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | 3   | aircorheatingcooling.com | Squarespace · HVAC · neighborhood pages · sitemap 196           | F · 30.2 (SEO 30 / GEO 21 / AEO 17) · 238 pages · Must 2 · Should 24 · Nice 58 · Couldn't 8 | 184 pages · 172 errors · 738 warnings · 1333 notices · schema.org 163 pages |
-| 4   | valentinecoffeeco.com    | Shopify · store · sitemap 53                                    | 60 pages · 63 findings · Must 2 · Should 17 (final stage still running at 03:40 PT)         | 92 pages · 17 errors · 242 warnings · 293 notices · schema.org 0            |
+| 4   | valentinecoffeeco.com    | Shopify · store · sitemap 53                                    | F · 39 (SEO 37 / GEO 38 / AEO 41) · 60 pages · Must 2 · Should 17 · Nice 44                 | 92 pages · 17 errors · 242 warnings · 293 notices · schema.org 0            |
 | 5   | wsparkdental.com         | no sitemap.xml (404) · dental · ~18 pages · platform unverified | F · 39 (SEO 39 / GEO 38 / AEO 31) · 18 pages · Must 1 · Should 14 · Nice 22 · Couldn't 6    | 25 pages · 7 errors · 59 warnings · 10 notices · schema.org 0               |
 
 ## 3 — aircorheatingcooling.com
@@ -40,3 +40,4 @@ In-app Check a site (whole site, app `handbook-v3.7.0`, no page cap) vs Semrush 
 7. Semrush reports schema.org 0 on Valentine and wsparkdental: verify in raw HTML (tool-wrong on Wix earlier).
 8. Valentine run sat in the last stage "Running checks 0 / 1" with no progress for 60 pages while it held the lease; check duration and progress display for that stage.
 9. Run time: 238 pages ≈ 60 min in-app. Record per-stage times for the three runs (run-query script) and list the slowest stage.
+10. Four of six field sites graded exactly F · 39 (Must-fix cap); the grade does not separate them (WO-B19-011).

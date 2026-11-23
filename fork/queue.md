@@ -217,3 +217,4 @@ Status: `todo` · `doing` · `done` · `ESCALATE` · `BLOCKED-KEN`. HEAVY writes
 | WO-B19-009 | B19 | Per-stage run time + final-stage progress | — | todo | | |
 | WO-B19-010 | B19 | Three new goldens | — | todo | | |
 | WO-B19-090 | B19 | Exit | — | todo | | |
+| WO-B19-011 | B19 | Grade cap flattens sites at F · 39: re-score, decide | — | todo | | |
