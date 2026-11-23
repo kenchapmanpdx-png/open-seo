@@ -1,0 +1,106 @@
+# Golden expectations for field test 5 (B19 WO-B19-010, M3 format). Source: fork/reports/field-wsparkdental.com-2026-11-23.md
+# (verdict table, 0 open) + fork/fixtures/external/wsparkdental.com-semrush-2026-11-23.csv, CLI run field-2026-11-23 (18 pages).
+# Kept: agree rows, app-only findings re-checked live 2026-11-23, and every B19 `fixed` (regression lock; `passes` lock false
+# positives that must stay gone). Left out: Semrush `skip` rows (text-to-HTML ratio, low word count, unminified, llms.txt).
+# No sitemap on this site (/sitemap.xml 404): WO-B19-013 lock.
+site: wsparkdental.com
+origin: https://www.wsparkdental.com
+
+findings:
+  - id: W01
+    title: "No XML sitemap (/sitemap.xml 404)"
+    items: [P3-12]
+    urls: [/sitemap.xml]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush Sitemap.xml not found + 4xx errors (/sitemap.xml); fixed B19 WO-013"
+  - id: W02
+    title: "robots.txt has no Sitemap: line"
+    items: [P3-19]
+    urls: [/robots.txt]
+    class: ROBOTS
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush Sitemap.xml not specified in robots.txt; fixed B19 WO-013"
+  - id: W03
+    title: "Outbound links are dead: localmed.com booking widget (502) on 16 pages"
+    items: [P5-13]
+    urls: [/services/invisalign, /terms]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S4
+    note: "Semrush Broken external links (16 of 17 rows); fixed B19 run 90 (5xx after retry = dead, ADR-031 amendment)"
+  - id: W04
+    title: "Pages without a meta description (3)"
+    items: [P4-03]
+    urls: [/services, /terms, /privacy]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Missing meta description: same pages"
+  - id: W05
+    title: "Pages without exactly one H1"
+    items: [P4-01]
+    urls: [/dentists, /services]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Missing h1 (2)"
+  - id: W06
+    title: "Pages with only one internal link"
+    items: [P3-12]
+    urls: [/services/crowns, /services/invisalign]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "Semrush Pages with only one internal link (9)"
+  - id: W07
+    title: "Home has no canonical"
+    items: [P3-04]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S1
+    note: "live 2026-11-23: no <link rel=canonical>"
+  - id: W08
+    title: "/index.html answers 200 (duplicate of /)"
+    items: [P3-03]
+    urls: [/index.html]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "live 2026-11-23"
+  - id: W09
+    title: "No JSON-LD: no WebSite, Organization or LocalBusiness (Dentist) node"
+    items: [P6-01, P6-03, P6-10, P6-11]
+    urls: [/]
+    class: SCHEMA
+    detectableBy: deterministic
+    severity: S2
+    note: "live 2026-11-23: no application/ld+json (Semrush schema.org 0 agrees)"
+  - id: W10
+    title: "Dentist bios printed twice on /dentists"
+    items: []
+    supp: [SUPP-03]
+    urls: [/dentists]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+  - id: W11
+    title: "Logo link with no anchor text"
+    items: []
+    supp: [SUPP-01]
+    urls: [/about, /dentists]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+
+passes:
+  - id: PASS-01
+    title: "LCP element on /terms is page text mentioning SMS consent, not a consent banner"
+    items: [P8-09]
+    urls: [/terms]
+    class: PERF
+    detectableBy: render
+    note: "false positive fixed B19 run 90"

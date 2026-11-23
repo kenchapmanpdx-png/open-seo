@@ -61,6 +61,15 @@ describe("crawl.coverage", () => {
     ).toEqual([abs("/events/b-2")]);
   });
 
+  it("counts an index link with a query (Shopify ?variant=) as an inlink", async () => {
+    const result = await run([
+      snapshot("/events/", { links: ["/events/a-1?variant=7", "/events/b-2"] }),
+      snapshot("/events/a-1"),
+      snapshot("/events/b-2"),
+    ]);
+    expect(statusOf(result, "P2-10")).toBe("PASS");
+  });
+
   it("opens P2-12 on an underscore slug", async () => {
     const result = await run([snapshot("/"), snapshot("/bad_slug")]);
     expect(statusOf(result, "P2-12")).toBe("OPEN");

@@ -121,11 +121,14 @@ export const canonicalFormCheck: HandbookCheck = {
       title: string,
       fix: string,
       hits: { page: PageSnapshot; why: string; excerpt?: string }[],
+      effect: { severity: "S1" | "S3"; severityReason?: string } = {
+        severity: "S1",
+      },
     ) => {
       if (hits.length === 0) return;
       out.finding({
         itemIds: ["P3-04"],
-        severity: "S1",
+        ...effect,
         title,
         detail: hits.map((h) => `${h.page.url} — ${h.why}`).join("\n"),
         fix,
@@ -189,6 +192,7 @@ export const canonicalFormCheck: HandbookCheck = {
     }
     const siteHost = new URL(ctx.origin).hostname.replace(/^www\./, "");
     const formHits: { page: PageSnapshot; why: string; excerpt: string }[] = [];
+    const dupHits: typeof formHits = [];
     const trackHits: { page: PageSnapshot; why: string; excerpt: string }[] =
       [];
     for (const page of live) {
@@ -203,21 +207,33 @@ export const canonicalFormCheck: HandbookCheck = {
         ),
       ];
       const self = normalizeUrl(page.url);
-      const badForm = internal.flatMap((href) => {
-        if (href === self) return [];
-        const canonical =
-          duplicateOf.get(href) ?? canonicalByForm.get(formKey(href));
-        return canonical && canonical !== href
-          ? [`${href} → ${canonical}`]
-          : [];
-      });
-      if (badForm.length > 0) {
-        formHits.push({
-          page,
-          why: badForm.slice(0, 10).join("; "),
-          excerpt: badForm.join("\n"),
+      const hits = (target: (href: string) => string | undefined) =>
+        internal.flatMap((href) => {
+          const canonical = href === self ? undefined : target(href);
+          return canonical && canonical !== href
+            ? [`${href} → ${canonical}`]
+            : [];
         });
-      }
+      const push = (list: typeof formHits, found: string[]) => {
+        if (found.length > 0)
+          list.push({
+            page,
+            why: found.slice(0, 10).join("; "),
+            excerpt: found.join("\n"),
+          });
+      };
+      push(
+        dupHits,
+        hits((href) => duplicateOf.get(href)),
+      );
+      push(
+        formHits,
+        hits((href) =>
+          duplicateOf.has(href)
+            ? undefined
+            : canonicalByForm.get(formKey(href)),
+        ),
+      );
       const tracked = internal.filter((href) => trackingParams(href).length);
       if (tracked.length > 0) {
         trackHits.push({
@@ -231,6 +247,16 @@ export const canonicalFormCheck: HandbookCheck = {
       "Internal links use a non-canonical URL form",
       "Link to the exact canonical form (same host, protocol, trailing slash, no index.html).",
       formHits,
+    );
+    report(
+      "Internal links point at a canonicalised duplicate",
+      "Link to the canonical URL itself (the duplicate's canonical already consolidates it, so this is consistency, not an indexing error).",
+      dupHits,
+      {
+        severity: "S3",
+        severityReason:
+          "the duplicate is correctly canonicalised; the link form is consistency, not an indexing error",
+      },
     );
     report(
       "Internal links carry tracking parameters",

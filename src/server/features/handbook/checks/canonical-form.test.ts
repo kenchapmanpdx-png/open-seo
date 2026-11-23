@@ -49,14 +49,23 @@ describe("crawl.canonical-form", () => {
       shop("/tag/hvac%20service", "Tagged.", "/tag/hvac+service"),
     ]);
     const byTitle = Object.fromEntries(
-      result.findings.map((f) => [f.title, f.urls]),
+      result.findings.map((f) => [f.title, [f.severity, ...f.urls]]),
     );
+    // A link to a correctly canonicalised duplicate is not a canonical error (§17 S1).
     expect(byTitle).toEqual({
       "Indexable pages are not self-canonical": [
+        "S1",
         "https://example.com/shop?page=2",
       ],
-      "Internal links use a non-canonical URL form": ["https://example.com/"],
+      "Internal links point at a canonicalised duplicate": [
+        "S3",
+        "https://example.com/",
+      ],
     });
+    // The runner rejects a below-default severity that has no reason.
+    expect(
+      result.findings.every((f) => f.severity === "S1" || f.severityReason),
+    ).toBe(true);
   });
 
   it("keeps a tracking-parameter canonical out of the duplicate rule and ignores self links", async () => {

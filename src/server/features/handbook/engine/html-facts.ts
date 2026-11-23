@@ -9,6 +9,7 @@ import type {
 import { aspectRatio, embedOf } from "./video-embeds";
 import { createProseReader } from "./prose-reader";
 import { readLink, readMeta } from "./html-head";
+import { hiddenTextTracker } from "./hidden-text";
 
 /**
  * One streaming pass over raw HTML → the parsed facts every raw-HTML check
@@ -29,6 +30,7 @@ export type HtmlFacts = Pick<
 };
 
 const SKIP_TEXT = new Set(["script", "style", "noscript", "template", "svg"]);
+
 const LANDMARKS = ["header", "nav", "footer", "aside"] as const;
 const isLandmark = (tag: string): tag is (typeof LANDMARKS)[number] =>
   (LANDMARKS as readonly string[]).includes(tag);
@@ -110,6 +112,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   let skipDepth = 0;
   /** Stack depth of the open `data-nosnippet` element (0 = none). */
   let nosnippetAt = 0;
+  const hidden = hiddenTextTracker(MAX_TEXT);
   let nosnippetWords = 0;
   /** The first answer paragraph being read (SUPP-13); done once one qualifies. */
   let para: { at: number; nosnippet: boolean; text: string[] } | null = null;
@@ -247,7 +250,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     {
       onopentag(name, attrs) {
         if (LINE_BREAKS.has(name)) endLine();
-        stack.push(name);
+        hidden.open(attrs, stack.push(name)); // push returns the new depth
         if (nosnippetAt === 0 && "data-nosnippet" in attrs)
           nosnippetAt = stack.length;
         if (name === "p" && !para && !firstAnswer && !stack.some(isLandmark))
@@ -306,6 +309,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         if (textLength < MAX_TEXT) {
           textParts.push(text);
           textLength += text.length;
+          hidden.text(text);
         }
         const n = countWords(text);
         words += n;
@@ -320,6 +324,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         const at = stack.lastIndexOf(name);
         if (at >= 0) stack.length = at;
         if (nosnippetAt > stack.length) nosnippetAt = 0;
+        hidden.close(stack.length);
         if (para && para.at > stack.length) {
           const text = collapse(para.text.join(" "));
           if (countWords(text) >= FIRST_ANSWER_MIN_WORDS)
@@ -380,6 +385,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
       embeds,
       counts,
       text: collapse(textParts.join(" ")).slice(0, MAX_TEXT),
+      ...hidden.result(),
       ...(nosnippetWords ? { nosnippetWords } : {}),
       ...(firstAnswer?.nosnippet
         ? { firstAnswerNosnippet: firstAnswer.text.slice(0, 200) }

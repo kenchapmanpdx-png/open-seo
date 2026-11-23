@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { context, snapshot, statusOf } from "./check-test-fixtures";
+import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
+import { context, ORIGIN, snapshot, statusOf } from "./check-test-fixtures";
 import { rawCopyCheck } from "./raw-copy";
 
 function page(
@@ -30,6 +31,17 @@ describe("crawl.raw-copy", () => {
       page("/", "Upcoming races. Loading events… please"),
     ]);
     expect(statusOf(result, "P2-04")).toBe("OPEN");
+  });
+
+  it("ignores error copy in a hidden state template (Shopify search drawer)", async () => {
+    const html =
+      '<main><p>Fresh roasts every week.</p><div class="search__message hidden"><p data-text>Something went wrong. Please try again!</p></div></main>';
+    const base = snapshot("/");
+    const markup = extractHtmlFacts(html, `${ORIGIN}/`).markup;
+    const result = await run([
+      { ...base, markup: { ...base.markup, ...markup } },
+    ]);
+    expect(statusOf(result, "P2-04")).toBe("PASS");
   });
 
   it("opens P5-08 on one number shown in two formats", async () => {

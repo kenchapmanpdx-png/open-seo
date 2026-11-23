@@ -101,10 +101,17 @@ export const crawlCoverageCheck: HandbookCheck = {
     for (const s of crawled) {
       const from = patternOf.get(normalizeUrl(s.url)) ?? "?";
       for (const link of s.links) {
-        const target = normalizeUrl(link.href);
-        const set = inlinkPatterns.get(target) ?? new Set<string>();
-        set.add(from);
-        inlinkPatterns.set(target, set);
+        // A link with a query (Shopify `?variant=`) still reaches its path's page.
+        const bare = new URL(link.href);
+        bare.search = "";
+        for (const target of new Set([
+          normalizeUrl(link.href),
+          normalizeUrl(bare.href),
+        ])) {
+          const set = inlinkPatterns.get(target) ?? new Set<string>();
+          set.add(from);
+          inlinkPatterns.set(target, set);
+        }
       }
     }
 

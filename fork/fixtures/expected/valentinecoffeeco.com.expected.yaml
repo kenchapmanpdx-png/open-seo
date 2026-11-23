@@ -1,0 +1,89 @@
+# Golden expectations for field test 4 (B19 WO-B19-010, M3 format). Source: fork/reports/field-valentinecoffeeco.com-2026-11-23.md
+# (verdict table, 0 open) + fork/fixtures/external/valentinecoffeeco.com-semrush-2026-11-23.csv, CLI run field-2026-11-23 (60 pages,
+# Shopify). Kept: agree rows, app-only findings re-checked live 2026-11-23, and every B19 `fixed` (regression lock; `passes` lock
+# false positives that must stay gone). Left out: Semrush `skip` rows (text-to-HTML ratio, low word count, crawl depth, multiple h1).
+site: valentinecoffeeco.com
+origin: https://www.valentinecoffeeco.com
+
+findings:
+  - id: V01
+    title: "Pages without exactly one H1 (/pages/*, /cart)"
+    items: [P4-01]
+    urls: [/pages/contact-us, /pages/vliet-street]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Missing h1 (6)"
+  - id: V02
+    title: "Duplicate meta descriptions"
+    items: [P4-01]
+    urls: [/products/gift-box-1, /products/free-mug]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Duplicate meta descriptions (17)"
+  - id: V03
+    title: "Sitemap URLs without an internal link (orphans)"
+    items: [P3-12]
+    urls: [/agents.md, /products/brazil]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush Orphaned sitemap pages (9)"
+  - id: V04
+    title: "Shopify default robots rules block render requests; rendered content unchanged"
+    items: [P3-20]
+    urls: [/, /products/brazil]
+    class: RENDER
+    detectableBy: render
+    severity: S4
+    note: "Semrush Disallowed internal resources; fixed B19 WO-004 (was S1 Must fix) and run 90 (one-page templates take the measured result)"
+  - id: V05
+    title: "?page=2 links ?page=1, a canonicalised duplicate of /collections/all"
+    items: [P3-04]
+    urls: [/collections/all?page=2]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "fixed B19 WO-005 (no canonical finding for ?page=1) and run 90 (link finding S3, was S1)"
+  - id: V06
+    title: "/index.html answers 200 (duplicate of /)"
+    items: [P3-03]
+    urls: [/index.html]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "live 2026-11-23"
+  - id: V07
+    title: "JSON-LD sameAs has empty values and an http: Facebook URL"
+    items: [P6-02]
+    urls: [/]
+    class: SCHEMA
+    detectableBy: deterministic
+    severity: S2
+    note: "raw HTML has 2 ld+json blocks (Semrush schema.org 0: tool-wrong)"
+  - id: V08
+    title: "Links with no anchor text"
+    items: []
+    supp: [SUPP-01]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "Semrush Links with no anchor text (156)"
+
+passes:
+  - id: PASS-01
+    title: "Products are linked from collection pages (links carry ?variant=)"
+    items: [P2-10]
+    urls: [/products/*]
+    class: CRAWL
+    detectableBy: deterministic
+    note: "false positive fixed B19 run 90"
+  - id: PASS-02
+    title: "Search drawer error template is class=hidden, not page copy"
+    items: [P2-04]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+    note: "false positive fixed B19 run 90"

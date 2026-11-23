@@ -93,6 +93,22 @@ export const renderResourcesCheck: HandbookCheck = {
         const e = effectOf(page);
         groups[!e ? "unknown" : e.sameContent ? "same" : "changed"].push(page);
       }
+      // An unmeasured page (a one-page template gets no re-render of its own)
+      // whose every blocking rule was measured "unchanged" elsewhere and never
+      // "changed" takes that result (valentinecoffeeco /cart, /account/login).
+      const rulesOf = (pages: string[]) =>
+        new Set(
+          blocked.filter((b) => pages.includes(b.page)).map((b) => b.rule),
+        );
+      const sameRules = rulesOf(groups.same);
+      const changedRules = rulesOf(groups.changed);
+      const cleared = (rule: string) =>
+        sameRules.has(rule) && !changedRules.has(rule);
+      const inferred = groups.unknown.filter((page) =>
+        blocked.filter((b) => b.page === page).every((b) => cleared(b.rule)),
+      );
+      groups.unknown = groups.unknown.filter((p) => !inferred.includes(p));
+      groups.same.push(...inferred);
       const emit = (
         pages: string[],
         effect: { severity: "S1" | "S2" | "S4"; severityReason?: string },
@@ -144,6 +160,8 @@ export const renderResourcesCheck: HandbookCheck = {
       };
       const effectLine = (url: string) => {
         const e = effectOf(url);
+        if (inferred.includes(url))
+          return `${url} — not re-rendered; its blocking rules left ${groups.same.length - inferred.length} measured page(s) unchanged`;
         const words = `${e?.wordsNormal} words rendered normally, ${e?.wordsBlocked} with the blocked requests aborted`;
         return e?.sameContent
           ? `${url} — same content without them (${words})`
@@ -165,10 +183,12 @@ export const renderResourcesCheck: HandbookCheck = {
         "robots.txt blocks render requests (rendered content unchanged)",
         groups.same.map(effectLine),
       );
-      // Not measured (older runs): by type.
+      // Not measured: by type, rules measured unchanged elsewhere left out.
       const unknownStatic = blocked.some(
         (b) =>
-          groups.unknown.includes(b.page) && STATIC_RENDER_TYPES.has(b.type),
+          groups.unknown.includes(b.page) &&
+          STATIC_RENDER_TYPES.has(b.type) &&
+          !cleared(b.rule),
       );
       emit(
         groups.unknown,

@@ -265,6 +265,11 @@ export type PageMarkup = {
   /** Words inside `data-nosnippet` elements (raw HTML). 1.5.1 */
   nosnippetWords?: number;
   /**
+   * `text` without hidden subtrees (`hidden`, `aria-hidden="true"`, class
+   * `hidden`, inline `display:none`); present only when one held text. 1.11.0 (B19 run 90, additive, crawl-side)
+   */
+  visibleText?: string;
+  /**
    * Start of the page's first answer paragraph (first `<p>` of ≥ 15 words
    * outside nav / header / footer / aside) when it sits inside
    * `data-nosnippet`; absent otherwise (SUPP-13). 1.6.0

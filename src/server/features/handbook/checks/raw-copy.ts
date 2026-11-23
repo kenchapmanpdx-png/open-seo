@@ -68,7 +68,9 @@ export const rawCopyCheck: HandbookCheck = {
 
     // P2-04
     const states = pagesLive.flatMap((s) => {
-      const hit = STATE_COPY.exec(s.markup.text)?.[0]?.trim();
+      const hit = STATE_COPY.exec(
+        s.markup.visibleText ?? s.markup.text,
+      )?.[0]?.trim();
       return hit ? [{ s, hit: hit.slice(0, 200) }] : [];
     });
     if (states.length > 0) {
