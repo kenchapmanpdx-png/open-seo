@@ -11,7 +11,7 @@ export function capNotes(run: CapRun, audit: CapAudit): string[] {
   const notes: string[] = [];
   if (run.coverageCapped) {
     notes.push(
-      `Handbook stopped at its page limit: ${read} pages read; results are incomplete.`,
+      `Handbook stopped at its page or time limit: ${read} pages read; results are incomplete.`,
     );
   }
   const maxPages = audit ? parseAuditConfig(audit.config)?.maxPages : null;

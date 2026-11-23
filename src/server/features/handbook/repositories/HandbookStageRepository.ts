@@ -1,9 +1,10 @@
-import { and, asc, count, eq, sql, sum } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql, sum } from "drizzle-orm";
 import { db } from "@/db";
 import {
   handbookBotFetches,
   handbookLlmCalls,
   handbookRunStages,
+  handbookRuns,
 } from "@/db/handbook-tables";
 import type {
   StageName,
@@ -19,6 +20,25 @@ import type {
  */
 const now = () => new Date().toISOString();
 
+/**
+ * Stage rows are written only while the run is live (B18 WO-B18-012): a step
+ * attempt the workflow already timed out keeps running in-process and must
+ * not mark its unit `done` after the run was marked `failed`.
+ */
+async function runLive(runId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: handbookRuns.id })
+    .from(handbookRuns)
+    .where(
+      and(
+        eq(handbookRuns.id, runId),
+        inArray(handbookRuns.status, ["queued", "running"]),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
 function forRun(runId: string): StageTracker {
   const where = (stage: StageName, batch: number) =>
     and(
@@ -31,6 +51,7 @@ function forRun(runId: string): StageTracker {
     batch: number,
     set: Partial<typeof handbookRunStages.$inferInsert>,
   ) => {
+    if (!(await runLive(runId))) return;
     await db
       .insert(handbookRunStages)
       .values({ runId, stage, batch, ...set })
@@ -62,6 +83,7 @@ function forRun(runId: string): StageTracker {
   return {
     get,
     async start(stage, batch) {
+      if (!(await runLive(runId))) throw new Error("handbook: run not live");
       await db
         .insert(handbookRunStages)
         .values({

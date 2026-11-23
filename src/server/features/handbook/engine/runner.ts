@@ -155,8 +155,8 @@ export async function runHandbook(
   const ctx = collectorContext(input, runtime);
   await runStagedHandbook(
     {
-      collect: (stage, prior) =>
-        collectRunUnit(input, runtime, ctx, stage, prior),
+      collect: (stage, prior, batch) =>
+        collectRunUnit(input, runtime, ctx, { stage, batch }, prior),
       evaluate: async (collected) => {
         out.result = await evaluateRun(input, runtime, collected);
       },

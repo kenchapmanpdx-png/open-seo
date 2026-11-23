@@ -46,6 +46,23 @@ export function resolveRunMaxMinutes(env: string | undefined): number {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_RUN_MAX_MINUTES;
 }
 
+/**
+ * Page-loop budget inside the in-app `crawl` unit (B18 WO-B18-011): the unit
+ * is one workflow step with a 30-min timeout, and robots, sitemap and the
+ * link / resource probes run after the page loop in the same step. Default
+ * 15 min; `HANDBOOK_CRAWL_MAX_MINUTES` overrides, clamped to 20.
+ */
+export const CRAWL_MAX_MINUTES_ENV = "HANDBOOK_CRAWL_MAX_MINUTES";
+const DEFAULT_CRAWL_MAX_MINUTES = 15;
+const CRAWL_MAX_MINUTES_CLAMP = 20;
+
+export function resolveCrawlMaxMinutes(env: string | undefined): number {
+  const n = Number(env);
+  return Number.isFinite(n) && n > 0
+    ? Math.min(n, CRAWL_MAX_MINUTES_CLAMP)
+    : DEFAULT_CRAWL_MAX_MINUTES;
+}
+
 /** Collector keys owned by a sidecar stage; every other collector runs in `crawl`. */
 const STAGE_COLLECTORS: Partial<Record<StageName, readonly CollectorKey[]>> = {
   render: ["render"],
@@ -58,6 +75,21 @@ function collectorStage(key: CollectorKey): StageName {
 }
 
 /**
+ * Crawl batch 1 (B18 WO-B18-011): the link, outbound and resource probes run
+ * in their own unit after the page crawl, so neither half can reach the
+ * 30-min step timeout on a large site. Every other crawl collector is batch 0.
+ */
+const CRAWL_PROBE_KEYS: readonly CollectorKey[] = [
+  "outbound",
+  "linkTargets",
+  "resources",
+];
+
+function collectorBatch(key: CollectorKey): number {
+  return CRAWL_PROBE_KEYS.includes(key) ? 1 : 0;
+}
+
+/**
  * Runs the collectors `stage` owns (in dependency order) on top of `prior`
  * and returns only their output. A throwing collector reads `unavailable`.
  */
@@ -66,11 +98,13 @@ export async function collectStage(
   ctx: CollectorContext,
   stage: StageName,
   prior: Partial<CollectedData>,
+  batch = 0,
 ): Promise<Partial<CollectedData>> {
   const collected: Partial<CollectedData> = { ...prior };
   const produced: Partial<CollectedData> = {};
   for (const collector of collectors) {
     if (collectorStage(collector.key) !== stage) continue;
+    if (stage === "crawl" && collectorBatch(collector.key) !== batch) continue;
     let value: unknown;
     try {
       value = await collector.collect(ctx, collected);
@@ -133,7 +167,7 @@ function lighthouseAllPages(crawl: Partial<CollectedData>): number {
 
 /**
  * Batch count per stage after the crawl (ADR-018: render and Lighthouse
- * 25 pages per batch, map 20). Lighthouse `all` takes ⌈live pages / 25⌉
+ * 25 pages per batch, map 20). Crawl is always 2: pages, then probes. Lighthouse `all` takes ⌈live pages / 25⌉
  * batches (each measures the next 25 pages not yet measured); render and
  * map stay one batch until their collectors take page batches (WO-B9-015).
  */
@@ -142,7 +176,7 @@ export function planBatches(
   lighthouse: LighthouseScope = "templates",
 ): Record<StageName, number> {
   return {
-    crawl: 1,
+    crawl: 2,
     render: 1,
     axe: 1,
     lighthouse:
@@ -285,10 +319,11 @@ async function pipe(
  * can drive stages without an import cycle.
  */
 export type StageEngine = {
-  /** Runs the collectors owned by `stage`; `prior` = earlier stages' output. */
+  /** Runs the collectors owned by `(stage, batch)`; `prior` = earlier units' output. */
   collect: (
     stage: StageName,
     prior: Partial<CollectedData>,
+    batch: number,
   ) => Promise<Partial<CollectedData>>;
   /**
    * Intake + checks + evidence over the full collected data. The engine
@@ -433,8 +468,9 @@ async function runWork(
     await engine.report();
     return 1;
   }
-  const prior = stage === "crawl" ? {} : await loadCollected(store, batches);
-  const patch = await engine.collect(stage, prior);
+  const prior =
+    stage === "crawl" && batch === 0 ? {} : await loadCollected(store, batches);
+  const patch = await engine.collect(stage, prior, batch);
   await store.save(stage, batch, patch);
   return Object.keys(patch).length;
 }
@@ -447,9 +483,11 @@ export async function runStagedHandbook(
   engine: StageEngine,
   ctx: StageContext,
 ): Promise<void> {
-  const one = planBatches({});
-  await runStageUnit("crawl", 0, one, engine, ctx);
-  const crawl = await loadCollected(ctx.store, one);
+  const first = planBatches({});
+  for (let batch = 0; batch < first.crawl; batch++) {
+    await runStageUnit("crawl", batch, first, engine, ctx);
+  }
+  const crawl = await loadCollected(ctx.store, first);
   const scope = ctx.lighthouse ?? "templates";
   const batches = planBatches(crawl, scope);
   // `all`: run cap + 0.6 min per Lighthouse page (FULL-READ §2).

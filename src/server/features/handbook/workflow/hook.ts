@@ -164,7 +164,11 @@ export async function runHandbookPhase(
         );
         if (outcome === SUPERSEDED) throw new SupersededError();
       };
-      await unit("crawl", 0, planBatches({}));
+      // Crawl = pages, then probes (WO-B18-011): one step each.
+      const first = planBatches({});
+      for (let batch = 0; batch < first.crawl; batch++) {
+        await unit("crawl", batch, first);
+      }
       const batches = await hbStep(step, `${runId}:plan`, undefined, async () =>
         (await service()).planRun(leased, leased.startedAt),
       );

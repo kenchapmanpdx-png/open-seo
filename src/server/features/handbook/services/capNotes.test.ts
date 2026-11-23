@@ -11,7 +11,7 @@ describe("capNotes", () => {
     expect(
       capNotes({ coverageCapped: true, coverageRead: 80 }, audit(30, 500)),
     ).toEqual([
-      "Handbook stopped at its page limit: 80 pages read; results are incomplete.",
+      "Handbook stopped at its page or time limit: 80 pages read; results are incomplete.",
     ]);
   });
 

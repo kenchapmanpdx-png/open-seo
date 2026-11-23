@@ -25,10 +25,10 @@ export async function collectRunUnit(
   input: RunInput,
   runtime: HandbookRuntime,
   ctx: CollectorContext,
-  stage: StageName,
+  { stage, batch }: { stage: StageName; batch: number },
   prior: Partial<CollectedData>,
 ): Promise<Partial<CollectedData>> {
-  if (stage !== "map") return collectRunStage(input, ctx, stage, prior);
+  if (stage !== "map") return collectRunStage(input, ctx, stage, prior, batch);
   const out: StageOutput = await runMapStage(input, runtime, prior);
   return out;
 }

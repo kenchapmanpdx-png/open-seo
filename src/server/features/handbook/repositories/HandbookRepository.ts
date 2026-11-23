@@ -128,9 +128,14 @@ async function finishRun(input: {
       and(
         eq(handbookRuns.id, input.runId),
         eq(handbookRuns.projectId, input.projectId),
+        // A finished run stays finished: a late step attempt must not
+        // rewrite a failed run (B18 WO-B18-012).
+        inArray(handbookRuns.status, LIVE_RUN_STATUSES),
       ),
     );
 }
+
+const LIVE_RUN_STATUSES: RunStatus[] = ["queued", "running"];
 
 /**
  * Runs with their findings count. A left join + group by, not a correlated

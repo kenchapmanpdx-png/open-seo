@@ -1,10 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   CollectedData,
   CollectorContext,
 } from "@/server/features/handbook/contracts/collectors";
 import { snapshot } from "@/server/features/handbook/checks/check-test-fixtures";
-import { crawlSecondPass, renderOnlyLinks } from "./site-crawl";
+import {
+  crawlSecondPass,
+  createCrawlCollectors,
+  renderOnlyLinks,
+} from "./site-crawl";
 
 const ORIGIN = "https://example.com";
 const fetched: string[] = [];
@@ -84,5 +88,41 @@ describe("render-discovered crawl pass", () => {
       [`${ORIGIN}/js-only`, "render"],
     ]);
     expect(pass.coverage.read).toBe(2);
+  });
+});
+
+describe("crawl time budget", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("stops reading at the budget and reports capped coverage", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-22T00:00:00Z") });
+    const slow: CollectorContext = {
+      ...ctx,
+      // Each page takes 6 simulated minutes; the budget is 15.
+      fetch: async (url, init) => {
+        vi.setSystemTime(Date.now() + 6 * 60_000);
+        return ctx.fetch(url, init);
+      },
+    };
+    const sitemap: CollectedData["sitemap"] = {
+      status: "ok",
+      sources: [],
+      urls: ["/a", "/b", "/c", "/d", "/e"].map((p) => ({
+        loc: ORIGIN + p,
+        lastmod: null,
+        source: "fixture",
+      })),
+    };
+    const { pages } = createCrawlCollectors({
+      followLinks: false,
+      maxPages: 100,
+      maxMinutes: 15,
+    });
+    const out = await pages.collect(slow, { sitemap });
+    if (out.status !== "ok") throw new Error("expected pages");
+    expect(out.snapshots).toHaveLength(3);
+    expect(out.coverage).toMatchObject({ read: 3, capped: true });
   });
 });

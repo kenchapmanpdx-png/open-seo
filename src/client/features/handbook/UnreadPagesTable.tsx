@@ -47,7 +47,7 @@ export function UnreadPagesTable({
       <div className="mt-2 space-y-2">
         {capped ? (
           <p className="text-xs text-muted-foreground">
-            The page limit for this run stopped the crawl; &ldquo;Not
+            The page or time limit for this run stopped the crawl; &ldquo;Not
             reached&rdquo; pages were left for that reason.
           </p>
         ) : null}

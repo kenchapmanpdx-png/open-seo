@@ -37,6 +37,13 @@ export type CrawlOptions = {
   /** Follow same-host links from fetched pages (CLI frontier). */
   followLinks: boolean;
   maxPages: number;
+  /**
+   * Time budget for the page loop (B18 WO-B18-011). In-app runs read pages
+   * inside one workflow step with a 30-min timeout; past this budget the
+   * crawl stops, keeps what it read and reports `capped` coverage. Unset
+   * (CLI) = no time limit.
+   */
+  maxMinutes?: number;
 };
 
 type PageExtra = {
@@ -135,14 +142,18 @@ async function crawl(
     for (const u of collected.sitemap.urls) discover(u.loc, "sitemap");
   }
 
+  const deadline = options.maxMinutes
+    ? Date.now() + options.maxMinutes * 60_000
+    : Infinity;
+  const outOfTime = () => Date.now() >= deadline;
   for (;;) {
     const room = options.maxPages - snapshots.length;
     const next = pending();
-    if (room <= 0 || next.length === 0) break;
+    if (room <= 0 || next.length === 0 || outOfTime()) break;
     const wave =
       next.length > room ? stratifiedFill(groupByPattern(next), room) : next;
     for (const url of wave) {
-      if (snapshots.length >= options.maxPages) break;
+      if (snapshots.length >= options.maxPages || outOfTime()) break;
       attempted.add(url);
       const page = await fetchPage(ctx, url, source.get(url) ?? "raw");
       if (!page) {
@@ -171,6 +182,13 @@ async function crawl(
     }
   }
   const left = pending();
+  if (outOfTime() && left.length > 0) {
+    ctx.log("handbook.crawl.timeCap", {
+      maxMinutes: options.maxMinutes,
+      read: snapshots.length,
+      left: left.length,
+    });
+  }
   return {
     snapshots,
     coverage: {

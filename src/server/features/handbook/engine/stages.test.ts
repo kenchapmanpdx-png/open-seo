@@ -1,8 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CollectedData } from "@/server/features/handbook/contracts/collectors";
+import type {
+  CollectedData,
+  Collector,
+  CollectorContext,
+  CollectorKey,
+} from "@/server/features/handbook/contracts/collectors";
 import { snapshot } from "@/server/features/handbook/checks/check-test-fixtures";
 import { createMemoryEvidenceStore } from "./memory-evidence-store";
 import {
+  collectStage,
   createEvidenceStageStore,
   createMemoryStageTracker,
   planBatches,
@@ -41,6 +47,45 @@ function context(overrides: Partial<StageContext> = {}): StageContext {
 }
 
 describe("staged run", () => {
+  it("crawl runs as two units: pages first, then the probes on the stored pages", async () => {
+    const ran: string[] = [];
+    const fake = (key: CollectorKey): Collector<CollectorKey> => ({
+      key,
+      dependsOn: [],
+      collect: async (_ctx, collected) => {
+        ran.push(key);
+        return key === "robots"
+          ? robots
+          : {
+              status: "unavailable",
+              reason: collected.robots ? "saw robots" : "no robots",
+            };
+      },
+    });
+    const collectors = [fake("robots"), fake("outbound")];
+    const collectorCtx: CollectorContext = {
+      runId: "r",
+      origin: "https://example.com",
+      fetch: () => Promise.reject(new Error("unused")),
+      fetchOffsite: () => Promise.reject(new Error("unused")),
+      storeBody: async (kind, url) => `${kind}:${url}`,
+      log: () => {},
+    };
+    const tracker = createMemoryStageTracker();
+    const run = engine();
+    vi.mocked(run.collect).mockImplementation((stage, prior, batch) =>
+      collectStage(collectors, collectorCtx, stage, prior, batch),
+    );
+    await runStagedHandbook(run, context({ tracker }));
+    expect(ran).toEqual(["robots", "outbound"]);
+    expect(tracker.rows.get("crawl:0")?.status).toBe("done");
+    expect(tracker.rows.get("crawl:1")?.status).toBe("done");
+    expect(run.seen[0]?.outbound).toEqual({
+      status: "unavailable",
+      reason: "saw robots",
+    });
+  });
+
   it("replaying finished stages is a no-op and checks reload stored facts", async () => {
     const ctx = context();
     const first = engine();

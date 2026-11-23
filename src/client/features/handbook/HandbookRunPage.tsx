@@ -52,6 +52,19 @@ function interruptedNote(
   return `Interrupted — re-run started automatically ${new Date(rerun.at).toLocaleString()}`;
 }
 
+/**
+ * Plain-words reason for a failed run (B18 WO-B18-013); the stored error
+ * code follows for support.
+ */
+function failedNote(errorCode: string | null) {
+  const code = errorCode ?? "unknown";
+  if (/timed out|WorkflowTimeoutError/i.test(code) && /queue/i.test(code))
+    return "Check failed: it waited too long for another check to finish.";
+  if (/timed out|WorkflowTimeoutError/i.test(code))
+    return `Check failed: one step ran past its 30-minute limit and was stopped. No grade was given. (${code})`;
+  return `Check failed before it finished. No grade was given. (${code})`;
+}
+
 /** One handbook run (ADR-010): grade, findings and checklist item statuses. */
 export function HandbookRunPage({
   projectId,
@@ -82,6 +95,10 @@ export function HandbookRunPage({
                 {detail.run.errorCode === "interrupted" ? (
                   <p className="text-sm text-muted-foreground">
                     {interruptedNote(detail.rerun)}
+                  </p>
+                ) : detail.run.status === "failed" ? (
+                  <p role="alert" className="text-sm text-destructive">
+                    {failedNote(detail.run.errorCode)}
                   </p>
                 ) : null}
                 {detail.run.status === "queued" ||
@@ -154,7 +171,10 @@ export function HandbookRunPage({
                         ) : null}
                       </TabsList>
                       <TabsContent value="findings">
-                        <FindingsTable findings={detail.report.findings} />
+                        <FindingsTable
+                          findings={detail.report.findings}
+                          finished={detail.run.status === "completed"}
+                        />
                         {detail.report.additionalFindings?.length ? (
                           <div className="mt-6 space-y-2">
                             <h3 className="text-sm font-medium">

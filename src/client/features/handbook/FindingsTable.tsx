@@ -23,13 +23,24 @@ const SEVERITIES = ["S1", "S2", "S3", "S4"] as const;
 export const findingAnchor = (code: string) => `finding-${code}`;
 
 /** Findings grouped by severity (S1 first), each group by F-code. */
-export function FindingsTable({ findings }: { findings: Finding[] }) {
+export function FindingsTable({
+  findings,
+  finished = true,
+}: {
+  findings: Finding[];
+  /** False for a running or failed run: an empty list proves nothing. */
+  finished?: boolean;
+}) {
   if (findings.length === 0)
     return (
       <EmptyState
         icon={ListChecks}
         title="No findings"
-        description="Every automated check passed or was not applicable."
+        description={
+          finished
+            ? "Every automated check passed or was not applicable."
+            : "This check has not finished, so no findings are recorded."
+        }
       />
     );
   return (

@@ -22,8 +22,15 @@ export async function collectRunStage(
   ctx: CollectorContext,
   stage: StageName,
   prior: Partial<CollectedData>,
+  batch = 0,
 ): Promise<Partial<CollectedData>> {
-  const produced = await collectStage(input.collectors, ctx, stage, prior);
+  const produced = await collectStage(
+    input.collectors,
+    ctx,
+    stage,
+    prior,
+    batch,
+  );
   // CrUX field data rides on the Lighthouse output (FULL-READ §3.10).
   if (stage === "lighthouse" && produced.lighthouse?.status === "ok")
     return {

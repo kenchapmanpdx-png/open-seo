@@ -44,6 +44,8 @@ import {
   planBatches,
   resolveRunMaxMinutes,
   RUN_MAX_MINUTES_ENV,
+  CRAWL_MAX_MINUTES_ENV,
+  resolveCrawlMaxMinutes,
   runStageUnit,
   type StageContext,
   type StageName,
@@ -309,6 +311,9 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
         seedUrls: input.seedUrls,
         followLinks: true,
         maxPages,
+        maxMinutes: resolveCrawlMaxMinutes(
+          await getOptionalEnvValue(CRAWL_MAX_MINUTES_ENV),
+        ),
       },
       sidecar,
     ),
@@ -372,19 +377,14 @@ async function runStage(
     input,
     input.startedAt,
   );
+  const cctx = collectorContext(runInput, runtime);
   return runStageUnit(
     stage,
     batch,
     batches,
     {
-      collect: (s, prior) =>
-        collectRunUnit(
-          runInput,
-          runtime,
-          collectorContext(runInput, runtime),
-          s,
-          prior,
-        ),
+      collect: (s, prior, b) =>
+        collectRunUnit(runInput, runtime, cctx, { stage: s, batch: b }, prior),
       evaluate: async (collected) => {
         const result = await evaluateRun(runInput, runtime, collected);
         await HandbookRepository.saveRunResult(input.runId, result);
