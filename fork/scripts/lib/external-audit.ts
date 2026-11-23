@@ -133,12 +133,19 @@ export function readCsv(text: string): Row[] {
 
 // ---------- issue extraction ----------
 
-export type ExportIssue = { name: string; failed: number; urls: string[] };
+export type ExportIssue = {
+  name: string;
+  failed: number;
+  urls: string[];
+  /** Target URL per page URL (link checks, orphan rows), when exported. */
+  targets?: Record<string, string[]>;
+};
 
 const ISSUE_HEADER = /^(issue|issue name|issue title|check|check name|title)$/i;
 const COUNT_HEADER =
   /^(failed|pages|failed checks|count|number of (pages|issues)|issues|affected pages)$/i;
 const URL_HEADER = /^(page url|url|page|source url|address)$/i;
+const TARGET_HEADER = /^(target url|target|link url|destination url)$/i;
 
 function toCount(v: string): number {
   const n = Number(v.replace(/[,\s]/g, ""));
@@ -159,20 +166,26 @@ export function issuesFromRows(rows: Row[]): ExportIssue[] {
   const issueCol = header.findIndex((h) => ISSUE_HEADER.test(h));
   const countCol = header.findIndex((h) => COUNT_HEADER.test(h));
   const urlCol = header.findIndex((h) => URL_HEADER.test(h));
+  const targetCol = header.findIndex((h) => TARGET_HEADER.test(h));
   const byName = new Map<string, ExportIssue>();
-  const add = (name: string, failed: number, url?: string) => {
+  const add = (name: string, failed: number, url?: string, target?: string) => {
     const key = name.trim();
     if (!key) return;
     const issue = byName.get(key) ?? { name: key, failed: 0, urls: [] };
     issue.failed += failed;
     if (url && !issue.urls.includes(url)) issue.urls.push(url);
+    if (url && target) {
+      issue.targets ??= {};
+      (issue.targets[url] ??= []).push(target);
+    }
     byName.set(key, issue);
   };
   if (issueCol >= 0) {
     for (const r of data) {
       const url = urlCol >= 0 ? r[urlCol]?.trim() : undefined;
+      const target = targetCol >= 0 ? r[targetCol]?.trim() : undefined;
       const failed = countCol >= 0 ? toCount(r[countCol] ?? "") : 1;
-      add(r[issueCol] ?? "", failed, url);
+      add(r[issueCol] ?? "", failed, url, target);
     }
     return [...byName.values()];
   }
@@ -320,7 +333,13 @@ const MAP_BY_KEY = new Map(
 
 // ---------- comparison ----------
 
-type ReportFinding = { code: string; title: string; itemIds?: string[] };
+type ReportFinding = {
+  code: string;
+  title: string;
+  itemIds?: string[];
+  urls?: string[];
+  evidence?: { url?: string }[];
+};
 export type HandbookReport = {
   findings?: ReportFinding[];
   additionalFindings?: ReportFinding[];
@@ -334,7 +353,22 @@ type ImportResult = {
   handbookMissed: (ExportIssue & { ids: string[] })[];
   /** Report findings whose ids no failing export issue maps to. */
   handbookOnly: ReportFinding[];
+  /**
+   * Caught issues whose export page URLs (or their targets) appear in no
+   * finding of the mapped items: the by-URL miss (M6 step 3).
+   */
+  urlMisses: (ExportIssue & { ids: string[]; missed: string[] })[];
 };
+
+/** host without www + path without trailing slash, for by-URL matching. */
+function urlKey(u: string): string {
+  try {
+    const x = new URL(u);
+    return `${x.host.replace(/^www\./, "")}${x.pathname.replace(/\/$/, "")}${x.search}`.toLowerCase();
+  } catch {
+    return u.toLowerCase();
+  }
+}
 
 export function compareExport(
   issues: ExportIssue[],
@@ -350,6 +384,7 @@ export function compareExport(
     noHandbookItem: [],
     handbookMissed: [],
     handbookOnly: [],
+    urlMisses: [],
   };
   for (const issue of issues) {
     const mapping = MAP_BY_KEY.get(normalize(issue.name)) ?? null;
@@ -360,6 +395,25 @@ export function compareExport(
       if (report && failing) {
         caught = mapping.ids.some((id) => foundIds.has(id));
         if (!caught) result.handbookMissed.push({ ...issue, ids: mapping.ids });
+        else {
+          const ids = mapping.ids;
+          const covered = new Set(
+            found
+              .filter((f) => (f.itemIds ?? []).some((id) => ids.includes(id)))
+              .flatMap((f) => [
+                ...(f.urls ?? []),
+                ...(f.evidence ?? []).flatMap((e) => (e.url ? [e.url] : [])),
+              ])
+              .map(urlKey),
+          );
+          const missed = issue.urls.filter(
+            (u) =>
+              !covered.has(urlKey(u)) &&
+              !(issue.targets?.[u] ?? []).some((t) => covered.has(urlKey(t))),
+          );
+          if (missed.length > 0)
+            result.urlMisses.push({ ...issue, ids, missed });
+        }
       }
     } else if (failing) {
       const reason = !mapping
@@ -421,6 +475,17 @@ export function renderMarkdown(
         ? result.handbookMissed.map(
             (i) =>
               `- ${i.name} (${i.failed}) → ${i.ids.join(", ")}${i.urls.length ? ` · e.g. ${i.urls.slice(0, 3).join(", ")}` : ""}`,
+          )
+        : ["- none"]
+      : ["- (no report given)"]),
+    "",
+    "## Misses by URL: issue caught, page not in a mapped finding",
+    "",
+    ...(reportPath
+      ? result.urlMisses.length
+        ? result.urlMisses.map(
+            (i) =>
+              `- ${i.name} (${i.missed.length} of ${i.urls.length} URLs) → ${i.ids.join(", ")} · ${i.missed.slice(0, 5).join(", ")}`,
           )
         : ["- none"]
       : ["- (no report given)"]),

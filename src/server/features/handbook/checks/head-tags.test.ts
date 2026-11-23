@@ -50,6 +50,19 @@ describe("crawl.head-tags", () => {
     expect(suffix?.urls).toEqual([snapshot("/d").url]);
   });
 
+  it("flags titles over 70 characters only", async () => {
+    const result = await run([
+      // spoiledspaandsalon.com product page, 84 characters (B18 WO-004).
+      page("/long", {
+        title:
+          "Cord Scrunchie Autumn Winter Corduroy Solid Fabric Scrunchies | Spoiled Salon Grand",
+      }),
+      page("/edge", { title: `${"x".repeat(62)} · Brand` }),
+    ]);
+    const long = result.findings.find((f) => f.title.startsWith("Titles over"));
+    expect(long?.urls).toEqual([snapshot("/long").url]);
+  });
+
   it("opens P4-03 on a missing description", async () => {
     const result = await run([page("/a", { metaDescription: " " })]);
     expect(statusOf(result, "P4-03")).toBe("OPEN");

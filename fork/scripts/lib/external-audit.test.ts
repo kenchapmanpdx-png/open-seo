@@ -78,6 +78,36 @@ describe("external audit import", () => {
     expect(result.handbookOnly.map((f) => f.code)).toEqual(["F01"]);
   });
 
+  it("lists pages a caught issue names that no mapped finding covers", () => {
+    const issues = issuesFromRows(
+      readCsv(
+        "Issue,Page URL,Target URL\n" +
+          "Missing h1,https://www.a.test/x/,\n" +
+          "Missing h1,https://www.a.test/y,\n" +
+          "Orphaned sitemap pages,https://www.a.test/sitemap.xml,https://www.a.test/o\n",
+      ),
+    );
+    const result = compareExport(issues, {
+      findings: [
+        {
+          code: "F01",
+          title: "Not exactly one H1",
+          itemIds: ["P4-01"],
+          urls: ["https://a.test/x"],
+        },
+        {
+          code: "F02",
+          title: "Orphans",
+          itemIds: ["P3-12"],
+          urls: ["https://a.test/o"],
+        },
+      ],
+    });
+    expect(result.urlMisses.map((i) => [i.name, i.missed])).toEqual([
+      ["Missing h1", ["https://www.a.test/y"]],
+    ]);
+  });
+
   it("reads a wide pages export (one column per issue) from CSV", () => {
     const rows = readCsv(
       'Page URL,Missing h1,"Doctype not declared"\r\nhttps://a.test/,1,0\r\nhttps://a.test/b/,,1\r\n',

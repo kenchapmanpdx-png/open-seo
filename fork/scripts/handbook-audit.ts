@@ -30,6 +30,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import { excludePathsSchema } from "@/shared/audit-exclude-paths";
 import {
   normalizeAndValidateStartUrl,
   resolveStartUrlRedirects,
@@ -120,7 +121,7 @@ import { writeFormatted } from "./lib/write-formatted";
 import { summarizeCollected } from "./lib/summarize-collected";
 
 const USAGE =
-  "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm] [--copy-quality] [--serp-originality] [--serp-originality-pages 10]";
+  "usage: handbook-audit.ts <origin> [--mode REVIEW|AUDIT] [--tier T3] [--depth full|quick] [--lighthouse templates|all] [--max-pages 1000] [--out dir] [--sidecar http://127.0.0.1:4777] [--llm] [--copy-quality] [--serp-originality] [--serp-originality-pages 10] [--exclude /blog/,/tag/]";
 
 export async function runCliAudit(argv: string[]) {
   const { values, positionals } = parseArgs({
@@ -139,6 +140,8 @@ export async function runCliAudit(argv: string[]) {
       "copy-quality": { type: "boolean", default: false },
       "serp-originality": { type: "boolean", default: false },
       "serp-originality-pages": { type: "string" },
+      // Sections left out, comma-separated, app syntax (`/blog/,/tag/`; WO-B18-019).
+      exclude: { type: "string" },
     },
   });
   const input = positionals[0];
@@ -235,10 +238,17 @@ export async function runCliAudit(argv: string[]) {
             Number(process.env.HANDBOOK_RENDER_CONCURRENCY) || undefined,
         }
       : null;
+  const excludePaths = excludePathsSchema.parse(
+    (values.exclude ?? "")
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean),
+  );
   const collectors = createDefaultCollectors(
     {
       followLinks: true,
       maxPages,
+      excludePaths,
     },
     sidecar,
   ).map((collector) => ({
@@ -296,6 +306,7 @@ export async function runCliAudit(argv: string[]) {
       collectors,
       checks: HANDBOOK_CHECKS,
       maxPages,
+      excludePaths,
       judge,
       mapper,
       budget,

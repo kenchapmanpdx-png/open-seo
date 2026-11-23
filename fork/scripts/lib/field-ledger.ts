@@ -35,6 +35,18 @@ export function buildRows(
     if (i.failed > 0 && i.caught)
       rows.push(row("agree", i.name, i.failed, "agree", ""));
   }
+  // Agreement by name can hide pages one side missed: one row per issue.
+  for (const i of result.urlMisses)
+    rows.push({
+      ...row(
+        "tool-only",
+        `${i.name} (by URL)`,
+        i.missed.length,
+        "",
+        i.missed.slice(0, 5).join(" "),
+      ),
+      key: `tool-url:${i.name}`,
+    });
   for (const i of result.handbookMissed)
     rows.push(
       row("tool-only", i.name, i.failed, "", `maps to ${i.ids.join(", ")}`),

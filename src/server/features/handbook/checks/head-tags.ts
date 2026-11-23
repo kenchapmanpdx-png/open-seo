@@ -18,6 +18,8 @@ const SUFFIX = /\s[|·•–—-]\s([^|·•–—-]+)$/;
 const YEAR = /\b20\d{2}\b/;
 /** Handbook §2: 150–160 [HEURISTIC]; flag only clear overshoots. */
 const DESCRIPTION_MAX = 170;
+/** Handbook §2: ~50–65 characters / < 600 px [HEURISTIC]; clear overshoots only (B18 WO-004). */
+const TITLE_MAX = 70;
 
 const indexable = (s: PageSnapshot) =>
   s.status === 200 &&
@@ -141,6 +143,22 @@ export const headTagsCheck: HandbookCheck = {
         { severity: "S3", severityReason: "brand-suffix consistency only" },
       );
     }
+    report(
+      "P4-01",
+      `Titles over ${TITLE_MAX} characters`,
+      "Shorten each title to about 50–65 characters, main topic first, so results do not cut it off.",
+      live.flatMap((page) => {
+        const length = page.head.title?.trim().length ?? 0;
+        return length > TITLE_MAX
+          ? [{ page, why: `title is ${length} characters` }]
+          : [];
+      }),
+      {
+        severity: "S4",
+        severityReason:
+          "handbook length range is [HEURISTIC]; Google indexes the full title",
+      },
+    );
     report(
       "P4-01",
       `Meta descriptions over ${DESCRIPTION_MAX} characters`,

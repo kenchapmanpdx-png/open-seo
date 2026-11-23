@@ -1,0 +1,159 @@
+# Golden expectations for field test 1 (B18 WO-B18-010, M3 format). Source: fork/reports/field-spoiledspaandsalon.com-2026-11-22.md
+# (verdict table) + fork/fixtures/external/spoiledspaandsalon.com-semrush-2026-11-22.csv (Semrush Site Audit, 164 issue × URL rows),
+# triaged by URL in B18 run 88. Kept: issues where app and Semrush agree page for page, the app-only findings re-checked in raw HTML,
+# and every `fixed` verdict from B18 (regression lock). Left out: Semrush `skip` rows (text-to-HTML ratio, low word count, low
+# semantic HTML count) and `tool-wrong` rows (schema.org 0 items, slow page load, home / PDF one-inlink, phorest 403).
+# urls: paths relative to origin; one shared path is enough to catch. severity: the app's severity on the B18 run.
+site: spoiledspaandsalon.com
+origin: https://www.spoiledspaandsalon.com
+audit: fork/reports/field-spoiledspaandsalon.com-2026-11-22.md
+auditHandbookVersion: "4.6"
+registryHandbookVersion: "4.6"
+mode: AUDIT
+tier: T3
+grade: { final: 52.6, uncapped: 52.6 }
+
+findings:
+  - id: S01
+    title: "robots.txt: named groups (PetalBot, dotbot, AhrefsBot) miss the * parameter Disallow — one finding, AdsBot skipped"
+    items: [P3-15]
+    urls: [/robots.txt]
+    class: ROBOTS
+    detectableBy: deterministic
+    severity: S3
+    note: "fixed B18 WO-001…003 (was 4 Must-fix findings + grade cap). Count and AdsBot skip locked by robots unit tests"
+  - id: S02
+    title: "Pages without an H1 (12)"
+    items: [P4-01]
+    urls:
+      [
+        /,
+        /about-us,
+        /careers,
+        /contact,
+        /giftcertificatesvancouver,
+        /hairextensions,
+        /home,
+        /new-client,
+        /our-team,
+        /policies,
+        /shopvancouversalon,
+        /spoiledgear,
+      ]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Missing h1: same 12 URLs"
+  - id: S03
+    title: "Pages with more than one H1 (3)"
+    items: [P4-01]
+    urls: [/book-now, /facials, /vancouverwashingtonsalon]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Multiple h1 tags: same 3 URLs"
+  - id: S04
+    title: "Duplicate titles: /facials and /vancouverwashingtonsalon"
+    items: [P4-01]
+    urls: [/facials, /vancouverwashingtonsalon]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Duplicate title tag: same 2 URLs (the app finding also lists duplicate H1s on stylist pages)"
+  - id: S05
+    title: "Indexable pages without a meta description (21: 18 products, /kira, /spoiledgear, /vivianne)"
+    items: [P4-03]
+    urls:
+      [
+        /kira,
+        /spoiledgear,
+        /vivianne,
+        /product-page/dad-hat,
+        /product-page/crop-hoodie,
+      ]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush 20; /vivianne (orphan) has no description in raw HTML (re-fetched 2026-11-22), Semrush did not report it"
+  - id: S06
+    title: "Sitemap URLs without an internal link: /vivianne, /maribel, /facials-near-me, /eyelash-extensions, /hair-salon-near-me"
+    items: [P3-12]
+    urls:
+      [
+        /vivianne,
+        /maribel,
+        /facials-near-me,
+        /eyelash-extensions,
+        /hair-salon-near-me,
+      ]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush Orphaned sitemap pages: same 5 targets"
+  - id: S07
+    title: "Sitemap URLs with only one internal link (28: stylists and products)"
+    items: [P3-12]
+    urls:
+      [
+        /ainsley,
+        /april,
+        /ruth,
+        /product-page/dad-hat,
+        /product-page/trucker-cap,
+      ]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "Semrush 30 = these 28 + the careers PDF (a file, not a sitemap page) + / (linked from every page: tool-wrong)"
+  - id: S08
+    title: "Dead outbound links on /new-client: lashesandcurlsstudio.com/ and /services (no answer)"
+    items: [P5-13]
+    urls: [/new-client]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S4
+    note: "Semrush Broken external links: same 2 targets"
+  - id: S09
+    title: "Generic anchor text on the external link to lashesandcurlsstudio.com (/new-client)"
+    items: []
+    supp: [SUPP-01]
+    urls: [/new-client]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "Semrush Links with non-descriptive anchor text: same link"
+  - id: S10
+    title: "Title over 70 characters: cord-scrunchie product page (84)"
+    items: [P4-01]
+    urls:
+      [
+        /product-page/cord-scrunchie-autumn-winter-corduroy-solid-fabric-scrunchies,
+      ]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "fixed B18 run 88 (WO-004 by URL: no app finding covered the page before)"
+  - id: S11
+    title: "Thin pages under 50 main-content words: /jordan (18), /contact (13)"
+    items: [P3-12]
+    urls: [/jordan, /contact]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "both are in Semrush Low word count (its other 33 pages are above the handbook ~50-word threshold: skip)"
+  - id: S12
+    title: "Lab LCP above 2.5 s on the product and page templates"
+    items: [P7-09]
+    urls: [/product-page/*, /vancouverwashingtonsalon, /home, /]
+    class: PERF
+    detectableBy: render
+    severity: S2
+    note: "lab LCP 4.6–9.2 s mobile; Semrush slow page load (HTML time) is a different metric"
+
+passes:
+  - id: PASS-01
+    title: "JSON-LD parses: LocalBusiness + WebSite on home, Product + Offer on product pages (Semrush 0 items: tool-wrong)"
+    items: [P6-08]
+    urls: [/]
+    class: SCHEMA
+    detectableBy: deterministic

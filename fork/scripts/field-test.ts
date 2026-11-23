@@ -5,11 +5,12 @@
 //
 //   pnpm exec tsx fork/scripts/field-test.ts <site> --external <export.csv|xlsx>
 //     [--run fork/runs/<host>/<dir>] [--tool Semrush] [--date YYYY-MM-DD]
-//     [--sidecar http://127.0.0.1:4777] [--preflight] [--close]
+//     [--sidecar http://127.0.0.1:4777] [--exclude /blog/,/tag/] [--preflight] [--close]
 //
 // --preflight: count sitemap URLs per first path segment and stop (pick a
 //   scope before any run on a big site; Semrush masks are `/path/`).
 // --run: reuse a report.json instead of running the engine.
+// --exclude: sections left out of the run (same scope as the external export).
 // --close: fail (exit 1) while any verdict row is open; no run, no import.
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -43,6 +44,7 @@ const { values, positionals } = parseArgs({
     tool: { type: "string", default: "Semrush" },
     date: { type: "string", default: new Date().toISOString().slice(0, 10) },
     sidecar: { type: "string", default: "http://127.0.0.1:4777" },
+    exclude: { type: "string" },
     preflight: { type: "boolean", default: false },
     close: { type: "boolean", default: false },
   },
@@ -99,6 +101,7 @@ if (!values.run) {
       values.sidecar,
       "--out",
       runDir,
+      ...(values.exclude ? ["--exclude", values.exclude] : []),
     ],
     { stdio: "inherit" },
   );
