@@ -1,0 +1,45 @@
+Issue,Count,Page URL,Target URL
+Missing h1,1,https://www.valentinecoffeeco.com/pages/vliet-street,
+Missing h1,1,https://www.valentinecoffeeco.com/pages/subscriptions,
+Missing h1,1,https://www.valentinecoffeeco.com/pages/our-philosophy,
+Missing h1,1,https://www.valentinecoffeeco.com/pages/our-locations-1,
+Missing h1,1,https://www.valentinecoffeeco.com/pages/contact-us,
+Missing h1,1,https://www.valentinecoffeeco.com/cart,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/products/gift-box-1,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/products/free-mug,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/pages/wholesale,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/pages/vliet-street,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/pages/subscriptions,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/pages/our-philosophy,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/pages/our-locations-1,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/pages/brewing-techniques,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/collections/merchandise,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/collections/gift-boxes,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/collections/coffee-kits,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/collections/coffee,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/collections/apparel,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/collections,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/cart,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/account/login,
+Duplicate meta descriptions,1,https://www.valentinecoffeeco.com/,
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/pages/about-valentine-1
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/pages/vliet-coffee-menu
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/pages/manage-subscriptions
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/collections/frontpage
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/collections/gift-cards
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/blogs/news
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/blogs/news/milwaukee-county-winter-farmers-market
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/blogs/news/special-release-last-chance
+Orphaned sitemap pages,1,https://www.valentinecoffeeco.com/sitemap.xml,https://www.valentinecoffeeco.com/agents.md
+Blocked from crawling,1,https://www.valentinecoffeeco.com/account/register,
+Multiple h1 tags,1,,
+Low text to HTML ratio,78,,
+Low word count,1,,
+Disallowed internal resources,157,,
+Disallowed external resources,78,,
+Page crawl depth,3,,
+Pages with only one internal link,30,,
+Permanent redirects,2,,
+Resources formatted as page links,6,,
+Links with no anchor text,156,,
+Links with non-descriptive anchor text,7,,

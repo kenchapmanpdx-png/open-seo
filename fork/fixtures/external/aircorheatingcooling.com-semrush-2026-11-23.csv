@@ -1,0 +1,44 @@
+Issue,Count,Page URL,Target URL
+4xx errors,1,https://www.aircorheatingcooling.com/repair-coupon,
+4xx errors,1,https://www.aircorheatingcooling.com/promotions,
+4xx errors,1,https://www.aircorheatingcooling.com/financing,
+4xx errors,1,https://www.aircorheatingcooling.com/duct-installation/,
+Broken internal links,1,https://www.aircorheatingcooling.com/top-rated-furnace-air-conditioning-hvac-service/,https://www.aircorheatingcooling.com/financing
+Broken internal links,1,https://www.aircorheatingcooling.com/top-rated-furnace-air-conditioning-hvac-service/,https://www.aircorheatingcooling.com/promotions
+Broken internal links,1,https://www.aircorheatingcooling.com/top-rated-furnace-air-conditioning-hvac-service,https://www.aircorheatingcooling.com/financing
+Broken internal links,1,https://www.aircorheatingcooling.com/top-rated-furnace-air-conditioning-hvac-service,https://www.aircorheatingcooling.com/promotions
+Broken internal links,1,https://www.aircorheatingcooling.com/services,https://www.aircorheatingcooling.com/duct-installation/
+Broken internal links,1,https://www.aircorheatingcooling.com/chicago-air-conditioning-furnace-savings,https://www.aircorheatingcooling.com/repair-coupon
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?offset=1621488710134&reversePaginate=true,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?offset=1517936917821&reversePaginate=true,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?offset=1486236901000&reversePaginate=true&category=HVAC Chicago,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?offset=1484885779000&tag=hvac service,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?offset=1484884180000&reversePaginate=true,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?author=6655c99b1abf8a2981fd151c,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?author=5fe4c0085b9afc566a3c33f1,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/hvac-chicago?author=4ff88acae4b049a93ba8c30d,
+Blocked from crawling,1,https://www.aircorheatingcooling.com/cart,
+Broken external links,1,https://www.aircorheatingcooling.com/top-rated-furnace-air-conditioning-hvac-service/,https://pictureperfectpricing.com/prolauncher/AircorHVACHeatingCoolingChicago
+Broken external links,1,https://www.aircorheatingcooling.com/top-rated-furnace-air-conditioning-hvac-service,https://pictureperfectpricing.com/prolauncher/AircorHVACHeatingCoolingChicago
+Broken external links,1,https://www.aircorheatingcooling.com/hvac-chicago/step-by-step-guide-on-how-to-book-an-appointment-on-aircorheatingcoolingcom,https://pictureperfectpricing.com/prolauncher/AircorHVACHeatingCoolingChicago
+Broken external links,1,https://www.aircorheatingcooling.com/hvac-chicago/how-to-calculate-your-home-energy-efficiency-number,https://rpsc.energy.gov/energy-data-facts
+Broken external links,1,https://www.aircorheatingcooling.com/furnace-repair-chicago-land/,https://www.energystar.gov/products/heating_cooling/air_conditioning_central
+Broken external links,1,https://www.aircorheatingcooling.com/furnace-repair-chicago-land,https://www.energystar.gov/products/heating_cooling/air_conditioning_central
+Broken external links,1,https://www.aircorheatingcooling.com/air-conditioning-repair-in-chicago/,https://www.energystar.gov/products/heating_cooling/air_conditioning_central
+Broken external links,1,https://www.aircorheatingcooling.com/air-conditioning-repair-in-chicago,https://www.energystar.gov/products/heating_cooling/air_conditioning_central
+Title element is too long,129,,
+Missing h1,22,,
+Multiple h1 tags,38,,
+Missing meta description,93,,
+Temporary redirects,324,,
+Low text to HTML ratio,162,,
+Llms.txt not found,1,,
+Nofollow attributes in external links,21,,
+Orphaned sitemap pages,72,,
+Page crawl depth,127,,
+Pages with only one internal link,42,,
+Permanent redirects,14,,
+Links with no anchor text,10,,
+Links with non-descriptive anchor text,975,,
+Content not optimized,24,,
+Structured data that contains markup errors,162,,

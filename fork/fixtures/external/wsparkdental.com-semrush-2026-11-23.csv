@@ -1,0 +1,45 @@
+Issue,Count,Page URL,Target URL
+Missing h1,1,https://www.wsparkdental.com/services,
+Missing h1,1,https://www.wsparkdental.com/dentists,
+Missing meta description,1,https://www.wsparkdental.com/terms,
+Missing meta description,1,https://www.wsparkdental.com/services,
+Missing meta description,1,https://www.wsparkdental.com/privacy,
+Duplicate meta descriptions,1,https://www.wsparkdental.com/dentists/saba,
+Duplicate meta descriptions,1,https://www.wsparkdental.com/dentists/grace,
+Duplicate meta descriptions,1,https://www.wsparkdental.com/dentists,
+Duplicate meta descriptions,1,https://www.wsparkdental.com/contact,
+Duplicate meta descriptions,1,https://www.wsparkdental.com/about,
+Duplicate meta descriptions,1,https://www.wsparkdental.com/,
+4xx errors,1,https://www.wsparkdental.com/sitemap.xml,
+Broken external links,1,https://www.wsparkdental.com/terms,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/teeth-whitening,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/invisalign,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/fillings,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/family-dentistry,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/extractions,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/dental-implants,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/dental-emergencies,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/crowns,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services/anti-anxiety-options,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/services,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/privacy,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/dentists/saba,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/dentists/grace,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/dentists,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/about,https://www.localmed.com/widgets/e6cba7d5-e66e-49bb-859e-36d23d0a5e41/
+Broken external links,1,https://www.wsparkdental.com/about,https://www.sfbg.com/specials/best-bay-2013-readers-poll-city-living
+Pages with only one internal link,1,https://www.wsparkdental.com/services/teeth-whitening,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/invisalign,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/fillings,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/family-dentistry,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/extractions,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/dental-implants,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/dental-emergencies,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/crowns,
+Pages with only one internal link,1,https://www.wsparkdental.com/services/anti-anxiety-options,
+Low text to HTML ratio,2,,
+Low word count,15,,
+Sitemap.xml not specified in robots.txt,1,,
+Sitemap.xml not found,1,,
+Unminified JavaScript and CSS files,18,,
+Llms.txt not found,1,,
