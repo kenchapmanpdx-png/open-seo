@@ -10,6 +10,7 @@ Rules:
 - B13 rules: `ops maint on` first, secrets, test mode, ops verbs.
 - After every work order: `pnpm types:check`, `pnpm lint`, `pnpm test`, `pnpm format:check` vs `fork/BASELINE.md`; four goldens caught Δ ≥ 0; BadGEO 0 / 0; commit and push to `ken/main`.
 - Never ask Ken. Decide, record the decision in `fork/reports/B18.md`.
+- Workaround active on Ken's PC since 2026-11-22: `HANDBOOK_MAX_PAGES=100` in `.env.local`. Until WO-B18-020 removes it, every CLI golden / BadGEO / field run passes `--max-pages 1000` (CLI wins over the env) so golden counts stay comparable, and in-app test audits note the cap in the report.
 
 ## R1 — Loop M6 on the field site
 
