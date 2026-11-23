@@ -1,0 +1,7 @@
+# Field tests (loop M6)
+
+One row per comparison of the app against an external audit tool on a live site. `fork/scripts/field-test.ts` writes the row and the verdict table in `fork/reports/field-<site>-<date>.md`; `--close` fails while any row lacks a verdict (`agree` · `fixed` · `skip` · `site-changed` · `tool-wrong` · `owner-only`). Procedure: `fork/MAINTENANCE.md` M6.
+
+| Site          | Date       | Tool    | Pages app | Pages tool | Agree | App only | Tool only | Unknown names | WOs                                                                    | Open rows                                                                                                                          |
+| ------------- | ---------- | ------- | --------- | ---------- | ----- | -------- | --------- | ------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| salonvata.com | 2026-11-19 | Semrush | 80        | ?          | 95    | 47       | 6         | 0             | WO-B17-005, WO-B17-006, WO-B17-007, WO-B17-008, WO-B17-009, WO-B17-010 | backfilled (B17 importer dry run; pre-ledger: the 6 tool-only rows are `skip`, the 47 app-only rows were not verdicted one by one) |
