@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { executeInBatches } from "@/db/runBatch";
 import { auditPages, audits } from "@/db/schema";
@@ -10,6 +10,7 @@ import {
   handbookFindingUrls,
   handbookItemStatuses,
   handbookLlmCalls,
+  handbookPageProfiles,
   handbookPageSnapshots,
   handbookProjectSettings,
   handbookRuns,
@@ -415,9 +416,18 @@ async function saveLlmCalls(runId: string, calls: readonly LlmCallLog[]) {
   await executeInBatches(rows, (tx, row) =>
     tx.insert(handbookLlmCalls).values(row).onConflictDoNothing(),
   );
+  // Map-stage spend lives on the page profiles this run created (B18
+  // WO-B18-018: it was missing from the run total).
+  const [map] = await db
+    .select({ usd: sum(handbookPageProfiles.costUsd).mapWith(Number) })
+    .from(handbookPageProfiles)
+    .where(eq(handbookPageProfiles.runId, runId));
   await db
     .update(handbookRuns)
-    .set({ llmCostUsd: calls.reduce((sum, c) => sum + c.costUsd, 0) })
+    .set({
+      llmCostUsd:
+        calls.reduce((total, c) => total + c.costUsd, 0) + (map?.usd ?? 0),
+    })
     .where(eq(handbookRuns.id, runId));
 }
 

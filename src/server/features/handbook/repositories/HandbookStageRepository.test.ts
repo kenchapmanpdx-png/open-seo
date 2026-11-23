@@ -38,6 +38,9 @@ beforeEach(() => {
       error text, started_at text, finished_at text,
       PRIMARY KEY (run_id, stage, batch)
     );
+    CREATE TABLE handbook_llm_call (run_id text, cost_usd real);
+    CREATE TABLE handbook_page_profile (run_id text, cost_usd real);
+    CREATE TABLE handbook_bot_fetch (run_id text);
     INSERT INTO handbook_run VALUES ('run-a', 'running');
   `);
 });
@@ -50,5 +53,14 @@ describe("handbook stage rows", () => {
     await tracker.finish("crawl", 0, 500);
     expect(await tracker.get("crawl", 0)).toMatchObject({ status: "running" });
     await expect(tracker.start("render", 0)).rejects.toThrow("not live");
+  });
+
+  it("live AI cost counts judge calls and the run's own map-stage profiles", async () => {
+    state.database?.exec(`
+      INSERT INTO handbook_llm_call VALUES ('run-a', 0.25), ('run-b', 9);
+      INSERT INTO handbook_page_profile VALUES ('run-a', 0.1), ('old', 5);
+    `);
+    const rows = await HandbookStageRepository.progressRows("run-a");
+    expect(rows.llmCostUsd).toBeCloseTo(0.35);
   });
 });

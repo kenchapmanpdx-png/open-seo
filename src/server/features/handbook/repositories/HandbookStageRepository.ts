@@ -3,6 +3,7 @@ import { db } from "@/db";
 import {
   handbookBotFetches,
   handbookLlmCalls,
+  handbookPageProfiles,
   handbookRunStages,
   handbookRuns,
 } from "@/db/handbook-tables";
@@ -165,13 +166,18 @@ async function progressRows(runId: string) {
     .select({ costUsd: sum(handbookLlmCalls.costUsd).mapWith(Number) })
     .from(handbookLlmCalls)
     .where(eq(handbookLlmCalls.runId, runId));
+  const [map] = await db
+    .select({ costUsd: sum(handbookPageProfiles.costUsd).mapWith(Number) })
+    .from(handbookPageProfiles)
+    .where(eq(handbookPageProfiles.runId, runId));
   const [bot] = await db
     .select({ n: count() })
     .from(handbookBotFetches)
     .where(eq(handbookBotFetches.runId, runId));
   return {
     stages,
-    llmCostUsd: llm?.costUsd ?? 0,
+    // Judge calls + map-stage page profiles (WO-B18-018).
+    llmCostUsd: (llm?.costUsd ?? 0) + (map?.costUsd ?? 0),
     botProbes: bot?.n ?? 0,
   };
 }
