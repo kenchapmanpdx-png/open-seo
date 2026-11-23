@@ -4,6 +4,8 @@ import type {
   RobotsHost,
 } from "@/server/features/handbook/contracts/collectors";
 import { decide } from "@/server/features/handbook/engine/robots";
+import { AI_BOT_TOKENS } from "@/server/features/handbook/collectors/ai-bot-tokens";
+import { ROBOTS_BOT_TOKENS } from "@/server/features/handbook/collectors/fetch-collectors";
 import { createResult } from "./support";
 
 /**
@@ -37,12 +39,41 @@ const formatGroup = (g: RobotsGroup) =>
 
 type Gap = { agents: string[]; missing: string[]; proof: string[] };
 
+/**
+ * Google special-case crawlers ignore the `*` group whatever the file says
+ * ("The global user agent (`*`) is ignored"), so a named group for them
+ * changes nothing (B18 WO-B18-002):
+ * https://developers.google.com/search/docs/crawling-indexing/google-special-case-crawlers
+ */
+const IGNORES_STAR = new Set(
+  [
+    "AdsBot-Google",
+    "AdsBot-Google-Mobile",
+    "Mediapartners-Google",
+    "APIs-Google",
+  ].map((t) => t.toLowerCase()),
+);
+
+/** Search and AI-answer crawlers: a gap for them always stays Must fix. */
+const SEARCH_OR_AI = new Set(
+  [...ROBOTS_BOT_TOKENS, ...AI_BOT_TOKENS.map((b) => b.token)].map((t) =>
+    t.toLowerCase(),
+  ),
+);
+const SEARCH_BOT =
+  /googlebot|storebot-google|google-extended|bingbot|msnbot|applebot|duckduck|yandex|baiduspider/i;
+const isSearchOrAi = (agent: string) =>
+  SEARCH_OR_AI.has(agent.toLowerCase()) || SEARCH_BOT.test(agent);
+const isParameterRule = (pattern: string) => /[?=]/.test(pattern);
+
 function namedGroupGaps(host: RobotsHost): Gap[] {
   const star = disallows(host.groups.filter((g) => g.userAgents.includes("*")));
   if (star.size === 0) return [];
   const gaps: Gap[] = [];
   for (const group of host.groups) {
     if (group.userAgents.includes("*")) continue;
+    if (group.userAgents.every((ua) => IGNORES_STAR.has(ua.toLowerCase())))
+      continue;
     const bot = group.userAgents[0] ?? "";
     // RFC 9309: every group naming the bot merges into its ruleset.
     const merged = disallows(
@@ -91,19 +122,34 @@ export const robotsGroupsCheck: HandbookCheck = {
     for (const host of hosts) {
       const url = `${protocol}//${host.host}/robots.txt`;
       const groupsText = host.groups.map(formatGroup).join("\n\n");
-      for (const gap of namedGroupGaps(host)) {
+      // One finding per robots.txt listing every affected group (WO-B18-001).
+      const gaps = namedGroupGaps(host);
+      if (gaps.length > 0) {
+        const agents = gaps.flatMap((g) => g.agents);
         const ref = out.evidence(
           "robotsTxt",
           url,
-          `${groupsText}\n\n# Evaluation\n${gap.proof.join("\n")}`,
+          `${groupsText}\n\n# Evaluation\n${gaps.flatMap((g) => g.proof).join("\n")}`,
           host.storageKey,
         );
+        // Severity scales (§18, WO-B18-003): parameter-only leaks to
+        // crawlers that are neither search nor AI-answer bots do not touch
+        // Google or AI answers. Any search / AI bot or real route → S1.
+        const minor =
+          !agents.some(isSearchOrAi) &&
+          gaps.every((g) => g.missing.every(isParameterRule));
         out.finding({
           itemIds: ["P3-15", "P9-05"],
-          severity: "S1",
-          title: `Named robots.txt group (${gap.agents.join(", ")}) misses the * Disallow set`,
-          detail: `A named group replaces \`*\` for that bot (RFC 9309), so ${gap.agents.join(", ")} may crawl ${gap.missing.join(", ")} while unlisted bots are blocked.`,
-          fix: `Copy every \`*\` Disallow line into the ${gap.agents.join(", ")} group (or drop the named group if it only restates \`Allow: /\`), then re-test one named and one unlisted bot per protected route shape.`,
+          severity: minor ? "S3" : "S1",
+          ...(minor
+            ? {
+                severityReason:
+                  "only parameter rules leak, and only to crawlers that are not search or AI-answer bots",
+              }
+            : {}),
+          title: `Named robots.txt groups miss the * Disallow set (${agents.join(", ")})`,
+          detail: `A named group replaces \`*\` for that bot (RFC 9309), so these bots may crawl paths unlisted bots may not:\n${gaps.map((g) => `${g.agents.join(", ")}: ${g.missing.join(", ")}`).join("\n")}`,
+          fix: `Copy every \`*\` Disallow line into each named group (or drop a named group that only restates \`Allow: /\`), then re-test one named and one unlisted bot per protected route shape.`,
           fixability: "FIXABLE",
           effort: "S",
           urls: [url],

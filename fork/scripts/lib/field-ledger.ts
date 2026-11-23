@@ -45,10 +45,11 @@ export function buildRows(
       row("tool-only", i.name, i.failed, unknown ? "" : "skip", i.reason),
     );
   }
+  // Keyed by title without its counts: F-codes renumber between runs.
   for (const f of result.handbookOnly)
     rows.push({
       ...row("app-only", `${f.code} ${f.title}`, 1, "", ""),
-      key: `app:${f.code}`,
+      key: `app:${f.title.replace(/\s*\([^)]*\d[^)]*\)/g, "").replace(/\d+/g, "N")}`,
     });
   return rows;
 }
@@ -80,7 +81,8 @@ export function readVerdicts(text: string): Map<string, VerdictRow> {
     const cells = line
       .split(/(?<!\\)\|/)
       .slice(1, -1)
-      .map((c) => c.trim().replace(/\\\|/g, "|"));
+      // Prettier escapes markdown (`\*`, `\_`, `\|`) in table cells.
+      .map((c) => c.trim().replace(/\\([\\`*_[\]()#+\-.!|])/g, "$1"));
     if (cells.length !== 6 || !cells[0].includes(":")) continue;
     const [key, set, check, count, verdict, note] = cells;
     out.set(key, {
@@ -190,12 +192,18 @@ export function ledgerRow(
 export function upsertLedger(text: string, row: LedgerRow): string {
   const line = `| ${row.site} | ${row.date} | ${row.tool} | ${row.pagesApp} | ${row.pagesTool} | ${row.agree} | ${row.appOnly} | ${row.toolOnly} | ${row.unknown} | ${row.wos} | ${row.open} |`;
   const lines = text.split("\n");
-  const at = lines.findIndex((l) =>
-    l.startsWith(`| ${row.site} | ${row.date} |`),
-  );
+  // Cells trimmed: prettier pads the columns.
+  const cellsOf = (l: string) => l.split("|").map((c) => c.trim());
+  const at = lines.findIndex((l) => {
+    const c = cellsOf(l);
+    return c[1] === row.site && c[2] === row.date;
+  });
   if (at >= 0) lines[at] = line;
   else {
-    let headerAt = lines.findIndex((l) => l.startsWith("| Site | Date |"));
+    let headerAt = lines.findIndex((l) => {
+      const c = cellsOf(l);
+      return c[1] === "Site" && c[2] === "Date";
+    });
     if (headerAt < 0) {
       lines.push("", ...LEDGER_HEADER);
       headerAt = lines.length - 2;

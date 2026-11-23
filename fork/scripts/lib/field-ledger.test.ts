@@ -28,7 +28,7 @@ describe("field-test verdicts", () => {
     const first = buildRows(result);
     expect(openRows(first).map((r) => r.key)).toEqual([
       "tool:Title element is too long",
-      "app:F-2",
+      "app:Robots group",
     ]);
     // Someone writes the verdicts into the report; a rerun keeps them.
     const written = renderSection(
@@ -39,6 +39,8 @@ describe("field-test verdicts", () => {
     const text = upsertSection("# Field test\n", written, "unused");
     const again = mergeVerdicts(buildRows(result), readVerdicts(text));
     expect(openRows(again)).toEqual([]);
-    expect(again.find((r) => r.key === "app:F-2")?.note).toBe("WO-B18-004");
+    expect(again.find((r) => r.key === "app:Robots group")?.note).toBe(
+      "WO-B18-004",
+    );
   });
 });

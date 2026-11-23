@@ -46,4 +46,25 @@ describe("robots.group-evaluation", () => {
     ]);
     expect(statusOf(result, "P9-05")).toBe("PASS");
   });
+
+  it("spoiledspaandsalon shape: one finding for all groups, AdsBot left out, S3 for SEO-tool bots on a parameter rule", async () => {
+    const file = [
+      "User-agent: *\nDisallow: /*?lightbox=",
+      "User-agent: AdsBot-Google\nUser-agent: AdsBot-Google-Mobile\nAllow: /",
+      "User-agent: dotbot\nCrawl-delay: 10",
+      "User-agent: AhrefsBot\nCrawl-delay: 10",
+    ].join("\n\n");
+    const minor = await run(file);
+    const named = minor.findings.filter((f) => f.title.startsWith("Named"));
+    expect(named.map((f) => [f.title, f.severity])).toEqual([
+      [
+        "Named robots.txt groups miss the * Disallow set (dotbot, AhrefsBot)",
+        "S3",
+      ],
+    ]);
+    const gpt = await run(`${file}\n\nUser-agent: GPTBot\nAllow: /`);
+    expect(
+      gpt.findings.find((f) => f.title.startsWith("Named"))?.severity,
+    ).toBe("S1");
+  });
 });
