@@ -81,7 +81,13 @@ export const headTagsCheck: HandbookCheck = {
       value: (s: PageSnapshot) => string | null,
     ) => {
       const groups = new Map<string, PageSnapshot[]>();
-      for (const s of live) {
+      // A page canonical to another URL is consolidated into it (§10): its
+      // shared title is not a duplicate (Shopify `?page=1`, WO-B19-005).
+      for (const s of live.filter(
+        (p) =>
+          !p.head.canonical ||
+          normalizeUrl(p.head.canonical) === normalizeUrl(p.url),
+      )) {
         const v = value(s)?.trim().toLowerCase();
         if (v) groups.set(v, [...(groups.get(v) ?? []), s]);
       }

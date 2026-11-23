@@ -38,6 +38,14 @@ describe("crawl.list-navigation", () => {
     expect(statusOf(result, "P3-21")).toBe("OPEN");
   });
 
+  it("passes P3-21 when page 1 canonicalises to the list (WO-B19-005)", async () => {
+    const result = await run([
+      snapshot("/shop", { links: ["/shop?page=1"] }),
+      snapshot("/shop?page=1", { canonical: "/shop" }),
+    ]);
+    expect(statusOf(result, "P3-21")).toBe("PASS");
+  });
+
   it("opens P3-23 when search is both Disallowed and noindex", async () => {
     const result = await run(
       [

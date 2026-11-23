@@ -43,10 +43,12 @@ function formKey(url: string): string {
 
 /** Same path once percent-encoding and `+` / `%20` are equated (`/tag/a%20b` = `/tag/a+b`). */
 const decodedKey = (url: string) => {
+  const u = new URL(url);
+  const raw = `${u.host}${u.pathname}${u.search}`.replaceAll("+", "%20");
   try {
-    return decodeURIComponent(formKey(url).replaceAll("+", "%20"));
+    return decodeURIComponent(raw);
   } catch {
-    return formKey(url);
+    return raw;
   }
 };
 
@@ -200,7 +202,9 @@ export const canonicalFormCheck: HandbookCheck = {
             ),
         ),
       ];
+      const self = normalizeUrl(page.url);
       const badForm = internal.flatMap((href) => {
+        if (href === self) return [];
         const canonical =
           duplicateOf.get(href) ?? canonicalByForm.get(formKey(href));
         return canonical && canonical !== href

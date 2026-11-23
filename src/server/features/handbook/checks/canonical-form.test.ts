@@ -58,4 +58,18 @@ describe("crawl.canonical-form", () => {
       "Internal links use a non-canonical URL form": ["https://example.com/"],
     });
   });
+
+  it("keeps a tracking-parameter canonical out of the duplicate rule and ignores self links", async () => {
+    const result = await run([
+      snapshot("/", { links: ["/promo"] }),
+      snapshot("/promo", {
+        canonical: "/promo?utm_source=x",
+        links: ["/promo"],
+      }),
+    ]);
+    expect(result.findings.map((f) => f.title)).toEqual([
+      "Indexable pages are not self-canonical",
+      "Canonical URLs carry tracking parameters",
+    ]);
+  });
 });

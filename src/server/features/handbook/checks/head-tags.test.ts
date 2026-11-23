@@ -38,6 +38,18 @@ describe("crawl.head-tags", () => {
     expect(dup?.urls).toHaveLength(2);
   });
 
+  it("does not count a page canonical to another URL as a duplicate (WO-B19-005)", async () => {
+    const shop = page("/shop");
+    const pageOne = {
+      ...page("/shop?page=1", { title: shop.head.title }, [...shop.h1]),
+      head: {
+        ...shop.head,
+        canonical: shop.url,
+      },
+    };
+    expect(statusOf(await run([shop, pageOne]), "P4-01")).toBe("PASS");
+  });
+
   it("flags titles without the majority brand suffix, not a brand prefix", async () => {
     const result = await run([
       page("/", { title: "Brand | Tagline" }),

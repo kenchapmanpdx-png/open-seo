@@ -14,6 +14,8 @@ import { createResult, normalizeUrl } from "./support";
 const ITEMS = ["P3-21", "P3-22", "P3-23"];
 
 const PAGINATION = /[?&]page=\d+|\/page\/\d+/i;
+/** §10: page 2+ must be self-canonical; page 1 may point at the list (WO-B19-005). */
+const PAGE_ONE = /[?&]page=1(&|$)|\/page\/1\/?$/i;
 const FACET_PARAM = /^(color|size|sort|filter|brand|price|orderby)$/i;
 const SEARCH = /\/search(\/|\.html?|\?|$)|[?&](q|s|query)=/i;
 
@@ -77,7 +79,7 @@ export const listNavigationCheck: HandbookCheck = {
         (s) =>
           s.status !== 200 ||
           normalizeUrl(s.finalUrl) !== normalizeUrl(s.url) ||
-          !selfCanonical(s),
+          (!selfCanonical(s) && !PAGE_ONE.test(s.url)),
       );
       if (bad.length > 0) {
         out.finding({
