@@ -185,10 +185,10 @@ function CheckForm({ projectId }: { projectId: string }) {
             onChange={(e) => setSkip(e.target.value)}
           />
           <FieldDescription>
-            One path per line: <code>/blog/</code> skips every page under
-            /blog/. On a big site, leave out blog posts, tags and categories to
-            check the core pages. Both the page reading and the full check skip
-            them.
+            One path per line: <code>/blog/</code> skips /blog itself and every
+            page under /blog/. On a big site, leave out blog posts, tags and
+            categories to check the core pages. Both the page reading and the
+            full check skip them.
           </FieldDescription>
         </Field>
         <Field orientation="horizontal" className="w-auto">

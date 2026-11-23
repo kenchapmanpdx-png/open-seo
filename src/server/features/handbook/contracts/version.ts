@@ -36,6 +36,9 @@
  * un-crawled internal targets) and `resources` (SUPP-20), `LinkProbe`,
  * coverage `unread` ("Pages not read", ACCURACY #0). No K3 change;
  * 1.10.0, B17: accuracy part 2 (ADR-032) — PageSnapshot `redirectChain`
- * (SUPP-25 temporary redirects) and `doctype` (SUPP-26). No K3 change.
+ * (SUPP-25 temporary redirects) and `doctype` (SUPP-26). No K3 change;
+ * 1.11.0, B19: field tests 3–5 (ADR-033) — K3 render request `abortUrls`,
+ * response `mainWords`, aborted reason `robots`; RenderData `js.mainWords`
+ * and `js.robotsBlocked` (P3-20 by effect, P2-07 denominator).
  */
-export const CONTRACTS_VERSION = "1.10.0";
+export const CONTRACTS_VERSION = "1.11.0";

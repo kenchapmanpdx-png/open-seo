@@ -65,6 +65,16 @@ describe("renderParityCheck", () => {
     ]);
   });
 
+  it("divides opacity:0 words by the same walker's main words (WO-B19-006)", async () => {
+    const page = rendered("/x", 1241, 365);
+    const result = await run({ ...page, js: { ...page.js, mainWords: 400 } });
+    const [p207] = result.findings.filter((f) => f.itemIds.includes("P2-07"));
+    expect([p207.severity, p207.detail]).toEqual([
+      "S2",
+      expect.stringContaining("365 of 400 main-content words"),
+    ]);
+  });
+
   it("flags a form that exists only in the rendered DOM", async () => {
     const page = rendered("/x", 105);
     const result = await run({ ...page, js: { ...page.js, forms: 1 } });

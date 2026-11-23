@@ -1,4 +1,4 @@
-import { z } from "zod";
+import type { z } from "zod";
 import type {
   CollectedData,
   Collector,
@@ -43,6 +43,14 @@ import {
   type Outcome,
 } from "./sidecar-per-url";
 import { renderOnlyLinks } from "./site-crawl";
+import {
+  encode,
+  nodeText,
+  pageWeight,
+  renderBlocking,
+  robotsBlockedEffect,
+  withRestartRetry,
+} from "./sidecar-effects";
 
 /**
  * K3 client collectors (ADR-004): `render`, `axe` and `lighthouse` call the
@@ -113,42 +121,6 @@ async function call<T extends z.ZodTypeAny>(
   }
 }
 
-/** Σ transferBytes, unknown sizes (aborted, opaque) skipped. */
-function pageWeight(
-  requests: ReadonlyArray<{ transferBytes?: number | null }>,
-): number {
-  return requests.reduce((sum, r) => sum + (r.transferBytes ?? 0), 0);
-}
-
-const encode = (text: string) => new TextEncoder().encode(text);
-
-/** Visible text of an axe node's outer HTML, ≤120 chars (P8-02, contracts 1.3.0). */
-const nodeText = (html: string) =>
-  extractHtmlFacts(html, "https://axe.invalid/").markup.text.slice(0, 120);
-
-// Lighthouse `render-blocking-resources` audit details (P7-05, contracts 1.3.0).
-const renderBlockingSchema = z.object({
-  audits: z.object({
-    "render-blocking-resources": z.object({
-      details: z.object({
-        items: z.array(
-          z.object({ url: z.string(), wastedMs: z.number().nonnegative() }),
-        ),
-      }),
-    }),
-  }),
-});
-
-/** Undefined when the report lacks the audit (older Lighthouse or no items). */
-function renderBlocking(report: unknown) {
-  const parsed = renderBlockingSchema.safeParse(report);
-  return parsed.success
-    ? parsed.data.audits["render-blocking-resources"].details.items.map(
-        (item) => ({ url: item.url, wastedMs: Math.round(item.wastedMs) }),
-      )
-    : undefined;
-}
-
 export function createSidecarCollectors(config: SidecarConfig) {
   const full = config.depth === "full";
   const want = config.concurrency ?? DEFAULT_CONCURRENCY;
@@ -175,6 +147,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
     collect: (ctx, collected) => {
       const samples = sampleUrls(collected);
       const urls = full && samples ? livePageUrls(collected) : samples;
+      const sampleSet = new Set((samples ?? []).map(normalizeUrl));
       const shots = full
         ? screenshotTargets(urls ?? [], samples ?? [])
         : new Set((samples ?? []).map(normalizeUrl));
@@ -236,6 +209,19 @@ export function createSidecarCollectors(config: SidecarConfig) {
             : null,
         ]);
         const jsFacts = extractHtmlFacts(js.value.html, js.value.finalUrl);
+        // WO-B19-004: template samples re-render without robots-blocked requests.
+        const without = {
+          ...base,
+          javascript: true,
+          screenshot: "none",
+        } as const;
+        const robotsBlocked = await robotsBlockedEffect(
+          (abortUrls) =>
+            sidecar("/render", { ...without, abortUrls }, renderResponseSchema),
+          js.value,
+          jsFacts.markup.text,
+          sampleSet.has(normalizeUrl(url)) ? collected.robots : undefined,
+        );
         const raw =
           collected.pages?.status === "ok"
             ? collected.pages.snapshots.find((s) => s.url === url)
@@ -251,6 +237,8 @@ export function createSidecarCollectors(config: SidecarConfig) {
             pageWeightBytes: pageWeight(js.value.requests),
             mediaElements: js.value.mediaElements,
             opacityZeroWords: js.value.opacityZeroWords,
+            mainWords: js.value.mainWords,
+            robotsBlocked,
             firstScreenActions: js.value.firstScreenActions,
             forms: jsFacts.markup.counts.forms,
             // Without the raw snapshot every rendered link would look JS-only.
@@ -320,8 +308,17 @@ export function createSidecarCollectors(config: SidecarConfig) {
   const lighthouseRun =
     (ctx: CollectorContext, formFactor: "mobile" | "desktop") =>
     async (url: string): Promise<Outcome<LighthousePage>> => {
-      const res = await oneAtATime(() =>
-        sidecar("/lighthouse", { url, formFactor }, lighthouseResponseSchema),
+      const res = await withRestartRetry(
+        () =>
+          oneAtATime(() =>
+            sidecar(
+              "/lighthouse",
+              { url, formFactor },
+              lighthouseResponseSchema,
+            ),
+          ),
+        config.url,
+        () => ctx.log("handbook.sidecar.lighthouse_retry", { url }),
       );
       if (!res.ok) return res;
       const storageKey = await ctx.storeBody(

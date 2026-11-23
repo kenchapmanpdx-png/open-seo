@@ -24,16 +24,24 @@ const now = () => new Date().toISOString();
 /**
  * Stage rows are written only while the run is live (B18 WO-B18-012): a step
  * attempt the workflow already timed out keeps running in-process and must
- * not mark its unit `done` after the run was marked `failed`.
+ * not mark its unit `done` after the run was marked `failed`. The report
+ * unit is the one that completes the run, so its own `done` row may land on
+ * a `completed` run (WO-B19-012).
  */
-async function runLive(runId: string): Promise<boolean> {
+async function runLive(
+  runId: string,
+  statuses: ReadonlyArray<"queued" | "running" | "completed"> = [
+    "queued",
+    "running",
+  ],
+): Promise<boolean> {
   const rows = await db
     .select({ id: handbookRuns.id })
     .from(handbookRuns)
     .where(
       and(
         eq(handbookRuns.id, runId),
-        inArray(handbookRuns.status, ["queued", "running"]),
+        inArray(handbookRuns.status, [...statuses]),
       ),
     )
     .limit(1);
@@ -52,7 +60,13 @@ function forRun(runId: string): StageTracker {
     batch: number,
     set: Partial<typeof handbookRunStages.$inferInsert>,
   ) => {
-    if (!(await runLive(runId))) return;
+    const live = await runLive(
+      runId,
+      stage === "report" && set.status === "done"
+        ? ["queued", "running", "completed"]
+        : undefined,
+    );
+    if (!live) return;
     await db
       .insert(handbookRunStages)
       .values({ runId, stage, batch, ...set })

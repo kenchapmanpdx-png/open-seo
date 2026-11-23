@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { context, ORIGIN, statusOf } from "./check-test-fixtures";
 import { renderResourcesCheck } from "./render-resources";
 
-function run(script: string, resourceType = "script") {
+type Measured = {
+  sameContent: boolean;
+  missing?: string[];
+};
+
+function run(script: string, resourceType = "script", measured?: Measured) {
   return renderResourcesCheck.run(
     context({
       robots: {
@@ -43,6 +48,17 @@ function run(script: string, resourceType = "script") {
               ],
               opacityZeroWords: 0,
               firstScreenActions: [],
+              ...(measured
+                ? {
+                    robotsBlocked: {
+                      urls: [`${ORIGIN}${script}`],
+                      wordsNormal: 100,
+                      wordsBlocked: measured.sameContent ? 100 : 20,
+                      sameContent: measured.sameContent,
+                      missing: measured.missing ?? [],
+                    },
+                  }
+                : {}),
             },
             noJs: { status: 200, nojsKey: "n", words: 100 },
             firstScreenKey: null,
@@ -68,5 +84,24 @@ describe("renderResourcesCheck", () => {
 
   it("passes allowed scripts", async () => {
     expect(statusOf(await run("/assets/app.js"), "P3-20")).toBe("PASS");
+  });
+
+  // WO-B19-004: severity by effect, measured by a re-render without the blocked requests.
+  it("keeps a blocked script that changes nothing at S4", async () => {
+    const result = await run("/assets/private/telemetry.js", "script", {
+      sameContent: true,
+    });
+    expect(result.findings.map((f) => [f.severity, f.severityReason])).toEqual([
+      ["S4", "blocked resources do not change the rendered content"],
+    ]);
+  });
+
+  it("opens S1 with the missing text when the blocked script feeds content", async () => {
+    const result = await run("/assets/private/menu.js", "script", {
+      sameContent: false,
+      missing: ["Espresso 3.50 dollars, flat white 4.25 dollars."],
+    });
+    expect(result.findings[0].severity).toBe("S1");
+    expect(result.findings[0].detail).toContain("missing: Espresso 3.50");
   });
 });

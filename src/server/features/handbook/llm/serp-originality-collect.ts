@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isOrganizationType } from "../checks/schema-localbusiness";
 import { sha256Hex } from "@/server/lib/audit/ids";
 import { isGoogleRedirect } from "@/shared/google-serp-url";
 import type {
@@ -319,7 +320,7 @@ function brandKeys(origin: string, collected: CollectedData): Set<string> {
     for (const node of page.nodes) {
       const name = node.properties.name;
       const brandNode = node.types.some(
-        (t) => t === "WebSite" || t.endsWith("Organization"),
+        (t) => t === "WebSite" || isOrganizationType(t),
       );
       if (brandNode && typeof name === "string") keys.add(compact(name));
     }

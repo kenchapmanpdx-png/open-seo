@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Handbook render sidecar (K3)
-  version: 1.2.0
+  version: 1.3.0
   description: >
     Playwright + Chromium + axe-core + Lighthouse CLI, bound to 127.0.0.1
     (ADR-004, ADR-009). Mirrors src/server/features/handbook/contracts/sidecar.ts.
@@ -55,6 +55,11 @@ paths:
                   type: boolean
                   default: true
                   description: "record then abort analytics / ad / pixel requests (classify.ts host list); since 1.2.0"
+                abortUrls:
+                  type: array
+                  maxItems: 200
+                  items: { type: string, format: uri }
+                  description: "exact request URLs to abort (reason robots): robots-blocked same-host requests, re-rendered to measure their effect (P3-20); since 1.3.0"
       responses:
         "200":
           description: Rendered page
@@ -100,8 +105,8 @@ paths:
                           type: [integer, "null"]
                           description: "bytes over the wire (Resource Timing transferSize, else headers + body); null when aborted or unknown; since 1.2.0"
                         aborted:
-                          enum: [beacon, media, null]
-                          description: "recorded then aborted: beacon (blockBeacons) or media body (always); since 1.2.0"
+                          enum: [beacon, media, robots, null]
+                          description: "recorded then aborted: beacon (blockBeacons), media body (always) or robots (abortUrls, since 1.3.0); since 1.2.0"
                         protocol:
                           type: [string, "null"]
                           description: "Resource Timing nextHopProtocol (h2, h3, http/1.1); since 1.2.0"
@@ -120,7 +125,10 @@ paths:
                           description: width + height attributes or a computed aspect-ratio
                   opacityZeroWords:
                     type: integer
-                    description: visible-text words inside elements with computed opacity 0 after load, before any scroll
+                    description: "words in the main content root under an opacity:0 ancestor after load, before any scroll (script / style / noscript / template, display:none and visibility:hidden skipped; same walker as mainWords since 1.3.0)"
+                  mainWords:
+                    type: integer
+                    description: "visible words in the main content root (main, [role=main], else body) by the same walker as opacityZeroWords; its denominator; since 1.3.0"
                   firstScreenActions:
                     type: array
                     description: buttons and links whose box intersects the first viewport

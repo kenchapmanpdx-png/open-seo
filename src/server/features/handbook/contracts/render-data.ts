@@ -21,8 +21,8 @@ export type RenderData = {
         beforeLoad?: boolean;
         /** Bytes over the wire (Resource Timing `transferSize`, else body size). 1.5.0 */
         transferBytes?: number | null;
-        /** Recorded then aborted by the sidecar (beacon or media). 1.5.0 */
-        aborted?: "beacon" | "media" | null;
+        /** Recorded then aborted by the sidecar (beacon or media; robots 1.11.0). 1.5.0 */
+        aborted?: "beacon" | "media" | "robots" | null;
         /** Resource Timing `nextHopProtocol` (h2, h3, http/1.1). 1.5.0 */
         protocol?: string | null;
       }>;
@@ -33,6 +33,22 @@ export type RenderData = {
       /** Same-host links present only in the rendered DOM (second crawl pass). 1.5.0 */
       renderOnlyLinks?: readonly string[];
       opacityZeroWords: number;
+      /** Main-root visible words by the sidecar's opacity walker: the P2-07 denominator (WO-B19-006). 1.11.0 */
+      mainWords?: number;
+      /**
+       * Effect of robots-blocked same-host requests (P3-20, WO-B19-004): a
+       * second render with those requests aborted, compared on main-content
+       * text. Template samples with blocked requests only. 1.11.0
+       */
+      robotsBlocked?: {
+        urls: readonly string[];
+        wordsNormal: number;
+        wordsBlocked: number;
+        /** Main text equal (word-set Jaccard ≥ 0.98 and word counts within 2 %). */
+        sameContent: boolean;
+        /** Up to 5 text lines present only in the normal render. */
+        missing: readonly string[];
+      };
       /** `<form>` count in the rendered DOM (P2-08 JS-only forms). 1.3.0 */
       forms?: number;
       /**

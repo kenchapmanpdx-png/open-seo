@@ -55,6 +55,16 @@ describe("handbook stage rows", () => {
     await expect(tracker.start("render", 0)).rejects.toThrow("not live");
   });
 
+  it("the report unit records done after it completed the run (WO-B19-012)", async () => {
+    const tracker = HandbookStageRepository.forRun("run-a");
+    await tracker.start("report", 0);
+    state.database?.exec("UPDATE handbook_run SET status = 'completed'");
+    await tracker.finish("report", 0, 1);
+    expect(await tracker.get("report", 0)).toMatchObject({ status: "done" });
+    await tracker.finish("checks", 0, 1);
+    expect(await tracker.get("checks", 0)).toBeNull();
+  });
+
   it("live AI cost counts judge calls and the run's own map-stage profiles", async () => {
     state.database?.exec(`
       INSERT INTO handbook_llm_call VALUES ('run-a', 0.25), ('run-b', 9);

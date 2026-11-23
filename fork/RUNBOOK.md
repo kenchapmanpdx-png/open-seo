@@ -180,6 +180,7 @@ The Fix List shows one line per cause with a count; ids and raw notes are under 
 
 | Runner note (start / contains)                                               | Shown as                                   | What to do                                       |
 | ---------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------ |
+| `lighthouse unavailable` (first)                                             | Speed checks did not run                   | Check again                                      |
 | `render unavailable`, `render` / `axe` / `lighthouse unavailable`, `sidecar` | Needs the browser helper                   | Start it, then Check again                       |
 | `llm budget`, `llm credits`, `… requires more credits`                       | The AI review ran out of budget or credits | Add credits or raise the AI budget               |
 | `no llm key`, `… LLM map stage (not run)`                                    | Needs the AI review                        | Optional: add an AI key                          |

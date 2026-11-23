@@ -86,7 +86,7 @@ export const crawlCoverageCheck: HandbookCheck = {
         ),
       ]);
     } else {
-      out.na("P3-13", "no sitemap to compare the crawl with");
+      out.na("P3-13", 'no sitemap (see finding "No XML sitemap")');
     }
 
     // Inlinks per target, keyed by source URL pattern.

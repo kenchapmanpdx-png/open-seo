@@ -129,7 +129,21 @@ export const duplicatesCheck: HandbookCheck = {
             ),
           ),
       });
-    if (live.length > 0) out.pass("P3-12", boilerplateNote(live), []);
+    if (live.length > 0)
+      out.pass(
+        "P3-12",
+        boilerplateNote(live),
+        live
+          .slice(0, 5)
+          .map((s) =>
+            out.evidence(
+              "rawHtml",
+              s.url,
+              `${s.mainWords ?? 0} main-content words · ${s.markup.text.slice(0, 200)}`,
+              s.rawKey,
+            ),
+          ),
+      );
 
     // SUPP-03 repeated blocks inside one page.
     const repeats = pages.snapshots.filter(

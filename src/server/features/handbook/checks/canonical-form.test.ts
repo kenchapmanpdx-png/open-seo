@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { canonicalFormCheck } from "./canonical-form";
-import { context, snapshot, statusOf } from "./check-test-fixtures";
+import { context, snapshot, statusOf, textPage } from "./check-test-fixtures";
 
 const run = (snapshots: PageSnapshot[]) =>
   canonicalFormCheck.run(context({ pages: { status: "ok", snapshots } }));
@@ -30,5 +30,32 @@ describe("crawl.canonical-form", () => {
     expect(result.findings.map((f) => f.title)).toContain(
       "Canonical URLs carry tracking parameters",
     );
+  });
+
+  // WO-B19-005: decide by content, never by parameter name (§10: page 2+ must stay self-canonical).
+  it("accepts a canonicalised duplicate but not page 2 canonical to page 1", async () => {
+    const shop = (path: string, text: string, canonical: string) => ({
+      ...textPage(path, text),
+      head: { ...snapshot(path, { canonical }).head },
+    });
+    const result = await run([
+      { ...shop("/shop", "Ten coffees.", "/shop"), links: [] },
+      {
+        ...shop("/", "Home.", "/"),
+        links: snapshot("/", { links: ["/shop?page=1"] }).links,
+      },
+      shop("/shop?page=1", "Ten coffees.", "/shop"),
+      shop("/shop?page=2", "Ten more coffees.", "/shop"),
+      shop("/tag/hvac%20service", "Tagged.", "/tag/hvac+service"),
+    ]);
+    const byTitle = Object.fromEntries(
+      result.findings.map((f) => [f.title, f.urls]),
+    );
+    expect(byTitle).toEqual({
+      "Indexable pages are not self-canonical": [
+        "https://example.com/shop?page=2",
+      ],
+      "Internal links use a non-canonical URL form": ["https://example.com/"],
+    });
   });
 });

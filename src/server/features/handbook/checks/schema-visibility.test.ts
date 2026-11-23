@@ -75,4 +75,17 @@ describe("schema.visibility", () => {
       "OPEN",
     );
   });
+
+  it("counts sameAs on a LocalBusiness subtype as the Organization's (P6-09)", async () => {
+    const store: JsonLdNode = {
+      id: null,
+      types: ["Dentist"],
+      properties: {
+        name: "Spark Dental",
+        alternateName: "Spark",
+        sameAs: ["https://www.yelp.com/biz/x", "https://www.facebook.com/x"],
+      },
+    };
+    expect(statusOf(await run({ "/": [store] }), "P6-09")).toBe("PASS");
+  });
 });

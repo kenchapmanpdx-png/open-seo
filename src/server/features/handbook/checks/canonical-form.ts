@@ -1,5 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import { estimateJaccard } from "../engine/minhash";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -40,6 +41,41 @@ function formKey(url: string): string {
   return `${u.hostname.replace(/^www\./, "")}${path}?${query}`;
 }
 
+/** Same path once percent-encoding and `+` / `%20` are equated (`/tag/a%20b` = `/tag/a+b`). */
+const decodedKey = (url: string) => {
+  try {
+    return decodeURIComponent(formKey(url).replaceAll("+", "%20"));
+  } catch {
+    return formKey(url);
+  }
+};
+
+/**
+ * WO-B19-005: a page canonical to another URL is a correctly canonicalised
+ * duplicate when the target is crawled, 200, self-canonical and carries the
+ * same main text (MinHash ≥ 0.9, or equal text), or when the two URLs only
+ * differ in encoding. Decided by content, never by parameter name: page 2
+ * canonical to page 1 (§10) has different text and stays a finding.
+ */
+function canonicalisedDuplicate(
+  page: PageSnapshot,
+  byUrl: ReadonlyMap<string, PageSnapshot>,
+): boolean {
+  const target = page.head.canonical;
+  if (!target) return false;
+  if (decodedKey(target) === decodedKey(page.url)) return true;
+  const t = byUrl.get(normalizeUrl(target));
+  if (!t || !indexable(t)) return false;
+  if (
+    !t.head.canonical ||
+    normalizeUrl(t.head.canonical) !== normalizeUrl(t.url)
+  )
+    return false;
+  if (page.minhash && t.minhash)
+    return estimateJaccard(page.minhash, t.minhash) >= 0.9;
+  return page.markup.text.trim() === t.markup.text.trim();
+}
+
 const canonicalTag = (href: string | null) =>
   href ? `<link rel="canonical" href="${href}">` : "no <link rel=canonical>";
 
@@ -62,6 +98,21 @@ export const canonicalFormCheck: HandbookCheck = {
       out.na("P3-04", "no indexable 200 page crawled");
       return out.build();
     }
+    const byUrl = new Map(pages.snapshots.map((s) => [normalizeUrl(s.url), s]));
+    // Canonicalised duplicates: no canonical finding; links to them are a link-form finding.
+    const duplicateOf = new Map(
+      live
+        .filter(
+          (s) =>
+            s.head.canonical &&
+            normalizeUrl(s.head.canonical) !== normalizeUrl(s.finalUrl) &&
+            canonicalisedDuplicate(s, byUrl),
+        )
+        .map((s) => [
+          normalizeUrl(s.url),
+          normalizeUrl(s.head.canonical ?? ""),
+        ]),
+    );
     const tagRef = (s: PageSnapshot) =>
       out.evidence("rawHtml", s.url, canonicalTag(s.head.canonical), s.rawKey);
     const report = (
@@ -104,7 +155,8 @@ export const canonicalFormCheck: HandbookCheck = {
           (s) =>
             s.head.canonical &&
             normalizeUrl(s.head.canonical) !== normalizeUrl(s.finalUrl) &&
-            !locs.has(normalizeUrl(s.url)),
+            !locs.has(normalizeUrl(s.url)) &&
+            !duplicateOf.has(normalizeUrl(s.url)),
         )
         .map((page) => ({
           page,
@@ -149,7 +201,8 @@ export const canonicalFormCheck: HandbookCheck = {
         ),
       ];
       const badForm = internal.flatMap((href) => {
-        const canonical = canonicalByForm.get(formKey(href));
+        const canonical =
+          duplicateOf.get(href) ?? canonicalByForm.get(formKey(href));
         return canonical && canonical !== href
           ? [`${href} → ${canonical}`]
           : [];

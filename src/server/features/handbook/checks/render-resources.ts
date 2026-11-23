@@ -1,5 +1,8 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import { decide } from "@/server/features/handbook/engine/robots";
+import {
+  robotsBlockedRequests,
+  STATIC_RENDER_TYPES,
+} from "@/server/features/handbook/engine/robots-blocked";
 import { createResult } from "./support";
 
 /**
@@ -8,14 +11,15 @@ import { createResult } from "./support";
  * rendered page requests from a host whose robots.txt was fetched. Off-site
  * hosts are ignored (their robots.txt is not fetched).
  *
- * S1 when a blocked request is a script, stylesheet, image or font (render
- * input by type). XHR/fetch only → S2: the run cannot tell content data from
- * telemetry (e.g. Squarespace `/api/census/*` beacons under its fixed
- * `Disallow: /api/`), so it does not cap the grade on that alone.
+ * Severity by effect (WO-B19-004): the render collector re-renders each
+ * template sample with the blocked requests aborted. Different main text →
+ * S1 with the missing lines as evidence; same text on every measured sample
+ * → S4 ("blocked resources do not change the rendered content"). No
+ * platform allow-list. Renders without that measurement (older runs) keep
+ * the by-type rule: S1 for a script, stylesheet, image or font, S2 when
+ * only XHR/fetch calls are blocked.
  */
 const ITEMS = ["P3-20"];
-const STATIC_TYPES = new Set(["script", "stylesheet", "image", "font"]);
-const RENDER_TYPES = new Set([...STATIC_TYPES, "xhr", "fetch"]);
 
 export const renderResourcesCheck: HandbookCheck = {
   id: "robots.render-resources",
@@ -38,31 +42,9 @@ export const renderResourcesCheck: HandbookCheck = {
     const blocked: { page: string; url: string; type: string; rule: string }[] =
       [];
     for (const page of render.pages) {
-      for (const req of page.js.requests) {
-        if (!RENDER_TYPES.has(req.resourceType)) continue;
-        let u: URL;
-        try {
-          u = new URL(req.url);
-        } catch {
-          continue;
-        }
-        const host = hosts.get(u.host);
-        if (!host) continue;
-        checked += 1;
-        const d = decide(
-          host.host,
-          host.groups,
-          "Googlebot",
-          u.pathname + u.search,
-        );
-        if (!d.allowed)
-          blocked.push({
-            page: page.url,
-            url: req.url,
-            type: req.resourceType,
-            rule: d.matchedRule ?? "disallow",
-          });
-      }
+      const found = robotsBlockedRequests(page.js.requests, robots);
+      checked += found.checked;
+      for (const b of found.blocked) blocked.push({ page: page.url, ...b });
     }
 
     const robotsRef = () => {
@@ -82,28 +64,54 @@ export const renderResourcesCheck: HandbookCheck = {
 
     if (blocked.length > 0) {
       const pages = [...new Set(blocked.map((b) => b.page))];
-      const staticBlocked = blocked.some((b) => STATIC_TYPES.has(b.type));
+      const measured = render.pages.filter((p) => p.js.robotsBlocked);
+      const changed = measured.filter((p) => !p.js.robotsBlocked?.sameContent);
+      const staticBlocked = blocked.some((b) =>
+        STATIC_RENDER_TYPES.has(b.type),
+      );
+      const effect =
+        measured.length === 0
+          ? staticBlocked
+            ? ({ severity: "S1" } as const)
+            : ({
+                severity: "S2",
+                severityReason:
+                  "only XHR/fetch calls are blocked; they may be telemetry rather than content",
+              } as const)
+          : changed.length > 0
+            ? ({ severity: "S1" } as const)
+            : ({
+                severity: "S4",
+                severityReason:
+                  "blocked resources do not change the rendered content",
+              } as const);
+      const effectLines =
+        measured.length === 0
+          ? staticBlocked
+            ? []
+            : [
+                "Only XHR/fetch calls are blocked: confirm whether their responses feed visible content (GSC URL Inspection → page resources).",
+              ]
+          : measured.map((p) => {
+              const r = p.js.robotsBlocked;
+              const words = `${r?.wordsNormal} words rendered normally, ${r?.wordsBlocked} with the blocked requests aborted`;
+              return r?.sameContent
+                ? `${p.url} — same content without them (${words})`
+                : `${p.url} — content changes without them (${words}); missing: ${(r?.missing ?? []).join(" | ") || "layout / word count only"}`;
+            });
       out.finding({
         itemIds: ["P3-20"],
-        severity: staticBlocked ? "S1" : "S2",
-        ...(staticBlocked
-          ? {}
-          : {
-              severityReason:
-                "only XHR/fetch calls are blocked; they may be telemetry rather than content",
-            }),
-        title: "robots.txt blocks resources needed to render the page",
-        detail: blocked
-          .slice(0, 20)
-          .map((b) => `${b.page} loads ${b.type} ${b.url} — ${b.rule}`)
-          .concat(
-            staticBlocked
-              ? []
-              : [
-                  "Only XHR/fetch calls are blocked: confirm whether their responses feed visible content (GSC URL Inspection → page resources).",
-                ],
-          )
-          .join("\n"),
+        ...effect,
+        title:
+          effect.severity === "S4"
+            ? "robots.txt blocks render requests (rendered content unchanged)"
+            : "robots.txt blocks resources needed to render the page",
+        detail: [
+          ...effectLines,
+          ...blocked
+            .slice(0, 20)
+            .map((b) => `${b.page} loads ${b.type} ${b.url} — ${b.rule}`),
+        ].join("\n"),
         fix: "Remove the Disallow rules that match scripts, styles, images, fonts or API calls used while rendering (or add a longer Allow rule for them).",
         fixability: "FIXABLE",
         effort: "S",
@@ -117,10 +125,19 @@ export const renderResourcesCheck: HandbookCheck = {
               out.evidence(
                 "renderedDom",
                 p.url,
-                blocked
-                  .filter((b) => b.page === p.url)
-                  .map((b) => `${b.type} ${b.url} — ${b.rule}`)
-                  .join("\n"),
+                [
+                  ...blocked
+                    .filter((b) => b.page === p.url)
+                    .map((b) => `${b.type} ${b.url} — ${b.rule}`),
+                  ...(p.js.robotsBlocked
+                    ? [
+                        `aborted re-render: ${p.js.robotsBlocked.wordsNormal} → ${p.js.robotsBlocked.wordsBlocked} words, same content ${p.js.robotsBlocked.sameContent}`,
+                        ...p.js.robotsBlocked.missing.map(
+                          (m) => `missing: ${m}`,
+                        ),
+                      ]
+                    : []),
+                ].join("\n"),
                 p.js.renderedKey,
               ),
             ),

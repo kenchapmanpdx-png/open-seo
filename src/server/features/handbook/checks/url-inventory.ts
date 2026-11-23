@@ -1,4 +1,7 @@
-import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
+import type {
+  CheckContext,
+  HandbookCheck,
+} from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { createResult, normalizeUrl } from "./support";
 
@@ -124,6 +127,115 @@ function inventoryIssues(
   return issues;
 }
 
+/** P3-19 robots.txt `Sitemap:` lines: declared and returning 200 (runs with or without a sitemap). */
+function robotsSitemapLine(
+  out: ReturnType<typeof createResult>,
+  ctx: CheckContext,
+) {
+  const { robots, sitemap } = ctx.collected;
+  if (robots.status !== "ok" || sitemap.status !== "ok") return;
+  const declared = robots.hosts.flatMap((h) => h.sitemaps);
+  const robotsUrl = new URL("/robots.txt", ctx.origin).href;
+  const broken = declared.filter(
+    (url) => sitemap.sources.find((s) => s.url === url)?.status !== 200,
+  );
+  if (declared.length > 0 && broken.length === 0) return;
+  const host = robots.hosts.find((h) => h.status === 200);
+  const ref = out.evidence(
+    "robotsTxt",
+    robotsUrl,
+    declared.length === 0
+      ? "no Sitemap: line"
+      : `Sitemap: lines not returning 200:\n${broken.join("\n")}`,
+    host?.storageKey,
+  );
+  out.finding({
+    itemIds: ["P3-19"],
+    severity: "S3",
+    title:
+      declared.length === 0
+        ? "robots.txt has no Sitemap: line"
+        : "robots.txt Sitemap: line does not resolve",
+    detail:
+      declared.length === 0
+        ? "robots.txt declares no sitemap"
+        : broken.join("\n"),
+    fix: "Point a `Sitemap:` line in robots.txt at the live sitemap (index) URL.",
+    fixability: "FIXABLE",
+    effort: "S",
+    urls: [robotsUrl],
+    evidenceRefs: [ref],
+  });
+}
+
+/**
+ * No sitemap (WO-B19-013): one P3-12 finding with the fetched sitemap
+ * statuses, and the one-inlink rule on the crawl link graph instead of the
+ * `<loc>` list (orphans cannot be found without a sitemap).
+ */
+function noSitemap(
+  out: ReturnType<typeof createResult>,
+  ctx: CheckContext,
+  snapshots: readonly PageSnapshot[],
+) {
+  const { sitemap } = ctx.collected;
+  if (sitemap.status !== "ok") return;
+  const sitemapUrl = new URL("/sitemap.xml", ctx.origin).href;
+  const tried = sitemap.sources.map(
+    (s) =>
+      `${s.url} — HTTP ${s.status}${s.kind === "invalid" ? " (no <urlset>)" : ""}`,
+  );
+  const lines = tried.length > 0 ? tried : [`${sitemapUrl} — not fetched`];
+  out.finding({
+    itemIds: ["P3-12"],
+    severity: "S3",
+    title: "No XML sitemap",
+    detail: lines.join("\n"),
+    fix: "Publish an XML sitemap listing every indexable, self-canonical page (most CMSs have a setting or plugin) and name it in robots.txt with a `Sitemap:` line.",
+    fixability: "FIXABLE",
+    effort: "S",
+    urls: [sitemap.sources[0]?.url ?? sitemapUrl],
+    evidenceRefs: [
+      out.evidence(
+        "sitemap",
+        sitemap.sources[0]?.url ?? sitemapUrl,
+        lines.join("\n"),
+        sitemap.sources[0]?.storageKey,
+      ),
+    ],
+  });
+  const indexable = snapshots
+    .filter(
+      (s) =>
+        s.status === 200 &&
+        normalizeUrl(s.finalUrl) === normalizeUrl(s.url) &&
+        !noindex(s) &&
+        (!s.head.canonical ||
+          normalizeUrl(s.head.canonical) === normalizeUrl(s.url)) &&
+        /html/i.test(s.contentType ?? "html"),
+    )
+    .map((s) => s.url);
+  const weak = inventoryIssues(indexable, snapshots).filter(
+    (i) => i.kind === "weak",
+  );
+  if (weak.length === 0) return;
+  const detail = weak.map((h) => `${h.url} — ${h.why}`).join("\n");
+  out.finding({
+    itemIds: ["P3-12"],
+    severity: "S4",
+    severityReason: KINDS.weak.severityReason,
+    title: "Pages with only one internal link",
+    detail,
+    fix: KINDS.weak.fix,
+    fixability: "FIXABLE",
+    effort: "S",
+    urls: weak.map((h) => h.url),
+    evidenceRefs: weak
+      .slice(0, 20)
+      .map((h) => out.evidence("rawHtml", h.url, h.why)),
+  });
+}
+
 export const urlInventoryCheck: HandbookCheck = {
   id: "crawl.url-inventory",
   itemIds: ITEMS,
@@ -131,11 +243,12 @@ export const urlInventoryCheck: HandbookCheck = {
   requires: ["sitemap", "pages"],
   run(ctx) {
     const out = createResult(ITEMS);
-    const { sitemap, pages, robots } = ctx.collected;
+    const { sitemap, pages } = ctx.collected;
     if (sitemap.status !== "ok" || pages.status !== "ok") return out.build();
     const source = sitemap.sources.find((s) => s.kind === "urlset");
     if (sitemap.urls.length === 0 || !source) {
-      for (const id of ITEMS) out.na(id, "no sitemap <loc> URLs found");
+      noSitemap(out, ctx, pages.snapshots);
+      robotsSitemapLine(out, ctx);
       return out.build();
     }
     const listing = (urls: readonly string[]) =>
@@ -183,41 +296,7 @@ export const urlInventoryCheck: HandbookCheck = {
         evidenceRefs: [listing(offHost.slice(0, 50).map((u) => u.loc))],
       });
     }
-    if (robots.status === "ok") {
-      const declared = robots.hosts.flatMap((h) => h.sitemaps);
-      const robotsUrl = new URL("/robots.txt", ctx.origin).href;
-      const broken = declared.filter(
-        (url) => sitemap.sources.find((s) => s.url === url)?.status !== 200,
-      );
-      if (declared.length === 0 || broken.length > 0) {
-        const host = robots.hosts.find((h) => h.status === 200);
-        const ref = out.evidence(
-          "robotsTxt",
-          robotsUrl,
-          declared.length === 0
-            ? "no Sitemap: line"
-            : `Sitemap: lines not returning 200:\n${broken.join("\n")}`,
-          host?.storageKey,
-        );
-        out.finding({
-          itemIds: ["P3-19"],
-          severity: "S3",
-          title:
-            declared.length === 0
-              ? "robots.txt has no Sitemap: line"
-              : "robots.txt Sitemap: line does not resolve",
-          detail:
-            declared.length === 0
-              ? "robots.txt declares no sitemap"
-              : broken.join("\n"),
-          fix: "Point a `Sitemap:` line in robots.txt at the live sitemap (index) URL.",
-          fixability: "FIXABLE",
-          effort: "S",
-          urls: [robotsUrl],
-          evidenceRefs: [ref],
-        });
-      }
-    }
+    robotsSitemapLine(out, ctx);
 
     const ref = listing(sitemap.urls.slice(0, 50).map((u) => u.loc));
     out.pass(

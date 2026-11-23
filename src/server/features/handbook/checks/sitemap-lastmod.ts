@@ -25,7 +25,7 @@ export const sitemapLastmodCheck: HandbookCheck = {
     if (sitemap.status !== "ok") return out.build();
     const sources = sitemap.sources.filter((s) => s.kind === "urlset");
     if (sources.length === 0 || sitemap.urls.length === 0) {
-      out.na("P3-17", "no sitemap <loc> URLs found");
+      out.na("P3-17", 'no sitemap (see finding "No XML sitemap")');
       return out.build();
     }
     const now = Date.now();

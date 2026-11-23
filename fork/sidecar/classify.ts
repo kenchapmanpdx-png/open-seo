@@ -19,7 +19,8 @@ const BEACON_PATHS = /(^|\/)(g|j|r)\/collect$/i;
 const MEDIA_EXT =
   /\.(mp4|m4v|webm|mov|ogv|ogg|mp3|m4a|wav|aac|flac|m3u8|mpd)$/i;
 
-export type AbortReason = "beacon" | "media";
+/** `robots`: listed in the request's `abortUrls` (WO-B19-004, K3 1.3.0). */
+export type AbortReason = "beacon" | "media" | "robots";
 
 export function classifyRequest(
   url: string,

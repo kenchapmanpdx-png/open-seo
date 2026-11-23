@@ -28,3 +28,7 @@
 
 - Probing inside the checks: rejected, checks are pure (K5).
 - A resource finding per page: rejected (§9 "one finding with page count").
+
+## Amendment (B19 WO-B19-007, 2026-11-23)
+
+SUPP-20 emits one finding per resource kind (images, stylesheets, scripts), not one per broken URL: each URL is a detail line with its page count, largest first, and keeps its own status evidence. aircorheatingcooling.com had 22 broken images spread over 4 Fix-list rows; grouping rule #5 (one finding per rule, detail rows per instance) applies here too.

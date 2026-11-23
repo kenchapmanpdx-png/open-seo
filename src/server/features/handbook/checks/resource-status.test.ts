@@ -40,6 +40,34 @@ describe("crawl.resource-status", () => {
     expect(result.findings[0].title).toBe("Image returns an error on 64 pages");
   });
 
+  it("groups broken resources of one kind into one finding, largest first (WO-B19-007)", async () => {
+    const image = (name: string, pages: number) => ({
+      url: `https://example.com/${name}.png`,
+      kind: "img" as const,
+      sourceUrls: Array.from(
+        { length: pages },
+        (_, i) => `https://example.com/p${i}`,
+      ),
+      probe: answer(404),
+    });
+    const result = await resourceStatusCheck.run(
+      context({
+        resources: {
+          status: "ok",
+          found: 2,
+          resources: [image("a", 2), image("b", 5)],
+        },
+      }),
+    );
+    expect(result.findings.map((f) => f.title)).toEqual([
+      "2 images return an error on 5 pages",
+    ]);
+    expect(result.findings[0].detail.indexOf("b.png")).toBeLessThan(
+      result.findings[0].detail.indexOf("a.png"),
+    );
+    expect(result.findings[0].evidenceRefs).toHaveLength(2);
+  });
+
   it("opens on no answer and on 5xx", async () => {
     expect(statusOf(await run(null), "SUPP-20")).toBe("OPEN");
     expect(statusOf(await run(answer(503)), "SUPP-20")).toBe("OPEN");

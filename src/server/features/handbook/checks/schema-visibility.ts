@@ -4,6 +4,7 @@ import type {
   JsonLdNode,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
+import { isOrganizationType } from "./schema-localbusiness";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -146,7 +147,7 @@ function scanProducts(pages: readonly Page[], textOf: TextOf): Scan {
   const orgPolicy = pages.some((p) =>
     p.nodes.some(
       (n) =>
-        n.types.some((t) => t.endsWith("Organization")) &&
+        n.types.some(isOrganizationType) &&
         n.properties.hasMerchantReturnPolicy !== undefined,
     ),
   );
@@ -167,7 +168,7 @@ function scanBrand(pages: readonly Page[]): Scan & { sameAs: number } {
   const brands = pages.flatMap((page) =>
     page.nodes
       .filter((n) =>
-        n.types.some((t) => t === "WebSite" || t.endsWith("Organization")),
+        n.types.some((t) => t === "WebSite" || isOrganizationType(t)),
       )
       .map((node) => ({ page, node })),
   );
@@ -175,7 +176,7 @@ function scanBrand(pages: readonly Page[]): Scan & { sameAs: number } {
   const sameAs = Math.max(
     0,
     ...brands
-      .filter((b) => b.node.types.some((t) => t.endsWith("Organization")))
+      .filter((b) => b.node.types.some(isOrganizationType))
       .map((b) => list(b.node.properties.sameAs).filter(str).length),
   );
   const why = [

@@ -210,6 +210,13 @@ async function main() {
     console.log(
       `\npages ${rows.length} · missing ${missing} · blocked ${blocked} · unexpected ${unexpected} · findings ${report.findings.length} + ${report.additionalFindings?.length ?? 0} additional · ${timing.totalMs}ms`,
     );
+    // WO-B19-008: a check that breaks the K1 contract loses all its items.
+    const violations = report.items.filter((i) =>
+      i.note?.startsWith("check contract violation"),
+    );
+    console.log(`contract violations: ${violations.length}`);
+    for (const v of violations) console.log(`  ${v.itemId}: ${v.note}`);
+    if (violations.length > 0) process.exitCode = 1;
     // WO-B9-001: infinite-space guard (warning only, not a failure).
     const calendarRead =
       result.collected.pages.status === "ok"

@@ -37,6 +37,8 @@ type Pair = {
   rendered: number;
   noJs: number;
   opacityZero: number;
+  /** Denominator of `opacityZero`: same-walker main words (WO-B19-006), else rendered words. */
+  opacityBase: number;
   snap: PageSnapshot;
   render: RenderData["pages"][number];
 };
@@ -50,9 +52,9 @@ const numbers = (p: Pair) =>
   `raw (JS off, server HTML) ${p.raw} words · rendered ${p.rendered} words · browser JS off ${p.noJs} words`;
 
 const mostlyHidden = (p: Pair) =>
-  p.opacityZero > MOSTLY_HIDDEN * Math.max(p.rendered, 1);
+  p.opacityZero > MOSTLY_HIDDEN * Math.max(p.opacityBase, 1);
 const opacityLine = (p: Pair) =>
-  `${p.url} — ${p.opacityZero} of ${p.rendered} rendered words at opacity:0 after load (before scroll) · browser JS off ${p.noJs} words`;
+  `${p.url} — ${p.opacityZero} of ${p.opacityBase} ${p.render.js.mainWords === undefined ? "rendered" : "main-content"} words at opacity:0 after load (before scroll) · browser JS off ${p.noJs} words`;
 
 export const renderParityCheck: HandbookCheck = {
   id: "render.parity",
@@ -83,6 +85,7 @@ export const renderParityCheck: HandbookCheck = {
           rendered: r.js.words,
           noJs: r.noJs.words,
           opacityZero: r.js.opacityZeroWords,
+          opacityBase: r.js.mainWords ?? r.js.words,
           snap,
           render: r,
         },

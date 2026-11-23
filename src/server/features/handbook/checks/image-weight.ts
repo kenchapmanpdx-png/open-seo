@@ -104,11 +104,24 @@ export const imageWeightCheck: HandbookCheck = {
         });
     }
 
+    if (render.pages.length === 0) {
+      out.na("P2-05", "no rendered page");
+      return out.build();
+    }
     if (oversized.length === 0 && heavyPages.length === 0) {
       out.pass(
         "P2-05",
         `${render.pages.length} rendered page(s): no image over 500 KB or its size-attribute budget, no page with > 3 MB of images`,
-        [],
+        render.pages
+          .slice(0, 5)
+          .map((page) =>
+            out.evidence(
+              "renderedDom",
+              page.url,
+              "no image over 500 KB or its size-attribute budget; under 3 MB of images",
+              page.js.renderedKey,
+            ),
+          ),
       );
       return out.build();
     }

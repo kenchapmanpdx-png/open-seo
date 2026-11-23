@@ -105,6 +105,15 @@ export function blockedItems(report: Pick<ReportJson, "items">) {
  */
 const BLOCKED_CAUSES = [
   {
+    // WO-B19-016: the browser helper ran, its speed test did not.
+    key: "speed",
+    match: /^lighthouse unavailable/i,
+    label: "Speed checks did not run",
+    action:
+      "The browser helper's speed test failed during this check. Check again.",
+    expected: false,
+  },
+  {
     key: "browser",
     match: /render unavailable|^(render|axe|lighthouse) unavailable|sidecar/i,
     label: "Needs the browser helper",

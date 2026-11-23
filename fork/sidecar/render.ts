@@ -41,19 +41,46 @@ export async function scrollToEnd(page: Page) {
   });
 }
 
-/** Runs in the page: words under opacity:0, first-viewport actions, media elements. */
+/**
+ * Runs in the page: words under opacity:0, first-viewport actions, media elements.
+ * WO-B19-006: one walker for numerator and denominator. It reads the main
+ * content root (`main`, `[role=main]`, else body), skips script / style /
+ * noscript / template text and anything under `display:none` or
+ * `visibility:hidden`; `mainWords` counts every remaining word and
+ * `opacityZeroWords` those under an `opacity:0` ancestor, so the hidden
+ * count can never exceed the total.
+ */
 function inspectPage(embedPattern: string) {
+  const root = document.querySelector("main, [role=main]") ?? document.body;
+  const SKIP = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]);
+  const state = new Map<Element, "skip" | "faded" | "shown">();
+  const stateOf = (el: Element | null): "skip" | "faded" | "shown" => {
+    if (!el) return "shown";
+    const known = state.get(el);
+    if (known) return known;
+    const style = getComputedStyle(el);
+    const parent = el === root ? "shown" : stateOf(el.parentElement);
+    const own: "skip" | "faded" | "shown" =
+      parent === "skip" ||
+      SKIP.has(el.tagName) ||
+      style.display === "none" ||
+      style.visibility === "hidden"
+        ? "skip"
+        : parent === "faded" || style.opacity === "0"
+          ? "faded"
+          : "shown";
+    state.set(el, own);
+    return own;
+  };
+  let mainWords = 0;
   let opacityZeroWords = 0;
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    for (let el = node.parentElement; el; el = el.parentElement) {
-      if (getComputedStyle(el).opacity === "0") {
-        opacityZeroWords += (node.textContent ?? "")
-          .split(/\s+/)
-          .filter(Boolean).length;
-        break;
-      }
-    }
+    const where = stateOf(node.parentElement);
+    if (where === "skip") continue;
+    const words = (node.textContent ?? "").split(/\s+/).filter(Boolean).length;
+    mainWords += words;
+    if (where === "faded") opacityZeroWords += words;
   }
   const firstScreenActions = [
     ...document.querySelectorAll("a, button, [role=button]"),
@@ -99,7 +126,7 @@ function inspectPage(embedPattern: string) {
       };
     })
     .filter((m) => m.kind === "video" || (!!m.src && embed.test(m.src)));
-  return { opacityZeroWords, firstScreenActions, mediaElements };
+  return { opacityZeroWords, mainWords, firstScreenActions, mediaElements };
 }
 
 export async function render(
@@ -117,14 +144,18 @@ export async function render(
     const log: Request[] = [];
     const statusOf = new Map<Request, number>();
     const abortedOf = new Map<Request, AbortReason>();
+    // WO-B19-004: robots-blocked same-host requests, aborted to measure their effect.
+    const abortUrls = new Set(req.abortUrls ?? []);
     // Record every request; abort beacons (when asked) and media bodies.
     await page.route("**/*", (route) => {
       const request = route.request();
-      const reason = classifyRequest(
-        request.url(),
-        request.resourceType(),
-        req.blockBeacons,
-      );
+      const reason = abortUrls.has(request.url())
+        ? "robots"
+        : classifyRequest(
+            request.url(),
+            request.resourceType(),
+            req.blockBeacons,
+          );
       if (!reason) return route.continue();
       abortedOf.set(request, reason);
       return route.abort("blockedbyclient");

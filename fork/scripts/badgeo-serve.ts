@@ -18,7 +18,10 @@ import type { AddressInfo } from "node:net";
 import { parseArgs } from "node:util";
 import { z } from "zod";
 
-export const BADGEO_ROOT = resolve("fork/fixtures/badgeo");
+/** `FIXTURE_ROOT=fork/fixtures/goodgeo` serves the clean GoodGEO site (WO-B19-008). */
+export const BADGEO_ROOT = resolve(
+  process.env.FIXTURE_ROOT ?? "fork/fixtures/badgeo",
+);
 
 const headersSchema = z.record(z.string(), z.record(z.string(), z.string()));
 /** Path → UA tokens answered 403, or `{ challenge200 }` tokens answered with a 200 bot-check page (WO-B9-008). */

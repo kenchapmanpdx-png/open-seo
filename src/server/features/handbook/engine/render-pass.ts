@@ -7,7 +7,7 @@ import type {
 import { withCruxField } from "../collectors/crux";
 import { withMediaSizes } from "../collectors/media-sizes";
 import { crawlSecondPass } from "../collectors/site-crawl";
-import { findExcludingPath } from "@/shared/audit-exclude-paths";
+import { handbookExcluded } from "./exclude";
 import type { RunInput } from "./runner";
 import { collectStage, type StageName } from "./stages";
 
@@ -68,7 +68,7 @@ async function renderDiscoveredPass(
   if (render?.status !== "ok" || pages?.status !== "ok") return {};
   const links = render.pages
     .flatMap((p) => p.js.renderOnlyLinks ?? [])
-    .filter((link) => !findExcludingPath(input.excludePaths ?? [], link));
+    .filter((link) => !handbookExcluded(input.excludePaths ?? [], link));
   if (links.length === 0) return {};
   const pass = await crawlSecondPass(ctx, collected, links, input.maxPages);
   ctx.log("handbook.crawl.render_pass", {

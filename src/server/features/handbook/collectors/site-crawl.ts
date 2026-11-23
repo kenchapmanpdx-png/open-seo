@@ -9,7 +9,7 @@ import { unreadCoverage } from "@/server/features/handbook/engine/unread";
 import { emptyHead, emptyMarkup } from "./empty-page";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
-import { findExcludingPath } from "@/shared/audit-exclude-paths";
+import { handbookExcluded } from "@/server/features/handbook/engine/exclude";
 import {
   groupByPattern,
   infiniteSpaceGuard,
@@ -130,7 +130,7 @@ async function crawl(
     const url = normalize(raw);
     if (!url || source.has(url)) return;
     source.set(url, by);
-    if (findExcludingPath(options.excludePaths ?? [], url)) return;
+    if (handbookExcluded(options.excludePaths ?? [], url)) return;
     if (robotsAllowed(collected, url)) discovered.push(url);
   };
   const pending = () =>

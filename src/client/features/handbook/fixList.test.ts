@@ -181,6 +181,7 @@ describe("blockedCauses (WO-B16-002)", () => {
     const notes = [
       "render unavailable: collector not configured",
       "axe unavailable: sidecar /axe unreachable: fetch failed",
+      "lighthouse unavailable: sidecar /lighthouse unreachable: Network connection lost.",
       "total page weight not measured: render unavailable (3 pages, HTML ≤ 500 KB)",
       "no llm key",
       "check error: This request requires more credits, or fewer max_tokens.",
@@ -195,6 +196,7 @@ describe("blockedCauses (WO-B16-002)", () => {
     ];
     const causes = blockedCauses(blockedReport(notes));
     expect(causes.map((c) => [c.key, c.items.length])).toEqual([
+      ["speed", 1],
       ["browser", 3],
       ["ai-budget", 1],
       ["ai-off", 1],

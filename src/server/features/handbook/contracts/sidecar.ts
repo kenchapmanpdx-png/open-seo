@@ -18,6 +18,12 @@ export const renderRequestSchema = z.object({
    * list) so the audit never fires the client's tags (ADR-021). K3 1.2.0.
    */
   blockBeacons: z.boolean().default(true),
+  /**
+   * Exact request URLs to abort (reason `robots`): the robots-blocked
+   * same-host requests of a normal render, re-rendered without them to see
+   * whether they change the page (P3-20, WO-B19-004). K3 1.3.0.
+   */
+  abortUrls: z.array(z.string().url()).max(200).optional(),
 });
 export type RenderRequest = z.input<typeof renderRequestSchema>;
 
@@ -39,7 +45,7 @@ export const renderResponseSchema = z.object({
       /** Bytes over the wire; null when unknown (cross-origin without TAO, aborted). 1.2.0 */
       transferBytes: z.number().int().nonnegative().nullable().optional(),
       /** Recorded then aborted by the sidecar: beacon host or media body. 1.2.0 */
-      aborted: z.enum(["beacon", "media"]).nullable().optional(),
+      aborted: z.enum(["beacon", "media", "robots"]).nullable().optional(),
       /** Resource Timing `nextHopProtocol` (h2, h3, http/1.1). 1.2.0 */
       protocol: z.string().nullable().optional(),
     }),
@@ -57,6 +63,11 @@ export const renderResponseSchema = z.object({
     .optional(),
   /** Visible-text words inside opacity:0 elements after load, before scroll (P2-07). */
   opacityZeroWords: z.number().int().nonnegative(),
+  /**
+   * Visible words in the main content root, counted by the same walker as
+   * `opacityZeroWords` (its denominator; WO-B19-006). K3 1.3.0.
+   */
+  mainWords: z.number().int().nonnegative().optional(),
   /** Buttons/links intersecting the first viewport (P5-14). */
   firstScreenActions: z.array(
     z.object({

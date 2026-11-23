@@ -47,6 +47,10 @@ const LOCAL_TYPES = new Set(
   TelevisionStation TouristInformationCenter TravelAgency`.split(/\s+/),
 );
 
+/** Organization or a LocalBusiness subtype (schema.org: LocalBusiness ⊂ Organization). */
+export const isOrganizationType = (t: string) =>
+  t.endsWith("Organization") || LOCAL_TYPES.has(t);
+
 type Page = JsonLdData["pages"][number];
 type Located = { page: Page; node: JsonLdNode };
 
