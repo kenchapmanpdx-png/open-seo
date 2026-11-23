@@ -81,4 +81,5 @@
   <url><loc>{{ORIGIN}}/shop-links.html</loc></url>
   <url><loc>{{ORIGIN}}/blocked-telemetry.html</loc></url>
   <url><loc>{{ORIGIN}}/drawer-ok.html</loc></url>
+  <url><loc>{{ORIGIN}}/widget-down.html</loc></url>
 </urlset>

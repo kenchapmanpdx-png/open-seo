@@ -9,10 +9,21 @@ import { createResult } from "./support";
  * a consent/cookie banner; Consent Mode v2 needs owner/EU scope.
  */
 const PRIMARY_VERB =
-  /\b(book|buy|register|sign ?up|get started|contact|call|donate|tickets?|order|shop|quote)\b/i;
-/** Banner selectors/labels and CMP vendors; bare "cookie" would hit bakeries. */
-const CONSENT =
-  /consent|gdpr|cookie[-_ ]?(banner|notice|bar|law|policy|settings|preferences)|we use cookies|accept (all )?cookies|onetrust|cookiebot|didomi|usercentrics/i;
+  /\b(book|buy|register|sign ?up|get started|contact|call|donate|tickets?|order|shop|quote|appointments?|schedule|reserve)\b/i;
+/** Banner selectors and CMP vendors; bare "cookie" would hit bakeries. */
+const CONSENT_SELECTOR =
+  /consent|gdpr|cookie[-_ ]?(banner|notice|bar|law|policy|settings|preferences)|onetrust|cookiebot|didomi|usercentrics/i;
+/** Banner wording; bare "consent" is ordinary page text (an SMS opt-in on /terms). */
+const CONSENT_TEXT =
+  /we use cookies|accept (all )?cookies|cookie (settings|preferences)/i;
+
+/** The sidecar reports "selector · label"; each part has its own pattern. */
+function isConsentBanner(lcpElement: string): boolean {
+  const [selector = "", ...label] = lcpElement.split(" · ");
+  return (
+    CONSENT_SELECTOR.test(selector) || CONSENT_TEXT.test(label.join(" · "))
+  );
+}
 
 export const firstScreenActionCheck: HandbookCheck = {
   id: "render.first-screen-action",
@@ -93,7 +104,7 @@ export const consentLcpCheck: HandbookCheck = {
         `Lighthouse ${p.formFactor} LCP element: ${p.lcpElement} (${p.lcpMs ?? "?"} ms, ${p.environment})`,
         p.storageKey,
       );
-    const banner = measured.filter((p) => CONSENT.test(p.lcpElement ?? ""));
+    const banner = measured.filter((p) => isConsentBanner(p.lcpElement ?? ""));
     if (banner.length > 0)
       out.finding({
         itemIds: ["P8-09"],

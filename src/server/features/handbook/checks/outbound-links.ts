@@ -4,9 +4,9 @@ import { createResult, normalizeUrl } from "./support";
 
 /**
  * BOTFETCH/CRAWL (handbook §12): outbound and third-party conversion links
- * are not dead (P5-13; ADR-031: no answer, 404, 410 = finding; redirects,
- * redirects = one S4 "(info)" finding; bot or platform blocks and
- * other statuses = info only); `target="_blank"` links carry noopener (noreferrer
+ * are not dead (P5-13; ADR-031: no answer, 404, 410, 5xx other than 503 =
+ * finding; redirects = one S4 "(info)" finding; bot or platform blocks
+ * (incl. 503) and other statuses = info only); `target="_blank"` links carry noopener (noreferrer
  * implies it; noreferrer alone on internal links is by intent) (P4-12).
  */
 const ITEMS = ["P5-13", "P4-12"];
@@ -25,18 +25,20 @@ const moved = (link: Link) =>
     (link.browser.status === 200 &&
       normalizeUrl(link.browser.finalUrl) !== normalizeUrl(link.url)));
 
-/** Dead = no answer (DNS / connect / timeout), 404 or 410 (ADR-031). */
+/** A server error that survived the probe's retry; 503 is usually a bot wall. */
+const serverError = (status: number) => status >= 500 && !BLOCKED.has(status);
+
+/** Dead = no answer (DNS / connect / timeout), 404, 410 or 5xx (ADR-031). */
 function deadReason(link: Link): string | null {
   if (!link.browser) return "no answer (DNS or connection failure)";
-  if (DEAD.has(link.browser.status))
-    return `browser gets ${link.browser.status}`;
+  const s = link.browser.status;
+  if (DEAD.has(s) || serverError(s)) return `browser gets ${s}`;
   return null;
 }
 
 /** Info only, never a finding: bot / platform blocks, other statuses. */
 function infoReason(link: Link): string | null {
-  if (!link.browser || DEAD.has(link.browser.status) || moved(link))
-    return null;
+  if (!link.browser || deadReason(link) || moved(link)) return null;
   if (link.browser.status !== 200) return `browser gets ${link.browser.status}`;
   if (link.bot && BLOCKED.has(link.bot.status))
     return `${link.bot.name} gets ${link.bot.status}`;

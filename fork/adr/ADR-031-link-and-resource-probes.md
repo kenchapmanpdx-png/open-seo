@@ -32,3 +32,7 @@
 ## Amendment (B19 WO-B19-007, 2026-11-23)
 
 SUPP-20 emits one finding per resource kind (images, stylesheets, scripts), not one per broken URL: each URL is a detail line with its page count, largest first, and keeps its own status evidence. aircorheatingcooling.com had 22 broken images spread over 4 Fix-list rows; grouping rule #5 (one finding per rule, detail rows per instance) applies here too.
+
+## Amendment (B19 run 90, 2026-11-23)
+
+P5-13 dead also covers a 5xx other than 503 that survives the probe's retry (§1: 502 / 504 are retried once after 2 s), the same rule SUPP-20 uses for resources. wsparkdental.com links a localmed.com booking widget from 16 pages; it answered 502 to the run, to Semrush ("Broken external links") and to a re-fetch the same day, and the app listed it as info only. 503 stays info (bot walls and rate limits answer 503).

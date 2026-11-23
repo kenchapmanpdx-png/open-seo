@@ -56,6 +56,9 @@ describe("botfetch.outbound-links", () => {
     ["no answer", null],
     ["404", { status: 404, finalUrl: "https://example.org/" }],
     ["410", { status: 410, finalUrl: "https://example.org/" }],
+    // The probe already retried a 502 / 504 once (ADR-031 §1).
+    ["502 after the retry", { status: 502, finalUrl: "https://example.org/" }],
+    ["500", { status: 500, finalUrl: "https://example.org/" }],
   ])("opens P5-13 on a dead link (%s)", async (_, browser) => {
     expect(statusOf(await outbound(browser), "P5-13")).toBe("OPEN");
   });
@@ -76,6 +79,10 @@ describe("botfetch.outbound-links", () => {
   it.each([
     ["platform block", { status: 403, finalUrl: "https://example.org/" }],
     ["other status", { status: 400, finalUrl: "https://example.org/" }],
+    [
+      "503 (often a bot wall)",
+      { status: 503, finalUrl: "https://example.org/" },
+    ],
   ])("keeps P5-13 passing on a %s (info only)", async (_, browser) => {
     expect(statusOf(await outbound(browser), "P5-13")).toBe("PASS");
   });

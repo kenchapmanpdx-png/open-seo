@@ -6,7 +6,7 @@
  * only the 1st, N+1th, … matching request is challenged), answers the
  * redirects `_redirects.json` lists (path or path?query → [status, location]), substitutes
  * `{{ORIGIN}}` in text files, 404 for anything missing. `{{OFFSITE}}` names
- * a second stub host (WO-B9-012): `/gone/*` → 404, anything else → 200.
+ * a second stub host (WO-B9-012): `/gone/*` → 404, `/down/*` → 502, anything else → 200.
  *
  *   pnpm exec tsx fork/scripts/badgeo-serve.ts [--port 4455]
  */
@@ -175,9 +175,14 @@ export async function startBadgeo(
   let origin = "";
   // Off-site stub (P5-13 outbound links): another host name on its own port.
   const offsite = createServer((req, res) => {
-    const gone = (req.url ?? "/").startsWith("/gone/");
-    res.writeHead(gone ? 404 : 200, { "content-type": "text/plain" });
-    res.end(req.method === "HEAD" ? undefined : gone ? "gone" : "ok");
+    const path = req.url ?? "/";
+    const status = path.startsWith("/gone/")
+      ? 404
+      : path.startsWith("/down/")
+        ? 502
+        : 200;
+    res.writeHead(status, { "content-type": "text/plain" });
+    res.end(req.method === "HEAD" ? undefined : String(status));
   });
   await new Promise<void>((done) => offsite.listen(0, "127.0.0.1", done));
   const offsiteAddress = offsite.address();
