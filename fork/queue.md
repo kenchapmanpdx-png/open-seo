@@ -221,3 +221,5 @@ Status: `todo` · `doing` · `done` · `ESCALATE` · `BLOCKED-KEN`. HEAVY writes
 | WO-B19-012 | B19 | Report stage row never marked done (B18 regression) | — | todo | | |
 | WO-B19-013 | B19 | Missing sitemap: finding + link-graph fallback | — | todo | | |
 | WO-B19-014 | B19 | LLM quote matcher: confident finding dropped as unverified | — | todo | | |
+| WO-B19-015 | B19 | Leave out sections: `/section/` also skips `/section` | — | todo | | |
+| WO-B19-016 | B19 | Lighthouse unavailable in run a3891e38: find cause, retry unit | — | todo | | |
