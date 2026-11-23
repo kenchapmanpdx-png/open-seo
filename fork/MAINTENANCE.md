@@ -97,7 +97,9 @@ Reads only; changes nothing unless a step says so. Database, systemd, Docker and
 
 ## M6 — External audit export (each new Semrush / other tool export, HEAVY)
 
-Ken adds an external tool export (Semrush Site Audit xlsx or csv: issues sheet, pages sheet or the mega export) to `fork/fixtures/audits/` (verbatim, never edited).
+Ken adds an external tool export (Semrush Site Audit xlsx or csv: issues sheet, pages sheet or the mega export) to `fork/fixtures/audits/` (verbatim, never edited). A chat session may instead pull the same data through the Semrush connector and commit it as a long-form csv (`Issue,Page URL,Target URL`) to `fork/fixtures/external/` (verbatim after the commit); no Ken step is needed then.
+
+Rule [Ken 2026-11-22]: every comparison is learned from. Each miss, both ways, ends with a verdict: `fixed` · `skip` (handbook reason) · `site-changed` · `tool-wrong` (evidence) · `owner-only`. A comparison is closed only when no row lacks a verdict and every `fixed` has a BadGEO page or a golden expectation. From B18 on: `fork/scripts/field-test.ts` runs steps 1–2 and keeps the ledger `fork/FIELD-TESTS.md`.
 
 1. Run the engine on the same site at full depth (M3 step 3), or reuse a run from the same week.
 2. `pnpm exec tsx fork/scripts/import-external-audit.ts fork/fixtures/audits/<export>.xlsx --report fork/runs/<site>/<run>/report.json --out fork/runs/<site>/<run>-import.md`. The importer reads every sheet (long form: one row per issue or per issue × page; wide form: one column per issue), maps each Semrush check name through `SEMRUSH_MAP` (`fork/scripts/lib/external-audit.ts`) and lists three sets.
