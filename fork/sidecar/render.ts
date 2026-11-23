@@ -53,34 +53,43 @@ export async function scrollToEnd(page: Page) {
 function inspectPage(embedPattern: string) {
   const root = document.querySelector("main, [role=main]") ?? document.body;
   const SKIP = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]);
+  // No named inner functions: the bundler wraps them in `__name`, which does
+  // not exist inside the page (WO-B19-006). Ancestors are walked in a loop.
   const state = new Map<Element, "skip" | "faded" | "shown">();
-  const stateOf = (el: Element | null): "skip" | "faded" | "shown" => {
-    if (!el) return "shown";
-    const known = state.get(el);
-    if (known) return known;
-    const style = getComputedStyle(el);
-    const parent = el === root ? "shown" : stateOf(el.parentElement);
-    const own: "skip" | "faded" | "shown" =
-      parent === "skip" ||
-      SKIP.has(el.tagName) ||
-      style.display === "none" ||
-      style.visibility === "hidden"
-        ? "skip"
-        : parent === "faded" || style.opacity === "0"
-          ? "faded"
-          : "shown";
-    state.set(el, own);
-    return own;
-  };
   let mainWords = 0;
   let opacityZeroWords = 0;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const where = stateOf(node.parentElement);
-    if (where === "skip") continue;
+    // Unknown ancestors from the text node up to the root (or a cached one).
+    const chain: Element[] = [];
+    let known: "skip" | "faded" | "shown" = "shown";
+    for (let el = node.parentElement; el; el = el.parentElement) {
+      const cached = state.get(el);
+      if (cached) {
+        known = cached;
+        break;
+      }
+      chain.push(el);
+      if (el === root) break;
+    }
+    for (let i = chain.length - 1; i >= 0; i -= 1) {
+      const el = chain[i];
+      const style = getComputedStyle(el);
+      known =
+        known === "skip" ||
+        SKIP.has(el.tagName) ||
+        style.display === "none" ||
+        style.visibility === "hidden"
+          ? "skip"
+          : known === "faded" || style.opacity === "0"
+            ? "faded"
+            : "shown";
+      state.set(el, known);
+    }
+    if (known === "skip") continue;
     const words = (node.textContent ?? "").split(/\s+/).filter(Boolean).length;
     mainWords += words;
-    if (where === "faded") opacityZeroWords += words;
+    if (known === "faded") opacityZeroWords += words;
   }
   const firstScreenActions = [
     ...document.querySelectorAll("a, button, [role=button]"),

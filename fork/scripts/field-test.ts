@@ -170,7 +170,12 @@ async function preflight() {
   console.log(`${origin}: ${new Set(urls).size} sitemap URLs`);
   for (const [section, n] of [...bySection].sort((a, b) => b[1] - a[1]))
     console.log(`  ${String(n).padStart(5)}  ${section}`);
+  const count = new Set(urls).size;
   console.log(
-    "Over 100 URLs: pick a scope (Check a site 'Leave out sections'; Semrush masks `/path/`, not `/path/*`).",
+    count === 0
+      ? "No sitemap URLs: the run reads the site by its links (expect a 'No XML sitemap' finding)."
+      : count > 100
+        ? "Over 100 URLs: pick a scope (Check a site 'Leave out sections'; Semrush masks `/path/`, not `/path/*`)."
+        : "100 URLs or fewer: run the whole site.",
   );
 }
