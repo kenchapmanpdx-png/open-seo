@@ -195,3 +195,14 @@ Status: `todo` · `doing` · `done` · `ESCALATE` · `BLOCKED-KEN`. HEAVY writes
 | WO-B18-009 | B18 | field-test.ts + FIELD-TESTS.md ledger + M6 text | — | todo | | |
 | WO-B18-010 | B18 | Regression lock: BadGEO pages + spoiledspaandsalon golden | — | todo | | |
 | WO-B18-090 | B18 | Exit | — | todo | | |
+| WO-B18-011 | B18 | Crawl stage 30-min unit timeout fails large sites | — | todo | | |
+| WO-B18-012 | B18 | No writes after run failed (late attempt) | — | todo | | |
+| WO-B18-013 | B18 | Failed run page shows reason, not 'all passed' | — | todo | | |
+| WO-B18-014 | B18 | Read-depth choice governs Handbook cap + labels | — | todo | | |
+| WO-B18-015 | B18 | Section scope (include / exclude paths) | — | todo | | |
+| WO-B18-016 | B18 | Crawl-stage progress display | — | todo | | |
+| WO-B18-017 | B18 | 5 'check itself failed' on run 06f68853 | — | todo | | |
+| WO-B18-018 | B18 | AI review cost shows $0.00 | — | todo | | |
+| WO-B18-019 | B18 | M6 by URL nwpersonaltraining.com (core scope) | — | todo | | |
+| WO-B18-020 | B18 | Remove HANDBOOK_MAX_PAGES=100 workaround | — | todo | | |
+| WO-B18-021 | B18 | M6 pre-flight: sitemap count, scope, mask format | — | todo | | |
