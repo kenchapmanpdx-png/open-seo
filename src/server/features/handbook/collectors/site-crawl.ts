@@ -174,6 +174,7 @@ async function crawl(
       }
       if (finalNorm) attempted.add(finalNorm);
       snapshots.push(page.snapshot);
+      if (snapshots.length % 10 === 0) ctx.progress?.(snapshots.length);
       extras.set(url, page.extra);
       if (options.followLinks && page.snapshot.status === 200) {
         for (const link of sameHostLinks(page.snapshot)) discover(link, "raw");

@@ -127,6 +127,13 @@ function forRun(runId: string): StageTracker {
         finishedAt: now(),
       });
     },
+    async progress(stage, batch, itemsDone) {
+      if (!(await runLive(runId))) return;
+      await db
+        .update(handbookRunStages)
+        .set({ itemsDone })
+        .where(where(stage, batch));
+    },
     async skip(stage, batch, reason) {
       await upsert(stage, batch, {
         status: "skipped",

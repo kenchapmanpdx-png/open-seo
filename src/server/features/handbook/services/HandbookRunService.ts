@@ -373,7 +373,12 @@ async function runStage(
     input,
     input.startedAt,
   );
-  const cctx = collectorContext(runInput, runtime);
+  const cctx = {
+    ...collectorContext(runInput, runtime),
+    progress: (n: number) => {
+      ctx.tracker.progress?.(stage, batch, n).catch(() => {});
+    },
+  };
   return runStageUnit(
     stage,
     batch,

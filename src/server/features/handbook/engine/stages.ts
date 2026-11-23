@@ -208,6 +208,12 @@ export type StageTracker = {
   finish: (stage: StageName, batch: number, itemsDone: number) => Promise<void>;
   fail: (stage: StageName, batch: number, error: string) => Promise<void>;
   skip: (stage: StageName, batch: number, reason: string) => Promise<void>;
+  /** Live items count of a running unit (WO-B18-016); absent = not tracked. */
+  progress?: (
+    stage: StageName,
+    batch: number,
+    itemsDone: number,
+  ) => Promise<void>;
 };
 
 /** Output of a finished unit, reloaded by later stages (facts only, no bodies). */
@@ -474,6 +480,9 @@ async function runWork(
     stage === "crawl" && batch === 0 ? {} : await loadCollected(store, batches);
   const patch = await engine.collect(stage, prior, batch);
   await store.save(stage, batch, patch);
+  // Crawl items = pages read (progress and the pages total use it).
+  if (stage === "crawl")
+    return patch.pages?.status === "ok" ? patch.pages.snapshots.length : 0;
   return Object.keys(patch).length;
 }
 

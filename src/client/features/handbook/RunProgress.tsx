@@ -37,9 +37,11 @@ export function RunProgress({
 
 function ProgressCard({ progress }: { progress: HandbookRunProgress }) {
   const pages =
-    progress.pagesTotal === null
-      ? "—"
-      : `${progress.pagesDone ?? 0} / ${progress.pagesTotal}`;
+    progress.pagesTotal !== null
+      ? `${progress.pagesDone ?? 0} / ${progress.pagesTotal}`
+      : progress.pagesDone
+        ? `${progress.pagesDone} read`
+        : "—";
   return (
     <Card>
       <CardHeader>

@@ -55,6 +55,11 @@ export type CollectorContext = {
     contentType: string,
   ) => Promise<string>;
   log: (event: string, fields: Record<string, unknown>) => void;
+  /**
+   * Pages read so far in the running unit (B18 WO-B18-016, live progress).
+   * Optional and in-process only: no version bump (the sidecar API is unchanged).
+   */
+  progress?: (pagesRead: number) => void;
 };
 
 export type SafeFetchResult = {

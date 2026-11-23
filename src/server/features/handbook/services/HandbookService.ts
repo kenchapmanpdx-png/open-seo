@@ -287,7 +287,8 @@ async function getRunProgress(projectId: string, runId: string) {
     status: run.status,
     stages,
     currentStage: current?.stage ?? null,
-    pagesDone: current && current.stage !== "crawl" ? current.itemsDone : null,
+    // Crawl: pages read so far (WO-B18-016); later stages: pages done.
+    pagesDone: current ? current.itemsDone : null,
     pagesTotal,
     escalations: rows.botProbes,
     llmCostUsd: Math.max(rows.llmCostUsd, run.llmCostUsd),
