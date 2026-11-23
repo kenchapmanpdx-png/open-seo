@@ -4,6 +4,7 @@ import type { RenderResponse } from "@/server/features/handbook/contracts/sideca
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import {
   compareRenderedText,
+  containsText,
   robotsBlockedRequests,
 } from "@/server/features/handbook/engine/robots-blocked";
 import { z } from "zod";
@@ -16,10 +17,11 @@ type RobotsBlocked = RenderData["pages"][number]["js"]["robotsBlocked"];
  * robots-blocked same-host requests, render again with exactly those URLs
  * aborted and compare the visible text. Undefined when nothing is blocked
  * or the second render fails (the check then keeps the by-type rule).
- * A difference is confirmed by a control render with nothing aborted
- * (B19 run 91): when the page's own text varies between two normal renders
- * (a review carousel, a typing animation), only sentences present in both
- * normal renders and absent without the blocked requests count as missing.
+ * A difference must hold twice (B19 run 91): a control render with nothing
+ * aborted keeps only sentences present in both normal renders (a review
+ * carousel, a typing animation vary on their own), and a second render with
+ * the requests aborted keeps only sentences missing both times (a slow
+ * third-party widget can fail to load once under load).
  */
 export async function robotsBlockedEffect(
   renderWithout: (abortUrls: string[]) => Promise<Outcome<RenderResponse>>,
@@ -54,13 +56,13 @@ export async function robotsBlockedEffect(
   });
   if (first.sameContent) return result(true, first.missing);
   const controlText = await textOf([]);
-  if (
-    controlText === undefined ||
-    compareRenderedText(normalText, controlText).sameContent
-  )
-    return result(false, first.missing);
-  const stable = first.missing.filter((s) => controlText.includes(s));
-  return result(stable.length === 0, stable);
+  if (controlText === undefined) return result(false, first.missing);
+  const stable = first.missing.filter((s) => containsText(controlText, s));
+  if (stable.length === 0) return result(true, stable);
+  const againText = await textOf(urls.slice(0, 200));
+  if (againText === undefined) return result(false, stable);
+  const repeated = stable.filter((s) => !containsText(againText, s));
+  return result(repeated.length === 0, repeated);
 }
 
 /** Polls the sidecar `/health` every 5 s until it answers ok or `ms` passes. */

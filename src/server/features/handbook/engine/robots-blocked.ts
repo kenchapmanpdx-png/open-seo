@@ -61,6 +61,14 @@ const sentences = (text: string) =>
     .filter((s) => s.length >= 20);
 
 /**
+ * `needle` occurs in `hay` ignoring whitespace: a typing animation prints a
+ * sentence as one span per letter ("A i r c o r"), the finished text as words.
+ */
+export function containsText(hay: string, needle: string) {
+  return hay.replace(/\s+/g, "").includes(needle.replace(/\s+/g, ""));
+}
+
+/**
  * Main text of the normal render vs the render with the blocked requests
  * aborted: same content when the word sets overlap ≥ 98 % (Jaccard) and the
  * word counts are within 2 %.
