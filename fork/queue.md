@@ -209,12 +209,15 @@ Status: `todo` · `doing` · `done` · `ESCALATE` · `BLOCKED-KEN`. HEAVY writes
 | WO-B19-001 | B19 | M6 aircorheatingcooling.com (Squarespace) | — | todo | | |
 | WO-B19-002 | B19 | M6 valentinecoffeeco.com (Shopify) | — | todo | | |
 | WO-B19-003 | B19 | M6 wsparkdental.com (no sitemap) | — | todo | | |
-| WO-B19-004 | B19 | Render-resource finding: platform cart / analytics endpoints | — | todo | | |
-| WO-B19-005 | B19 | Self-canonical: parameter variants with clean canonical | — | todo | | |
-| WO-B19-006 | B19 | opacity:0 word count + shared off-canvas blocks | — | todo | | |
-| WO-B19-007 | B19 | Image-error finding grouping | — | todo | | |
-| WO-B19-008 | B19 | 1 failed check + 2 AI-unsure checks | — | todo | | |
-| WO-B19-009 | B19 | Per-stage run time + final-stage progress | — | todo | | |
+| WO-B19-004 | B19 | Render-resource finding: severity by measured effect (blocked-request render diff) | — | todo | | |
+| WO-B19-005 | B19 | Canonicalised duplicates by content (page=1, %20 vs +); keep page 2 → page 1 | — | todo | | |
+| WO-B19-006 | B19 | opacity:0: one visible-text walker, main content only | — | todo | | |
+| WO-B19-007 | B19 | Resource errors: one finding per kind (ADR-031 amend) | — | todo | | |
+| WO-B19-008 | B19 | PASS without evidence in duplicates.ts + image-weight.ts; GoodGEO clean fixture | — | todo | | |
+| WO-B19-009 | B19 | Run time: instrument; multi-row inserts; crawl concurrency; parallel LLM checks | — | todo | | |
 | WO-B19-010 | B19 | Three new goldens | — | todo | | |
 | WO-B19-090 | B19 | Exit | — | todo | | |
-| WO-B19-011 | B19 | Grade cap flattens sites at F · 39: re-score, decide | — | todo | | |
+| WO-B19-011 | B19 | Grade cap is handbook rule: show uncapped, write note for Ken (no scoring change) | — | todo | | |
+| WO-B19-012 | B19 | Report stage row never marked done (B18 regression) | — | todo | | |
+| WO-B19-013 | B19 | Missing sitemap: finding + link-graph fallback | — | todo | | |
+| WO-B19-014 | B19 | LLM quote matcher: confident finding dropped as unverified | — | todo | | |
