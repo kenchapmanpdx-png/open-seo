@@ -76,10 +76,7 @@ export function compareRenderedText(normal: string, blocked: string) {
   const hi = Math.max(a.length, b.length);
   const sameContent =
     jaccard >= 0.98 && (hi === 0 || Math.abs(a.length - b.length) / hi <= 0.02);
-  const missing = sentences(normal)
-    .filter((s) => !blocked.includes(s))
-    .slice(0, 5)
-    .map((s) => s.slice(0, 200));
+  const missing = sentences(normal).filter((s) => !blocked.includes(s));
   return {
     wordsNormal: a.length,
     wordsBlocked: b.length,

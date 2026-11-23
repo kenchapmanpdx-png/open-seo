@@ -1,0 +1,125 @@
+# Golden expectations for field test 3 (B19 WO-B19-010, M3 format). Source: fork/reports/field-aircorheatingcooling.com-2026-11-23.md
+# (verdict table, 0 open) + fork/fixtures/external/aircorheatingcooling.com-semrush-2026-11-23.csv, CLI run field-2026-11-23 (whole site).
+# Squarespace site. Kept: agree rows, app-only findings re-checked live 2026-11-23, and every B19 `fixed` (regression lock).
+# Left out: Semrush `skip` rows (multiple h1, text-to-HTML ratio, llms.txt, nofollow, crawl depth, content not optimized,
+# blocked from crawling = Squarespace default Disallow on list variants + /cart noindex).
+site: aircorheatingcooling.com
+origin: https://www.aircorheatingcooling.com
+
+findings:
+  - id: A01
+    title: "Internal links point at retired pages (404: /promotions, /financing, /repair-coupon, /duct-installation/)"
+    items: [P3-08]
+    urls: [/promotions]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush 4xx errors + Broken internal links; live 2026-11-23 all four answer 404"
+  - id: A02
+    title: "Internal links go through temporary redirects"
+    items: []
+    supp: [SUPP-25]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush Temporary redirects (324)"
+  - id: A03
+    title: "Pages without a meta description"
+    items: [P4-03]
+    urls: [/hvac-chicago/*]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Missing meta description (93)"
+  - id: A04
+    title: "Pages without exactly one H1"
+    items: [P4-01]
+    urls: [/hvac-chicago/category/Blogs]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "Semrush Missing h1 (22)"
+  - id: A05
+    title: "Sitemap URLs without an internal link (orphans)"
+    items: [P3-12]
+    urls: [/hvac-chicago/tag/furnace+repair]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "Semrush Orphaned sitemap pages (72)"
+  - id: A06
+    title: "Neighbourhood page set shares its text (only the place name changes)"
+    items: []
+    supp: [SUPP-17]
+    urls: [/edison-park, /kenwood]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "live 2026-11-23: /edison-park vs /kenwood differ only by the place name"
+  - id: A07
+    title: "Images on a dead CloudFront host"
+    items: []
+    supp: [SUPP-20]
+    urls: [/hvac-chicago/how-to-know-if-its-time-to-replace-your-old-gas-heater]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S2
+    note: "live 2026-11-23: dta0yqvfnusiq.cloudfront.net does not resolve; one finding for all images (WO-B19-007)"
+  - id: A08
+    title: "Unknown URLs serve the savings page as the 404 body"
+    items: [P3-11]
+    urls: [/chicago-air-conditioning-furnace-savings]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "live 2026-11-23"
+  - id: A09
+    title: "Trailing-slash variant answers 200 with a canonical instead of a redirect"
+    items: [P3-02]
+    urls: [/hvac-chicago/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "live 2026-11-23"
+  - id: A10
+    title: "HSTS max-age=0"
+    items: [P8-05]
+    urls: [/]
+    class: HEADERS
+    detectableBy: deterministic
+    severity: S4
+    note: "live 2026-11-23"
+  - id: A11
+    title: "Bytespider allowed by robots.txt, 403 from the server"
+    items: [P9-01]
+    urls: [/]
+    class: BOTFETCH
+    detectableBy: deterministic
+    severity: S4
+    note: "live 2026-11-23"
+  - id: A12
+    title: "Links to encoded-space tag duplicates (canonical uses +)"
+    items: [P3-04]
+    urls: [/hvac-chicago/common-hvac-faqs]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S3
+    note: "canonicalised duplicate, S3 with reason; fixed B19 WO-005 / run 90"
+  - id: A13
+    title: "robots.txt blocks Squarespace telemetry XHR (/api/census): rendered content unchanged"
+    items: [P3-20]
+    urls: [/hvac-chicago]
+    class: ROBOTS
+    detectableBy: render
+    severity: S4
+    note: "fixed B19 run 91: control render filters text that varies between renders (home review widget); expected S4, not S1"
+  - id: A14
+    title: "Generic and empty anchor text on internal links"
+    items: []
+    supp: [SUPP-01]
+    urls: [/]
+    class: CRAWL
+    detectableBy: deterministic
+    severity: S4
+    note: "Semrush Links with non-descriptive anchor text (975) + Links with no anchor text (10)"

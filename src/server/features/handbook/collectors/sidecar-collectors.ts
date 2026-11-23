@@ -221,6 +221,8 @@ export function createSidecarCollectors(config: SidecarConfig) {
           js.value,
           jsFacts.markup.text,
           sampleSet.has(normalizeUrl(url)) ? collected.robots : undefined,
+          (reason) =>
+            ctx.log("handbook.render.robots_effect_failed", { url, reason }),
         );
         const raw =
           collected.pages?.status === "ok"

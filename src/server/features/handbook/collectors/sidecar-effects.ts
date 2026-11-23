@@ -16,12 +16,17 @@ type RobotsBlocked = RenderData["pages"][number]["js"]["robotsBlocked"];
  * robots-blocked same-host requests, render again with exactly those URLs
  * aborted and compare the visible text. Undefined when nothing is blocked
  * or the second render fails (the check then keeps the by-type rule).
+ * A difference is confirmed by a control render with nothing aborted
+ * (B19 run 91): when the page's own text varies between two normal renders
+ * (a review carousel, a typing animation), only sentences present in both
+ * normal renders and absent without the blocked requests count as missing.
  */
 export async function robotsBlockedEffect(
   renderWithout: (abortUrls: string[]) => Promise<Outcome<RenderResponse>>,
   normal: RenderResponse,
   normalText: string,
   robots: CollectedData["robots"] | undefined,
+  onFail: (reason: string) => void = () => {},
 ): Promise<RobotsBlocked> {
   if (robots?.status !== "ok") return undefined;
   const urls = [
@@ -30,17 +35,32 @@ export async function robotsBlockedEffect(
     ),
   ];
   if (urls.length === 0) return undefined;
-  const without = await renderWithout(urls.slice(0, 200));
-  if (!without.ok) return undefined;
-  const status = without.value.status;
-  if (status !== null && (status < 200 || status >= 300)) return undefined;
-  return {
-    urls,
-    ...compareRenderedText(
-      normalText,
-      extractHtmlFacts(without.value.html, without.value.finalUrl).markup.text,
-    ),
+  const textOf = async (abortUrls: string[]) => {
+    const r = await renderWithout(abortUrls);
+    if (!r.ok) return onFail(r.reason);
+    const status = r.value.status;
+    if (status !== null && (status < 200 || status >= 300))
+      return onFail(`HTTP ${status}`);
+    return extractHtmlFacts(r.value.html, r.value.finalUrl).markup.text;
   };
+  const blockedText = await textOf(urls.slice(0, 200));
+  if (blockedText === undefined) return undefined;
+  const first = compareRenderedText(normalText, blockedText);
+  const result = (sameContent: boolean, missing: string[]) => ({
+    urls,
+    ...first,
+    sameContent,
+    missing: missing.slice(0, 5).map((s) => s.slice(0, 200)),
+  });
+  if (first.sameContent) return result(true, first.missing);
+  const controlText = await textOf([]);
+  if (
+    controlText === undefined ||
+    compareRenderedText(normalText, controlText).sameContent
+  )
+    return result(false, first.missing);
+  const stable = first.missing.filter((s) => controlText.includes(s));
+  return result(stable.length === 0, stable);
 }
 
 /** Polls the sidecar `/health` every 5 s until it answers ok or `ms` passes. */
