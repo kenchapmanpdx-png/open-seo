@@ -68,27 +68,28 @@ describe("robots.group-evaluation", () => {
     ).toBe("S1");
   });
 
-  it("reports a 404 robots.txt as one S3 'No robots.txt' finding (WO-B20-011)", async () => {
-    const result = await robotsGroupsCheck.run(
-      context({
-        robots: {
-          status: "ok",
-          hosts: [
-            {
-              host: "example.com",
-              status: 404,
-              storageKey: null,
-              groups: [],
-              sitemaps: [],
-              parseWarnings: [],
-            },
-          ],
-          decisions: [],
-        },
-      }),
-    );
-    expect(
-      result.findings.map((f) => [f.itemIds[0], f.severity, f.title]),
-    ).toEqual([["P3-15", "S3", "No robots.txt (HTTP 404)"]]);
+  const host = (name: string, status: number) => ({
+    host: name,
+    status,
+    storageKey: null,
+    groups: [],
+    sitemaps: [],
+    parseWarnings: [],
   });
+
+  // WO-B20-011; bluebonnetroofs.com: the www sibling only redirects (301) to the 404 host.
+  it.each([
+    [[host("example.com", 404)]],
+    [[host("example.com", 404), host("www.example.com", 301)]],
+  ])(
+    "reports a 404 robots.txt as one S3 'No robots.txt' finding (%#)",
+    async (hosts) => {
+      const result = await robotsGroupsCheck.run(
+        context({ robots: { status: "ok", hosts, decisions: [] } }),
+      );
+      expect(
+        result.findings.map((f) => [f.itemIds[0], f.severity, f.title]),
+      ).toEqual([["P3-15", "S3", "No robots.txt (HTTP 404)"]]);
+    },
+  );
 });

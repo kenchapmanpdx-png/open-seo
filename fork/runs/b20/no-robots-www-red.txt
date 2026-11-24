@@ -1,0 +1,40 @@
+
+ RUN  v5.0.4 /home/kenny/open-seo
+
+ ❯ src/server/features/handbook/checks/robots-groups.test.ts (5 tests | 1 failed) 7ms
+   ❯ robots.group-evaluation (5)
+     × reports a 404 robots.txt as one S3 'No robots.txt' finding (1) 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/server/features/handbook/checks/robots-groups.test.ts > robots.group-evaluation > reports a 404 robots.txt as one S3 'No robots.txt' finding (1)
+AssertionError: expected [] to deeply equal [ [ 'P3-15', 'S3', …(1) ] ]
+
+- Expected
++ Received
+
+- [
+-   [
+-     "P3-15",
+-     "S3",
+-     "No robots.txt (HTTP 404)",
+-   ],
+- ]
++ []
+
+ ❯ src/server/features/handbook/checks/robots-groups.test.ts:92:9
+     90|       expect(
+     91|         result.findings.map((f) => [f.itemIds[0], f.severity, f.title]…
+     92|       ).toEqual([["P3-15", "S3", "No robots.txt (HTTP 404)"]]);
+       |         ^
+     93|     },
+     94|   );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  00:58:42
+   Duration  197ms (import 66%, transform 27%, tests 6%, worker 2%)
+

@@ -5,6 +5,7 @@ import type {
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import {
   createResult,
+  missingRobotsHosts,
   normalizeUrl,
   originUrl,
   parseUrl,
@@ -143,11 +144,7 @@ function robotsSitemapLine(
   if (robots.status !== "ok" || sitemap.status !== "ok") return;
   // WO-B20-011: no robots.txt at all (4xx) is the P3-15 "No robots.txt"
   // finding, not "no Sitemap: line".
-  if (
-    robots.hosts.length > 0 &&
-    robots.hosts.every((h) => h.status >= 400 && h.status < 500)
-  )
-    return;
+  if (missingRobotsHosts(robots.hosts).length > 0) return;
   const declared = robots.hosts.flatMap((h) => h.sitemaps);
   const robotsUrl = siteUrl(ctx.origin, "/robots.txt");
   const broken = declared.filter(

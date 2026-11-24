@@ -4,6 +4,7 @@ import type {
   FindingDraft,
   ItemVerdict,
 } from "@/server/features/handbook/contracts/check";
+import type { RobotsHost } from "@/server/features/handbook/contracts/collectors";
 import type { EvidenceKind } from "@/server/features/handbook/contracts/registry-types";
 
 /**
@@ -127,4 +128,18 @@ export function normalizeUrl(url: string): string {
   if (!u) return url;
   u.hash = "";
   return u.href;
+}
+
+/**
+ * WO-B20-011: the robots.txt hosts that answer 4xx when the site has none at
+ * all (no host answers 200, at least one answers 4xx, the rest only redirect,
+ * e.g. `www.` → bare host). Empty otherwise: one shared rule for P3-15 and P3-19.
+ */
+export function missingRobotsHosts(hosts: readonly RobotsHost[]): RobotsHost[] {
+  const missing = hosts.filter((h) => h.status >= 400 && h.status < 500);
+  const others = hosts.filter((h) => !missing.includes(h));
+  return missing.length > 0 &&
+    others.every((h) => h.status >= 300 && h.status < 400)
+    ? missing
+    : [];
 }

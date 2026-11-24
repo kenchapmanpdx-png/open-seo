@@ -6,7 +6,7 @@ import type {
 import { decide } from "@/server/features/handbook/engine/robots";
 import { AI_BOT_TOKENS } from "@/server/features/handbook/collectors/ai-bot-tokens";
 import { ROBOTS_BOT_TOKENS } from "@/server/features/handbook/collectors/fetch-collectors";
-import { createResult, originUrl } from "./support";
+import { createResult, missingRobotsHosts, originUrl } from "./support";
 
 /**
  * ROBOTS exemplar (handbook §18 group-matching rule + Route coverage).
@@ -116,14 +116,8 @@ export const robotsGroupsCheck: HandbookCheck = {
     const hosts = robots.hosts.filter((h) => h.status === 200);
     // WO-B20-011: robots.txt answers 4xx on every host → one "No robots.txt"
     // finding (crawlers read a 4xx as allow-all); a 5xx keeps the N/A below.
-    const missing = robots.hosts.filter(
-      (h) => h.status >= 400 && h.status < 500,
-    );
-    if (
-      hosts.length === 0 &&
-      missing.length > 0 &&
-      missing.length === robots.hosts.length
-    ) {
+    const missing = missingRobotsHosts(robots.hosts);
+    if (missing.length > 0) {
       const first = missing[0];
       const url = `${protocol}//${first?.host}/robots.txt`;
       out.finding({
