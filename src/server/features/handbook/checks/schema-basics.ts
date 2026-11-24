@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { JsonLdData } from "@/server/features/handbook/contracts/collectors";
-import { createResult } from "./support";
+import { createResult, originUrl, pathOf, parseUrl } from "./support";
 
 /**
  * SCHEMA (handbook §24): the home page graph has a WebSite node with name,
@@ -38,12 +38,8 @@ const bare = (h: string) => h.replace(/^www\./, "");
 
 function urlProblem(value: string, origin: URL): string | null {
   if (value.startsWith("//")) return "protocol-relative";
-  let u: URL;
-  try {
-    u = new URL(value);
-  } catch {
-    return "relative";
-  }
+  const u = parseUrl(value);
+  if (!u) return "relative";
   if (bare(u.hostname) === bare(origin.hostname))
     return u.protocol === origin.protocol ? null : `${u.protocol} on-site URL`;
   return u.protocol === "https:" ? null : `${u.protocol} off-site URL`;
@@ -92,12 +88,12 @@ export const schemaBasicsCheck: HandbookCheck = {
     const out = createResult(ITEMS);
     const { jsonld } = ctx.collected;
     if (jsonld.status !== "ok") return out.build();
-    const origin = new URL(ctx.origin);
+    const origin = originUrl(ctx.origin);
     const blockRef = (page: Page, excerpt: string) =>
       out.evidence("jsonld", page.url, excerpt);
 
     // P6-01
-    const home = jsonld.pages.find((p) => new URL(p.url).pathname === "/");
+    const home = jsonld.pages.find((p) => pathOf(p.url) === "/");
     const site = home?.nodes.find((n) => n.types.includes("WebSite"));
     const missing = ["name", "url", "alternateName"].filter((k) => {
       const v = site?.properties[k];
@@ -166,7 +162,7 @@ export const schemaBasicsCheck: HandbookCheck = {
       });
     }
     const inventory = withBlocks
-      .map((p) => `${new URL(p.url).pathname}: ${typesOf(p).join(", ")}`)
+      .map((p) => `${pathOf(p.url)}: ${typesOf(p).join(", ")}`)
       .join("\n");
     out.pass(
       "P6-02",

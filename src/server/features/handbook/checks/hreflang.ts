@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, parseUrl } from "./support";
 
 /**
  * CRAWL (handbook §13, §10 Product variant URLs): hreflang sets are
@@ -93,7 +93,9 @@ export const hreflangCheck: HandbookCheck = {
 
     // P3-25
     const variants = pages.snapshots.filter((s) =>
-      [...new URL(s.url).searchParams.keys()].some((k) => VARIANT.test(k)),
+      [...(parseUrl(s.url)?.searchParams.keys() ?? [])].some((k) =>
+        VARIANT.test(k),
+      ),
     );
     if (variants.length === 0) {
       out.na("P3-25", "no variant URLs crawled");

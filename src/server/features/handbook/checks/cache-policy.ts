@@ -1,5 +1,5 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import { createResult, formatHeaders, headerValue } from "./support";
+import { createResult, formatHeaders, headerValue, pathOf } from "./support";
 
 /**
  * HEADERS (handbook §14): hashed (fingerprinted) assets are cached for a year
@@ -33,7 +33,7 @@ export const cachePolicyCheck: HandbookCheck = {
         `HTTP ${r.status}\n${formatHeaders(r.headers.filter(([k]) => k === "cache-control" || k === "content-type" || k === "age" || k === "etag"))}`,
       );
     const ok = headers.responses.filter((r) => r.status === 200);
-    const assets = ok.filter((r) => HASHED.test(new URL(r.url).pathname));
+    const assets = ok.filter((r) => HASHED.test(pathOf(r.url)));
     const html = ok.filter((r) =>
       /text\/html/i.test(headerValue(r.headers, "content-type") ?? ""),
     );

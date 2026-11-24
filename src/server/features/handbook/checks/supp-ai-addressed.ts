@@ -3,7 +3,7 @@ import type {
   AiAddressedText,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf } from "./support";
 
 /**
  * SUPP-19 text addressed to AI assistants (SCALED-COPY §3.4, ADR-022). Reads
@@ -46,7 +46,7 @@ export const suppAiAddressedCheck: HandbookCheck = {
         : [],
     );
     const scanned = pages.snapshots.filter(
-      (s) => s.status === 200 && !EXCLUDED.test(new URL(s.url).pathname),
+      (s) => s.status === 200 && !EXCLUDED.test(pathOf(s.url)),
     );
     const english = scanned.filter(isEnglish);
     const limited = scanned.length - english.length;

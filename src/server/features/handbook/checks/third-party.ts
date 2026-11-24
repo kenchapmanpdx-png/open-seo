@@ -1,6 +1,12 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import {
+  createResult,
+  normalizeUrl,
+  originUrl,
+  parseUrl,
+  pathOf,
+} from "./support";
 
 /**
  * Third-party tags and hero video (handbook §14, §15).
@@ -35,7 +41,7 @@ const live = (s: PageSnapshot) =>
 function hostOf(url: string | null): string {
   if (!url) return "";
   try {
-    return new URL(url).hostname;
+    return parseUrl(url)?.hostname ?? "";
   } catch {
     return "";
   }
@@ -93,9 +99,9 @@ export const thirdPartyCheck: HandbookCheck = {
 
     // P7-04 — pixel requests during the initial render.
     const sp6 = ctx.siteProfile.find((a) => a.code === "SP6")?.value ?? "?";
-    const home = pagesLive.find((s) => new URL(s.url).pathname === "/");
+    const home = pagesLive.find((s) => pathOf(s.url) === "/");
     const euSignal =
-      EU_TLD.test(new URL(ctx.origin).hostname) ||
+      EU_TLD.test(originUrl(ctx.origin).hostname) ||
       EU_LANG.test(home?.head.lang ?? pagesLive[0].head.lang ?? "");
     const preConsentApplies = sp6 !== "N" || euSignal;
     const renderOk = render.status === "ok";

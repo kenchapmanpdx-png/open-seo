@@ -1,6 +1,12 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import {
+  createResult,
+  normalizeUrl,
+  pathOf,
+  parseUrl,
+  siteUrl,
+} from "./support";
 
 /**
  * CRAWL (handbook §17, §12, §9, §8): crawl coverage counts (P3-13), every
@@ -18,7 +24,8 @@ const live = (s: PageSnapshot) =>
   /html/i.test(s.contentType ?? "html");
 
 function slugProblems(url: string): string[] {
-  const u = new URL(url);
+  const u = parseUrl(url);
+  if (!u) return [];
   const parts = u.pathname.split("/").filter(Boolean);
   const out: string[] = [];
   if (parts.some((p) => /[A-Z]/.test(p))) out.push("uppercase");
@@ -37,7 +44,7 @@ function slugProblems(url: string): string[] {
  * `/events/a.html` is the usual hub + detail layout.
  */
 function urlStyle(url: string): string | null {
-  const path = new URL(url).pathname;
+  const path = pathOf(url);
   if (path.endsWith("/")) return null;
   const last = path.split("/").at(-1);
   if (!last) return null;
@@ -102,11 +109,11 @@ export const crawlCoverageCheck: HandbookCheck = {
       const from = patternOf.get(normalizeUrl(s.url)) ?? "?";
       for (const link of s.links) {
         // A link with a query (Shopify `?variant=`) still reaches its path's page.
-        const bare = new URL(link.href);
-        bare.search = "";
+        const bare = parseUrl(link.href);
+        if (bare) bare.search = "";
         for (const target of new Set([
           normalizeUrl(link.href),
-          normalizeUrl(bare.href),
+          normalizeUrl(bare?.href ?? link.href),
         ])) {
           const set = inlinkPatterns.get(target) ?? new Set<string>();
           set.add(from);
@@ -230,7 +237,7 @@ export const crawlCoverageCheck: HandbookCheck = {
       .map(([href]) => href);
     const hubs = [...byPattern]
       .filter(([pattern, urls]) => hubPath(pattern) && urls.length >= 3)
-      .map(([pattern]) => new URL(hubPath(pattern) ?? "/", ctx.origin).href)
+      .map(([pattern]) => siteUrl(ctx.origin, hubPath(pattern) ?? "/"))
       .filter((hub) => crawledSet.has(hub));
     const missing = hubs.filter((hub) => !nav.includes(hub));
     const navRef = () =>

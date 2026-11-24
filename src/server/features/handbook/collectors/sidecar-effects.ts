@@ -7,8 +7,10 @@ import {
   containsText,
   robotsBlockedRequests,
 } from "@/server/features/handbook/engine/robots-blocked";
+import { normalizeUrl } from "@/server/features/handbook/checks/support";
 import { z } from "zod";
 import type { Outcome } from "./sidecar-per-url";
+import { effectRenderUrls } from "./sidecar-targets";
 
 type RobotsBlocked = RenderData["pages"][number]["js"]["robotsBlocked"];
 
@@ -23,6 +25,41 @@ type RobotsBlocked = RenderData["pages"][number]["js"]["robotsBlocked"];
  * the requests aborted keeps only sentences missing both times (a slow
  * third-party widget can fail to load once under load).
  */
+/** Effect renders beyond the template samples (B20 run 93). */
+const MAX_EXTRA_EFFECTS = 20;
+
+/**
+ * Which rendered pages get the robots-blocked effect re-render: the
+ * template samples (`effectRenderUrls`), plus any page whose blocked requests were
+ * not measured yet, up to MAX_EXTRA_EFFECTS pages. A template's first sample
+ * may load no blocked request while its other pages do (BadGEO
+ * /icon-only.html vs /needs-blocked-js.html, B20 run 93).
+ */
+export function effectPicker(
+  collected: Partial<CollectedData>,
+  rendered: string[],
+) {
+  const effectSet = effectRenderUrls(collected, rendered);
+  const measured = new Set<string>();
+  let extra = 0;
+  return {
+    pick(url: string, requests: RenderResponse["requests"]): boolean {
+      const robots = collected.robots;
+      if (robots?.status !== "ok") return false;
+      if (effectSet.has(normalizeUrl(url))) return true;
+      if (extra >= MAX_EXTRA_EFFECTS) return false;
+      const fresh = robotsBlockedRequests(requests, robots).blocked.some(
+        (b) => !measured.has(b.url),
+      );
+      if (fresh) extra += 1;
+      return fresh;
+    },
+    measured(urls: readonly string[]) {
+      for (const u of urls) measured.add(u);
+    },
+  };
+}
+
 export async function robotsBlockedEffect(
   renderWithout: (abortUrls: string[]) => Promise<Outcome<RenderResponse>>,
   normal: RenderResponse,

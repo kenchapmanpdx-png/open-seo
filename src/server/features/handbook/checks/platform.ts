@@ -5,6 +5,7 @@ import {
   formatHeaders,
   headerValue,
   normalizeUrl,
+  pathOf,
 } from "./support";
 
 /**
@@ -88,8 +89,7 @@ export const platformCheck: HandbookCheck = {
     const { pages, headers } = ctx.collected;
     if (pages.status !== "ok") return out.build();
     const live = pages.snapshots.filter((s) => s.status === 200);
-    const home =
-      live.find((s) => new URL(s.url).pathname === "/") ?? live[0] ?? null;
+    const home = live.find((s) => pathOf(s.url) === "/") ?? live[0] ?? null;
     if (!home) {
       out.na("P0-03", "no 200 page crawled");
       return out.build();

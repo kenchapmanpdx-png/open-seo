@@ -1,7 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { BotFetchData } from "@/server/features/handbook/contracts/collectors";
 import { decide } from "@/server/features/handbook/engine/robots";
-import { createResult } from "./support";
+import { createResult, parseUrl } from "./support";
 
 /**
  * BOTFETCH exemplar (handbook §0 P9, §18): a bot that robots.txt allows must
@@ -42,8 +42,9 @@ export const botParityCheck: HandbookCheck = {
     const { botFetch, robots } = ctx.collected;
     if (botFetch.status !== "ok") return out.build();
     const robotsAllows = (bot: string, url: string) => {
-      if (robots.status !== "ok") return true;
-      const { host, pathname } = new URL(url);
+      const u = parseUrl(url);
+      if (robots.status !== "ok" || !u) return true;
+      const { host, pathname } = u;
       const file = robots.hosts.find(
         (h) => h.host === host && h.status === 200,
       );

@@ -1,6 +1,6 @@
 import type { CheckContext } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { normalizeUrl } from "./support";
+import { normalizeUrl, siteUrl } from "./support";
 
 /**
  * WO-B4-004 (P5-07 entity test): body-text spellings of the brand and of
@@ -93,7 +93,7 @@ export function nameMentions(
   pages: readonly PageSnapshot[],
 ): Map<string, string[]> {
   const home = pages.find(
-    (p) => normalizeUrl(p.url) === normalizeUrl(new URL("/", ctx.origin).href),
+    (p) => normalizeUrl(p.url) === normalizeUrl(siteUrl(ctx.origin)),
   );
   const byForm = new Map<string, Hit[]>();
   for (const name of entityNames(ctx, home)) collect(name, pages, byForm);

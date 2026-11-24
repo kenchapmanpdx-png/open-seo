@@ -1,7 +1,13 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { decide } from "@/server/features/handbook/engine/robots";
-import { createResult, normalizeUrl } from "./support";
+import {
+  bareHost,
+  createResult,
+  normalizeUrl,
+  parseUrl,
+  siteUrl,
+} from "./support";
 
 /**
  * CRAWL/ROBOTS (handbook §11, §18): pagination pages are linked, 200 and
@@ -26,7 +32,7 @@ const selfCanonical = (s: PageSnapshot) =>
   !s.head.canonical || normalizeUrl(s.head.canonical) === normalizeUrl(s.url);
 
 function isFacet(url: string): boolean {
-  const keys = [...new URL(url).searchParams.keys()];
+  const keys = [...(parseUrl(url)?.searchParams.keys() ?? [])];
   return (
     !SEARCH.test(url) &&
     !PAGINATION.test(url) &&
@@ -43,24 +49,23 @@ export const listNavigationCheck: HandbookCheck = {
     const out = createResult(ITEMS);
     const { pages, robots } = ctx.collected;
     if (pages.status !== "ok" || robots.status !== "ok") return out.build();
-    const robotsUrl = new URL("/robots.txt", ctx.origin).href;
+    const robotsUrl = siteUrl(ctx.origin, "/robots.txt");
     const disallowRule = (url: string) => {
-      const u = new URL(url);
+      const u = parseUrl(url);
+      if (!u) return null;
       const host = robots.hosts.find((h) => h.host === u.host);
       if (!host) return null;
       const d = decide(u.host, host.groups, "*", `${u.pathname}${u.search}`);
       return d.allowed ? null : d.matchedRule;
     };
     const byUrl = new Map(pages.snapshots.map((s) => [normalizeUrl(s.url), s]));
-    const site = new URL(ctx.origin).hostname.replace(/^www\./, "");
+    const site = bareHost(ctx.origin);
     const internal = [
       ...new Set(
         pages.snapshots.flatMap((s) =>
           s.links
             .map((l) => normalizeUrl(l.href))
-            .filter(
-              (href) => new URL(href).hostname.replace(/^www\./, "") === site,
-            ),
+            .filter((href) => bareHost(href) === site),
         ),
       ),
     ];

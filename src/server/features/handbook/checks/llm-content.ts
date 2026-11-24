@@ -15,7 +15,7 @@ import {
   samplePages,
 } from "./llm-copy";
 import { AWARD_WORD, awardViews, keyFactsViews } from "./llm-views";
-import { normalizeUrl } from "./support";
+import { normalizeUrl, pathOf } from "./support";
 
 /**
  * WO-B4-001 LLM content checks (handbook §6, §7): page-type matrix (P5-06),
@@ -59,7 +59,7 @@ const pageTypeMatrixCheck = llmCheck(
     effort: "S",
   },
   (ctx) => {
-    const isArticle = (url: string) => ARTICLE_PATH.test(new URL(url).pathname);
+    const isArticle = (url: string) => ARTICLE_PATH.test(pathOf(url));
     const views = samplePages(ctx, SAMPLE_PAGES * 2)
       .filter((s) => !isArticle(s.url))
       .slice(0, SAMPLE_PAGES)

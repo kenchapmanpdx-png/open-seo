@@ -4,7 +4,7 @@ import type {
   JsonLdNode,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf, parseUrl } from "./support";
 
 /**
  * SCHEMA (handbook §24): index pages of detail templates carry an ItemList
@@ -70,7 +70,7 @@ export const schemaListsArticlesCheck: HandbookCheck = {
       const detail = new Set(t.urls.map(normalizeUrl));
       const index = pagesLive.find((s) =>
         [prefix, `${prefix}index.html`, prefix.slice(0, -1)].includes(
-          new URL(s.url).pathname,
+          pathOf(s.url),
         ),
       );
       if (index) {
@@ -116,11 +116,8 @@ export const schemaListsArticlesCheck: HandbookCheck = {
           .map((i) => (isRecord(i) ? idOf(i.item) : null))
           .filter((u): u is string => !!u)
           .filter((u) => {
-            try {
-              return !liveUrls.has(normalizeUrl(new URL(u, url).href));
-            } catch {
-              return true;
-            }
+            const abs = parseUrl(u, url);
+            return !abs || !liveUrls.has(normalizeUrl(abs.href));
           });
         if (dead.length > 0)
           problems.push({

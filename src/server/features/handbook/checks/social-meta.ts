@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf } from "./support";
 
 /**
  * CRAWL (handbook §2): Open Graph + Twitter tags on every indexable page with
@@ -78,22 +78,27 @@ export const socialMetaCheck: HandbookCheck = {
       });
     };
 
-    // P4-09
+    // P4-09. WO-B20-014 (a): when every page lacks the same tags the title
+    // names them (samanthaco.ca: only og:url missing, all other tags present).
+    const ogHits = live.flatMap((page) => {
+      const missing = [
+        ...REQUIRED_OG.filter((k) => !page.head.og[k]?.trim()).map(
+          (k) => `og:${k}`,
+        ),
+        ...(page.head.twitter.card?.trim() ? [] : ["twitter:card"]),
+      ];
+      return missing.length > 0
+        ? [{ page, why: `missing ${missing.join(", ")}`, missing }]
+        : [];
+    });
+    const sameMissing = new Set(ogHits.map((h) => h.missing.join(", ")));
     report(
       "P4-09",
-      "Pages missing Open Graph / Twitter tags",
+      sameMissing.size === 1
+        ? `Pages missing ${[...sameMissing][0]}`
+        : "Pages missing Open Graph / Twitter tags",
       "Emit og:title, og:description, og:image, og:url and twitter:card on every indexable page.",
-      live.flatMap((page) => {
-        const missing = [
-          ...REQUIRED_OG.filter((k) => !page.head.og[k]?.trim()).map(
-            (k) => `og:${k}`,
-          ),
-          ...(page.head.twitter.card?.trim() ? [] : ["twitter:card"]),
-        ];
-        return missing.length > 0
-          ? [{ page, why: `missing ${missing.join(", ")}` }]
-          : [];
-      }),
+      ogHits,
     );
     const images = new Map<string, number>();
     for (const s of live) {
@@ -104,7 +109,7 @@ export const socialMetaCheck: HandbookCheck = {
       ([img, n]) =>
         n >= live.length * 0.8 &&
         live.length > 1 &&
-        /logo/i.test(new URL(img, ctx.origin).pathname.split("/").at(-1) ?? ""),
+        /logo/i.test(pathOf(img, ctx.origin).split("/").at(-1) ?? ""),
     );
     if (shared) {
       report(

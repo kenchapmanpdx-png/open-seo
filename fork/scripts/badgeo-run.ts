@@ -79,21 +79,31 @@ function loadExpectations(sidecar: boolean): Map<string, string[]> {
   return out;
 }
 
-function firedByPage(report: ReportJson): Map<string, Set<string>> {
-  const out = new Map<string, Set<string>>();
+/** Page path → fired item id → severities of the findings that fired it. */
+function firedByPage(
+  report: ReportJson,
+): Map<string, Map<string, Set<string>>> {
+  const out = new Map<string, Map<string, Set<string>>>();
   for (const finding of [
     ...report.findings,
     ...(report.additionalFindings ?? []),
   ]) {
     for (const url of finding.urls) {
       const path = new URL(url, report.site.origin).pathname;
-      const set = out.get(path) ?? new Set<string>();
-      for (const id of finding.itemIds) set.add(id);
-      out.set(path, set);
+      const items = out.get(path) ?? new Map<string, Set<string>>();
+      for (const id of finding.itemIds)
+        items.set(id, (items.get(id) ?? new Set()).add(finding.severity));
+      out.set(path, items);
     }
   }
   return out;
 }
+
+/** `P3-20:S3` → id `P3-20` + severity `S3` (ADR-034 severity expectations). */
+const splitExpect = (token: string) => {
+  const [id = token, severity] = token.split(":");
+  return { id, severity };
+};
 
 export function compare(
   report: ReportJson,
@@ -125,14 +135,27 @@ export function compare(
     (a, b) => a.localeCompare(b),
   );
   return pages.map((page) => {
-    const expected = expectations.get(page) ?? [];
-    const got = [...(fired.get(page) ?? [])];
+    const tokens = expectations.get(page) ?? [];
+    const expected = tokens.map((t) => splitExpect(t).id);
+    const firedItems = fired.get(page) ?? new Map<string, Set<string>>();
+    const got = [...firedItems.keys()];
     const notFired = expected.filter((id) => !got.includes(id));
+    // A fired item whose findings never carry the expected severity counts as missing.
+    const wrongSeverity = tokens.flatMap((t) => {
+      const { id, severity } = splitExpect(t);
+      const seen = firedItems.get(id);
+      return severity && seen && !seen.has(severity)
+        ? [`${t} (got ${[...seen].join("/")})`]
+        : [];
+    });
     return {
       page,
-      expected,
+      expected: tokens,
       fired: got,
-      missing: notFired.filter((id) => !isBlocked(page, id)),
+      missing: [
+        ...notFired.filter((id) => !isBlocked(page, id)),
+        ...wrongSeverity,
+      ],
       blocked: notFired.filter((id) => isBlocked(page, id)),
       unexpected: got.filter((id) => !expected.includes(id)),
     };
@@ -141,9 +164,10 @@ export function compare(
 
 /** Restrict rows and their id lists to the `--only` ids. */
 function onlyIds(rows: Row[], ids: readonly string[]): Row[] {
-  const keep = (list: string[]) => list.filter((id) => ids.includes(id));
+  const has = (token: string) => ids.includes(splitExpect(token).id);
+  const keep = (list: string[]) => list.filter(has);
   return rows
-    .filter((r) => [...r.expected, ...r.fired].some((id) => ids.includes(id)))
+    .filter((r) => [...r.expected, ...r.fired].some(has))
     .map((r) => ({
       page: r.page,
       expected: keep(r.expected),

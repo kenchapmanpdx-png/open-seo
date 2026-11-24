@@ -3,12 +3,14 @@ import Papa from "papaparse";
 import {
   blockedCauses,
   buildFixGroups,
+  capNote,
   fixListCsv,
   loadDone,
   newerCompletedRun,
   notFinalNote,
   saveDone,
   topFixes,
+  unreadSiteReason,
   type Finding,
 } from "./fixList";
 
@@ -262,5 +264,41 @@ describe("notFinalNote (WO-B16-003)", () => {
     ];
     expect(newerCompletedRun(runs, run)).toBe("r3");
     expect(newerCompletedRun(runs.slice(0, 1), run)).toBeNull();
+  });
+});
+
+// WO-B20-010: a 0-page run showed "F · 0" and "Nothing to fix".
+describe("unreadSiteReason", () => {
+  it("names why no page was read, and stays null once a page was", () => {
+    const items = [{ note: "pages unavailable: home page HTTP 403" }];
+    expect(unreadSiteReason({ run: { coverage: { read: 0 } }, items })).toBe(
+      "pages unavailable: home page HTTP 403",
+    );
+    expect(
+      unreadSiteReason({ run: { coverage: { read: 3 } }, items }),
+    ).toBeNull();
+  });
+});
+
+// WO-B20-003: theogdenver.com showed "F · 39" with no hint of why.
+describe("capNote", () => {
+  it("names the finding and the page count behind the cap", () => {
+    const report = {
+      score: { final: 39, capReason: "open S1: F01" },
+      findings: [
+        finding({
+          code: "F01",
+          title: "Core content needs JavaScript",
+          urls: urls(2),
+        }),
+        finding({ code: "F02", title: "Other" }),
+      ],
+    };
+    expect(capNote(report)).toBe(
+      "Capped at 39 by: Core content needs JavaScript on 2 pages",
+    );
+    expect(
+      capNote({ ...report, score: { final: 62, capReason: null } }),
+    ).toBeNull();
   });
 });

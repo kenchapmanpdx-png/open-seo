@@ -37,6 +37,7 @@
   <url><loc>{{ORIGIN}}/fade-three.html</loc></url>
   <url><loc>{{ORIGIN}}/icon-only.html</loc></url>
   <url><loc>{{ORIGIN}}/needs-blocked-js.html</loc></url>
+  <url><loc>{{ORIGIN}}/hostile-links.html</loc></url>
   <url><loc>{{ORIGIN}}/low-contrast.html</loc></url>
   <url><loc>{{ORIGIN}}/heavy.html</loc></url>
   <url><loc>{{ORIGIN}}/beacon.html</loc></url>

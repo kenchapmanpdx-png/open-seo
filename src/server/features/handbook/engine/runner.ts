@@ -46,6 +46,7 @@ import type {
 } from "../contracts/scaled-copy";
 import { serpForRun, type SerpDeps } from "../llm/serp-originality-collect";
 import { contractViolation } from "./contract-violation";
+import { scopeS1ToIndexable } from "./s1-scope";
 import {
   completeCollected,
   createMemoryStageStore,
@@ -331,7 +332,7 @@ export async function evaluateRun(
   const { findings, evidence } = await materialize(
     input,
     runtime,
-    applyScaledPrecedence(pending),
+    scopeS1ToIndexable(applyScaledPrecedence(pending), collected),
     registryById,
   );
   if (siteFactMap)

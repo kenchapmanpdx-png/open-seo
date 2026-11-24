@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { VariantsData } from "@/server/features/handbook/contracts/collectors";
-import { createResult } from "./support";
+import { createResult, pathOf } from "./support";
 
 /**
  * CRAWL (handbook §10 Soft 404s): an unknown URL returns a real 404/410, not
@@ -73,7 +73,7 @@ export const notFoundCheck: HandbookCheck = {
       return out.build();
     }
     const home = pages.snapshots.find(
-      (s) => new URL(s.url).pathname === "/" && s.status === 200,
+      (s) => pathOf(s.url) === "/" && s.status === 200,
     );
     const liveByTitle = new Map(
       pages.snapshots

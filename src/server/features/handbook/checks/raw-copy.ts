@@ -3,7 +3,7 @@ import type {
   JsonLdNode,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf } from "./support";
 
 /**
  * CRAWL (handbook §14, §7, §25): server HTML carries no loading/empty/error
@@ -123,10 +123,8 @@ export const rawCopyCheck: HandbookCheck = {
           });
       }
     }
-    const home = pagesLive.find((s) => new URL(s.url).pathname === "/");
-    const contact = pagesLive.find((s) =>
-      /contact/i.test(new URL(s.url).pathname),
-    );
+    const home = pagesLive.find((s) => pathOf(s.url) === "/");
+    const contact = pagesLive.find((s) => /contact/i.test(pathOf(s.url)));
     const factPages = [home, contact].filter((s): s is PageSnapshot => !!s);
     // NAP facts come from the home/contact JSON-LD only (other pages may
     // describe venues or partners).
@@ -177,7 +175,7 @@ export const rawCopyCheck: HandbookCheck = {
     const channelPages = pagesLive.filter(
       (s) =>
         s.links.some((l) => /^(mailto|tel):/i.test(l.href)) ||
-        (/contact/i.test(new URL(s.url).pathname) && s.markup.counts.forms > 0),
+        (/contact/i.test(pathOf(s.url)) && s.markup.counts.forms > 0),
     );
     if (channelPages.length === 0) {
       const target = contact ?? home ?? first;

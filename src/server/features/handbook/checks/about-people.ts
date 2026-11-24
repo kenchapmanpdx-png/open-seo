@@ -3,7 +3,7 @@ import type {
   JsonLdData,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf } from "./support";
 
 /**
  * CRAWL/SCHEMA (handbook §7, §33): the About page names people with roles in
@@ -30,7 +30,7 @@ const str = (value: unknown) =>
 const live = (s: PageSnapshot) =>
   s.status === 200 && normalizeUrl(s.finalUrl) === normalizeUrl(s.url);
 
-const isAbout = (url: string) => /about/i.test(new URL(url).pathname);
+const isAbout = (url: string) => /about/i.test(pathOf(url));
 
 /** Person objects anywhere in a value (top-level nodes, employee, founder…). */
 function collectPeople(value: unknown, out: Person[]) {
@@ -179,9 +179,7 @@ export const aboutPeopleCheck: HandbookCheck = {
     for (const s of pagesLive) {
       const hrefs = new Set(
         s.links
-          .filter((l) =>
-            STANDARDS.test(`${l.text} ${new URL(l.href).pathname}`),
-          )
+          .filter((l) => STANDARDS.test(`${l.text} ${pathOf(l.href)}`))
           .map((l) => normalizeUrl(l.href)),
       );
       for (const h of hrefs) counts.set(h, (counts.get(h) ?? 0) + 1);

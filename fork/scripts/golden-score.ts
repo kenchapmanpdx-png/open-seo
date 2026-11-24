@@ -99,6 +99,9 @@ function urlMatches(report: ReportJson, pattern: string, reportUrl: string) {
   );
 }
 
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const entryIds = (entry: Entry) => [...entry.items, ...entry.supp];
 
 /** FULL-READ §9 rates findings detectable from the site; owner / data ones are listed, not rated. */
@@ -117,8 +120,17 @@ function scoreFinding(report: ReportJson, entry: Entry): Scored {
     ...report.findings,
     ...(report.additionalFindings ?? []),
   ].filter((f) => f.itemIds.some((id) => ids.includes(id)));
-  const urlHit = sharing.find((f) =>
-    f.urls.some((u) => entry.urls.some((p) => urlMatches(report, p, u))),
+  // A link-target finding lists the linking pages in `urls` and the targets
+  // in its detail (WO-B20-014 b): an exact expected path named there counts.
+  const inDetail = (detail: string, path: string) =>
+    !path.includes("*") &&
+    new RegExp(
+      `${escapeRegExp(new URL(path, report.site.origin).href)}(?![\\w/-])`,
+    ).test(detail);
+  const urlHit = sharing.find(
+    (f) =>
+      f.urls.some((u) => entry.urls.some((p) => urlMatches(report, p, u))) ||
+      entry.urls.some((p) => inDetail(f.detail, p)),
   );
   if (urlHit)
     return {

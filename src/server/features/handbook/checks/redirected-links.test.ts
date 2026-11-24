@@ -40,6 +40,18 @@ describe("crawl.redirected-links", () => {
     expect(statusOf(result, "P3-05")).toBe("PASS");
   });
 
+  // WO-B20-014 (b): samanthaco.ca showed 2 dead targets as "4 pages".
+  it("lists the linking pages in urls and the targets in the detail", async () => {
+    const result = await run([
+      snapshot("/", { links: ["/old"] }),
+      snapshot("/about", { links: ["/old"] }),
+      redirect("/old", "/new"),
+    ]);
+    const [p308] = result.findings.filter((f) => f.itemIds[0] === "P3-08");
+    expect(p308?.urls).toEqual([`${ORIGIN}/`, `${ORIGIN}/about`]);
+    expect(p308?.detail).toContain(`${ORIGIN}/old → ${ORIGIN}/new`);
+  });
+
   it("opens P3-05 when a deep URL redirects to the homepage", async () => {
     const result = await run([snapshot("/"), redirect("/events/old", "/")]);
     expect(statusOf(result, "P3-05")).toBe("OPEN");

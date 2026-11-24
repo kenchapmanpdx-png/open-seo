@@ -95,13 +95,36 @@ export const formatHeaders = (
   headers: ReadonlyArray<readonly [string, string]>,
 ) => headers.map(([k, v]) => `${k}: ${v}`).join("\n");
 
+/**
+ * WO-B20-007: the only URL parser under `checks/`. Values read from a site
+ * (hrefs, src, canonicals, sitemap `<loc>`, headers, robots.txt, JSON-LD)
+ * can be malformed; one bad value must skip that value, never throw and
+ * discard the whole check. `hostile-inputs.test.ts` runs every check on
+ * malformed URLs and fails on any `new URL(` outside this file.
+ */
+export function parseUrl(value: string, base?: string): URL | undefined {
+  return URL.canParse(value, base) ? new URL(value, base) : undefined;
+}
+
+/** Path of `url`; "" when malformed (matches no path rule). */
+export const pathOf = (url: string, base?: string) =>
+  parseUrl(url, base)?.pathname ?? "";
+
+/** Hostname without `www.`; "" when malformed (matches no host). */
+export const bareHost = (url: string) =>
+  (parseUrl(url)?.hostname ?? "").replace(/^www\./, "");
+
+/** The run origin (validated before the run starts; not a site-read value). */
+export const originUrl = (origin: string) => new URL(origin);
+
+/** `path` on the run origin, e.g. `siteUrl(ctx.origin, "/robots.txt")`. */
+export const siteUrl = (origin: string, path = "/") =>
+  new URL(path, origin).href;
+
 /** URL without fragment, for set membership across sitemap/links/canonicals. */
 export function normalizeUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    u.hash = "";
-    return u.href;
-  } catch {
-    return url;
-  }
+  const u = parseUrl(url);
+  if (!u) return url;
+  u.hash = "";
+  return u.href;
 }

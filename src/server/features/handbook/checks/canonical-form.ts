@@ -1,7 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { estimateJaccard } from "../engine/minhash";
-import { createResult, normalizeUrl } from "./support";
+import { bareHost, createResult, normalizeUrl, parseUrl } from "./support";
 
 /**
  * CRAWL (handbook §10): every indexable page is self-canonical, and the
@@ -25,11 +25,17 @@ const indexable = (s: PageSnapshot) =>
   /html/i.test(s.contentType ?? "html");
 
 const trackingParams = (url: string) =>
-  [...new URL(url).searchParams.keys()].filter((k) => TRACKING.test(k));
+  [...(parseUrl(url)?.searchParams.keys() ?? [])].filter((k) =>
+    TRACKING.test(k),
+  );
+
+const text = (list: { href: string; canonical: string }[]) =>
+  list.map(({ href, canonical }) => `${href} → ${canonical}`);
 
 /** Same page in any trivial form: host without www, path without slash/index.html, any case, no tracking params. */
 function formKey(url: string): string {
-  const u = new URL(url);
+  const u = parseUrl(url);
+  if (!u) return url;
   const path = u.pathname
     .replace(/\/index\.html?$/i, "/")
     .replace(/\/+$/, "")
@@ -43,7 +49,8 @@ function formKey(url: string): string {
 
 /** Same path once percent-encoding and `+` / `%20` are equated (`/tag/a%20b` = `/tag/a+b`). */
 const decodedKey = (url: string) => {
-  const u = new URL(url);
+  const u = parseUrl(url);
+  if (!u) return url;
   const raw = `${u.host}${u.pathname}${u.search}`.replaceAll("+", "%20");
   try {
     return decodeURIComponent(raw);
@@ -190,9 +197,24 @@ export const canonicalFormCheck: HandbookCheck = {
       )
         canonicalByForm.set(formKey(s.url), normalizeUrl(s.url));
     }
-    const siteHost = new URL(ctx.origin).hostname.replace(/^www\./, "");
+    const siteHost = bareHost(ctx.origin);
     const formHits: { page: PageSnapshot; why: string; excerpt: string }[] = [];
     const dupHits: typeof formHits = [];
+    const hopHits: typeof formHits = [];
+    // WO-B20-009 (ADR-034): the crawl's own fetch of the linked form shows
+    // what a crawler gets. One 301 / 308 straight to the canonical (200) is
+    // consistency, S3; a live 200 duplicate, a 302 / 307, a chain, an error
+    // or another landing URL stays S1. No crawl record keeps S1.
+    const onePermanentHop = (href: string, canonical: string) => {
+      const t = byUrl.get(href);
+      const chain = t?.redirectChain ?? [];
+      return (
+        t?.status === 200 &&
+        chain.length === 1 &&
+        (chain[0]?.status === 301 || chain[0]?.status === 308) &&
+        normalizeUrl(t.finalUrl) === canonical
+      );
+    };
     const trackHits: { page: PageSnapshot; why: string; excerpt: string }[] =
       [];
     for (const page of live) {
@@ -200,20 +222,17 @@ export const canonicalFormCheck: HandbookCheck = {
         ...new Set(
           page.links
             .map((l) => normalizeUrl(l.href))
-            .filter(
-              (href) =>
-                new URL(href).hostname.replace(/^www\./, "") === siteHost,
-            ),
+            .filter((href) => bareHost(href) === siteHost),
         ),
       ];
       const self = normalizeUrl(page.url);
-      const hits = (target: (href: string) => string | undefined) =>
+      const pairs = (target: (href: string) => string | undefined) =>
         internal.flatMap((href) => {
           const canonical = href === self ? undefined : target(href);
-          return canonical && canonical !== href
-            ? [`${href} → ${canonical}`]
-            : [];
+          return canonical && canonical !== href ? [{ href, canonical }] : [];
         });
+      const hits = (target: (href: string) => string | undefined) =>
+        text(pairs(target));
       const push = (list: typeof formHits, found: string[]) => {
         if (found.length > 0)
           list.push({
@@ -226,13 +245,16 @@ export const canonicalFormCheck: HandbookCheck = {
         dupHits,
         hits((href) => duplicateOf.get(href)),
       );
+      const forms = pairs((href) =>
+        duplicateOf.has(href) ? undefined : canonicalByForm.get(formKey(href)),
+      );
       push(
         formHits,
-        hits((href) =>
-          duplicateOf.has(href)
-            ? undefined
-            : canonicalByForm.get(formKey(href)),
-        ),
+        text(forms.filter((p) => !onePermanentHop(p.href, p.canonical))),
+      );
+      push(
+        hopHits,
+        text(forms.filter((p) => onePermanentHop(p.href, p.canonical))),
       );
       const tracked = internal.filter((href) => trackingParams(href).length);
       if (tracked.length > 0) {
@@ -247,6 +269,16 @@ export const canonicalFormCheck: HandbookCheck = {
       "Internal links use a non-canonical URL form",
       "Link to the exact canonical form (same host, protocol, trailing slash, no index.html).",
       formHits,
+    );
+    report(
+      "Internal links use a non-canonical URL form (one permanent redirect)",
+      "Link to the exact canonical form so crawlers and visitors skip the redirect.",
+      hopHits,
+      {
+        severity: "S3",
+        severityReason:
+          "each link reaches the canonical in one permanent redirect",
+      },
     );
     report(
       "Internal links point at a canonicalised duplicate",

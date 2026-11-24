@@ -32,6 +32,7 @@ import { getAuditStatus, startAudit } from "@/serverFunctions/audit";
 import {
   getHandbookSettings,
   updateHandbookSettings,
+  verifyHandbookWebsite,
 } from "@/server/features/handbook/functions";
 import {
   CHECK_SIZE_KEYS,
@@ -110,6 +111,8 @@ function CheckForm({ projectId }: { projectId: string }) {
           excludePaths: excludePaths.data,
         },
         {
+          verifyWebsite: (domain) =>
+            verifyHandbookWebsite({ data: { website: domain } }),
           listProjects: () => getProjects(queryClient),
           createProject: (name) => createProject({ data: { name } }),
           setProjectDomain: (pid, domain) =>
@@ -149,6 +152,8 @@ function CheckForm({ projectId }: { projectId: string }) {
             value={site}
             placeholder="example.com"
             onChange={(e) => setWebsite(e.target.value)}
+            // A click selects the prefilled site, so typing replaces it (WO-B20-010).
+            onFocus={(e) => e.currentTarget.select()}
           />
         </Field>
         <FieldSet className="gap-2">

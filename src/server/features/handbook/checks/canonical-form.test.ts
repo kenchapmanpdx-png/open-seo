@@ -25,6 +25,36 @@ describe("crawl.canonical-form", () => {
     ]);
   });
 
+  // WO-B20-009 (theogdenver.com /menus): one 301 to the canonical is S3; a 302 stays S1.
+  it("grades link forms by what the linked form answers", async () => {
+    const redirected = (path: string, status: number) => ({
+      ...snapshot(path),
+      finalUrl: `https://example.com${path}/`,
+      redirectChain: [{ url: `https://example.com${path}`, status }],
+    });
+    const result = await run([
+      snapshot("/", { links: ["/menus", "/events"] }),
+      snapshot("/menus/"),
+      snapshot("/events/"),
+      redirected("/menus", 301),
+      redirected("/events", 302),
+    ]);
+    expect(result.findings.map((f) => [f.severity, f.title, f.detail])).toEqual(
+      [
+        [
+          "S1",
+          "Internal links use a non-canonical URL form",
+          "https://example.com/ — https://example.com/events → https://example.com/events/",
+        ],
+        [
+          "S3",
+          "Internal links use a non-canonical URL form (one permanent redirect)",
+          "https://example.com/ — https://example.com/menus → https://example.com/menus/",
+        ],
+      ],
+    );
+  });
+
   it("opens on a tracking parameter in the canonical", async () => {
     const result = await run([snapshot("/", { canonical: "/?utm_source=x" })]);
     expect(result.findings.map((f) => f.title)).toContain(

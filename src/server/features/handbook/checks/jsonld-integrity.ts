@@ -1,7 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { JsonLdNode } from "@/server/features/handbook/contracts/collectors";
 import { groupBy, sort } from "remeda";
-import { createResult } from "./support";
+import { createResult, siteUrl } from "./support";
 
 /** Entries whose `key` differs from the most common key in the group. */
 function minority<T>(group: readonly T[], key: (t: T) => string): T[] {
@@ -196,7 +196,7 @@ export const jsonLdIntegrityCheck: HandbookCheck = {
     const issues: { url: string; text: string }[] = [];
     if (orgs.length === 0) {
       issues.push({
-        url: new URL("/", ctx.origin).href,
+        url: siteUrl(ctx.origin),
         text: "no Organization / LocalBusiness node on any crawled page",
       });
     }

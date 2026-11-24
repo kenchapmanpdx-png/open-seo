@@ -16,7 +16,7 @@ import {
   withFactQuotes,
 } from "./llm-views";
 import { nameMentions } from "./name-mentions";
-import { clip, normalizeUrl } from "./support";
+import { clip, normalizeUrl, siteUrl } from "./support";
 
 export { type View, headLines, htmlPages, mainText } from "./llm-views";
 
@@ -48,7 +48,7 @@ export function samplePages(ctx: CheckContext, max: number): PageSnapshot[] {
     const page = byUrl.get(normalizeUrl(url));
     if (page && picked.size < max) picked.set(normalizeUrl(page.url), page);
   };
-  add(new URL("/", ctx.origin).href);
+  add(siteUrl(ctx.origin));
   const templates = ctx.collected.templates;
   if (templates.status === "ok")
     for (const t of templates.templates)

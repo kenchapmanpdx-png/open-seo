@@ -52,3 +52,30 @@ describe("supabase evidence store gzip", () => {
     expect(await store.get("p/r/stages/map-0.json.gz")).toEqual(blob);
   });
 });
+
+describe("supabase evidence store transient errors (WO-B20-008)", () => {
+  const answers = (statuses: number[]) => {
+    const fetchMock = vi.fn(async () => {
+      const status = statuses.shift() ?? 200;
+      return new Response(status === 200 ? "{}" : "error", { status });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  };
+  const body = new TextEncoder().encode("lighthouse json");
+
+  it("keeps the upload when Storage answers 520 then 200", async () => {
+    const fetchMock = answers([520, 200]);
+    await expect(
+      store.put("p/r/lighthouse/x.json", body, "application/json"),
+    ).resolves.toMatchObject({ key: "p/r/lighthouse/x.json" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("still fails after three transient answers", async () => {
+    answers([520, 503, 429]);
+    await expect(
+      store.put("p/r/lighthouse/x.json", body, "application/json"),
+    ).rejects.toThrow("evidence upload failed: HTTP 429");
+  });
+});

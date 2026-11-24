@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, parseUrl } from "./support";
 
 /**
  * A11Y (raw HTML, handbook §14, §15): a skip link among the first three
@@ -18,17 +18,15 @@ const live = (s: PageSnapshot) =>
   /html/i.test(s.contentType ?? "html");
 
 function isSkipLink(page: PageSnapshot, link: PageSnapshot["links"][number]) {
-  try {
-    const href = new URL(link.href);
-    const here = new URL(page.url);
-    return (
-      href.hash.length > 1 &&
-      href.pathname === here.pathname &&
-      /skip/i.test(`${link.text} ${link.ariaLabel ?? ""}`)
-    );
-  } catch {
-    return false;
-  }
+  const href = parseUrl(link.href);
+  const here = parseUrl(page.url);
+  return (
+    !!href &&
+    !!here &&
+    href.hash.length > 1 &&
+    href.pathname === here.pathname &&
+    /skip/i.test(`${link.text} ${link.ariaLabel ?? ""}`)
+  );
 }
 
 function fileAlt(image: PageSnapshot["images"][number]): boolean {

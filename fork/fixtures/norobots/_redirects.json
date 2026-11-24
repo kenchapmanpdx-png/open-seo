@@ -1,0 +1,4 @@
+{
+  "/about": [301, "{{ORIGIN}}/about/"],
+  "/index.html": [301, "{{ORIGIN}}/"]
+}

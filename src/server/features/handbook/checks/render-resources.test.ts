@@ -144,6 +144,20 @@ describe("renderResourcesCheck", () => {
     ]);
   });
 
+  // B20 run 93 (BadGEO): telemetry.js measured unchanged must not clear app.js under the same rule.
+  it("carries 'unchanged' by blocked request, not by Disallow rule", async () => {
+    const result = await runPages([
+      page("/", "/assets/private/telemetry.js", "script", {
+        sameContent: true,
+      }),
+      page("/results", "/assets/private/app.js", "script"),
+    ]);
+    expect(result.findings.map((f) => [f.severity, f.urls])).toEqual([
+      ["S4", [`${ORIGIN}/`]],
+      ["S1", [`${ORIGIN}/results`]],
+    ]);
+  });
+
   it("does not carry 'unchanged' when the same rule changed content elsewhere", async () => {
     const result = await run(
       "/assets/private/menu.js",

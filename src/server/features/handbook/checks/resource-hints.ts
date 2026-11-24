@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, parseUrl } from "./support";
 
 /**
  * P7-06 (raw HTML + render): preconnect only to origins the rendered page
@@ -15,19 +15,12 @@ const live = (s: PageSnapshot) =>
   /html/i.test(s.contentType ?? "html");
 
 function absolute(url: string, base: string): string {
-  try {
-    return normalizeUrl(new URL(url, base).href);
-  } catch {
-    return url;
-  }
+  const u = parseUrl(url, base);
+  return u ? normalizeUrl(u.href) : url;
 }
 
 const host = (url: string) => {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url;
-  }
+  return parseUrl(url)?.host ?? url;
 };
 
 export const resourceHintsCheck: HandbookCheck = {

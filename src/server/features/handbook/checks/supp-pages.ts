@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf } from "./support";
 
 /**
  * SUPP-05 / SUPP-06 (ADR-020, FULL-READ §6, handbook §2/§10/§17):
@@ -24,7 +24,7 @@ const noindex = (s: PageSnapshot) =>
   /noindex/i.test(`${s.head.robotsMeta ?? ""} ${s.xRobotsTag ?? ""}`);
 
 function slugOf(url: string): string {
-  const path = new URL(url).pathname.replace(/\/+$/, "");
+  const path = pathOf(url).replace(/\/+$/, "");
   return (path.split("/").pop() ?? "").replace(/\.[a-z0-9]+$/i, "");
 }
 

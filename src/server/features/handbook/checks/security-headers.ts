@@ -1,5 +1,5 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import { createResult, formatHeaders, headerValue } from "./support";
+import { createResult, formatHeaders, headerValue, pathOf } from "./support";
 
 /**
  * HEADERS exemplar (handbook §14): security headers on HTML responses checked
@@ -130,7 +130,7 @@ export const securityHeadersCheck: HandbookCheck = {
         formatHeaders(response.headers),
       );
       firstRef ??= ref;
-      states.push(`${new URL(response.url).pathname}: CSP ${csp}`);
+      states.push(`${pathOf(response.url)}: CSP ${csp}`);
       for (const problem of problems) {
         const entry = grouped.get(problem.key) ?? {
           problem,

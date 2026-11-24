@@ -4,7 +4,7 @@ import type {
   UrlVariantKind,
   VariantsData,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult } from "./support";
+import { createResult, originUrl, parseUrl, pathOf } from "./support";
 
 /**
  * CRAWL (handbook §2, §10): one URL per page. Host/protocol variants reach
@@ -45,8 +45,6 @@ function hopProblem(p: Probe, target: (url: string) => boolean) {
   return null;
 }
 
-const pathOf = (url: string) => new URL(url).pathname;
-
 /** Plain-HTTP URLs that answered a bot with an interstitial, not a redirect. */
 function plainHttpChallenges(botFetch: CollectedData["botFetch"]) {
   if (botFetch.status !== "ok") return [];
@@ -74,6 +72,24 @@ function plainHttpChallenges(botFetch: CollectedData["botFetch"]) {
   });
 }
 
+/** The home page's canonical origin; a missing or malformed canonical falls back to the run origin. */
+function canonicalOriginOf(
+  canonical: string | null | undefined,
+  origin: string,
+) {
+  return parseUrl(canonical ?? "")?.origin ?? originUrl(origin).origin;
+}
+
+/** A same-origin link to `…/index.html` (P3-03). */
+function indexHtmlLink(href: string, pageUrl: string) {
+  const u = parseUrl(href);
+  return (
+    !!u &&
+    u.origin === parseUrl(pageUrl)?.origin &&
+    /\/index\.html?$/i.test(u.pathname)
+  );
+}
+
 export const urlVariantsCheck: HandbookCheck = {
   id: "crawl.url-variants",
   itemIds: ITEMS,
@@ -86,7 +102,7 @@ export const urlVariantsCheck: HandbookCheck = {
     const home = pages.snapshots.find(
       (s) => pathOf(s.url) === "/" && s.status === 200,
     );
-    const canonicalOrigin = new URL(home?.head.canonical ?? ctx.origin).origin;
+    const canonicalOrigin = canonicalOriginOf(home?.head.canonical, ctx.origin);
     const probe = (p: Probe) =>
       out.evidence("redirectChain", p.url, describe(p));
 
@@ -94,7 +110,7 @@ export const urlVariantsCheck: HandbookCheck = {
     const hostProbes = variants.probes.filter(
       (p) =>
         HOST_KINDS.includes(p.kind) &&
-        new URL(p.url).origin !== canonicalOrigin,
+        parseUrl(p.url)?.origin !== canonicalOrigin,
     );
     const hostIssues = hostProbes.flatMap((p) => {
       if (p.redirectChain.length === 0) {
@@ -106,7 +122,7 @@ export const urlVariantsCheck: HandbookCheck = {
       }
       const why = hopProblem(
         p,
-        (url) => new URL(url).origin === canonicalOrigin,
+        (url) => parseUrl(url)?.origin === canonicalOrigin,
       );
       return why ? [{ p, why }] : [];
     });
@@ -166,10 +182,10 @@ export const urlVariantsCheck: HandbookCheck = {
     const slash = variants.probes.find(
       (p) => p.kind === "trailing-slash" || p.kind === "no-trailing-slash",
     );
-    if (!slash) {
+    const toggled = slash && parseUrl(slash.url);
+    if (!slash || !toggled) {
       out.na("P3-02", "no inner route to toggle the trailing slash on");
     } else {
-      const toggled = new URL(slash.url);
       const crawledPath =
         slash.kind === "trailing-slash"
           ? toggled.pathname.slice(0, -1)
@@ -230,13 +246,7 @@ export const urlVariantsCheck: HandbookCheck = {
     const linkers = pages.snapshots.flatMap((s) => {
       const hrefs = s.links
         .map((l) => l.href)
-        .filter((href) => {
-          const u = new URL(href);
-          return (
-            u.origin === new URL(s.finalUrl).origin &&
-            /\/index\.html?$/i.test(u.pathname)
-          );
-        });
+        .filter((href) => indexHtmlLink(href, s.finalUrl));
       return hrefs.length > 0 ? [{ s, hrefs }] : [];
     });
     if (linkers.length > 0) {

@@ -3,7 +3,7 @@ import type {
   HandbookCheck,
 } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf } from "./support";
 
 /**
  * CRAWL (handbook §2, §14): unique title / meta description / single H1 with
@@ -241,8 +241,7 @@ export const headTagsCheck: HandbookCheck = {
       live
         .filter(
           (s) =>
-            (new URL(s.url).pathname === "/" ||
-              listingUrls.has(normalizeUrl(s.url))) &&
+            (pathOf(s.url) === "/" || listingUrls.has(normalizeUrl(s.url))) &&
             !eventUrls.has(normalizeUrl(s.url)),
         )
         .flatMap((page) => {

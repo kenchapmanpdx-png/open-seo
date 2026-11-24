@@ -10,6 +10,8 @@ import { HandbookService } from "@/server/features/handbook/services/HandbookSer
 import { renderStatusMd } from "@/server/features/handbook/export/markdown";
 import { REGISTRY } from "@/server/features/handbook/registry";
 import { AppError } from "@/server/lib/errors";
+import { domainField } from "@/types/schemas/domain";
+import { verifyWebsite } from "@/server/features/handbook/services/verifyWebsite";
 import {
   handbookModeSchema,
   siteTierSchema,
@@ -138,3 +140,12 @@ export const getForkHealth = createServerFn({ method: "POST" })
     const health = await import("@/server/features/handbook/ops/health");
     return health.getForkHealth();
   });
+
+/**
+ * "Check a site" step 0 (WO-B20-010): the website value is a public
+ * hostname that answers, checked before any project or run row is written.
+ */
+export const verifyHandbookWebsite = createServerFn({ method: "POST" })
+  .middleware(requireAuthenticatedContext)
+  .validator(z.object({ website: domainField }))
+  .handler(async ({ data }) => verifyWebsite(data.website));

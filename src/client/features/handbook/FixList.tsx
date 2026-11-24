@@ -19,6 +19,7 @@ import {
   blockedCauses,
   blockedItems,
   buildFixGroups,
+  capNote,
   checksCount,
   fixFindings,
   fixListCsv,
@@ -27,6 +28,7 @@ import {
   notFinalNote,
   provisionalReason,
   saveDone,
+  unreadSiteReason,
   type CategoryFilter,
 } from "./fixList";
 import { STATUS_LABELS } from "./labels";
@@ -85,6 +87,23 @@ export function FixList({
     const storage = browserStorage();
     if (storage) saveDone(runId, next, storage);
   };
+
+  const unread = unreadSiteReason(report);
+  if (unread)
+    return (
+      <div className="space-y-4">
+        <Alert variant="warning">
+          <AlertTitle>The site could not be read</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              No page was read, so there is no grade and no fix list. Reason:{" "}
+              {unread}
+            </p>
+            <RunFullAuditButton projectId={projectId} label="Check again" />
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
 
   return (
     <div className="space-y-4">
@@ -227,7 +246,7 @@ function FixListHeader({ report }: { report: ReportJson }) {
         }
         note={
           report.score?.capReason
-            ? `${report.score.uncapped} before the must-fix cap`
+            ? `${report.score.uncapped} before the must-fix cap. ${capNote(report)}`
             : null
         }
       />

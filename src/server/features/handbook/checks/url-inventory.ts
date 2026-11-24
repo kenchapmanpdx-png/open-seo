@@ -3,7 +3,14 @@ import type {
   HandbookCheck,
 } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import {
+  createResult,
+  normalizeUrl,
+  originUrl,
+  parseUrl,
+  pathOf,
+  siteUrl,
+} from "./support";
 
 /**
  * CRAWL exemplar (handbook §17): URL inventory reconciled — every sitemap
@@ -76,7 +83,7 @@ function inventoryIssues(
   for (const loc of locSet) {
     const snap = byUrl.get(loc);
     if (!snap) continue; // not crawled within the page budget
-    if (TEST_PATH.test(new URL(loc).pathname))
+    if (TEST_PATH.test(pathOf(loc)))
       issues.push({ kind: "test", url: loc, why: "test/draft path" });
     if (snap.status !== 200 || normalizeUrl(snap.finalUrl) !== loc) {
       issues.push({
@@ -99,7 +106,7 @@ function inventoryIssues(
       continue;
     }
     const from = inlinks.get(loc) ?? [];
-    if (new URL(loc).pathname === "/") continue;
+    if (pathOf(loc) === "/") continue;
     if (from.length === 0)
       issues.push({ kind: "orphan", url: loc, why: "0 internal inlinks" });
     if (from.length === 1)
@@ -134,8 +141,15 @@ function robotsSitemapLine(
 ) {
   const { robots, sitemap } = ctx.collected;
   if (robots.status !== "ok" || sitemap.status !== "ok") return;
+  // WO-B20-011: no robots.txt at all (4xx) is the P3-15 "No robots.txt"
+  // finding, not "no Sitemap: line".
+  if (
+    robots.hosts.length > 0 &&
+    robots.hosts.every((h) => h.status >= 400 && h.status < 500)
+  )
+    return;
   const declared = robots.hosts.flatMap((h) => h.sitemaps);
-  const robotsUrl = new URL("/robots.txt", ctx.origin).href;
+  const robotsUrl = siteUrl(ctx.origin, "/robots.txt");
   const broken = declared.filter(
     (url) => sitemap.sources.find((s) => s.url === url)?.status !== 200,
   );
@@ -180,7 +194,7 @@ function noSitemap(
 ) {
   const { sitemap } = ctx.collected;
   if (sitemap.status !== "ok") return;
-  const sitemapUrl = new URL("/sitemap.xml", ctx.origin).href;
+  const sitemapUrl = siteUrl(ctx.origin, "/sitemap.xml");
   const tried = sitemap.sources.map(
     (s) =>
       `${s.url} — HTTP ${s.status}${s.kind === "invalid" ? " (no <urlset>)" : ""}`,
@@ -204,6 +218,19 @@ function noSitemap(
       ),
     ],
   });
+  oneInlinkPages(out, snapshots, new Set());
+}
+
+/**
+ * P3-12 one-inlink rule on indexable crawled pages outside `skip` (the
+ * sitemap URLs, which have their own row). WO-B20-014 (c): with a sitemap
+ * it still covers pages the sitemap leaves out (theogdenver.com /event/*).
+ */
+function oneInlinkPages(
+  out: ReturnType<typeof createResult>,
+  snapshots: readonly PageSnapshot[],
+  skip: ReadonlySet<string>,
+) {
   const indexable = snapshots
     .filter(
       (s) =>
@@ -212,7 +239,8 @@ function noSitemap(
         !noindex(s) &&
         (!s.head.canonical ||
           normalizeUrl(s.head.canonical) === normalizeUrl(s.url)) &&
-        /html/i.test(s.contentType ?? "html"),
+        /html/i.test(s.contentType ?? "html") &&
+        !skip.has(normalizeUrl(s.url)),
     )
     .map((s) => s.url);
   const weak = inventoryIssues(indexable, snapshots).filter(
@@ -275,14 +303,22 @@ export const urlInventoryCheck: HandbookCheck = {
       });
     }
 
+    oneInlinkPages(
+      out,
+      pages.snapshots,
+      new Set(sitemap.urls.map((u) => normalizeUrl(u.loc))),
+    );
+
     // P3-19 — host consistency + robots Sitemap: lines.
     const home = pages.snapshots.find(
-      (s) => new URL(s.url).pathname === "/" && s.status === 200,
+      (s) => pathOf(s.url) === "/" && s.status === 200,
     );
-    const canonicalHost = new URL(home?.head.canonical ?? ctx.origin).host;
-    const offHost = sitemap.urls.filter(
-      (u) => new URL(u.loc, ctx.origin).host !== canonicalHost,
-    );
+    const canonicalHost =
+      parseUrl(home?.head.canonical ?? "")?.host ?? originUrl(ctx.origin).host;
+    const offHost = sitemap.urls.filter((u) => {
+      const host = parseUrl(u.loc, ctx.origin)?.host;
+      return host !== undefined && host !== canonicalHost;
+    });
     if (offHost.length > 0) {
       out.finding({
         itemIds: ["P3-19"],

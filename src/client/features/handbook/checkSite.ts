@@ -23,6 +23,8 @@ type Settings = {
 };
 
 export type CheckSiteDeps = {
+  /** Server check (WO-B20-010): DNS + one home-page fetch; throws with the reason. */
+  verifyWebsite: (domain: string) => Promise<unknown>;
   listProjects: () => Promise<Project[]>;
   createProject: (name: string) => Promise<{ id: string }>;
   setProjectDomain: (projectId: string, domain: string) => Promise<unknown>;
@@ -66,6 +68,8 @@ export async function checkSite(
 ): Promise<{ projectId: string; auditId: string }> {
   const domain = siteDomain(input.website);
   if (!domain) throw new Error("Enter a website like example.com.");
+  // Nothing is created for a site that does not answer (WO-B20-010).
+  await deps.verifyWebsite(domain);
 
   const current = input.currentProject;
   let projectId: string | null = current.domain === domain ? current.id : null;

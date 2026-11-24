@@ -2,7 +2,7 @@ import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { MAX_TARGETS } from "@/server/features/handbook/collectors/link-targets";
 import { effectiveStatus } from "@/server/features/handbook/collectors/probe";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf, parseUrl } from "./support";
 
 /**
  * CRAWL (handbook §10): internal links point at final 200 URLs, not at
@@ -20,7 +20,6 @@ type Target = Pick<PageSnapshot, "url" | "finalUrl" | "status"> & {
   sources: string[];
 };
 
-const pathOf = (url: string) => new URL(url).pathname;
 const redirected = (s: Pick<PageSnapshot, "url" | "finalUrl">) =>
   normalizeUrl(s.finalUrl) !== normalizeUrl(s.url);
 const retired = (s: Pick<PageSnapshot, "status">) =>
@@ -31,8 +30,8 @@ const retired = (s: Pick<PageSnapshot, "status">) =>
  * (`/x/?page_id=1` → `/x/`, e.g. WordPress attachment pages), else null.
  */
 function selfQuery(t: Target): string | null {
-  const from = new URL(t.url);
-  if (!from.search || !redirected(t)) return null;
+  const from = parseUrl(t.url);
+  if (!from?.search || !redirected(t)) return null;
   const bare = `${from.origin}${from.pathname}`;
   return normalizeUrl(bare) === normalizeUrl(t.finalUrl) ? from.search : null;
 }
@@ -70,6 +69,11 @@ function groupRows(targets: Target[], describe: (t: Target) => string) {
       .join(", ")} — ${from}`;
   });
 }
+
+/** Pages that link to any of `targets`, first-seen order. */
+const sourcePages = (targets: readonly Target[]) => [
+  ...new Set(targets.flatMap((t) => t.sources)),
+];
 
 export const redirectedLinksCheck: HandbookCheck = {
   id: "crawl.redirected-links",
@@ -140,7 +144,9 @@ export const redirectedLinksCheck: HandbookCheck = {
         fix: "Update each internal link to the final 200 URL (or remove links to retired pages). A row covering many URLs is usually one link in a shared template (header, footer, menu).",
         fixability: "FIXABLE",
         effort: "S",
-        urls: badTargets.map((t) => t.url),
+        // WO-B20-014 (b): the pages to edit are the linking pages; the
+        // targets stay in the detail (samanthaco.ca: 2 targets on 8 pages).
+        urls: sourcePages(badTargets),
         evidenceRefs: badTargets.slice(0, 20).map(evidenceFor),
       });
     } else {
@@ -200,7 +206,7 @@ export const redirectedLinksCheck: HandbookCheck = {
         fix: "Point retired items at a no-longer-offered page or the closest equivalent; return 410 when there is no demand, and drop internal links to them.",
         fixability: "FIXABLE",
         effort: "S",
-        urls: gone.map((t) => t.url),
+        urls: sourcePages(gone),
         evidenceRefs: gone.slice(0, 20).map(evidenceFor),
       });
     }

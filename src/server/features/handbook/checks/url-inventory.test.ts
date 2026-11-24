@@ -44,11 +44,13 @@ describe("crawl.url-inventory", () => {
       "Sitemap URLs without an internal link (orphans)": [`${ORIGIN}/orphan`],
       "Sitemap URLs with only one internal link": [`${ORIGIN}/a`],
       "Indexable pages missing from the sitemap": [`${ORIGIN}/b`],
+      // WO-B20-014 (c): pages outside the sitemap get the one-inlink rule too.
+      "Pages with only one internal link": [`${ORIGIN}/b`],
     });
   });
 
-  it("reports a missing sitemap and falls back to the crawl link graph (WO-B19-013)", async () => {
-    const result = await urlInventoryCheck.run(
+  const noSitemapRun = (robotsStatus: number) =>
+    urlInventoryCheck.run(
       context({
         sitemap: {
           status: "ok",
@@ -68,7 +70,7 @@ describe("crawl.url-inventory", () => {
           hosts: [
             {
               host: "example.com",
-              status: 200,
+              status: robotsStatus,
               storageKey: null,
               groups: [],
               sitemaps: [],
@@ -87,6 +89,9 @@ describe("crawl.url-inventory", () => {
         },
       }),
     );
+
+  it("reports a missing sitemap and falls back to the crawl link graph (WO-B19-013)", async () => {
+    const result = await noSitemapRun(200);
     const byTitle = Object.fromEntries(
       result.findings.map((f) => [f.title, f.urls]),
     );
@@ -96,5 +101,10 @@ describe("crawl.url-inventory", () => {
       "Pages with only one internal link": [`${ORIGIN}/a`],
     });
     expect(result.findings[0].detail).toContain("/sitemap.xml — HTTP 404");
+  });
+
+  it("leaves a missing robots.txt to P3-15, not 'no Sitemap: line' (WO-B20-011)", async () => {
+    const result = await noSitemapRun(404);
+    expect(result.findings.map((f) => f.itemIds[0])).not.toContain("P3-19");
   });
 });

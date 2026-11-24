@@ -5,7 +5,7 @@ import type {
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
 import type { RenderData } from "@/server/features/handbook/contracts/render-data";
-import { normalizeUrl } from "./support";
+import { normalizeUrl, parseUrl } from "./support";
 
 /** Pages with a `<video>` or player embed, shared by the video checks (FULL-READ §3.12). */
 type RenderPage = RenderData["pages"][number];
@@ -36,11 +36,8 @@ const live = (s: PageSnapshot) =>
 
 function resolveOn(page: string, src: string | null): string | null {
   if (!src) return null;
-  try {
-    return normalizeUrl(new URL(src, page).href);
-  } catch {
-    return null;
-  }
+  const u = parseUrl(src, page);
+  return u ? normalizeUrl(u.href) : null;
 }
 
 /** Markup videos and embeds per live page, with first-screen flags from render. */

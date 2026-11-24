@@ -6,7 +6,7 @@ import type {
 import { decide } from "@/server/features/handbook/engine/robots";
 import { AI_BOT_TOKENS } from "@/server/features/handbook/collectors/ai-bot-tokens";
 import { ROBOTS_BOT_TOKENS } from "@/server/features/handbook/collectors/fetch-collectors";
-import { createResult } from "./support";
+import { createResult, originUrl } from "./support";
 
 /**
  * ROBOTS exemplar (handbook §18 group-matching rule + Route coverage).
@@ -112,8 +112,53 @@ export const robotsGroupsCheck: HandbookCheck = {
     const out = createResult(ITEMS);
     const robots = ctx.collected.robots;
     if (robots.status !== "ok") return out.build();
-    const protocol = new URL(ctx.origin).protocol;
+    const protocol = originUrl(ctx.origin).protocol;
     const hosts = robots.hosts.filter((h) => h.status === 200);
+    // WO-B20-011: robots.txt answers 4xx on every host → one "No robots.txt"
+    // finding (crawlers read a 4xx as allow-all); a 5xx keeps the N/A below.
+    const missing = robots.hosts.filter(
+      (h) => h.status >= 400 && h.status < 500,
+    );
+    if (
+      hosts.length === 0 &&
+      missing.length > 0 &&
+      missing.length === robots.hosts.length
+    ) {
+      const first = missing[0];
+      const url = `${protocol}//${first?.host}/robots.txt`;
+      out.finding({
+        itemIds: ["P3-15"],
+        severity: "S3",
+        severityReason:
+          "a missing robots.txt blocks nothing; crawlers treat a 4xx as allow-all",
+        title: `No robots.txt (HTTP ${first?.status})`,
+        detail: [
+          ...missing.map(
+            (h) => `${protocol}//${h.host}/robots.txt — HTTP ${h.status}`,
+          ),
+          "Crawlers treat a 4xx robots.txt as allow-all, so nothing is blocked, but there is no place to declare the sitemap or keep private sections out of crawls.",
+        ].join("\n"),
+        fix: "Publish /robots.txt (HTTP 200) with a `Sitemap:` line pointing at the XML sitemap, and Disallow rules only for real private or duplicate routes.",
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: [url],
+        evidenceRefs: [
+          out.evidence(
+            "status",
+            url,
+            missing
+              .map(
+                (h) =>
+                  `GET ${protocol}//${h.host}/robots.txt → HTTP ${h.status}`,
+              )
+              .join("\n"),
+            first?.storageKey,
+          ),
+        ],
+      });
+      out.na("P9-05", "no robots.txt (HTTP 200) on any host");
+      return out.build();
+    }
     if (hosts.length === 0) {
       out.na("P3-15", "no robots.txt (HTTP 200) on any host");
       out.na("P9-05", "no robots.txt (HTTP 200) on any host");

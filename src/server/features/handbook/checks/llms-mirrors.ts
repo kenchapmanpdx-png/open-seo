@@ -5,6 +5,7 @@ import {
   formatHeaders,
   headerValue,
   normalizeUrl,
+  pathOf,
 } from "./support";
 
 /**
@@ -31,9 +32,7 @@ export const llmsMirrorsCheck: HandbookCheck = {
     const byUrl = new Map(pages.snapshots.map((s) => [normalizeUrl(s.url), s]));
 
     // P9-02
-    const file = llms.files.find((f) =>
-      /\/llms\.txt$/i.test(new URL(f.url).pathname),
-    );
+    const file = llms.files.find((f) => /\/llms\.txt$/i.test(pathOf(f.url)));
     if (!file || file.status === 404) {
       out.na("P9-02", "no llms.txt");
     } else {

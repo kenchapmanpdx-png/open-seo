@@ -5,7 +5,7 @@ import type {
 } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { type View, htmlPages, judged, only } from "./llm-copy";
-import { normalizeUrl } from "./support";
+import { normalizeUrl, bareHost } from "./support";
 
 /**
  * WO-B4-003 source check (P5-03, handbook §0 EP-1, §6). Step 1 picks claim
@@ -103,10 +103,10 @@ function claimSentences(text: string): string[] {
 }
 
 function claimsOf(ctx: CheckContext, page: PageSnapshot): Claim[] {
-  const host = new URL(ctx.origin).hostname.replace(/^www\./, "");
+  const host = bareHost(ctx.origin);
   const offsite = page.links.filter((l) => {
     try {
-      return new URL(l.href).hostname.replace(/^www\./, "") !== host;
+      return bareHost(l.href) !== host;
     } catch {
       return false;
     }

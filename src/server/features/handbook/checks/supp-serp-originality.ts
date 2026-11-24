@@ -12,7 +12,7 @@ import {
   type SerpVerdict,
 } from "@/server/features/handbook/contracts/scaled-copy";
 import { mainText } from "./llm-views";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, bareHost } from "./support";
 
 /**
  * SUPP-18 original value vs the top-10 results (SCALED-COPY §3.3, ADR-024).
@@ -75,7 +75,7 @@ const isFinding = (v: Verdict | null) =>
   !v.hasOriginalElement &&
   v.confidence >= STABLE_CONFIDENCE;
 
-const hostOf = (url: string) => new URL(url).hostname.replace(/^www\./, "");
+const hostOf = (url: string) => bareHost(url);
 
 function artifact(ref: string, record: SerpOriginality): EvidenceDraft {
   const state = record.blocked

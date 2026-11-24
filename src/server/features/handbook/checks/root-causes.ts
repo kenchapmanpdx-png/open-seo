@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, pathOf } from "./support";
 
 /**
  * Root-cause rules (B17 §9 #8, T5 / T6 / T17). One finding per cause instead
@@ -137,7 +137,7 @@ export const rootCausesCheck: HandbookCheck = {
       const template = (href: string) =>
         (linkPages.get(href) ?? 0) > pagesLive.length / 2;
       const archives = pagesLive.filter((s) => {
-        if (!ARCHIVE.test(new URL(s.url).pathname)) return false;
+        if (!ARCHIVE.test(pathOf(s.url))) return false;
         const own = [
           ...new Set(s.links.map((l) => normalizeUrl(l.href))),
         ].filter(
@@ -145,8 +145,8 @@ export const rootCausesCheck: HandbookCheck = {
             href.startsWith(ctx.origin) &&
             href !== normalizeUrl(s.url) &&
             !template(href) &&
-            !NOT_A_POST.test(new URL(href).pathname) &&
-            new URL(href).pathname !== "/",
+            !NOT_A_POST.test(pathOf(href)) &&
+            pathOf(href) !== "/",
         );
         return own.length > 0 && own.every((href) => demo.has(href));
       });

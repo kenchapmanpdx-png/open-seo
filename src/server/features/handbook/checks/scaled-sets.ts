@@ -7,7 +7,7 @@ import {
   similarPairs,
 } from "@/server/features/handbook/engine/minhash";
 import { sort } from "remeda";
-import { normalizeUrl } from "./support";
+import { normalizeUrl, pathOf } from "./support";
 
 /**
  * Shared page-set helpers (ADR-022): one implementation for P3-12
@@ -138,7 +138,7 @@ export type ScaledSet = {
 };
 
 const slugWords = (url: string) =>
-  (new URL(url).pathname.split("/").filter(Boolean).at(-1) ?? "")
+  (pathOf(url).split("/").filter(Boolean).at(-1) ?? "")
     .replace(/\.[a-z0-9]+$/i, "")
     .replace(/[-_]+/g, " ");
 

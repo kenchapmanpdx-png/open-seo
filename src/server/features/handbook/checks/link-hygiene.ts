@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, originUrl, parseUrl } from "./support";
 
 /**
  * Semrush GAP checks (B17 §9 #10, T13), raw HTML of read pages, not scored
@@ -44,12 +44,8 @@ function malformed(href: string): string | null {
     return null;
   if (/^h?t{1,3}ps?:/i.test(href) && !/^https?:/i.test(href))
     return "scheme typo";
-  let url: URL;
-  try {
-    url = new URL(href);
-  } catch {
-    return "not a valid URL";
-  }
+  const url = parseUrl(href);
+  if (!url) return "not a valid URL";
   if (/\/https?\/\//i.test(url.pathname)) return "missing ':' after http";
   if (/\/www\.[a-z0-9-]+\.[a-z]/i.test(url.pathname))
     return "domain written as a relative path (missing https://)";
@@ -90,16 +86,12 @@ export const linkHygieneCheck: HandbookCheck = {
     const out = createResult(ITEMS);
     const { pages } = ctx.collected;
     if (pages.status !== "ok") return out.build();
-    const host = new URL(ctx.origin).host.replace(/^www\./, "");
+    const host = originUrl(ctx.origin).host.replace(/^www\./, "");
     const secure = pages.snapshots.filter(
       (s) => live(s) && s.url.startsWith("https://"),
     );
     const ownHost = (url: string) => {
-      try {
-        return new URL(url).host.replace(/^www\./, "") === host;
-      } catch {
-        return false;
-      }
+      return (parseUrl(url)?.host ?? "").replace(/^www\./, "") === host;
     };
 
     const rules = [

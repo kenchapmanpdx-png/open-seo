@@ -300,6 +300,43 @@ export function saveDone(
  * Why the grade is provisional, or null: the runner notes "render
  * unavailable: <reason>" on BLOCKED items (WO-B4-006, WO-B13-007).
  */
+/**
+ * WO-B20-003: which open must-fix finding(s) capped the grade, by title and
+ * page count ("Capped at 39 by: <title> on 2 pages"). Null when not capped.
+ * The codes come from the stored cap reason ("open S1: F01, F03").
+ */
+export function capNote(report: {
+  score: { final: number; capReason: string | null } | null;
+  findings: ReadonlyArray<Pick<Finding, "code" | "title" | "urls">>;
+}): string | null {
+  const reason = report.score?.capReason;
+  if (!reason || !report.score) return null;
+  const codes = new Set(reason.replace(/^open S1:\s*/, "").split(/,\s*/));
+  const causes = report.findings
+    .filter((f) => codes.has(f.code))
+    .map((f) => {
+      const n = f.urls.length;
+      return n > 0 ? `${f.title} on ${n} page${n === 1 ? "" : "s"}` : f.title;
+    });
+  return `Capped at ${report.score.final} by: ${causes.length > 0 ? causes.join("; ") : reason}`;
+}
+
+/**
+ * WO-B20-010: a run that read no page has no grade and nothing to fix; the
+ * page says the site could not be read and why. Null when pages were read.
+ */
+export function unreadSiteReason(report: {
+  run: { coverage?: { read: number } };
+  items: ReadonlyArray<{ note?: string | null }>;
+}): string | null {
+  const note = report.items.find((i) =>
+    /^pages unavailable/i.test(i.note ?? ""),
+  )?.note;
+  const read = report.run.coverage?.read;
+  if (read === 0) return note ?? "no page of the site answered the crawler";
+  return read === undefined && note ? note : null;
+}
+
 export function provisionalReason(report: ReportJson): string | null {
   const note = report.items.find((i) =>
     i.note?.startsWith("render unavailable"),

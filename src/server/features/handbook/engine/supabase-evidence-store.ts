@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sha256Hex } from "@/server/lib/audit/ids";
+import { fetchWithRetry } from "./transient-retry";
 import {
   EVIDENCE_BUCKET,
   type EvidenceStore,
@@ -92,17 +93,20 @@ export function createSupabaseEvidenceStore(config: {
       // Already-compressed blobs (stage outputs) are stored as given.
       const compress = contentType !== GZIP_TYPE;
       const body = compress ? await gzip(bytes) : bytes;
+      // WO-B20-008: a 520 / 429 / dropped connection from Storage is retried.
       const upload = () =>
-        fetch(objectUrl(key), {
-          method: "POST",
-          headers: {
-            ...auth,
-            "content-type": contentType,
-            "x-upsert": "true",
-            ...(compress ? GZIP_HEADERS : {}),
-          },
-          body: new Uint8Array(body),
-        });
+        fetchWithRetry(() =>
+          fetch(objectUrl(key), {
+            method: "POST",
+            headers: {
+              ...auth,
+              "content-type": contentType,
+              "x-upsert": "true",
+              ...(compress ? GZIP_HEADERS : {}),
+            },
+            body: new Uint8Array(body),
+          }),
+        );
       let res = await upload();
       if (res.status === 404 || res.status === 400) {
         await ensureBucket();

@@ -2,7 +2,7 @@ import type { CheckContext } from "@/server/features/handbook/contracts/check";
 import type { JsonLdData } from "@/server/features/handbook/contracts/collectors";
 import { decide } from "@/server/features/handbook/engine/robots";
 import type { createResult } from "./support";
-import { normalizeUrl } from "./support";
+import { normalizeUrl, parseUrl } from "./support";
 import { embedTag, videoTag, type PageVideos } from "./video-pages";
 
 /**
@@ -43,11 +43,7 @@ function videoObjects(page: JsonLdPage | undefined) {
 }
 
 function absolute(url: string, base: string): string | null {
-  try {
-    return new URL(url, base).href;
-  } catch {
-    return null;
-  }
+  return parseUrl(url, base)?.href ?? null;
 }
 
 const pageTags = (p: PageVideos) =>
@@ -68,12 +64,8 @@ const urlsOf = (v: unknown): string[] =>
 function robotsBlocked(ctx: CheckContext, url: string): boolean {
   const { robots } = ctx.collected;
   if (robots.status !== "ok") return false;
-  let u: URL;
-  try {
-    u = new URL(url);
-  } catch {
-    return false;
-  }
+  const u = parseUrl(url);
+  if (!u) return false;
   const host = robots.hosts.find(
     (h) => h.host.toLowerCase() === u.hostname.toLowerCase() && h.status < 400,
   );

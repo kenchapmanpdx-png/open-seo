@@ -8,7 +8,7 @@ import {
   type PageProfile,
 } from "@/server/features/handbook/contracts/page-profile";
 import type { Severity } from "@/server/features/handbook/contracts/registry-types";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, siteUrl } from "./support";
 
 /**
  * Answer-engine set (FULL-READ §6, ADR-020, handbook §3/§16). Not scored.
@@ -110,7 +110,7 @@ function snippets(
     return reasons ? [{ s, reasons }] : [];
   });
   if (hits.length === 0) return;
-  const home = normalizeUrl(new URL("/", origin).href);
+  const home = normalizeUrl(siteUrl(origin));
   const keyPage = (s: PageSnapshot) =>
     normalizeUrl(s.url) === home ||
     KEY_PAGE_TYPES.has(profiles.get(normalizeUrl(s.url))?.pageType ?? "");

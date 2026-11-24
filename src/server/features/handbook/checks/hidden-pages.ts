@@ -1,7 +1,14 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { decide } from "@/server/features/handbook/engine/robots";
-import { createResult, normalizeUrl } from "./support";
+import {
+  bareHost,
+  createResult,
+  normalizeUrl,
+  parseUrl,
+  pathOf,
+  siteUrl,
+} from "./support";
 
 /**
  * ROBOTS/HEADERS (handbook §10, §12, §18): hidden pages use noindex OR
@@ -19,7 +26,6 @@ const UTILITY =
 
 const noindex = (s: PageSnapshot) =>
   /noindex/i.test(`${s.head.robotsMeta ?? ""} ${s.xRobotsTag ?? ""}`);
-const pathOf = (url: string) => new URL(url).pathname;
 
 export const hiddenPagesCheck: HandbookCheck = {
   id: "robots.hidden-pages",
@@ -30,9 +36,10 @@ export const hiddenPagesCheck: HandbookCheck = {
     const out = createResult(ITEMS);
     const { pages, robots, sitemap } = ctx.collected;
     if (pages.status !== "ok" || robots.status !== "ok") return out.build();
-    const robotsUrl = new URL("/robots.txt", ctx.origin).href;
+    const robotsUrl = siteUrl(ctx.origin, "/robots.txt");
     const disallowRule = (url: string) => {
-      const u = new URL(url);
+      const u = parseUrl(url);
+      if (!u) return null;
       const host = robots.hosts.find((h) => h.host === u.host);
       if (!host) return null;
       const d = decide(u.host, host.groups, "*", u.pathname);
@@ -43,18 +50,19 @@ export const hiddenPagesCheck: HandbookCheck = {
         "robotsTxt",
         robotsUrl,
         `User-agent: * → ${rule} matches ${pathOf(url)}`,
-        robots.hosts.find((h) => h.host === new URL(url).host)?.storageKey,
+        robots.hosts.find((h) => h.host === (parseUrl(url)?.host ?? ""))
+          ?.storageKey,
       );
     const byUrl = new Map(pages.snapshots.map((s) => [normalizeUrl(s.url), s]));
     const publicPages = pages.snapshots.filter(
       (s) => s.status === 200 && !noindex(s) && !ADMIN.test(pathOf(s.url)),
     );
-    const site = new URL(ctx.origin).hostname.replace(/^www\./, "");
+    const site = bareHost(ctx.origin);
     const linkedFrom = new Map<string, string[]>();
     for (const s of publicPages) {
       for (const link of s.links) {
         const target = normalizeUrl(link.href);
-        if (new URL(target).hostname.replace(/^www\./, "") !== site) continue;
+        if (bareHost(target) !== site) continue;
         if (target === normalizeUrl(s.url)) continue;
         const list = linkedFrom.get(target) ?? [];
         if (!list.includes(s.url)) list.push(s.url);

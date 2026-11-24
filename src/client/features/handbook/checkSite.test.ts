@@ -10,6 +10,7 @@ const settings = {
 };
 
 const deps = {
+  verifyWebsite: vi.fn<CheckSiteDeps["verifyWebsite"]>(),
   listProjects: vi.fn<CheckSiteDeps["listProjects"]>(),
   createProject: vi.fn<CheckSiteDeps["createProject"]>(),
   setProjectDomain: vi.fn<CheckSiteDeps["setProjectDomain"]>(),
@@ -21,6 +22,7 @@ const deps = {
 const current = { id: "p1", domain: "acme.com" };
 
 beforeEach(() => {
+  deps.verifyWebsite.mockResolvedValue({ domain: "acme.com" });
   deps.listProjects.mockResolvedValue([current, { id: "p2", domain: "b.io" }]);
   deps.createProject.mockResolvedValue({ id: "new" });
   deps.getSettings.mockResolvedValue(settings);
@@ -122,6 +124,28 @@ describe("checkSite", () => {
         deps,
       ),
     ).rejects.toThrow("Enter a website");
+    expect(deps.startAudit).not.toHaveBeenCalled();
+  });
+
+  // WO-B20-010: `aircorheatingcooling.comsamanthaco.ca` created a project and an empty run.
+  it("creates nothing when the website does not answer", async () => {
+    deps.verifyWebsite.mockRejectedValue(
+      new Error(
+        "a.comb.ca does not exist (no DNS record). Check the spelling.",
+      ),
+    );
+    await expect(
+      checkSite(
+        {
+          currentProject: current,
+          website: "a.comb.ca",
+          size: "whole",
+          fullCheck: true,
+        },
+        deps,
+      ),
+    ).rejects.toThrow("no DNS record");
+    expect(deps.createProject).not.toHaveBeenCalled();
     expect(deps.startAudit).not.toHaveBeenCalled();
   });
 });

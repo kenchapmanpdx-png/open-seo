@@ -4,7 +4,7 @@ import {
   STATIC_RENDER_TYPES,
 } from "@/server/features/handbook/engine/robots-blocked";
 import type { RenderData } from "@/server/features/handbook/contracts/render-data";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, originUrl, parseUrl } from "./support";
 
 type RobotsEffect = NonNullable<
   RenderData["pages"][number]["js"]["robotsBlocked"]
@@ -29,7 +29,8 @@ const ITEMS = ["P3-20"];
 
 /** A query variant (`/products/x?variant=…`) is the same page as its path. */
 function pathOf(url: string) {
-  const u = new URL(url);
+  const u = parseUrl(url);
+  if (!u) return url;
   u.search = "";
   return u.toString();
 }
@@ -64,7 +65,7 @@ export const renderResourcesCheck: HandbookCheck = {
       const [host] = hosts.values();
       return out.evidence(
         "robotsTxt",
-        `${new URL(ctx.origin).protocol}//${host.host}/robots.txt`,
+        `${originUrl(ctx.origin).protocol}//${host.host}/robots.txt`,
         host.groups
           .map(
             (g) =>
@@ -103,19 +104,20 @@ export const renderResourcesCheck: HandbookCheck = {
         const e = effectOf(page);
         groups[!e ? "unknown" : e.sameContent ? "same" : "changed"].push(page);
       }
-      // An unmeasured page (a one-page template gets no re-render of its own)
-      // whose every blocking rule was measured "unchanged" elsewhere and never
-      // "changed" takes that result (valentinecoffeeco /cart, /account/login).
-      const rulesOf = (pages: string[]) =>
+      // An unmeasured page whose every blocked request was measured
+      // "unchanged" on another page and never "changed" takes that result.
+      // By request URL, not by Disallow rule: two scripts under one rule can
+      // differ (BadGEO telemetry.js vs app.js, B20 run 93).
+      const requestsOf = (pages: string[]) =>
         new Set(
-          blocked.filter((b) => pages.includes(b.page)).map((b) => b.rule),
+          blocked.filter((b) => pages.includes(b.page)).map((b) => b.url),
         );
-      const sameRules = rulesOf(groups.same);
-      const changedRules = rulesOf(groups.changed);
-      const cleared = (rule: string) =>
-        sameRules.has(rule) && !changedRules.has(rule);
+      const sameRequests = requestsOf(groups.same);
+      const changedRequests = requestsOf(groups.changed);
+      const cleared = (url: string) =>
+        sameRequests.has(url) && !changedRequests.has(url);
       const inferred = groups.unknown.filter((page) =>
-        blocked.filter((b) => b.page === page).every((b) => cleared(b.rule)),
+        blocked.filter((b) => b.page === page).every((b) => cleared(b.url)),
       );
       groups.unknown = groups.unknown.filter((p) => !inferred.includes(p));
       groups.same.push(...inferred);
@@ -171,7 +173,7 @@ export const renderResourcesCheck: HandbookCheck = {
       const effectLine = (url: string) => {
         const e = effectOf(url);
         if (inferred.includes(url))
-          return `${url} — not re-rendered; its blocking rules left ${groups.same.length - inferred.length} measured page(s) unchanged`;
+          return `${url} — not re-rendered; its blocked requests left ${groups.same.length - inferred.length} measured page(s) unchanged`;
         const words = `${e?.wordsNormal} words rendered normally, ${e?.wordsBlocked} with the blocked requests aborted`;
         return e?.sameContent
           ? `${url} — same content without them (${words})`
@@ -198,7 +200,7 @@ export const renderResourcesCheck: HandbookCheck = {
         (b) =>
           groups.unknown.includes(b.page) &&
           STATIC_RENDER_TYPES.has(b.type) &&
-          !cleared(b.rule),
+          !cleared(b.url),
       );
       emit(
         groups.unknown,

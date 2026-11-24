@@ -16,7 +16,13 @@ import {
 import { headLineViews } from "./llm-views";
 import { findScaledSets, swapped } from "./scaled-sets";
 import { scaledSetSummary } from "./supp-scaled";
-import { createResult, normalizeUrl } from "./support";
+import {
+  bareHost,
+  createResult,
+  normalizeUrl,
+  pathOf,
+  siteUrl,
+} from "./support";
 
 /**
  * WO-B4-002 LLM template checks: hub titles (P4-07, §2), local pages
@@ -24,7 +30,7 @@ import { createResult, normalizeUrl } from "./support";
  * mapping is the shared `judged` one in llm-copy.ts.
  */
 
-const pathOf = (url: string) => new URL(url).pathname.replace(/\/$/, "");
+const pathKey = (url: string) => pathOf(url).replace(/\/$/, "");
 
 /** Hub pages: a detail cluster's parent path, or a page linking ≥ 5 of its URLs. */
 function hubPages(ctx: CheckContext): { page: PageSnapshot; items: number }[] {
@@ -37,19 +43,21 @@ function hubPages(ctx: CheckContext): { page: PageSnapshot; items: number }[] {
       // Detail pages linking their siblings ("more events") are not hubs.
       if (
         members.has(normalizeUrl(p.url)) ||
-        pathOf(p.url).startsWith(`${parent}/`)
+        pathKey(p.url).startsWith(`${parent}/`)
       )
         continue;
       const linked = new Set(
         p.links.map((l) => normalizeUrl(l.href)).filter((h) => members.has(h)),
       ).size;
-      const isParent = [parent, `${parent}/index.html`].includes(pathOf(p.url));
+      const isParent = [parent, `${parent}/index.html`].includes(
+        pathKey(p.url),
+      );
       if (isParent || linked >= 5)
         hubs.set(normalizeUrl(p.url), { page: p, items: t.urls.length });
     }
   }
   // Home links to everything; it is not a hub for this rule.
-  hubs.delete(normalizeUrl(new URL("/", ctx.origin).href));
+  hubs.delete(normalizeUrl(siteUrl(ctx.origin)));
   return [...hubs.values()];
 }
 
@@ -76,7 +84,7 @@ const hubTitlesCheck = llmCheck(
     // crawled children), in one call (WO-B9-017).
     // Home links to everything; it is not a hub for this rule.
     const seen = new Set([
-      normalizeUrl(new URL("/", ctx.origin).href),
+      normalizeUrl(siteUrl(ctx.origin)),
       ...hubs.map((p) => normalizeUrl(p.url)),
     ]);
     const byUrl = new Map(htmlPages(ctx).map((p) => [normalizeUrl(p.url), p]));
@@ -113,10 +121,10 @@ const localPagesCheck: HandbookCheck = {
     // (b) a services/locations page with no page below it (ryan F14); the
     // judge reads its text to tell one real service from a list of many.
     const single = pages.filter((p) => {
-      const path = pathOf(p.url);
+      const path = pathKey(p.url);
       return (
         SERVICE_PATH.test(path) &&
-        !pages.some((q) => pathOf(q.url).startsWith(`${path}/`))
+        !pages.some((q) => pathKey(q.url).startsWith(`${path}/`))
       );
     });
     if (twins.length === 0 && single.length === 0) {
@@ -150,7 +158,7 @@ const localPagesCheck: HandbookCheck = {
       })),
       ...single.slice(0, 2).map((p) => ({
         url: p.url,
-        text: `${headLines(p)}\nNo crawled page below ${pathOf(p.url)}/.\n\n${p.markup.text.slice(0, 3_000)}`,
+        text: `${headLines(p)}\nNo crawled page below ${pathKey(p.url)}/.\n\n${p.markup.text.slice(0, 3_000)}`,
       })),
     ];
     return judged(
@@ -167,8 +175,6 @@ const localPagesCheck: HandbookCheck = {
   },
 };
 
-const host = (u: string) => new URL(u).hostname.replace(/^www\./, "");
-
 /** Pages whose rendered version calls a same-site fetch/XHR (intake API gate). */
 function apiPages(ctx: CheckContext): PageSnapshot[] {
   const render = ctx.collected.render;
@@ -178,7 +184,8 @@ function apiPages(ctx: CheckContext): PageSnapshot[] {
       .filter((p) =>
         p.js.requests.some(
           (q) =>
-            /^(fetch|xhr)$/.test(q.resourceType) && host(q.url) === host(p.url),
+            /^(fetch|xhr)$/.test(q.resourceType) &&
+            bareHost(q.url) === bareHost(p.url),
         ),
       )
       .map((p) => normalizeUrl(p.url)),

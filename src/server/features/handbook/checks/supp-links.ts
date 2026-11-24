@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult } from "./support";
+import { createResult, originUrl, parseUrl } from "./support";
 
 /**
  * SUPP-01 / SUPP-02 (ADR-020, FULL-READ §6, handbook §12): links whose
@@ -43,12 +43,8 @@ const anchorText = (text: string) =>
 
 /** An http(s) link to another host. */
 function isExternal(href: string, host: string): boolean {
-  try {
-    const url = new URL(href);
-    return /^https?:$/.test(url.protocol) && url.host !== host;
-  } catch {
-    return false;
-  }
+  const url = parseUrl(href);
+  return !!url && /^https?:$/.test(url.protocol) && url.host !== host;
 }
 
 /** No accessible name; in-page `#` targets and `javascript:` are UI controls. */
@@ -59,12 +55,8 @@ const unnamed = (l: Link, page: string) =>
   l.href.split("#")[0] !== page.split("#")[0];
 
 function isInternal(href: string, host: string): boolean {
-  try {
-    const url = new URL(href);
-    return /^https?:$/.test(url.protocol) && url.host === host;
-  } catch {
-    return false;
-  }
+  const url = parseUrl(href);
+  return !!url && /^https?:$/.test(url.protocol) && url.host === host;
 }
 
 const tag = (l: Link) =>
@@ -79,7 +71,7 @@ export const suppLinksCheck: HandbookCheck = {
     const out = createResult(ITEMS);
     const { pages } = ctx.collected;
     if (pages.status !== "ok") return out.build();
-    const host = new URL(ctx.origin).host;
+    const host = originUrl(ctx.origin).host;
     const hits = (match: (l: Link, page: string) => boolean) =>
       pages.snapshots.flatMap((s) => {
         const bad = s.links.filter((l) => match(l, s.url));

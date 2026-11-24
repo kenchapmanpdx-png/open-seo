@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { BotFetchData } from "@/server/features/handbook/contracts/collectors";
-import { createResult } from "./support";
+import { createResult, siteUrl } from "./support";
 
 /**
  * AI-bot policy map (FULL-READ §3.9, handbook §16/§18; bluetree F27): per
@@ -36,7 +36,7 @@ export const aiBotPolicyCheck: HandbookCheck = {
     const { botFetch } = ctx.collected;
     const rows = botFetch.status === "ok" ? (botFetch.policyMap ?? []) : [];
     if (rows.length === 0) return out.build();
-    const home = new URL("/", ctx.origin).href;
+    const home = siteUrl(ctx.origin);
     const table = rows
       .map(
         (r) =>

@@ -31,7 +31,6 @@ import { createLimiter } from "./limiter";
 import {
   LIGHTHOUSE_BATCH_SIZE,
   livePageUrls,
-  effectRenderUrls,
   sampleUrls,
   screenshotTargets,
 } from "./sidecar-targets";
@@ -49,6 +48,7 @@ import {
   nodeText,
   pageWeight,
   renderBlocking,
+  effectPicker,
   robotsBlockedEffect,
   withRestartRetry,
 } from "./sidecar-effects";
@@ -148,7 +148,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
     collect: (ctx, collected) => {
       const samples = sampleUrls(collected);
       const urls = full && samples ? livePageUrls(collected) : samples;
-      const effectSet = effectRenderUrls(collected, urls ?? []);
+      const effects = effectPicker(collected, urls ?? []);
       const shots = full
         ? screenshotTargets(urls ?? [], samples ?? [])
         : new Set((samples ?? []).map(normalizeUrl));
@@ -210,7 +210,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
             : null,
         ]);
         const jsFacts = extractHtmlFacts(js.value.html, js.value.finalUrl);
-        // WO-B19-004: template samples re-render without robots-blocked requests.
+        // WO-B19-004 effect: re-render without robots-blocked requests.
         const without = {
           ...base,
           javascript: true,
@@ -220,10 +220,11 @@ export function createSidecarCollectors(config: SidecarConfig) {
           (abortUrls) => renderCall({ ...without, abortUrls }),
           js.value,
           jsFacts.markup.text,
-          effectSet.has(normalizeUrl(url)) ? collected.robots : undefined,
+          effects.pick(url, js.value.requests) ? collected.robots : undefined,
           (reason) =>
             ctx.log("handbook.render.robots_effect_failed", { url, reason }),
         );
+        effects.measured(robotsBlocked?.urls ?? []);
         const raw =
           collected.pages?.status === "ok"
             ? collected.pages.snapshots.find((s) => s.url === url)

@@ -4,7 +4,7 @@ import type {
   FactRef,
   SiteFactMap,
 } from "@/server/features/handbook/contracts/site-fact-map";
-import { normalizeUrl } from "./support";
+import { normalizeUrl, siteUrl } from "./support";
 
 /**
  * WO-B9-017 judge views (FULL-READ §5.4). With a K15 SiteFactMap (full read:
@@ -86,7 +86,7 @@ export function inventoryViews(
     quotes.get(normalizeUrl(p.url))?.length ?? 0;
   const flagged = pages.filter((p) => hits(p) > 0);
   flagged.sort((a, b) => hits(b) - hits(a));
-  const home = normalizeUrl(new URL("/", ctx.origin).href);
+  const home = normalizeUrl(siteUrl(ctx.origin));
   const clean = pages.filter((p) => hits(p) === 0);
   clean.sort(
     (a, b) =>

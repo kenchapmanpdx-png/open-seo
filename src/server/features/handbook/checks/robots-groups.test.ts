@@ -67,4 +67,28 @@ describe("robots.group-evaluation", () => {
       gpt.findings.find((f) => f.title.startsWith("Named"))?.severity,
     ).toBe("S1");
   });
+
+  it("reports a 404 robots.txt as one S3 'No robots.txt' finding (WO-B20-011)", async () => {
+    const result = await robotsGroupsCheck.run(
+      context({
+        robots: {
+          status: "ok",
+          hosts: [
+            {
+              host: "example.com",
+              status: 404,
+              storageKey: null,
+              groups: [],
+              sitemaps: [],
+              parseWarnings: [],
+            },
+          ],
+          decisions: [],
+        },
+      }),
+    );
+    expect(
+      result.findings.map((f) => [f.itemIds[0], f.severity, f.title]),
+    ).toEqual([["P3-15", "S3", "No robots.txt (HTTP 404)"]]);
+  });
 });
