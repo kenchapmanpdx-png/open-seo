@@ -3,6 +3,10 @@ import { decide, parseRobots } from "@/server/features/handbook/engine/robots";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import {
+  sleep,
+  withRetry,
+} from "@/server/features/handbook/engine/transient-retry";
+import {
   MD_MIRROR_CAP,
   mdMirrorTrigger,
 } from "@/server/features/handbook/engine/escalations";
@@ -123,13 +127,13 @@ export const sitemapCollector: Collector<"sitemap"> = {
       const url = queue.shift() ?? "";
       if (seen.has(url)) continue;
       seen.add(url);
-      let res = await tryFetch(ctx, url);
       // One retry on 5xx: a transient 503 on the sitemap drops every
       // sitemap-only URL from the crawl (WO-B11-091).
-      if (res && res.status >= 500 && res.status <= 599) {
-        await new Promise((r) => setTimeout(r, SITEMAP_RETRY_MS));
-        res = await tryFetch(ctx, url);
-      }
+      const res = await withRetry(() => tryFetch(ctx, url), {
+        tries: 2,
+        retryable: (r) => !!r && r.status >= 500 && r.status <= 599,
+        wait: () => sleep(SITEMAP_RETRY_MS),
+      });
       if (!res || res.status !== 200) {
         const error = res
           ? `HTTP ${res.status}`
@@ -337,14 +341,13 @@ export const variantsCollector: Collector<"variants"> = {
     }
     const out: VariantsData["probes"][number][] = [];
     for (const [kind, url] of probes) {
-      let res = await tryFetch(ctx, url);
       // One retry on 429: the probes run right after the crawl, and a
       // throttled answer says nothing about the variant (salonvata, B15).
-      if (res?.status === 429) {
-        const wait = retryAfterMs(res);
-        await new Promise((r) => setTimeout(r, wait));
-        res = await tryFetch(ctx, url);
-      }
+      const res = await withRetry(() => tryFetch(ctx, url), {
+        tries: 2,
+        retryable: (r) => r?.status === 429,
+        wait: (_next, last) => sleep(last ? retryAfterMs(last) : 0),
+      });
       if (res) {
         const facts = extractHtmlFacts(res.body, res.finalUrl);
         out.push({

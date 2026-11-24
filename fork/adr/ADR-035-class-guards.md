@@ -1,6 +1,6 @@
 # ADR-035: Class guards for field-test defect classes (B20)
 
-- Status: accepted (run 93; (c) and (e) partial, see below)
+- Status: accepted (run 93; (c) done run 95; (e) partial, see below)
 - Date: 2026-11-24 · Batch: B20 · `fork/batches/B20-heavy-cap-scope-speed.md` (WO-B20-015)
 
 ## Context
@@ -19,14 +19,20 @@ Field tests 6–8 (samanthaco.ca, theogdenver.com, bluebonnetroofs.com) showed d
 | (f) bad input reaches the engine    | `verifyHandbookWebsite` (upstream `domainField` Zod + SafeFetch DNS policy + one home-page fetch) runs before Check a site writes a project or a run                          | `services/verifyWebsite.test.ts` (spaces, no TLD, private IP, IP literal, glued hosts) and `checkSite.test.ts` (nothing created when the site does not answer)                                                                                           |
 | (g) field-test procedure            | `fork/MAINTENANCE.md` M6 rules: pre-flight recorded, valid run only (0 check / collector errors), live check before a verdict, every `fixed` names its red case and its guard | the ledger (`field-test.ts --close`)                                                                                                                                                                                                                     |
 
-Retry call sites (c):
+Retry call sites (c). One primitive, `engine/transient-retry.ts` `withRetry(attempt, policy)`: a call site states only its policy (which results are transient, tries, the wait before the next try; the wait may stop the retry). Run 95 moved every Handbook retry loop onto it:
 
-| Call                              | Policy                                                                                               | Test                                        |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Evidence store upload (Supabase)  | `fetchWithRetry` (B20)                                                                               | `supabase-evidence-store.test.ts` 520 → 200 |
-| Sidecar `/render`, `/lighthouse`  | `withRestartRetry` (dropped connection → wait for `/health` ≤ 90 s → one retry); 429 render throttle | `sidecar-*.test.ts`                         |
-| Link / resource / outbound probes | `collectors/probe.ts`: 429 / 502 / 503 / 504 → one retry after 2 s                                   | `probe.test.ts`                             |
-| LLM (OpenRouter)                  | AI SDK `maxRetries` with `retry-after` (ADR-019)                                                     | `llm/judge` tests                           |
-| DB save                           | workflow step retries (Cloudflare Workflows step config)                                             | —                                           |
+| Call                                       | Policy (tries · transient · wait)                                                       | Test                                        |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Evidence store upload (Supabase)           | `fetchWithRetry`: 3 · 429 / 5xx / network error · 400 ms doubling                       | `supabase-evidence-store.test.ts` 520 → 200 |
+| Sidecar `/render`, `/lighthouse` (restart) | 2 · "unreachable" · wait for `/health` ≤ 90 s (stop when it never answers)              | `sidecar-effects.test.ts`                   |
+| Link / resource / outbound probes          | 2 · no answer, 429 / 502 / 503 / 504 · 2 s (a site's own server: never a burst)         | `probe.test.ts`                             |
+| Sitemap fetch                              | 2 · 5xx · `SITEMAP_RETRY_MS`                                                            | `fetch-collectors` tests                    |
+| URL-variant probes                         | 2 · 429 · `Retry-After` (capped 15 s, default 10 s)                                     | `fetch-collectors` tests                    |
+| Crawl interstitial (challenge page)        | 2 · challenge detected · `INTERSTITIAL_RETRY_MS`                                        | `interstitial.test.ts`                      |
+| Competitor fetch (SERP originality)        | 2 · not HTTP 200 · none                                                                 | `serp-originality` tests                    |
+| LLM (OpenRouter)                           | AI SDK `maxRetries` with `retry-after` (ADR-019; library policy, not a Handbook loop)   | `llm/judge` tests                           |
+| DB save                                    | workflow step retries (Cloudflare Workflows step config; one transaction per save, B20) | —                                           |
 
-Open: moving probes and sidecar onto `fetchWithRetry` (their policies differ on purpose: probes must not hammer a small site, sidecar waits for a restart); a DB-save transient test; the general finding contract test of (e).
+Not retries, kept on purpose: the render throttle and the sidecar circuit breaker (`sidecar-per-url.ts`, state shared across pages), the per-host pacers (`safe-fetch.ts`, `bot-fetch.ts`), timeout races. Guard: `engine/transient-retry.test.ts` (withRetry: transient then success = result kept; last result after the last try; thrown errors only with `retryThrown`) and a source scan: a Handbook file that waits with `setTimeout(` outside that allow-list (each entry with its reason) fails `pnpm test`. Red: the run-94 tree fails it with 4 files (`fork/runs/b20/retry-guard-red.txt`).
+
+Open: the general finding contract test of (e).

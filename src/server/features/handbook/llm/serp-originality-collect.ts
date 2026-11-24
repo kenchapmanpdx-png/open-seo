@@ -1,3 +1,4 @@
+import { withRetry } from "@/server/features/handbook/engine/transient-retry";
 import { z } from "zod";
 import { isOrganizationType } from "../checks/schema-localbusiness";
 import { sha256Hex } from "@/server/lib/audit/ids";
@@ -379,16 +380,17 @@ async function fetchCompetitor(
   fetchOffsite: SafeFetch,
   url: string,
 ): Promise<{ fetch: "ok" | "failed" | "non-html"; html: string | null }> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await withTimeout(
-      fetchOffsite(url, { userAgent: BROWSER_UA }),
-    ).catch(() => null);
-    if (!res || res.status !== 200) continue;
-    const type = headerValue(res.headers, "content-type") ?? "text/html";
-    if (!type.includes("html")) return { fetch: "non-html", html: null };
-    return { fetch: "ok", html: res.body };
-  }
-  return { fetch: "failed", html: null };
+  const res = await withRetry(
+    () =>
+      withTimeout(fetchOffsite(url, { userAgent: BROWSER_UA })).catch(
+        () => null,
+      ),
+    { tries: 2, retryable: (r) => r?.status !== 200, wait: async () => {} },
+  );
+  if (!res || res.status !== 200) return { fetch: "failed", html: null };
+  const type = headerValue(res.headers, "content-type") ?? "text/html";
+  if (!type.includes("html")) return { fetch: "non-html", html: null };
+  return { fetch: "ok", html: res.body };
 }
 
 function withTimeout<T>(promise: Promise<T>): Promise<T> {

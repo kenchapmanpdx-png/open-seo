@@ -1,0 +1,7 @@
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected [ …(4) ] to deeply equal []
++   "collectors/fetch-collectors.ts",
++   "collectors/probe.ts",
++   "collectors/sidecar-effects.ts",
++   "engine/interstitial.ts",
+      Tests  1 failed | 3 passed (4)

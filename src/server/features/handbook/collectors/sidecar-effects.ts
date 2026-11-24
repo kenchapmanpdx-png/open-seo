@@ -3,6 +3,10 @@ import type { RenderData } from "@/server/features/handbook/contracts/render-dat
 import type { RenderResponse } from "@/server/features/handbook/contracts/sidecar";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import {
+  sleep,
+  withRetry,
+} from "@/server/features/handbook/engine/transient-retry";
+import {
   compareRenderedText,
   containsText,
   robotsBlockedRequests,
@@ -106,7 +110,7 @@ export async function robotsBlockedEffect(
 async function waitHealthy(url: string, ms: number): Promise<boolean> {
   const until = Date.now() + ms;
   while (Date.now() < until) {
-    await new Promise((r) => setTimeout(r, 5_000));
+    await sleep(5_000);
     try {
       const res = await fetch(`${url.replace(/\/$/, "")}/health`, {
         signal: AbortSignal.timeout(5_000),
@@ -129,10 +133,14 @@ export async function withRestartRetry<T>(
   sidecarUrl: string,
   onRetry: () => void,
 ): Promise<Outcome<T>> {
-  const first = await attempt();
-  if (first.ok || !first.reason.includes("unreachable")) return first;
-  onRetry();
-  return (await waitHealthy(sidecarUrl, 90_000)) ? attempt() : first;
+  return withRetry(attempt, {
+    tries: 2,
+    retryable: (o) => !o.ok && o.reason.includes("unreachable"),
+    wait: () => {
+      onRetry();
+      return waitHealthy(sidecarUrl, 90_000);
+    },
+  });
 }
 
 /** Σ transferBytes, unknown sizes (aborted, opaque) skipped. */

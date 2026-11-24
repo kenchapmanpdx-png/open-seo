@@ -1,3 +1,7 @@
+import {
+  sleep,
+  withRetry,
+} from "@/server/features/handbook/engine/transient-retry";
 import type {
   CollectorContext,
   SafeFetchResult,
@@ -169,16 +173,23 @@ export async function crawlFetch(
   ctx: CollectorContext,
   url: string,
 ): Promise<SafeFetchResult | null> {
-  const first = await tryFetch(ctx, url);
-  if (!first) return null;
-  const challenged = detectInterstitial(
-    first.body,
-    first.headers,
-    first.finalUrl,
+  const challengeOf = (r: SafeFetchResult) =>
+    detectInterstitial(r.body, r.headers, r.finalUrl);
+  let first: SafeFetchResult | null = null;
+  const res = await withRetry(
+    async () => {
+      const r = (await tryFetch(ctx, url)) ?? first;
+      first ??= r;
+      return r;
+    },
+    {
+      tries: 2,
+      retryable: (r) => r !== null && challengeOf(r) !== null,
+      wait: () => sleep(INTERSTITIAL_RETRY_MS),
+    },
   );
-  if (!challenged) return first;
-  await new Promise((resolve) => setTimeout(resolve, INTERSTITIAL_RETRY_MS));
-  const res = (await tryFetch(ctx, url)) ?? first;
+  const challenged = first ? challengeOf(first) : null;
+  if (!res || !challenged) return res;
   const still = detectInterstitial(res.body, res.headers, res.finalUrl);
   ctx.log("handbook.crawl.interstitial", {
     url,

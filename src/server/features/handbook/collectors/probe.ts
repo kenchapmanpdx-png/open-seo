@@ -3,6 +3,11 @@ import type {
   LinkProbe,
   SafeFetch,
 } from "@/server/features/handbook/contracts/collectors";
+import {
+  type RetryPolicy,
+  sleep,
+  withRetry,
+} from "@/server/features/handbook/engine/transient-retry";
 
 /**
  * Shared URL probe (ADR-031) for outbound links, un-crawled internal link
@@ -12,11 +17,16 @@ import type {
  */
 export const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+/**
+ * Probe retry policy (ADR-035 (c)): a site's own server, so one retry after
+ * 2 s on 429 / 502 / 503 / 504 or no answer, never a burst.
+ */
 const TRANSIENT = new Set([429, 502, 503, 504]);
-const RETRY_DELAY_MS = 2000;
-
-const sleep = (ms: number) =>
-  new Promise<void>((done) => setTimeout(done, Math.max(0, ms)));
+const PROBE_RETRY: RetryPolicy<Answer | null> = {
+  tries: 2,
+  retryable: (a) => !a || TRANSIENT.has(a.status),
+  wait: () => sleep(2000),
+};
 
 type Pace = (url: string) => Promise<void>;
 
@@ -73,10 +83,13 @@ async function attempt(
     if (head && head.status < 400) return head;
     return fetchOnce(ctx, target, userAgent, "GET");
   };
-  const first = await once();
-  if (first && !TRANSIENT.has(first.status)) return first;
-  await sleep(RETRY_DELAY_MS);
-  return (await once()) ?? first;
+  let first: Answer | null | undefined;
+  const last = await withRetry(async () => {
+    const answer = await once();
+    first ??= answer;
+    return answer;
+  }, PROBE_RETRY);
+  return last ?? first ?? null;
 }
 
 /** Probe `url`; `userAgent` undefined = the fetcher's default (Handbook) UA. */
