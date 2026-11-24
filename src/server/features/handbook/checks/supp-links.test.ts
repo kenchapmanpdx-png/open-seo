@@ -68,4 +68,22 @@ describe("crawl.supp-links", () => {
       ]),
     ).toEqual([]);
   });
+
+  // Field test 7 (theogdenver.com home): <a aria-label="Learn More">Learn
+  // More</a>. The aria-label is the link's name, and that name is generic.
+  it("flags a link whose aria-label is itself generic", async () => {
+    expect(
+      await titles([
+        page([
+          {
+            href: "https://example.com/private-events/",
+            text: "Learn More",
+            ariaLabel: "Learn More",
+          },
+        ]),
+      ]),
+    ).toEqual([
+      expect.stringMatching(/^Generic anchor text .* internal links$/),
+    ]);
+  });
 });

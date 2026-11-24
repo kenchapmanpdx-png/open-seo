@@ -5,7 +5,8 @@ import { createResult, originUrl, parseUrl } from "./support";
 /**
  * SUPP-01 / SUPP-02 (ADR-020, FULL-READ §6, handbook §12): links whose
  * anchor text says nothing about the target ("Read more", "Click here",
- * "Learn more", "Find out more"; an `aria-label` names the link instead) —
+ * "Learn more", "Find out more"; an `aria-label` is the name tested when
+ * present) —
  * internal and, since B17 §9 #6, external ones; links with no name at all
  * (no text, no image alt, no `aria-label`; in-page `#` and `javascript:`
  * controls excluded); internal links that open a new tab. Raw HTML links of
@@ -77,8 +78,10 @@ export const suppLinksCheck: HandbookCheck = {
         const bad = s.links.filter((l) => match(l, s.url));
         return bad.length > 0 ? [{ s, bad }] : [];
       });
+    // The accessible name is the aria-label when there is one (field test 7:
+    // aria-label="Learn More" names the link "Learn More").
     const generic = (l: Link) =>
-      !l.ariaLabel?.trim() && GENERIC.has(anchorText(l.text));
+      GENERIC.has(anchorText(l.ariaLabel?.trim() || l.text));
 
     const rules = [
       {

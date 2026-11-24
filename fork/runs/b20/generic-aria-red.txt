@@ -1,0 +1,3 @@
+     × flags a link whose aria-label is itself generic 3ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  1 failed | 2 passed (3)
