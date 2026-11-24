@@ -9,7 +9,8 @@
  * `site-changed` when its `note` says so, or when a direct re-fetch of one of
  * its concrete URLs returns a status different from the run's crawl
  * (collected.json next to report.json). Expected passes → caught when every
- * listed item is PASS, partial when some are.
+ * listed item is PASS, or (pass with `urls`) when no finding on those items
+ * cites a listed URL; partial when some items are PASS.
  *
  * `supp: [SUPP-nn]` (ADR-020) adds supplementary rule ids: they match report
  * findings and `additionalFindings` like `items` do (a SUPP-only entry has
@@ -161,6 +162,32 @@ function scorePass(report: ReportJson, entry: Entry): Scored {
   const why = items.map((i) => `${i.itemId} ${i.status}`).join(", ");
   if (items.length > 0 && passed.length === entry.items.length)
     return { entry, verdict: "caught", why };
+  // A pass with `urls` locks those pages only: an evaluated item may be OPEN
+  // for other pages (BLOCKED / NA items are not evaluated, so they never pass).
+  const evaluated = items.every((i) =>
+    ["PASS", "OPEN", "PARTIAL"].includes(i.status),
+  );
+  if (
+    entry.urls.length > 0 &&
+    items.length === entry.items.length &&
+    evaluated
+  ) {
+    const ids = entryIds(entry);
+    const onUrls = [
+      ...report.findings,
+      ...(report.additionalFindings ?? []),
+    ].filter(
+      (f) =>
+        f.itemIds.some((id) => ids.includes(id)) &&
+        f.urls.some((u) => entry.urls.some((p) => urlMatches(report, p, u))),
+    );
+    if (onUrls.length === 0)
+      return {
+        entry,
+        verdict: "caught",
+        why: `${why}, no finding on ${entry.urls.join(" ")}`,
+      };
+  }
   if (passed.length > 0) return { entry, verdict: "partial", why };
   return { entry, verdict: "missed", why };
 }

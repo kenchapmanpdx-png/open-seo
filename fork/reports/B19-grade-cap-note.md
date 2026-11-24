@@ -27,4 +27,22 @@ The cap value (39) and whether it applies to every S1 are handbook decisions. Op
 1. Keep the cap as is. It only bites when a site is otherwise D or better and has a real S1.
 2. Cap only on S1s that block indexing (noindex, robots Disallow on content, canonical errors), not on S1s that degrade rendering.
 
-The WO-B19-090 reruns (eight goldens, live) refresh the "after" column with measured scores.
+## Measured after B19 (WO-B19-090 live reruns, final code, 2026-11-24)
+
+| Site                     | Run     | Capped (final) | Uncapped | Grade | Open S1                                                                                                 |
+| ------------------------ | ------- | -------------- | -------- | ----- | ------------------------------------------------------------------------------------------------------- |
+| whyracingevents.com      | b19r92  | 39             | 51.6     | F     | P2-01 core content added by JavaScript                                                                  |
+| ryanmscottsdale.com      | b19r92  | 40.2           | 40.2     | D     | none                                                                                                    |
+| bluetreefunding.com      | b19r92  | 39             | 42.2     | F     | P3-04 non-canonical link form · P9-01 bots do not get the browser response                              |
+| salonvata.com            | b19r92e | 44.4           | 44.4     | D     | none                                                                                                    |
+| spoiledspaandsalon.com   | b19r92  | 51.6           | 51.6     | D     | none                                                                                                    |
+| wsparkdental.com         | b19r92  | 37.2           | 37.2     | F     | P3-04 home has no canonical                                                                             |
+| aircorheatingcooling.com | b19r92b | 29.5           | 29.5     | F     | none (P3-20 measured on the whole site: S4)                                                             |
+| valentinecoffeeco.com    | b19r92d | 39             | 40.7     | F     | P3-20 `/cart`: with `/cart.js` blocked the cart's "Spend $50.00 more for free shipping" line disappears |
+
+- The cap changes the grade on three of eight sites: whyracingevents D 51.6 → F, bluetreefunding D 42.2 → F, valentinecoffeeco D 40.7 → F.
+- whyracingevents (12.6 points) and bluetreefunding are capped by S1s that render or crawl access really depends on (content only after JavaScript; bots get a different response).
+- valentinecoffeeco is capped by a real but small measured difference: seven words of cart messaging on `/cart`. Under option 2 below it would not cap (a cart page's free-shipping nudge does not block indexing); under option 1 it does.
+- A third option the data suggests: cap only when the S1 affects an indexable content page (not cart, account or checkout pages).
+
+The "Six field sites" table above is the before (stored runs as of run 91).

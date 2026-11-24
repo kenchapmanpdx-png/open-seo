@@ -249,7 +249,8 @@ async function main() {
         ? `bot-parity escalation: ${botParity.urls.length} URLs because ${botParity.because}`
         : "bot-parity escalation: NOT fired",
     );
-    if (!botParity) process.exitCode = 1;
+    // GoodGEO / NoSitemap (FIXTURE_ROOT set) have no challenge page: report only.
+    if (!botParity && !process.env.FIXTURE_ROOT) process.exitCode = 1;
     if ((missing > 0 || unexpected > 0) && !values["report-only"])
       process.exitCode = 1;
   } finally {
