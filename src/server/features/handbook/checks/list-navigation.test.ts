@@ -38,6 +38,15 @@ describe("crawl.list-navigation", () => {
     expect(statusOf(result, "P3-21")).toBe("OPEN");
   });
 
+  // Field test 7 (theogdenver.com /press/?p=2): every numbered-page form, not only ?page=.
+  it("opens P3-21 for a ?p=2 page canonical to page 1", async () => {
+    const result = await run([
+      snapshot("/press/", { links: ["/press/?p=2"] }),
+      snapshot("/press/?p=2", { canonical: "/press/" }),
+    ]);
+    expect(statusOf(result, "P3-21")).toBe("OPEN");
+  });
+
   it("passes P3-21 when page 1 canonicalises to the list (WO-B19-005)", async () => {
     const result = await run([
       snapshot("/shop", { links: ["/shop?page=1"] }),

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { Coverage } from "@/server/features/handbook/contracts/collectors";
 import {
+  pagePathBase,
+  paginationParam,
+} from "@/server/features/handbook/engine/pagination";
+import {
   handbookDepthSchema,
   type HandbookDepth,
 } from "@/server/features/handbook/contracts/exports";
@@ -117,28 +121,12 @@ export function groupByPattern(urls: readonly string[]): Map<string, string[]> {
 const SPACE_CAP = 20;
 const TEMPLATE_CAP_AFTER = 300;
 const TEMPLATE_CAP = 100;
-const PAGE_PATH = /^(.*?)\/page\/\d+\/?$/i;
 const DATE_ARCHIVE = /^(.*?)\/\d{4}(?:\/\d{2}){0,2}\/?$/;
-/**
- * Query parameters that paginate a list when their value is a number
- * (`?page=2`, WordPress `?paged=2`, `?p=2` paginators, `?pg=2`); field test
- * 7: `/press/?p=2` was dropped as a parameter duplicate of `/press/`.
- */
-const PAGINATION_PARAMS = ["page", "paged", "p", "pg", "pagenum"];
-
-function paginationParam(u: URL): string | null {
-  for (const name of PAGINATION_PARAMS) {
-    const value = u.searchParams.get(name);
-    if (value !== null && /^\d+$/.test(value)) return value;
-  }
-  return null;
-}
-
 /**
  * Keeps calendars, filters and archives from eating the page budget:
  * a query-string URL is dropped when its path (or an earlier query variant
  * of it) is already listed (except numeric pagination parameters, see
- * PAGINATION_PARAMS); pagination, `/page/N/` and date
+ * engine/pagination.ts); pagination, `/page/N/` and date
  * archives (`/YYYY/`, `/YYYY/MM/`) keep 20 URLs per base path, and after 300
  * URLs each template keeps 100. Order is kept.
  */
@@ -155,11 +143,12 @@ export function infiniteSpaceGuard(urls: readonly string[]): string[] {
       if (listed.has(path) || queryPaths.has(path)) continue;
       queryPaths.add(path);
     }
+    const pageBase = pagePathBase(u.pathname);
     const space =
       page !== null
         ? `q:${u.pathname}`
-        : PAGE_PATH.test(u.pathname)
-          ? `p:${PAGE_PATH.exec(u.pathname)?.[1] ?? ""}`
+        : pageBase !== null
+          ? `p:${pageBase}`
           : DATE_ARCHIVE.test(u.pathname)
             ? `d:${DATE_ARCHIVE.exec(u.pathname)?.[1] ?? ""}`
             : null;

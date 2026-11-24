@@ -1,5 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import { listPage } from "@/server/features/handbook/engine/pagination";
 import { decide } from "@/server/features/handbook/engine/robots";
 import {
   bareHost,
@@ -19,9 +20,6 @@ import {
  */
 const ITEMS = ["P3-21", "P3-22", "P3-23"];
 
-const PAGINATION = /[?&]page=\d+|\/page\/\d+/i;
-/** §10: page 2+ must be self-canonical; page 1 may point at the list (WO-B19-005). */
-const PAGE_ONE = /[?&]page=1(&|$)|\/page\/1\/?$/i;
 const FACET_PARAM = /^(color|size|sort|filter|brand|price|orderby)$/i;
 const SEARCH = /\/search(\/|\.html?|\?|$)|[?&](q|s|query)=/i;
 
@@ -35,7 +33,7 @@ function isFacet(url: string): boolean {
   const keys = [...(parseUrl(url)?.searchParams.keys() ?? [])];
   return (
     !SEARCH.test(url) &&
-    !PAGINATION.test(url) &&
+    listPage(url) === null &&
     (keys.length >= 2 || keys.some((k) => FACET_PARAM.test(k)))
   );
 }
@@ -75,7 +73,7 @@ export const listNavigationCheck: HandbookCheck = {
       `${s.url} → ${s.status}; canonical ${s.head.canonical ?? "(none)"}; robots "${robotsMeta(s).trim()}"`;
 
     // P3-21 — pagination.
-    const paged = internal.filter((u) => PAGINATION.test(u));
+    const paged = internal.filter((u) => listPage(u) !== null);
     const pagedSnaps = paged.flatMap((u) => byUrl.get(u) ?? []);
     if (paged.length === 0) {
       out.na("P3-21", "no pagination URLs found");
@@ -84,7 +82,8 @@ export const listNavigationCheck: HandbookCheck = {
         (s) =>
           s.status !== 200 ||
           normalizeUrl(s.finalUrl) !== normalizeUrl(s.url) ||
-          (!selfCanonical(s) && !PAGE_ONE.test(s.url)),
+          // §10: page 2+ must be self-canonical; page 1 may point at the list (WO-B19-005).
+          (!selfCanonical(s) && listPage(s.url)?.page !== 1),
       );
       if (bad.length > 0) {
         out.finding({

@@ -35,6 +35,7 @@ import {
   type Answer,
   type Facts,
 } from "./site-facts";
+import { listPage } from "./pagination";
 
 const SP_ORDER: readonly SpCode[] = SP_CODES;
 const TIER_RANK: Record<SiteTier, number> = { T1: 1, T2: 2, T3: 3, T4: 4 };
@@ -142,7 +143,7 @@ function evaluateGate(gate: string, f: Facts, profile: Profile): Answer {
     case "SP6 or publisher":
       return either(sp("SP6"), article());
     case "SP8 or paginated lists": {
-      const pagination = internalMatches(f, /[?&]page=\d|\/page\/\d+/i);
+      const pagination = f.internal.filter((h) => listPage(h) !== null);
       return either(
         sp("SP8"),
         pagination.length

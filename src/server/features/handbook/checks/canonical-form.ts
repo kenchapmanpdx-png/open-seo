@@ -1,6 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { estimateJaccard } from "../engine/minhash";
+import { listPage } from "../engine/pagination";
 import { bareHost, createResult, normalizeUrl, parseUrl } from "./support";
 
 /**
@@ -159,21 +160,80 @@ export const canonicalFormCheck: HandbookCheck = {
         .filter((s) => !s.head.canonical)
         .map((page) => ({ page, why: "no canonical" })),
     );
+    const notSelf = live.filter(
+      (s) =>
+        s.head.canonical &&
+        normalizeUrl(s.head.canonical) !== normalizeUrl(s.finalUrl) &&
+        !locs.has(normalizeUrl(s.url)) &&
+        !duplicateOf.has(normalizeUrl(s.url)),
+    );
+    // §11 "Don't canonical-tag a paginated series back to page 1": the risk is
+    // content linked only from page 2+ going unfound (field test 7,
+    // theogdenver /press/?p=N). S1 when a crawled page is linked only from
+    // such pages; otherwise S3 with that reason.
+    const toPageOne = (s: PageSnapshot) => {
+      const list = listPage(s.url);
+      return (
+        list !== null &&
+        list.page >= 2 &&
+        normalizeUrl(s.head.canonical ?? "") === normalizeUrl(list.firstPage)
+      );
+    };
     report(
       "Indexable pages are not self-canonical",
       "Point each page's canonical at its own clean URL (or 301 the duplicate to the canonical URL).",
-      live
-        .filter(
-          (s) =>
-            s.head.canonical &&
-            normalizeUrl(s.head.canonical) !== normalizeUrl(s.finalUrl) &&
-            !locs.has(normalizeUrl(s.url)) &&
-            !duplicateOf.has(normalizeUrl(s.url)),
-        )
+      notSelf
+        .filter((s) => !toPageOne(s))
         .map((page) => ({
           page,
           why: `canonical → ${page.head.canonical}`,
         })),
+    );
+    const series = notSelf.filter(toPageOne);
+    const seriesUrls = new Set(series.map((s) => normalizeUrl(s.url)));
+    const linkedFrom = new Map<string, Set<string>>();
+    for (const s of pages.snapshots) {
+      const from = normalizeUrl(s.url);
+      for (const l of s.links) {
+        const to = normalizeUrl(l.href);
+        if (to === from || bareHost(to) !== bareHost(ctx.origin)) continue;
+        linkedFrom.set(to, (linkedFrom.get(to) ?? new Set()).add(from));
+      }
+    }
+    const onlyFromSeries = (s: PageSnapshot) =>
+      [...new Set(s.links.map((l) => normalizeUrl(l.href)))].filter((to) => {
+        const target = byUrl.get(to);
+        const from = linkedFrom.get(to);
+        return (
+          target?.status === 200 &&
+          !seriesUrls.has(to) &&
+          from !== undefined &&
+          [...from].every((f) => seriesUrls.has(f))
+        );
+      });
+    let orphans = 0;
+    const seriesHits = series.map((page) => {
+      const only = onlyFromSeries(page);
+      orphans += only.length;
+      const why = `canonical → ${page.head.canonical}`;
+      return {
+        page,
+        why: only.length
+          ? `${why}; only link to ${only.slice(0, 5).join(", ")}`
+          : why,
+      };
+    });
+    report(
+      "Paginated pages canonical to page 1",
+      "Give each page of the series a self-referencing canonical (page 2 → page 2), not page 1.",
+      seriesHits,
+      orphans > 0
+        ? { severity: "S1" }
+        : {
+            severity: "S3",
+            severityReason:
+              "no crawled site page is linked only from these pages, so nothing is orphaned (the §11 risk); the series is still not self-canonical",
+          },
     );
     report(
       "Canonical URLs carry tracking parameters",

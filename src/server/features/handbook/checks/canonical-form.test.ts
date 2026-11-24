@@ -5,6 +5,8 @@ import { context, snapshot, statusOf, textPage } from "./check-test-fixtures";
 
 const run = (snapshots: PageSnapshot[]) =>
   canonicalFormCheck.run(context({ pages: { status: "ok", snapshots } }));
+const graded = (r: Awaited<ReturnType<typeof run>>) =>
+  r.findings.map((f) => [f.severity, f.title, ...f.urls]);
 
 describe("crawl.canonical-form", () => {
   it("passes a self-canonical site whose links use the canonical form", async () => {
@@ -83,8 +85,8 @@ describe("crawl.canonical-form", () => {
     );
     // A link to a correctly canonicalised duplicate is not a canonical error (§17 S1).
     expect(byTitle).toEqual({
-      "Indexable pages are not self-canonical": [
-        "S1",
+      "Paginated pages canonical to page 1": [
+        "S3",
         "https://example.com/shop?page=2",
       ],
       "Internal links point at a canonicalised duplicate": [
@@ -96,6 +98,49 @@ describe("crawl.canonical-form", () => {
     expect(
       result.findings.every((f) => f.severity === "S1" || f.severityReason),
     ).toBe(true);
+  });
+
+  // Field test 7 (theogdenver.com /press/?p=2…6 → /press/): §11 forbids it because content
+  // linked only from page 2+ is orphaned. S1 only when that happens; else S3 with the reason.
+  it("grades page 2 canonical to page 1 by what only page 2 links", async () => {
+    const press = (path: string, text: string, links: string[]) => ({
+      ...snapshot(path, { canonical: "/press/", links }),
+      markup: textPage(path, text).markup,
+    });
+    const offsite = await run([
+      snapshot("/", { links: ["/press/"] }),
+      press("/press/", "New press.", [
+        "/press/?p=2",
+        "https://news.example.org/a",
+      ]),
+      press("/press/?p=2", "Old press.", [
+        "/press/",
+        "https://news.example.org/b",
+      ]),
+    ]);
+    const orphaning = await run([
+      snapshot("/", { links: ["/press/"] }),
+      press("/press/", "New press.", ["/press/?p=2"]),
+      press("/press/?p=2", "Old press.", ["/press/", "/press/old-story/"]),
+      snapshot("/press/old-story/"),
+    ]);
+    expect(graded(offsite)).toEqual([
+      [
+        "S3",
+        "Paginated pages canonical to page 1",
+        "https://example.com/press/?p=2",
+      ],
+    ]);
+    expect(graded(orphaning)).toEqual([
+      [
+        "S1",
+        "Paginated pages canonical to page 1",
+        "https://example.com/press/?p=2",
+      ],
+    ]);
+    expect(orphaning.findings[0]?.detail).toContain(
+      "https://example.com/press/old-story/",
+    );
   });
 
   it("keeps a tracking-parameter canonical out of the duplicate rule and ignores self links", async () => {
