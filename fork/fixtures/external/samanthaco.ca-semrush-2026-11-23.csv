@@ -1,0 +1,86 @@
+Issue,Count,Page URL,Target URL
+4xx errors,1,https://www.samanthaco.ca/team/law-students,
+4xx errors,1,https://www.samanthaco.ca/blogs/znge05kh8oym60dn5vvtj8luvsedqz,
+Broken internal links,1,https://www.samanthaco.ca/team/samantha-eisen,https://www.samanthaco.ca/team/law-students
+Broken internal links,1,https://www.samanthaco.ca/team/phoenix-chan,https://www.samanthaco.ca/team/law-students
+Broken internal links,1,https://www.samanthaco.ca/team/lindsey-stewart,https://www.samanthaco.ca/team/law-students
+Broken internal links,1,https://www.samanthaco.ca/team/leanna-rose-jimenez,https://www.samanthaco.ca/team/law-students
+Broken internal links,1,https://www.samanthaco.ca/team/elizabeth-joy-cortez,https://www.samanthaco.ca/team/law-students
+Broken internal links,1,https://www.samanthaco.ca/team/dominique-nikki-pangilinan,https://www.samanthaco.ca/team/law-students
+Broken internal links,1,https://www.samanthaco.ca/team/david-baxter,https://www.samanthaco.ca/team/law-students
+Broken internal links,1,https://www.samanthaco.ca/blog/2025-amendments-to-the-federal-child-support-tables---out-with-the-old-in-with-the-new,https://www.samanthaco.ca/blogs/znge05kh8oym60dn5vvtj8luvsedqz
+Duplicate title tag,1,https://www.samanthaco.ca/blog/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate content,1,https://www.samanthaco.ca/blog/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate meta descriptions,1,https://www.samanthaco.ca/blog/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate title tag,1,https://www.samanthaco.ca/blog//limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate content,1,https://www.samanthaco.ca/blog//limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate meta descriptions,1,https://www.samanthaco.ca/blog//limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate title tag,1,https://www.samanthaco.ca/blog/ limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate content,1,https://www.samanthaco.ca/blog/ limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Duplicate meta descriptions,1,https://www.samanthaco.ca/blog/ limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Broken external links,1,https://www.samanthaco.ca/blog/international-and-out-of-province-marriage-contracts-are-they-enforceable-under-ontario-family-law,"https://torgersrud%20v.%20lightstone,%202023%20onca%20580."
+Broken external links,1,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,https://homelesshub.ca/resource/23-no-fixed-address-young-queer-and-restless
+Broken external links,3,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,chrome-extension links to rainbowhealthontario.ca / cpath.ca PDFs
+Broken external links,1,https://www.samanthaco.ca/blog/2025-amendments-to-the-federal-child-support-tables---out-with-the-old-in-with-the-new,https://gazette.gc.ca/rp-pr/p2/2025/2025-09-10/html/sor-dors166-eng.html
+Malformed links,1,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,https://<https://homelesshub.ca/resource/23-no-fixed-address-young-queer-and-restless>
+Malformed links,1,https://www.samanthaco.ca/blog/coercive-control-in-the-digital-age-how-technology-can-be-used-to-facilitate-intimate-partner-violence,"https://RSC 1985, c 3 (2nd Supp)"
+Structured data that contains markup errors,1,https://www.samanthaco.ca/legal-services,
+Structured data that contains markup errors,1,https://www.samanthaco.ca/,
+Title element is too long,1,https://www.samanthaco.ca/team/lindsey-stewart,
+Title element is too long,1,https://www.samanthaco.ca/blog/update-on-damages-for-spousal-violence---still-too-low,
+Title element is too long,1,https://www.samanthaco.ca/blog/surreptitious-recordings-in-support-of-claims-of-intimate-partner-violence-mitchell-v-mitchell-2026-onsc-4259-and-fang-v-lu-2026-onsc-3617,
+Title element is too long,1,https://www.samanthaco.ca/blog/re-thinking-appropriate-dispute-resolution-in-the-context-of-intimate-partner-violence-and-family-violence,
+Title element is too long,1,https://www.samanthaco.ca/blog/practical-not-purr-fect-why-ontarios-pets-as-property-approach-makes-sense,
+Title element is too long,1,https://www.samanthaco.ca/blog/limitation-periods-for-the-tort-of-intentional-infliction-of-mental-suffering-in-cases-of-intimate-partner-violence-in-ontario,
+Title element is too long,1,https://www.samanthaco.ca/blog/key-things-to-keep-in-mind-when-advancing-tort-claims-for-ipv-in-family-court,
+Title element is too long,1,https://www.samanthaco.ca/blog/international-and-out-of-province-marriage-contracts-are-they-enforceable-under-ontario-family-law,
+Title element is too long,1,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,
+Title element is too long,1,https://www.samanthaco.ca/blog/coercive-control-in-the-digital-age-how-technology-can-be-used-to-facilitate-intimate-partner-violence,
+Title element is too long,1,https://www.samanthaco.ca/blog/2025-amendments-to-the-federal-child-support-tables---out-with-the-old-in-with-the-new,
+Title element is too long,1,https://www.samanthaco.ca/blog/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Title element is too long,1,https://www.samanthaco.ca/blog//limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Title element is too long,1,https://www.samanthaco.ca/blog/ limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Missing h1,1,https://www.samanthaco.ca/team/samantha-eisen,
+Missing h1,1,https://www.samanthaco.ca/team/phoenix-chan,
+Missing h1,1,https://www.samanthaco.ca/team/lindsey-stewart,
+Missing h1,1,https://www.samanthaco.ca/team/leanna-rose-jimenez,
+Missing h1,1,https://www.samanthaco.ca/team/elizabeth-joy-cortez,
+Missing h1,1,https://www.samanthaco.ca/team/dominique-nikki-pangilinan,
+Missing h1,1,https://www.samanthaco.ca/team/david-baxter,
+Missing meta description,1,https://www.samanthaco.ca/team/elizabeth-joy-cortez,
+Low text to HTML ratio,11,https://www.samanthaco.ca/,
+Low word count,1,https://www.samanthaco.ca/our-team,
+Llms.txt not found,1,https://www.samanthaco.ca/,
+Orphaned sitemap pages,1,https://www.samanthaco.ca/sitemap.xml,https://www.samanthaco.ca
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/who-needs-a-marriage-contract,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/who-needs-a-cohabitation-agreement-in-ontario,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/update-on-damages-for-spousal-violence---still-too-low,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/re-thinking-appropriate-dispute-resolution-in-the-context-of-intimate-partner-violence-and-family-violence,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/polyamory-and-domestic-contracts-in-ontario,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/key-things-to-keep-in-mind-when-advancing-tort-claims-for-ipv-in-family-court,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/international-and-out-of-province-marriage-contracts-are-they-enforceable-under-ontario-family-law,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/2025-amendments-to-the-federal-child-support-tables---out-with-the-old-in-with-the-new,
+Pages with only one internal link,1,https://www.samanthaco.ca/blog/ limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,
+Permanent redirects,1,https://www.samanthaco.ca/blog/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,https://www.samanthaco.ca/blogs/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii
+Permanent redirects,1,https://www.samanthaco.ca/blog/limitation-periods-for-the-tort-of-intentional-infliction-of-mental-suffering-in-cases-of-intimate-partner-violence-in-ontario,https://www.samanthaco.ca/blogs/limitation-periods-for-the-tort-of-intentional-infliction-of-mental-suffering-in-cases-of-intimate-partner-violence-in-ontario
+Permanent redirects,1,https://www.samanthaco.ca/blog//limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,https://www.samanthaco.ca/blogs/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii
+Permanent redirects,1,https://www.samanthaco.ca/blog/ limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,https://www.samanthaco.ca/blogs/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii
+Links with no anchor text,1,https://www.samanthaco.ca/blog/who-needs-a-cohabitation-agreement-in-ontario,https://www150.statcan.gc.ca/n1/daily-quotidien/220713/dq220713b-eng.htm
+Links with no anchor text,1,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,https://transpulseproject.ca/research/impacts-of-strong-parental-support-for-trans-youth/
+Links with no anchor text,2,https://www.samanthaco.ca/blog/limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,https://doi.org/10.1891/0886-6708.25.5.631 ; https://canliiconnects.org/en/summaries/93091
+Links with no anchor text,2,https://www.samanthaco.ca/blog//limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,https://doi.org/10.1891/0886-6708.25.5.631 ; https://canliiconnects.org/en/summaries/93091
+Links with no anchor text,2,https://www.samanthaco.ca/blog/ limitation-periods-the-issue-of-res-judicata-and-spousal-violence-mccann-v-barens-2023-bcsc-2000-canlii,https://doi.org/10.1891/0886-6708.25.5.631 ; https://canliiconnects.org/en/summaries/93091
+Links with no anchor text,7,https://www.samanthaco.ca/blog/coercive-control-in-the-digital-age-how-technology-can-be-used-to-facilitate-intimate-partner-violence,"statcan.gc.ca, tandfonline.com, cacp.ca, scc-csc.ca, femicideincanada.ca, justice.gc.ca, pmc.ncbi.nlm.nih.gov"
+External pages or resources with 403 HTTP status code,2,https://www.samanthaco.ca/blog/update-on-damages-for-spousal-violence---still-too-low,nextcanada.westlaw.com
+External pages or resources with 403 HTTP status code,1,https://www.samanthaco.ca/blog/key-things-to-keep-in-mind-when-advancing-tort-claims-for-ipv-in-family-court,nextcanada.westlaw.com
+External pages or resources with 403 HTTP status code,1,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,https://www.tandfonline.com/doi/pdf/10.1080/26895269.2022.2100644
+External pages or resources with 403 HTTP status code,1,https://www.samanthaco.ca/blog/coercive-control-in-the-digital-age-how-technology-can-be-used-to-facilitate-intimate-partner-violence,https://www.tandfonline.com/doi/full/10.1080/14680777.2018.1447341
+Content not optimized,1,https://www.samanthaco.ca/privacy-policy,
+Content not optimized,1,https://www.samanthaco.ca/blog/update-on-damages-for-spousal-violence---still-too-low,
+Content not optimized,1,https://www.samanthaco.ca/blog/limitation-periods-for-the-tort-of-intentional-infliction-of-mental-suffering-in-cases-of-intimate-partner-violence-in-ontario,
+Content not optimized,1,https://www.samanthaco.ca/blog/key-things-to-keep-in-mind-when-advancing-tort-claims-for-ipv-in-family-court,
+Content not optimized,1,https://www.samanthaco.ca/blog/international-and-out-of-province-marriage-contracts-are-they-enforceable-under-ontario-family-law,
+Content not optimized,1,https://www.samanthaco.ca/blog/gender-affirming-medical-care-for-children-in-family-law-disputes,
+Content not optimized,1,https://www.samanthaco.ca/blog/coercive-control-in-the-digital-age-how-technology-can-be-used-to-facilitate-intimate-partner-violence,
+Content not optimized,1,https://www.samanthaco.ca/blog/2025-amendments-to-the-federal-child-support-tables---out-with-the-old-in-with-the-new,

@@ -57,7 +57,27 @@ App only: no WebSite node, Organization @id, LCP / CLS, form labels, heading ord
 
 ### samanthaco.ca
 
-Semrush pending. App: 14 Should fix, 29 Nice to have; 15 items without a result (defects 1–2), so the grade is not final.
+Semrush finished 06:27 UTC: 38 pages, 23 errors / 40 warnings / 46 notices. csv: `fork/fixtures/external/samanthaco.ca-semrush-2026-11-23.csv`.
+
+| Semrush issue (count)                                                                                                 | App                                                                 | First-pass verdict                                                           |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 4xx `/team/law-students`, linked from 7 team pages; 4xx `/blogs/znge05…` linked from 1 post (Broken internal links 8) | Internal links point at redirected or retired URLs (4 pages)        | open: 8 source pages vs 4; P3-13 crashed (defect 1). Verify after WO-B20-007 |
+| Duplicate title / content / meta description on 3 URL forms of one post (`/blog/x`, `/blog//x`, `/blog/%20x`)         | Near-duplicate pages (3); Duplicate titles, descriptions or H1s (3) | agree                                                                        |
+| Malformed links (2: `https://<https://…>`, `https://RSC 1985, c 3 (2nd Supp)`)                                        | Malformed link URLs (3 pages)                                       | agree; these hrefs are the cause of defect 1                                 |
+| Broken external links (6, incl. `chrome-extension//` PDF links)                                                       | Outbound links are dead (2 pages)                                   | agree (verify URLs)                                                          |
+| Structured data markup errors (2: `/`, `/legal-services`)                                                             | JSON-LD relative / empty values (10 pages)                          | agree                                                                        |
+| Title too long (14)                                                                                                   | Titles over 70 characters (16)                                      | agree                                                                        |
+| Missing h1 (7 team pages)                                                                                             | missing title / not one H1 (7 pages)                                | agree                                                                        |
+| Missing meta description (1)                                                                                          | Indexable pages without a meta description (1)                      | agree                                                                        |
+| Pages with only one internal link (10)                                                                                | Sitemap URLs with only one internal link (10)                       | agree                                                                        |
+| Permanent redirects (4, `/blog/x` → `/blogs/x`)                                                                       | Internal links point at redirected or retired URLs                  | agree (verify URLs)                                                          |
+| Orphaned sitemap page; Low word count `/our-team`                                                                     | Test / draft URLs in the sitemap; —                                 | verify                                                                       |
+| Links with no anchor text (15, footnote links on 6 posts)                                                             | not reported on this run                                            | open: verify, WO-B20-013                                                     |
+| External 403 (5: westlaw, tandfonline)                                                                                | —                                                                   | tool-wrong candidate (sites refuse bots)                                     |
+| Low text to HTML ratio (11), Llms.txt not found, Content not optimized (10)                                           | —                                                                   | skip (map)                                                                   |
+| schema.org markup = 0 pages                                                                                           | JSON-LD findings on 24 pages                                        | tool-wrong                                                                   |
+
+App only: accessibility (28 pages), ItemList / BreadcrumbList gaps (24), Article JSON-LD gaps (16), OG / Twitter tags missing (28; Semrush counts 28 pages **with** them: verify in WO-B20-013), image dimensions, cache policy, security headers, no primary action on first mobile screen (21), hard-coded years, AI-bot policy split, AI-judged ×6. Grade not final: 15 items without a result (defects 1–2).
 
 ## Residual weaknesses
 
