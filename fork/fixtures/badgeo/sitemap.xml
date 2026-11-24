@@ -83,4 +83,8 @@
   <url><loc>{{ORIGIN}}/blocked-telemetry.html</loc></url>
   <url><loc>{{ORIGIN}}/drawer-ok.html</loc></url>
   <url><loc>{{ORIGIN}}/widget-down.html</loc></url>
+  <url><loc>{{ORIGIN}}/link-form-301.html</loc></url>
+  <url><loc>{{ORIGIN}}/link-form-302.html</loc></url>
+  <url><loc>{{ORIGIN}}/kit-list/</loc></url>
+  <url><loc>{{ORIGIN}}/ride-maps/</loc></url>
 </urlset>

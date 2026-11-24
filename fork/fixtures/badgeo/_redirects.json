@@ -1,4 +1,6 @@
 {
   "/old-event.html": [301, "{{ORIGIN}}/"],
-  "/contact.html?page_id=7": [301, "{{ORIGIN}}/contact.html"]
+  "/contact.html?page_id=7": [301, "{{ORIGIN}}/contact.html"],
+  "/kit-list": [301, "{{ORIGIN}}/kit-list/"],
+  "/ride-maps": [302, "{{ORIGIN}}/ride-maps/"]
 }

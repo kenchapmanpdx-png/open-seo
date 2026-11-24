@@ -25,6 +25,15 @@ function run(text: string) {
   );
 }
 
+const host = (name: string, status: number) => ({
+  host: name,
+  status,
+  storageKey: null,
+  groups: [],
+  sitemaps: [],
+  parseWarnings: [],
+});
+
 describe("robots.group-evaluation", () => {
   it("opens P3-15/P9-05 when a named Allow-only group skips the * Disallows, proving it per bot", async () => {
     const result = await run(
@@ -66,15 +75,6 @@ describe("robots.group-evaluation", () => {
     expect(
       gpt.findings.find((f) => f.title.startsWith("Named"))?.severity,
     ).toBe("S1");
-  });
-
-  const host = (name: string, status: number) => ({
-    host: name,
-    status,
-    storageKey: null,
-    groups: [],
-    sitemaps: [],
-    parseWarnings: [],
   });
 
   // WO-B20-011; bluebonnetroofs.com: the www sibling only redirects (301) to the 404 host.
