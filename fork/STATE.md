@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: done (not-started | in-progress | needs-ken | done)
-needs_ken: B20 done (run 98); every batch in the sequence is done. BLOCKED-KEN left in fork/queue.md: WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); M1-2026-11-20 upstream rebase onto v0.1.31 pushed as `ken/rebase-v0.1.31-m1`, `ken/main` needs your "push" (force-with-lease), and upstream has 14 newer commits; WO-B9-026 in-app perf half; WO-B13-015 Windows autostart install (K1). Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Handbook decisions for you (fork/reports/B20.md § Exit): proposed wording "S1 applies where the defect affects at least one indexable page"; whether cart / account / checkout pages leave S1 by page type (valentinecoffeeco `/cart` is indexable and still caps). Revert lines: "link form always S1", "pagination canonical always S1". Look C is live (A / B / upstream to switch); local branch `wip/b16-run81` can be deleted
-current_batch: B20
-batch_file: fork/batches/B20-heavy-cap-scope-speed.md
+status: not-started (not-started | in-progress | needs-ken | done)
+needs_ken: B21 queued by Ken's request 2026-11-24 (nothing needs Ken to start); B20 done (run 98). BLOCKED-KEN left in fork/queue.md: WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); M1-2026-11-20 upstream rebase onto v0.1.31 pushed as `ken/rebase-v0.1.31-m1`, `ken/main` needs your "push" (force-with-lease), and upstream has 14 newer commits; WO-B9-026 in-app perf half; WO-B13-015 Windows autostart install (K1). Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Handbook decisions for you (fork/reports/B20.md § Exit): proposed wording "S1 applies where the defect affects at least one indexable page"; whether cart / account / checkout pages leave S1 by page type (valentinecoffeeco `/cart` is indexable and still caps). Revert lines: "link form always S1", "pagination canonical always S1". Look C is live (A / B / upstream to switch); local branch `wip/b16-run81` can be deleted
+current_batch: B21
+batch_file: fork/batches/B21-heavy-round2-class-fixes.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 98
-next_action: build sequence complete (B20 done run 98, tag handbook-v3.9.0). MAINT: weekly LIGHT loop M1 (BLUEPRINT §9: upstream sync, selftest, goldens); nothing else queued without Ken
+next_action: B21 (round-2 field-test class fixes: WO-B21-001…004, exit 090; fork/work-orders/WO-B21-*.md). Then MAINT: weekly LIGHT loop M1 (BLUEPRINT §9: upstream sync, selftest, goldens)
 contracts_version: 1.11.0 (B19 run 89: ADR-033 K3 abortUrls / mainWords / aborted robots, RenderData js.mainWords + js.robotsBlocked; 1.10.0 B17 run 84: ADR-032 PageSnapshot `redirectChain` + `doctype`, SUPP-21…26; 1.9.0 B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -29,8 +29,8 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 3. Set `status: in-progress`. Open `batch_file`; resume at `next_action`.
 4. Missing credential or access (run `bash fork/scripts/preflight.sh`; never read `.env*`) → mark only the dependent WOs/steps `BLOCKED-KEN` and continue everything else.
 5. End of run scope or ~70% context: commit (every run must produce ≥1 commit; it is the autopilot progress signal), update this file (run log, next_action). AUTOPILOT → exit. INTERACTIVE → keep going (auto-compact handles context).
-6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch in table order (B15 → B17 → B16 → B18 → B19 → B20), skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
-7. Last batch in the sequence with a batch file (B20) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
+6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch in table order (B15 → B17 → B16 → B18 → B19 → B20 → B21), skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
+7. Last batch in the sequence with a batch file (B21) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
 8. `status: needs-ken` only when no remaining work in the current or any later batch can proceed without Ken.
 9. Ken switches to SPLIT (weekly usage low) → follow SPLIT rules from the next run. Weekly limit fully reached → autopilot stops; resume later with the same command.
 
@@ -58,6 +58,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B18   | fork/batches/B18-heavy-field-test-1.md           | HEAVY         | done   |
 | B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done   |
 | B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done   |
+| B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | todo   |
 
 ## Run log
 
