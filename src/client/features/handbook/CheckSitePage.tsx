@@ -111,8 +111,12 @@ function CheckForm({ projectId }: { projectId: string }) {
           excludePaths: excludePaths.data,
         },
         {
-          verifyWebsite: (domain) =>
-            verifyHandbookWebsite({ data: { website: domain } }),
+          verifyWebsite: async (domain) => {
+            const result = await verifyHandbookWebsite({
+              data: { website: domain },
+            });
+            if (!result.ok) throw new Error(result.reason);
+          },
           listProjects: () => getProjects(queryClient),
           createProject: (name) => createProject({ data: { name } }),
           setProjectDomain: (pid, domain) =>
