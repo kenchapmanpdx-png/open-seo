@@ -20,3 +20,22 @@ export function createLimiter(max: number) {
     }
   };
 }
+
+/**
+ * Read-ahead over an ordered list (WO-B20-005): `take(i)` starts `items[i]`
+ * and the next `ahead() - 1` items if not started yet, then awaits item `i`.
+ * The caller still handles results one by one in list order.
+ */
+export function readAhead<T, R>(
+  items: readonly T[],
+  ahead: () => number,
+  start: (item: T) => Promise<R>,
+): (index: number) => Promise<R> {
+  const started = new Map<number, Promise<R>>();
+  return (index) => {
+    const end = Math.min(items.length, index + Math.max(1, ahead()));
+    for (let i = index; i < end; i++)
+      if (!started.has(i)) started.set(i, start(items[i]));
+    return started.get(index) ?? start(items[index]);
+  };
+}

@@ -7,6 +7,8 @@ import { scanAiAddressed } from "@/server/features/handbook/engine/ai-addressed"
 import { parseBlock } from "./jsonld-parse";
 import { unreadCoverage } from "@/server/features/handbook/engine/unread";
 import { emptyHead, emptyMarkup } from "./empty-page";
+import { readAhead } from "./limiter";
+import { keptHeaders } from "./kept-headers";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
 import { handbookExcluded } from "@/server/features/handbook/engine/exclude";
@@ -112,6 +114,8 @@ export function createCrawlCollectors(options: CrawlOptions) {
   return { pages, jsonld, templates };
 }
 
+const CRAWL_CONCURRENCY = 4; // WO-B20-005
+
 async function crawl(
   ctx: CollectorContext,
   collected: Partial<CollectedData>,
@@ -151,10 +155,17 @@ async function crawl(
     if (room <= 0 || next.length === 0 || outOfTime()) break;
     const wave =
       next.length > room ? stratifiedFill(groupByPattern(next), room) : next;
-    for (const url of wave) {
+    // WO-B20-005: CRAWL_CONCURRENCY fetches in flight (safeFetch keeps its
+    // per-host spacing); results handled in wave order as before.
+    const take = readAhead(
+      wave,
+      () => Math.min(CRAWL_CONCURRENCY, options.maxPages - snapshots.length),
+      (url) => fetchPage(ctx, url, source.get(url) ?? "raw"),
+    );
+    for (const [index, url] of wave.entries()) {
       if (snapshots.length >= options.maxPages || outOfTime()) break;
       attempted.add(url);
-      const page = await fetchPage(ctx, url, source.get(url) ?? "raw");
+      const page = await take(index);
       if (!page) {
         failed.push(url);
         continue;
@@ -361,20 +372,6 @@ async function fetchPage(
       blocks,
     },
   };
-}
-
-const HEADER_VALUE_MAX = 2048;
-
-/** Crawl response headers as stored on the snapshot (ADR-021): no cookies, values ≤ 2 kB. */
-function keptHeaders(
-  headers: ReadonlyArray<readonly [string, string]>,
-): [string, string][] {
-  return headers.flatMap(([name, value]): [string, string][] => {
-    const key = name.toLowerCase();
-    return key === "set-cookie"
-      ? []
-      : [[key, value.slice(0, HEADER_VALUE_MAX)]];
-  });
 }
 
 function normalize(url: string): string | null {

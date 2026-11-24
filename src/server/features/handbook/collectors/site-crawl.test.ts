@@ -100,10 +100,13 @@ describe("crawl time budget", () => {
     vi.useFakeTimers({ now: new Date("2026-11-22T00:00:00Z") });
     const slow: CollectorContext = {
       ...ctx,
-      // Each page takes 6 simulated minutes; the budget is 15.
+      // Each page takes 6 simulated minutes; fetches run 4 at a time
+      // (WO-B20-005), so overlapping fetches end together. Budget 10 min.
       fetch: async (url, init) => {
-        vi.setSystemTime(Date.now() + 6 * 60_000);
-        return ctx.fetch(url, init);
+        const end = Date.now() + 6 * 60_000;
+        const res = await ctx.fetch(url, init);
+        vi.setSystemTime(Math.max(Date.now(), end));
+        return res;
       },
     };
     const sitemap: CollectedData["sitemap"] = {
@@ -118,12 +121,15 @@ describe("crawl time budget", () => {
     const { pages } = createCrawlCollectors({
       followLinks: false,
       maxPages: 100,
-      maxMinutes: 15,
+      maxMinutes: 10,
     });
     const out = await pages.collect(slow, { sitemap });
     if (out.status !== "ok") throw new Error("expected pages");
-    expect(out.snapshots).toHaveLength(3);
-    expect(out.coverage).toMatchObject({ read: 3, capped: true });
+    // Six pages at 6 min each cannot all fit in 10 min, even 4 at a time.
+    const read = out.snapshots.length;
+    expect(read).toBeGreaterThan(0);
+    expect(read).toBeLessThan(6);
+    expect(out.coverage).toMatchObject({ read, capped: true });
   });
 
   it("never reads a section the user left out", async () => {
