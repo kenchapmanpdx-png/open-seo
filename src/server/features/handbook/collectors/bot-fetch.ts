@@ -23,6 +23,7 @@ import {
 import { decide } from "@/server/features/handbook/engine/robots";
 import { AI_BOT_TOKENS } from "./ai-bot-tokens";
 import { tryFetch } from "./fetch-collectors";
+import { pool } from "./probe";
 
 /**
  * Bot parity (handbook §0 P9, §18; FULL-READ §4 row 1, ADR-021). Probe:
@@ -39,6 +40,7 @@ type Fetch = BotFetchData["fetches"][number];
 type Agent = Fetch["bot"];
 
 const PROBE_URLS = 8;
+const PROBE_WORKERS = 4;
 /** Body excerpt kept as evidence for a blocked fetch (WO-B9-008). */
 const EXCERPT_CHARS = 400;
 
@@ -238,14 +240,17 @@ export const botFetchCollector: Collector<"botFetch"> = {
   key: "botFetch",
   dependsOn: ["templates"],
   async collect(ctx, collected) {
-    const probe: Fetch[] = [];
     const agents: Agent[] = ["browser", ...ALL_BOTS];
-    for (const url of probeUrls(ctx, collected, PROBE_URLS)) {
-      for (const bot of agents) {
-        const f = await fetchAs(ctx, url, bot, 1);
-        if (f) probe.push(f);
-      }
-    }
+    // WO-B20-005: 4 probe fetches in flight (safeFetch keeps 300 ms per
+    // host between starts); results stay in URL × agent order.
+    const pairs = probeUrls(ctx, collected, PROBE_URLS).flatMap((url) =>
+      agents.map((bot) => [url, bot] as const),
+    );
+    const probe: Fetch[] = (
+      await pool(pairs, PROBE_WORKERS, ([url, bot]) =>
+        fetchAs(ctx, url, bot, 1),
+      )
+    ).filter((f): f is Fetch => f !== null);
     if (probe.length === 0)
       return { status: "unavailable", reason: "no response" };
     // A second browser fetch tells a dynamic page from a bot-specific body.

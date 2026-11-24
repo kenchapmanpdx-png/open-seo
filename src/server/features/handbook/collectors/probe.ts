@@ -20,8 +20,12 @@ const sleep = (ms: number) =>
 
 type Pace = (url: string) => Promise<void>;
 
-/** Per-host pacer: each request on a host waits for its own slot. */
-export function hostPacer(intervalMs = 1000): Pace {
+/**
+ * Per-host pacer: each request on a host waits for its own slot. 300 ms =
+ * the page crawl's own per-host spacing (safeFetch); was 1 s, which made the
+ * probes of a site's own assets the longest crawl unit (WO-B20-005 / 012).
+ */
+export function hostPacer(intervalMs = 300): Pace {
   const next = new Map<string, number>();
   return async (url: string) => {
     const host = new URL(url).host;

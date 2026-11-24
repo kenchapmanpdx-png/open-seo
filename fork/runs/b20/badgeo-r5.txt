@@ -1,0 +1,151 @@
+handbook.collector.start {"key":"robots"}
+handbook.collector.fetch_failed {"url":"http://www.127.0.0.1.nip.io:32993/robots.txt","error":"Error: fetch blocked (scope): http://www.127.0.0.1.nip.io:32993/robots.txt"}
+handbook.collector.end {"key":"robots","ms":78}
+handbook.collector.start {"key":"sitemap"}
+handbook.collector.end {"key":"sitemap","ms":6}
+handbook.collector.start {"key":"pages"}
+handbook.collector.end {"key":"pages","ms":338}
+handbook.collector.start {"key":"jsonld"}
+handbook.collector.end {"key":"jsonld","ms":0}
+handbook.collector.start {"key":"templates"}
+handbook.collector.end {"key":"templates","ms":6}
+handbook.collector.start {"key":"headers"}
+handbook.collector.end {"key":"headers","ms":3}
+handbook.collector.start {"key":"llms"}
+handbook.collector.end {"key":"llms","ms":3}
+handbook.collector.start {"key":"variants"}
+handbook.collector.fetch_failed {"url":"http://www.127.0.0.1.nip.io:32993/","error":"Error: fetch blocked (scope): http://www.127.0.0.1.nip.io:32993/"}
+handbook.collector.fetch_failed {"url":"https://127.0.0.1.nip.io:32993/","error":"TypeError: fetch failed"}
+handbook.collector.fetch_failed {"url":"https://www.127.0.0.1.nip.io:32993/","error":"Error: fetch blocked (scope): https://www.127.0.0.1.nip.io:32993/"}
+handbook.collector.end {"key":"variants","ms":56}
+handbook.collector.start {"key":"botFetch"}
+handbook.botfetch.interstitial {"url":"http://127.0.0.1.nip.io:32993/gate/challenge.html","bot":"PerplexityBot","round":1,"status":200,"reason":"interstitial:openresty"}
+handbook.botfetch.escalate {"because":"GPTBot got HTTP 403 on http://127.0.0.1.nip.io:32993/partners/acme.html"}
+handbook.collector.end {"key":"botFetch","ms":364931}
+handbook.collector.start {"key":"outbound"}
+handbook.collector.end {"key":"outbound","ms":66021}
+handbook.collector.start {"key":"linkTargets"}
+handbook.collector.end {"key":"linkTargets","ms":21055}
+handbook.collector.start {"key":"resources"}
+handbook.collector.end {"key":"resources","ms":19080}
+handbook.collector.start {"key":"render"}
+handbook.collector.end {"key":"render","ms":10235}
+handbook.crawl.render_pass {"links":1,"read":1}
+handbook.collector.start {"key":"render"}
+handbook.collector.end {"key":"render","ms":10430}
+handbook.media_size.unknown {"url":"https://region1.google-analytics.com/g/collect?v=2&tid=G-BADGEO&en=page_view","status":204,"rangeStatus":204}
+handbook.collector.start {"key":"axe"}
+handbook.collector.end {"key":"axe","ms":19507}
+handbook.collector.start {"key":"lighthouse"}
+handbook.collector.end {"key":"lighthouse","ms":103127}
+handbook.checks.timing {"totalMs":110,"slowest":["perf.video 26ms","crawl.raw-copy 13ms","crawl.canonical-form 6ms","crawl.url-inventory 5ms","botfetch.parity 5ms","crawl.coverage 5ms","crawl.duplicates 3ms","robots.hidden-pages 3ms","crawl.supp-links 3ms","crawl.supp-scaled 3ms"]}
+[handbook] Escalated: Lighthouse on that page because http://127.0.0.1.nip.io:32993/autoplay-video.html weighs 12.0 MB (> 5 MB); http://127.0.0.1.nip.io:32993/heavy.html weighs 6.3 MB (> 5 MB) (2 URLs)
+[handbook] Escalated: bot parity on all pages × 5 bots × 2 rounds + plain-HTTP probe on 10 URLs because GPTBot got HTTP 403 on http://127.0.0.1.nip.io:32993/partners/acme.html (113 URLs)
+| page | expected | fired | missing | blocked | unexpected |
+| --- | --- | --- | --- | --- | --- |
+| / | P9-01 | P9-01 | — | — | — |
+| /a11y-bad.html | P8-04, SUPP-20, SUPP-01 | P8-04, SUPP-20, SUPP-01 | — | — | — |
+| /about | P3-02 | P3-02 | — | — | — |
+| /about/ | — | — | — | — | — |
+| /admin/ | P3-14, P3-16 | P3-14, P3-16 | — | — | — |
+| /all.html | — | — | — | — | — |
+| /assets/app.3f9a1c.js | P7-07 | P7-07 | — | — | — |
+| /attachment-photo.html | P3-12 | P3-12 | — | — | — |
+| /autoplay-video.html | P7-01, SUPP-08, P2-05 | P2-05, P7-01, SUPP-08 | — | — | — |
+| /Bad_Slug.html | P2-12 | P2-12 | — | — | — |
+| /bad-structure.html | P4-08, P5-12, P8-06 | P4-08, P8-06, P5-12 | — | — | — |
+| /badge.html | P5-11 | — | — | P5-11 | — |
+| /beacon.html | P7-04 | P7-04 | — | — | — |
+| /blank-target.html | P4-12, SUPP-02 | P4-12, SUPP-02 | — | — | — |
+| /blocked-telemetry.html | P3-20 | P3-20 | — | — | — |
+| /broken-jsonld.html | P6-08 | P6-08 | — | — | — |
+| /calendar/ | — | — | — | — | — |
+| /canonical-mismatch.html | P3-04 | P3-04 | — | — | — |
+| /canonicalised.html | P3-12 | P3-12 | — | — | — |
+| /coffee-menu.html | — | — | — | — | — |
+| /contact.html | — | — | — | — | — |
+| /content-video.html | SUPP-11, SUPP-12 | SUPP-12 | — | SUPP-11 | — |
+| /countdown-ok.html | — | — | — | — | — |
+| /counter.html | P2-01, SUPP-04 | SUPP-04, P2-01 | — | — | — |
+| /deep/no-hsts.html | P8-01, P8-05 | P8-01, P8-05 | — | — | — |
+| /demo-post.html | P5-04, P3-12 | P3-12, P5-04 | — | — | — |
+| /drawer-ok.html | — | — | — | — | — |
+| /dup-title-a.html | P4-01 | P4-01 | — | — | — |
+| /dup-title-b.html | P4-01 | P4-01 | — | — | — |
+| /duplicate-org.html | P6-03 | P6-03 | — | — | — |
+| /embed.html | SUPP-09, SUPP-10, SUPP-11, SUPP-12 | SUPP-09, SUPP-10, SUPP-12 | — | SUPP-11 | — |
+| /empty-og.html | SUPP-06 | SUPP-06 | — | — | — |
+| /events/ | P3-08 | P3-08 | — | — | — |
+| /events/page/2.html | P3-21, P3-04 | P3-04, P3-21 | — | — | — |
+| /events/spring-run-2026.html | — | — | — | — | — |
+| /events/thin-event.html | P2-06, P6-05, P6-06, P3-12 | P2-06, P6-05, P6-06, P3-12 | — | — | — |
+| /events/unlinked-run-2026.html | P2-10, P3-12 | P2-10, P3-12 | — | — | — |
+| /fade-in.html | P2-07, SUPP-03 | P2-07, SUPP-03 | — | — | — |
+| /fade-one.html | — | — | — | — | — |
+| /fade-three.html | — | — | — | — | — |
+| /fade-two.html | P2-07 | P2-07 | — | — | — |
+| /fake-list.html | SUPP-14 | SUPP-14 | — | — | — |
+| /faq-good.html | — | — | — | — | — |
+| /gate/challenge.html | P9-01, SUPP-07 | P9-01, SUPP-07 | — | — | — |
+| /generic-anchors.html | SUPP-01 | SUPP-01 | — | — | — |
+| /guide.html | SUPP-15 | — | — | SUPP-15 | — |
+| /heavy.html | P2-05 | P2-05 | — | — | — |
+| /hidden-faq.html | P6-07, SUPP-16 | P6-07 | — | SUPP-16 | — |
+| /hostile-links.html | SUPP-24, P3-12 | P3-12, SUPP-24 | — | — | — |
+| /icon-only.html | P8-04, SUPP-01 | P8-04, SUPP-01 | — | — | — |
+| /index.html | P3-03 | P3-03 | — | — | — |
+| /js-nav.html | — | — | — | — | — |
+| /js-only-target.html | P3-12 | P3-12 | — | — | — |
+| /js-only.html | P2-01, P2-08, P2-09, P3-12 | P2-01, P2-09, P3-12, P2-08 | — | — | — |
+| /kit-list/ | — | P3-12 | — | — | P3-12 |
+| /landing-dev.html | SUPP-05 | SUPP-05 | — | — | — |
+| /lazy-hero.html | P7-02, P7-03 | P7-02, P7-03 | — | — | — |
+| /link-form-301.html | P3-04:S3 | P3-04, P3-08, P3-12 | — | — | P3-08, P3-12 |
+| /link-form-302.html | P3-04:S1 | P3-04, P3-08, P3-12, SUPP-25 | — | — | P3-08, P3-12, SUPP-25 |
+| /link-hygiene.html | SUPP-23, SUPP-24, P3-12 | P3-12, SUPP-23, SUPP-24 | — | — | — |
+| /low-contrast.html | P8-02 | P8-02 | — | — | — |
+| /many-outbound.html | P5-13, P3-08 | P3-08, P5-13 | — | — | — |
+| /members-results.html | P3-20:S3 | P3-20 | — | — | — |
+| /needs-blocked-js.html | P3-20:S1 | P3-20 | — | — | — |
+| /no-headers.html | P8-01, P8-05 | P8-01, P8-05 | — | — | — |
+| /no-og.html | P4-09, P4-11 | P4-09, P4-11 | — | — | — |
+| /nosnippet-answer.html | SUPP-13 | SUPP-13 | — | — | — |
+| /nosnippet.html | SUPP-13 | SUPP-13 | — | — | — |
+| /old-event.html | P3-05 | P3-05 | — | — | — |
+| /orphan.html | P3-12 | P3-12 | — | — | — |
+| /partners/acme.html | P9-01 | P9-01 | — | — | — |
+| /placeholder.html | P6-15, P6-11, P6-10 | P6-10, P6-15, P6-11 | — | — | — |
+| /relative-urls.html | P6-02 | P6-02 | — | — | — |
+| /repeat-block.html | SUPP-03 | SUPP-03 | — | — | — |
+| /ride-maps/ | — | P3-12 | — | — | P3-12 |
+| /robots.txt | P3-15, P9-05 | P3-15, P9-05 | — | — | — |
+| /search.html | P3-23 | P3-23 | — | — | — |
+| /shop-links.html | P3-04 | P3-04 | — | — | — |
+| /sitemap-build.xml | P3-17 | P3-17 | — | — | — |
+| /supp17-low-a.html | — | — | — | — | — |
+| /supp17-low-b.html | — | — | — | — | — |
+| /supp17-low-c.html | — | — | — | — | — |
+| /supp17-pair-a.html | — | — | — | — | — |
+| /supp17-pair-b.html | — | — | — | — | — |
+| /supp17-variation-a.html | SUPP-17 | SUPP-17 | — | — | — |
+| /supp17-variation-b.html | SUPP-17 | SUPP-17 | — | — | — |
+| /supp17-variation-c.html | SUPP-17 | SUPP-17 | — | — | — |
+| /supp17-variation-d.html | SUPP-17 | SUPP-17 | — | — | — |
+| /supp19-ai-tools-article.html | — | — | — | — | — |
+| /supp19-comment.html | SUPP-19 | SUPP-19 | — | — | — |
+| /supp19-hidden.html | SUPP-19 | SUPP-19 | — | — | — |
+| /supp19-visible.html | SUPP-19 | SUPP-19 | — | — | — |
+| /tag/demo.html | P3-12 | P3-12 | — | — | — |
+| /tel-formats.html | P5-08 | P5-08 | — | — | — |
+| /twin-a.html | P3-12 | P3-12 | — | — | — |
+| /twin-b.html | P3-12, P3-04 | P3-04, P3-12 | — | — | — |
+| /twin-copy.html | — | — | — | — | — |
+| /two-websites.html | P6-03 | P6-03 | — | — | — |
+| /video-ok.html | — | — | — | — | — |
+| /widget-down.html | P5-13 | P5-13 | — | — | — |
+
+pages 100 · missing 0 · blocked 5 · unexpected 7 · findings 68 + 21 additional · 606248ms
+contract violations / check errors: 0
+beacon: aborted by the sidecar
+bot-parity escalation: 113 URLs because GPTBot got HTTP 403 on http://127.0.0.1.nip.io:32993/partners/acme.html
+exit 1
