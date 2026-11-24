@@ -79,6 +79,17 @@ Semrush finished 06:27 UTC: 38 pages, 23 errors / 40 warnings / 46 notices. csv:
 
 App only: accessibility (28 pages), ItemList / BreadcrumbList gaps (24), Article JSON-LD gaps (16), OG / Twitter tags missing (28; Semrush counts 28 pages **with** them: verify in WO-B20-013), image dimensions, cache policy, security headers, no primary action on first mobile screen (21), hard-coded years, AI-bot policy split, AI-judged ×6. Grade not final: 15 items without a result (defects 1–2).
 
+## Verified on the live sites (2026-11-23 22:50 PT)
+
+| Open item                                                                  | Check                                 | Result                                                                                                                                                                                                               | Verdict                                                                  |
+| -------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| samanthaco.ca Open Graph: app 28 pages missing, Semrush 28 pages with      | raw HTML of 6 pages                   | every page has og:title, og:description, og:image, og:type, twitter:card; none has og:url. App detail says "missing og:url"                                                                                          | both right; app title overstates. WO-B20-014                             |
+| samanthaco.ca broken internal links: Semrush 8 source pages, app "4 pages" | app finding detail                    | app lists `/team/law-students → 404 — linked from 7 page(s)` and `/blogs/znge05… → 404`; "4 pages" counts link targets, not the 8 pages that carry the links                                                         | agree; page count misleading. WO-B20-014                                 |
+| samanthaco.ca Links with no anchor text (Semrush 15)                       | raw HTML of the coercive-control post | the links have text: the bare URL, or `<sup>[1]</sup>` footnote marks. No empty anchors                                                                                                                              | tool-wrong (Semrush counts bare-URL and footnote anchors as "no anchor") |
+| theogdenver.com Pages with only one internal link (10)                     | sitemap + links on hub pages          | the 6 `/event/*` pages are linked only from `/happenings/` and are not in the sitemap (10 URLs). App reports them under "Indexable pages missing from the sitemap" (8) but its one-link rule reads sitemap URLs only | Semrush right; app gap, low severity. WO-B20-014                         |
+
+Not verified: external 403s (westlaw, tandfonline, bakersway) and the 20 vs 33 page count on theogdenver.com.
+
 ## Residual weaknesses
 
 - SUPPORTED: defects 1–5 (run output + code read).
