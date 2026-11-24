@@ -31,13 +31,13 @@ Round 2 (post-B20, run 98, tag handbook-v3.9.0). Manual comparison: in-app run h
 | Resources formatted as page links | 12 rows (2 wixstatic images) | — | skip: live fetch of / has 4 anchors to wixstatic; not a ranking factor, no handbook rule | SUPPORTED (anchors); SPECULATIVE (no ranking effect) |
 | Links with no anchor text | 4 (nuvet.com/70832, Vimeo player; on / and root variant) | — | skip, not reproduced: live raw HTML of / has 3 nuvet.com anchors, all with text | SUPPORTED (anchors have text); SPECULATIVE (Semrush reads a different text node) |
 | Pages with only one internal link | 1 (/) | — | skip: live / has 8 internal anchors to 5 distinct pages; Semrush counts inbound links and splits / from the no-slash variant | SUPPORTED (anchors); SPECULATIVE (cause) |
-| Low semantic HTML | 1 (/services) | — | skip: notice-level; app landmark/heading check passes on all 5 pages | SUPPORTED |
+| Low semantic HTML | 1 (/services) | — | skip: notice-level; app landmark/heading check has no finding on this site | SUPPORTED |
 | Content not optimized | 1 (/faq) | FAQ answers finding (F30) | skip: LLM-judged | SUPPORTED |
 
 ## App-only (Semrush has no equivalent)
 - JSON-LD: WebSite missing alternateName, LocalBusiness missing @id and address, generic type, no sameAs.
 - Lab LCP 4.4–8.4 s on 2 of 2 templates; HTML above 500 KB on 4 pages; analytics before load.
-- Skip link, filename alts, og:image 2500x630-ratio mismatch, max-image-preview, sitemap lastmod = build date, robots named groups miss `*?lightbox=`, NAP formats, entity/local checks, FAQ answers.
+- Skip link, filename alts, og:image declared 2500x1330 (not 1200x630), max-image-preview, sitemap lastmod = build date, robots named groups miss `*?lightbox=`, NAP formats, entity/local checks, FAQ answers.
 
 ## Result
 - Zero app misses on ranking-relevant issues. All Semrush rows without an app counterpart are skip-class (ratio, image-as-link, notice-level, not reproduced).

@@ -12,7 +12,7 @@ Round 2 (post-B20, run 98, tag handbook-v3.9.0). Manual comparison: in-app run h
 ## App run
 - Run hb-c99f1071-a911-4e07-b108-0efbed4227a5, 2026-11-24 13:27 MST, completed
 - Grade F · 39 (45.4 before the must-fix cap; SEO 39 / GEO 33 / AEO 42); must fix 3, should fix 9, nice to have 21; couldn't check 18
-- **Grade is not final**: the browser helper got HTTP 403 (no-JS fetch also 403). 10 checks need it (P1-02, P2-01, P2-07..09, P3-20, P5-14, P7-04, P7-06 and P2-05 page weight). Normal Chrome gets 200 on all 8 pages.
+- **Grade is not final**: the browser helper got HTTP 403 (no-JS fetch also 403). 10 checks need it (P1-02, P2-01, P2-05, P2-07, P2-08, P2-09, P3-20, P5-14, P7-04, P7-06). Normal Chrome gets 200 on all 8 pages.
 - Cap drivers: no canonical (8 pages), NerdyBot robots group, ClaudeBot 403 (7 of 7 fetches)
 
 ## Semrush export
@@ -49,5 +49,5 @@ Round 2 (post-B20, run 98, tag handbook-v3.9.0). Manual comparison: in-app run h
 3. **Cloudflare 403 drives a grade cap before the owner decision.** F03 (must-fix, ClaudeBot 403 on 7 of 7 fetches) caps the grade at 39 while P9-04 (owner decides which AI bots may read the site) is still open, and F32 reports the same evidence at nice-to-have. Cloudflare's bot/AI blocking is typically a platform setting, so the cause is likely deliberate (SPECULATIVE). Candidate fix: report the split once, and do not cap the grade on it until P9-04 is recorded. Needs Ken's call on severity policy; not a defect with a single right answer.
 
 ## Result
-- App matches Semrush on 7 of 8 ranking-relevant Semrush issue types (H1, meta, sitemap scheme, 4xx/broken links, HSTS, plus the skip-class rows). One miss: uncached CSS (P7-07).
+- Of the 6 ranking-relevant Semrush issue types on this site (H1, meta, sitemap scheme, 4xx/broken links, HSTS, uncached CSS), the app matches 5 and misses 1 (uncached CSS, P7-07).
 - The browser helper outage makes the grade provisional (banner shown correctly); 10 checks need a rerun with the helper allowed through Cloudflare, or a different render route. Live bot-UA test (curl as ClaudeBot) was not run (blocked in this session), so the 403 cause is SUPPORTED only by the app's stored evidence.
