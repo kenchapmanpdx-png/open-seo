@@ -151,4 +151,42 @@ describe("crawl time budget", () => {
     await pages.collect(ctx, { sitemap });
     expect(fetched).toEqual([`${ORIGIN}/`, `${ORIGIN}/services`]);
   });
+
+  // Field test 6 (samanthaco.ca): /blogs/x 301 → /blog/%20x, linked nowhere
+  // else. The page was stored only under /blogs/x (finalUrl ≠ url), which
+  // every page-fact check skips, so its duplicate title went unreported.
+  it("keeps a redirect target first reached by the redirect as its own page", async () => {
+    const redirecting: CollectorContext = {
+      ...ctx,
+      fetch: async (url, init) => {
+        const res = await ctx.fetch(url, init);
+        return url.endsWith("/old")
+          ? {
+              ...res,
+              finalUrl: `${ORIGIN}/new`,
+              redirectChain: [{ url, status: 301 }],
+            }
+          : res;
+      },
+    };
+    const sitemap: CollectedData["sitemap"] = {
+      status: "ok",
+      sources: [],
+      urls: [{ loc: `${ORIGIN}/old`, lastmod: null, source: "fixture" }],
+    };
+    const { pages } = createCrawlCollectors({
+      followLinks: false,
+      maxPages: 100,
+    });
+    const out = await pages.collect(redirecting, { sitemap });
+    if (out.status !== "ok") throw new Error("expected pages");
+    const old = out.snapshots.find((s) => s.url === `${ORIGIN}/old`);
+    const page = out.snapshots.find((s) => s.url === `${ORIGIN}/new`);
+    expect(old).toMatchObject({ finalUrl: `${ORIGIN}/new`, rawKey: null });
+    expect(page).toMatchObject({
+      finalUrl: `${ORIGIN}/new`,
+      redirectChain: [],
+    });
+    expect(page?.rawKey).not.toBeNull();
+  });
 });

@@ -171,22 +171,22 @@ async function crawl(
         continue;
       }
       const finalNorm = normalize(page.snapshot.finalUrl);
-      if (finalNorm && finalNorm !== url && attempted.has(finalNorm)) {
-        // Redirect to a page already crawled: keep a body-less stub so link
-        // checks see `url → finalUrl` (P3-08). No rawKey/links/extras, so
-        // templates and JSON-LD skip it; page-fact checks filter finalUrl = url.
-        snapshots.push({
-          ...page.snapshot,
-          rawKey: null,
-          links: [],
-          images: [],
-        });
-        continue;
+      let snapshot = page.snapshot;
+      if (finalNorm && finalNorm !== url) {
+        // Redirect: keep a body-less stub so link checks see `url →
+        // finalUrl` (P3-08). No rawKey/links/extras, so templates and
+        // JSON-LD skip it; page-fact checks filter finalUrl = url.
+        snapshots.push({ ...snapshot, rawKey: null, links: [], images: [] });
+        if (attempted.has(finalNorm)) continue;
+        // First sight of the target (field test 6: /blogs/x → /blog/%20x,
+        // linked nowhere else): the page itself is read under its final
+        // URL, so page-fact checks see it.
+        snapshot = { ...snapshot, url: snapshot.finalUrl, redirectChain: [] };
       }
       if (finalNorm) attempted.add(finalNorm);
-      snapshots.push(page.snapshot);
+      snapshots.push(snapshot);
       if (snapshots.length % 10 === 0) ctx.progress?.(snapshots.length);
-      extras.set(url, page.extra);
+      extras.set(snapshot.url, page.extra);
       if (options.followLinks && page.snapshot.status === 200) {
         for (const link of sameHostLinks(page.snapshot)) discover(link, "raw");
       }
