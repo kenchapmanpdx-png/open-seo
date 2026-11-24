@@ -46,3 +46,23 @@ The cap value (39) and whether it applies to every S1 are handbook decisions. Op
 - A third option the data suggests: cap only when the S1 affects an indexable content page (not cart, account or checkout pages).
 
 The "Six field sites" table above is the before (stored runs as of run 91).
+
+## After B20 (run-97 goldens, live, 2026-11-24)
+
+B20 kept the cap rule and `S1_CAP` as they are and changed which findings are S1 (ADR-034): an S1 about what search engines see on a page counts only when at least one affected URL is indexable; a link that reaches the canonical in one permanent redirect, and page 2+ of a series canonicalised to page 1 (unless it orphans a crawled page), are S3.
+
+| Site                     | Run     | Capped (final) | Uncapped | Grade | Open S1                                                                                        |
+| ------------------------ | ------- | -------------- | -------- | ----- | ---------------------------------------------------------------------------------------------- |
+| whyracingevents.com      | b20r97  | 39             | 51.6     | F     | P2-01 core content added by JavaScript (home)                                                  |
+| ryanmscottsdale.com      | b20r97  | 40.2           | 40.2     | D     | none                                                                                           |
+| bluetreefunding.com      | b20r97b | 39             | 42.2     | F     | P9-01 bots get a different response (6 pages)                                                  |
+| salonvata.com            | b20r97d | 44.4           | 44.4     | D     | none                                                                                           |
+| spoiledspaandsalon.com   | b20r97  | 51.6           | 51.6     | D     | none                                                                                           |
+| wsparkdental.com         | b20r97  | 37.2           | 37.2     | F     | P3-04 home has no canonical (cap not binding)                                                  |
+| aircorheatingcooling.com | b20r97  | 29.5           | 29.5     | F     | none                                                                                           |
+| valentinecoffeeco.com    | b20r97  | 39             | 43.6     | F     | P3-20 robots.txt blocks render resources on `/cart` (indexable live: 200, self-canonical)      |
+| theogdenver.com          | b20r96  | 50.4           | 50.4     | D     | none (was F 39 / 51: pagination canonical → page 1, now S3 because it orphans no crawled page) |
+
+- The cap still changes the grade on three of eight goldens (whyracingevents, bluetreefunding, valentinecoffeeco); every remaining capping S1 sits on an indexable page.
+- valentinecoffeeco stays capped under the B20 rule: Shopify's robots.txt disallows `/cart/` but not `/cart`, so `/cart` is indexable. If the handbook wants cart / account / checkout pages out of S1 regardless of indexability, that is a page-type rule, not an indexability rule; not made in B20.
+- Proposed wording for the next handbook version: "S1 applies where the defect affects at least one indexable page."
