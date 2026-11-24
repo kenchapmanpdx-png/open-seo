@@ -34,8 +34,9 @@ Round 2 (post-B20, run 98, tag handbook-v3.9.0). Manual comparison: the in-app r
 - JSON-LD issues (Semrush schemaOrg = 0), axe contrast, Core Web Vitals lab data, security headers, heading order.
 
 ## Page-count gap
-- Semrush 29 = 16 app pages + 11 redirect URLs + 1 broken (/aboutlove4pawserscue returned 503 to a live fetch; Semrush counts it broken) + 1 blocked (/cart).
-- Residual: the 503 on /aboutlove4pawserscue may be Squarespace rate limiting from rapid fetches (SPECULATIVE).
+- Semrush `info`: 29 crawled = 15 pages with issues + 1 healthy + 11 redirected + 1 broken + 1 blocked (/cart).
+- App: 16 pages. The broken page was not identified (not looked up).
+- A live fetch of /aboutlove4pawserscue (a 302 target) returned 503 once; possibly Squarespace rate limiting from rapid fetches (SPECULATIVE).
 
 ## Result
 - Zero app misses on ranking-relevant issues. One tool-side gap (orphan sitemap page not audited by Semrush), in the app's favour.
