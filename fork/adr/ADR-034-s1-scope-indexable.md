@@ -40,3 +40,7 @@ valentinecoffeeco `/cart` is **indexable** (checked live 2026-11-23 with a brows
 - Change the cap (option 1 / 2 of the grade-cap note): rejected by the decision; the handbook rule stays.
 - Per-check indexability filters: rejected; three copies of "indexable" already drifted (`scaled-sets.ts`, `canonical-form.ts`, `head-tags.ts`).
 - Treat uncrawled URLs as not indexable: rejected; it would lower findings on evidence the run does not have.
+
+## Addendum: link-form severity (WO-B20-009)
+
+theogdenver.com was capped by "Internal links use a non-canonical URL form": `/menus` and `/happenings` link without the trailing slash, each answering one 301 to the canonical. Handbook §10 (P3-04) asks for links in the canonical form; it does not call a one-hop permanent redirect an indexing error. Decision (Ken delegated severity calls 2026-11-23): the crawl's own fetch of the linked form decides. One 301 / 308 straight to the canonical (200) → S3, title "… (one permanent redirect)", reason "each link reaches the canonical in one permanent redirect". A form that answers 200 (live duplicate), a 302 / 307, a chain of 2+ hops, an error or another landing URL stays S1. A form the crawl did not fetch keeps S1 (no new fetch class).

@@ -4,6 +4,7 @@ import type {
 } from "@/server/features/handbook/contracts/check";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import { SUPP_BY_ID } from "../registry-supp";
+import { ACCESS_S1, PAGE_SCOPED_S1 } from "./s1-scope";
 
 /** Runner-enforced K1 invariants on one check result; the first violation, or null. */
 export function contractViolation(
@@ -34,6 +35,9 @@ export function contractViolation(
     ) {
       return `finding "${f.title}" changes severity without a reason`;
     }
+    // WO-B20-015 (d): every S1 has its condition in the ADR-034 table.
+    if (f.severity === "S1" && !PAGE_SCOPED_S1.has(id) && !ACCESS_S1.has(id))
+      return `S1 finding "${f.title}" on ${id} has no ADR-034 S1 entry`;
     if (f.fixability === "LIMITED" && !f.limitedReason) {
       return `LIMITED finding "${f.title}" without limitedReason`;
     }

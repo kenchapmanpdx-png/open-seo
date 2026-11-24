@@ -5,6 +5,7 @@ import { REGISTRY } from "../registry";
 import { SUPP_REGISTRY } from "../registry-supp";
 import { context, ORIGIN, snapshot } from "../checks/check-test-fixtures";
 import { ACCESS_S1, PAGE_SCOPED_S1, scopeS1ToIndexable } from "./s1-scope";
+import { contractViolation } from "./contract-violation";
 
 const robots: RobotsHost = {
   host: "example.com",
@@ -87,5 +88,29 @@ describe("scopeS1ToIndexable (ADR-034)", () => {
       (id) => PAGE_SCOPED_S1.has(id) === ACCESS_S1.has(id),
     );
     expect(unclassified).toEqual([]);
+  });
+
+  // WO-B20-015 (d): an S1 needs its condition in the ADR-034 table.
+  it("makes an S1 on an item outside the table a contract violation", () => {
+    const raised = {
+      ...finding("P4-01", ["/"]),
+      severityReason: "raised",
+    };
+    const violation = contractViolation(
+      {
+        id: "c",
+        itemIds: ["P4-01"],
+        class: "CRAWL",
+        requires: [],
+        run: () => ({ statuses: [], findings: [], evidence: [] }),
+      },
+      {
+        statuses: [],
+        findings: [raised],
+        evidence: [{ ref: "e1", kind: "url", url: ORIGIN, excerpt: "x" }],
+      },
+      new Map(REGISTRY.map((e) => [e.id, e])),
+    );
+    expect(violation).toContain("has no ADR-034 S1 entry");
   });
 });

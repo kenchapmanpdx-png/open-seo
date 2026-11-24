@@ -1,0 +1,32 @@
+# ADR-035: Class guards for field-test defect classes (B20)
+
+- Status: accepted (run 93; (c) and (e) partial, see below)
+- Date: 2026-11-24 · Batch: B20 · `fork/batches/B20-heavy-cap-scope-speed.md` (WO-B20-015)
+
+## Context
+
+Field tests 6–8 (samanthaco.ca, theogdenver.com, bluebonnetroofs.com) showed defects that were classes, not instances: one malformed href stopped eleven checks, a transient storage 520 lost four speed measurements, a severity rule ignored what the linked URL answers, a glued host reached the engine. [Ken 2026-11-23] "engineer the fixes so these don't happen again": each class gets a guard that fails the build.
+
+## Decision
+
+| Class                               | Fix (shared)                                                                                                                                                                  | Guard                                                                                                                                                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (a) one bad value kills a check     | `checks/support.ts` `parseUrl` / `pathOf` / `bareHost` (undefined / "" on a bad URL), `siteUrl` / `originUrl` for the run origin; every `checks/` call site moved to them     | `checks/hostile-inputs.test.ts`: every registered check runs on malformed hrefs / src / canonical / hreflang / sitemap `<loc>` / robots `Sitemap:` / headers / JSON-LD / probe URLs and must finish; and no `new URL(` in `checks/` outside `support.ts` |
+| (b) silent incomplete runs          | —                                                                                                                                                                             | `badgeo-run.ts` and `golden-score.ts` exit 1 on any item noted `check error` / `check contract violation`; the Fix list already shows "This grade is not final" for render failures                                                                      |
+| (c) transient infrastructure errors | `engine/transient-retry.ts` `fetchWithRetry`: 429 / 5xx / network error, 3 tries, 400 ms doubling                                                                             | unit test per call-site class (below)                                                                                                                                                                                                                    |
+| (d) severity out of proportion      | ADR-034 table (`engine/s1-scope.ts` `PAGE_SCOPED_S1` / `ACCESS_S1`)                                                                                                           | `contractViolation`: an S1 finding on an item in neither list blocks the item ("has no ADR-034 S1 entry"); `s1-scope.test.ts` fails when an S1-default item is unclassified; `golden-score` prints a capped grade and the finding(s) that capped it      |
+| (e) finding says more than evidence | P3-08 / P3-07 `urls` = linking pages (targets in the detail); P4-09 title names the tags only when every page lacks the same ones                                             | unit tests at the checks; the general contract test (urls ⊆ pages read, title vs detail) is open                                                                                                                                                         |
+| (f) bad input reaches the engine    | `verifyHandbookWebsite` (upstream `domainField` Zod + SafeFetch DNS policy + one home-page fetch) runs before Check a site writes a project or a run                          | `services/verifyWebsite.test.ts` (spaces, no TLD, private IP, IP literal, glued hosts) and `checkSite.test.ts` (nothing created when the site does not answer)                                                                                           |
+| (g) field-test procedure            | `fork/MAINTENANCE.md` M6 rules: pre-flight recorded, valid run only (0 check / collector errors), live check before a verdict, every `fixed` names its red case and its guard | the ledger (`field-test.ts --close`)                                                                                                                                                                                                                     |
+
+Retry call sites (c):
+
+| Call                              | Policy                                                                                               | Test                                        |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Evidence store upload (Supabase)  | `fetchWithRetry` (B20)                                                                               | `supabase-evidence-store.test.ts` 520 → 200 |
+| Sidecar `/render`, `/lighthouse`  | `withRestartRetry` (dropped connection → wait for `/health` ≤ 90 s → one retry); 429 render throttle | `sidecar-*.test.ts`                         |
+| Link / resource / outbound probes | `collectors/probe.ts`: 429 / 502 / 503 / 504 → one retry after 2 s                                   | `probe.test.ts`                             |
+| LLM (OpenRouter)                  | AI SDK `maxRetries` with `retry-after` (ADR-019)                                                     | `llm/judge` tests                           |
+| DB save                           | workflow step retries (Cloudflare Workflows step config)                                             | —                                           |
+
+Open: moving probes and sidecar onto `fetchWithRetry` (their policies differ on purpose: probes must not hammer a small site, sidecar waits for a restart); a DB-save transient test; the general finding contract test of (e).

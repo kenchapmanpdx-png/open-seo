@@ -235,10 +235,11 @@ async function main() {
       `\npages ${rows.length} · missing ${missing} · blocked ${blocked} · unexpected ${unexpected} · findings ${report.findings.length} + ${report.additionalFindings?.length ?? 0} additional · ${timing.totalMs}ms`,
     );
     // WO-B19-008: a check that breaks the K1 contract loses all its items.
+    // WO-B20-015 (b): a check error is a failed run, not a "blocked" item.
     const violations = report.items.filter((i) =>
-      i.note?.startsWith("check contract violation"),
+      /^check (contract violation|error)/.test(i.note ?? ""),
     );
-    console.log(`contract violations: ${violations.length}`);
+    console.log(`contract violations / check errors: ${violations.length}`);
     for (const v of violations) console.log(`  ${v.itemId}: ${v.note}`);
     if (violations.length > 0) process.exitCode = 1;
     // WO-B9-001: infinite-space guard (warning only, not a failure).

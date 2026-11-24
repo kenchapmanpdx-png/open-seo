@@ -416,6 +416,27 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         );
       }
       console.log(`→ ${out}`);
+      // WO-B20-015 (b) / (d): a golden with a check error is not a valid
+      // comparison; a capped grade names the finding that capped it.
+      const report = reportJsonSchema.parse(
+        JSON.parse(readFileSync(reportPath, "utf8")),
+      );
+      if (report.score?.capReason) {
+        const codes = report.score.capReason
+          .replace(/^open S1:\s*/, "")
+          .split(/,\s*/);
+        const by = report.findings
+          .filter((f) => codes.includes(f.code))
+          .map((f) => `${f.code} ${f.title} (${f.urls.length} pages)`);
+        console.log(
+          `capped: ${report.score.final} (uncapped ${report.score.uncapped}) by ${by.join("; ")}`,
+        );
+      }
+      const errors = report.items.filter((i) =>
+        /^check (error|contract violation)/.test(i.note ?? ""),
+      );
+      for (const e of errors) console.log(`check error: ${e.itemId} ${e.note}`);
+      if (errors.length > 0) process.exitCode = 1;
     })
     .catch((error) => {
       console.error(error);

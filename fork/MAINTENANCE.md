@@ -101,6 +101,12 @@ Ken adds an external tool export (Semrush Site Audit xlsx or csv: issues sheet, 
 
 Rule [Ken 2026-11-22]: every comparison is learned from. Each miss, both ways, ends with a verdict: `fixed` · `skip` (handbook reason) · `site-changed` · `tool-wrong` (evidence) · `owner-only`. A comparison is closed only when no row lacks a verdict and every `fixed` has a BadGEO page or a golden expectation. From B18 on: `fork/scripts/field-test.ts` runs steps 1–2 and keeps the ledger `fork/FIELD-TESTS.md`.
 
+Rules [Ken 2026-11-23, B20 WO-B20-015 g]:
+
+- **Pre-flight recorded first**: sitemap URL count (`--preflight`), robots.txt status and groups, and the platform go into the field-test report before any run.
+- **Valid run only**: a comparison counts only when the app run has 0 `check error` and 0 collector errors (`golden-score` / `badgeo-run` exit 1 on them). Otherwise fix the cause, rerun, then compare.
+- **Live check before a verdict**: every tool-only or conflicting row is checked against the live page (browser or a fetch with the stored headers) before it gets a verdict, and every `fixed` verdict names its red case (failing BadGEO page or unit test) and its guard.
+
 0. Pre-flight (B18 WO-B18-021): `pnpm exec tsx fork/scripts/field-test.ts <site> --preflight` counts sitemap URLs per section. Over 100 URLs: pick the scope before any run (in-app: Check a site "Leave out sections"; Semrush masks are `/path/`, not `/path/*`) and use the same scope on both sides.
    One command for steps 1–2 and the ledger: `pnpm exec tsx fork/scripts/field-test.ts <site> --external <export> [--run <dir>] [--exclude /blog/,/tag/]` (`--exclude` = the export's scope, app syntax) → verdict table in `fork/reports/field-<site>-<date>.md` (earlier verdicts kept on rerun) + row in `fork/FIELD-TESTS.md`. Write a verdict per open row, rerun to refresh the ledger, then `--close` (exit 1 while any row is open).
 1. Run the engine on the same site at full depth (M3 step 3), or reuse a run from the same week.
