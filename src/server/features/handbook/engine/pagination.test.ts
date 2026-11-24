@@ -10,6 +10,7 @@ describe("listPage", () => {
         "https://example.com/press/?p=2",
         "https://example.com/shop?page=3&sort=new",
         "https://example.com/blog/page/4/",
+        "https://example.com/events/page/2.html",
         "https://example.com/?s=coffee",
         "https://example.com/press/?p=about",
       ].map(listPage),
@@ -17,6 +18,7 @@ describe("listPage", () => {
       { page: 2, firstPage: "https://example.com/press/" },
       { page: 3, firstPage: "https://example.com/shop?sort=new" },
       { page: 4, firstPage: "https://example.com/blog/" },
+      { page: 2, firstPage: "https://example.com/events/" },
       null,
       null,
     ]);

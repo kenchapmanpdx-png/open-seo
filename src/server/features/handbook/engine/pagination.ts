@@ -5,10 +5,10 @@
  *
  * Numbered pages: a numeric `page`, `paged`, `p`, `pg` or `pagenum` query
  * parameter (`?page=2`, WordPress `?paged=2`, `?p=2` paginators) or a
- * `/page/N` path segment.
+ * `/page/N` path end (`/page/2`, `/page/2/`, `/page/2.html`).
  */
 const PAGINATION_PARAMS = ["page", "paged", "p", "pg", "pagenum"];
-const PAGE_PATH = /^(.*?)\/page\/(\d+)\/?$/i;
+const PAGE_PATH = /^(.*?)\/page\/(\d+)(?:\/|\.html?)?$/i;
 
 export type ListPage = {
   /** Page number (1 for an explicit `?page=1` / `/page/1/`). */

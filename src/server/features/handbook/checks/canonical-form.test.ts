@@ -114,9 +114,11 @@ describe("crawl.canonical-form", () => {
         "https://news.example.org/a",
       ]),
       press("/press/?p=2", "Old press.", [
-        "/press/",
+        "/press/?p=1",
         "https://news.example.org/b",
       ]),
+      // theogdenver r3: ?p=1 is the series' own page 1 (a canonicalised duplicate), not orphaned content.
+      press("/press/?p=1", "New press.", []),
     ]);
     const orphaning = await run([
       snapshot("/", { links: ["/press/"] }),
@@ -128,6 +130,11 @@ describe("crawl.canonical-form", () => {
       [
         "S3",
         "Paginated pages canonical to page 1",
+        "https://example.com/press/?p=2",
+      ],
+      [
+        "S3",
+        "Internal links point at a canonicalised duplicate",
         "https://example.com/press/?p=2",
       ],
     ]);

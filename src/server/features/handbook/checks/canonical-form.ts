@@ -204,9 +204,17 @@ export const canonicalFormCheck: HandbookCheck = {
       [...new Set(s.links.map((l) => normalizeUrl(l.href)))].filter((to) => {
         const target = byUrl.get(to);
         const from = linkedFrom.get(to);
+        const list = listPage(to);
         return (
           target?.status === 200 &&
           !seriesUrls.has(to) &&
+          // The list's own pages and canonicalised duplicates are not orphaned content.
+          !duplicateOf.has(to) &&
+          !(
+            list &&
+            normalizeUrl(list.firstPage) ===
+              normalizeUrl(s.head.canonical ?? "")
+          ) &&
           from !== undefined &&
           [...from].every((f) => seriesUrls.has(f))
         );
