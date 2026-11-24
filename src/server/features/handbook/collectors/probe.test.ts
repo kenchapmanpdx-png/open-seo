@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type {
   CollectorContext,
   SafeFetch,
@@ -53,5 +53,21 @@ describe("probeUrl", () => {
 
   it("returns null when nothing answers", async () => {
     expect(await probe(() => null)).toBeNull();
+  });
+});
+
+describe("hostPacer", () => {
+  it("spaces a host out after it answers 429; other hosts keep their pace", async () => {
+    vi.useFakeTimers();
+    const pace = hostPacer(300);
+    const done: string[] = [];
+    pace.slowDown("https://a.test/1");
+    void pace.wait("https://a.test/2").then(() => done.push("a"));
+    void pace.wait("https://b.test/2").then(() => done.push("b"));
+    await vi.advanceTimersByTimeAsync(300);
+    expect(done).toEqual(["b"]);
+    await vi.advanceTimersByTimeAsync(700);
+    expect(done).toEqual(["b", "a"]);
+    vi.useRealTimers();
   });
 });

@@ -28,21 +28,43 @@ const PROBE_RETRY: RetryPolicy<Answer | null> = {
   wait: () => sleep(2000),
 };
 
-type Pace = (url: string) => Promise<void>;
+/** Per-host request spacing; `slowDown` after the host answered 429. */
+type Pace = {
+  wait: (url: string) => Promise<void>;
+  slowDown: (url: string) => void;
+};
+
+/** Slowest spacing a 429 can push a host to. */
+const MAX_INTERVAL_MS = 4000;
 
 /**
  * Per-host pacer: each request on a host waits for its own slot. 300 ms =
  * the page crawl's own per-host spacing (safeFetch); was 1 s, which made the
  * probes of a site's own assets the longest crawl unit (WO-B20-005 / 012).
+ * A 429 slows that host for the rest of the collector: 1 s, then doubling up
+ * to 4 s (run 97: salonvata.com answered 78 link and 91 resource probes with
+ * 429 at a fixed 300 ms).
  */
 export function hostPacer(intervalMs = 300): Pace {
   const next = new Map<string, number>();
-  return async (url: string) => {
-    const host = new URL(url).host;
-    const now = Date.now();
-    const slot = Math.max(now, next.get(host) ?? 0);
-    next.set(host, slot + intervalMs);
-    await sleep(slot - now);
+  const interval = new Map<string, number>();
+  return {
+    async wait(url) {
+      const host = new URL(url).host;
+      const now = Date.now();
+      const slot = Math.max(now, next.get(host) ?? 0);
+      next.set(host, slot + (interval.get(host) ?? intervalMs));
+      await sleep(slot - now);
+    },
+    slowDown(url) {
+      const host = new URL(url).host;
+      const slower = Math.min(
+        MAX_INTERVAL_MS,
+        Math.max(1000, 2 * (interval.get(host) ?? intervalMs)),
+      );
+      interval.set(host, slower);
+      next.set(host, Math.max(next.get(host) ?? 0, Date.now() + slower));
+    },
   };
 }
 
@@ -57,9 +79,10 @@ export async function fetchOnce(
   userAgent: string | undefined,
   method: "GET" | "HEAD",
 ): Promise<Answer | null> {
-  await pace(url);
+  await pace.wait(url);
   try {
     const res = await fetcher(url, { userAgent, method });
+    if (res.status === 429) pace.slowDown(url);
     return { status: res.status, finalUrl: res.finalUrl, method };
   } catch (error) {
     ctx.log("handbook.probe.fetch_failed", {
