@@ -57,17 +57,23 @@ describe("probeUrl", () => {
 });
 
 describe("hostPacer", () => {
-  it("spaces a host out after it answers 429; other hosts keep their pace", async () => {
+  it("spaces a host out after a 429 and speeds it up again after clean answers; other hosts keep their pace", async () => {
     vi.useFakeTimers();
     const pace = hostPacer(300);
-    const done: string[] = [];
-    pace.slowDown("https://a.test/1");
-    void pace.wait("https://a.test/2").then(() => done.push("a"));
-    void pace.wait("https://b.test/2").then(() => done.push("b"));
-    await vi.advanceTimersByTimeAsync(300);
-    expect(done).toEqual(["b"]);
-    await vi.advanceTimersByTimeAsync(700);
-    expect(done).toEqual(["b", "a"]);
+    const waited = async (url: string) => {
+      const start = Date.now();
+      const done = pace.wait(url);
+      await vi.runAllTimersAsync();
+      await done;
+      return Date.now() - start;
+    };
+    await waited("https://a.test/0");
+    pace.answered("https://a.test/0", 429);
+    expect(await waited("https://b.test/1")).toBe(0);
+    expect(await waited("https://a.test/1")).toBe(1000);
+    for (let i = 0; i < 10; i++) pace.answered("https://a.test/1", 200);
+    await waited("https://a.test/2");
+    expect(await waited("https://a.test/3")).toBe(500);
     vi.useRealTimers();
   });
 });

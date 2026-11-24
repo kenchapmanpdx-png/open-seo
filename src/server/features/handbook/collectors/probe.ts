@@ -28,42 +28,58 @@ const PROBE_RETRY: RetryPolicy<Answer | null> = {
   wait: () => sleep(2000),
 };
 
-/** Per-host request spacing; `slowDown` after the host answered 429. */
+/** Per-host request spacing, adjusted by each answer's status. */
 type Pace = {
   wait: (url: string) => Promise<void>;
-  slowDown: (url: string) => void;
+  answered: (url: string, status: number) => void;
 };
 
-/** Slowest spacing a 429 can push a host to. */
+/** Slowest spacing 429s can push a host to. */
 const MAX_INTERVAL_MS = 4000;
+/** Answers without a 429 before a slowed host's spacing halves. */
+const CLEAN_ANSWERS_TO_SPEED_UP = 10;
 
 /**
  * Per-host pacer: each request on a host waits for its own slot. 300 ms =
  * the page crawl's own per-host spacing (safeFetch); was 1 s, which made the
  * probes of a site's own assets the longest crawl unit (WO-B20-005 / 012).
- * A 429 slows that host for the rest of the collector: 1 s, then doubling up
- * to 4 s (run 97: salonvata.com answered 78 link and 91 resource probes with
- * 429 at a fixed 300 ms).
+ * A 429 slows that host: 1 s, then doubling up to 4 s; every 10 answers
+ * without one halve it again, down to the base (run 97: salonvata.com
+ * answered 78 link and 91 resource probes with 429 at a fixed 300 ms; a
+ * fixed 4 s after the first 429 tripled its probe time).
  */
 export function hostPacer(intervalMs = 300): Pace {
   const next = new Map<string, number>();
-  const interval = new Map<string, number>();
+  const hosts = new Map<string, { interval: number; clean: number }>();
+  const state = (url: string) => {
+    const host = new URL(url).host;
+    const found = hosts.get(host);
+    if (found) return { host, s: found };
+    const fresh = { interval: intervalMs, clean: 0 };
+    hosts.set(host, fresh);
+    return { host, s: fresh };
+  };
   return {
     async wait(url) {
-      const host = new URL(url).host;
+      const { host, s } = state(url);
       const now = Date.now();
       const slot = Math.max(now, next.get(host) ?? 0);
-      next.set(host, slot + (interval.get(host) ?? intervalMs));
+      next.set(host, slot + s.interval);
       await sleep(slot - now);
     },
-    slowDown(url) {
-      const host = new URL(url).host;
-      const slower = Math.min(
-        MAX_INTERVAL_MS,
-        Math.max(1000, 2 * (interval.get(host) ?? intervalMs)),
-      );
-      interval.set(host, slower);
-      next.set(host, Math.max(next.get(host) ?? 0, Date.now() + slower));
+    answered(url, status) {
+      const { host, s } = state(url);
+      if (status === 429) {
+        s.interval = Math.min(MAX_INTERVAL_MS, Math.max(1000, 2 * s.interval));
+        s.clean = 0;
+        next.set(host, Math.max(next.get(host) ?? 0, Date.now() + s.interval));
+      } else if (
+        s.interval > intervalMs &&
+        ++s.clean >= CLEAN_ANSWERS_TO_SPEED_UP
+      ) {
+        s.interval = Math.max(intervalMs, s.interval / 2);
+        s.clean = 0;
+      }
     },
   };
 }
@@ -82,7 +98,7 @@ export async function fetchOnce(
   await pace.wait(url);
   try {
     const res = await fetcher(url, { userAgent, method });
-    if (res.status === 429) pace.slowDown(url);
+    pace.answered(url, res.status);
     return { status: res.status, finalUrl: res.finalUrl, method };
   } catch (error) {
     ctx.log("handbook.probe.fetch_failed", {
