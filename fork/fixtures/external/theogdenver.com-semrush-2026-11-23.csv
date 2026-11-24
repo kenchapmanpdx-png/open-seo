@@ -1,0 +1,44 @@
+Issue,Count,Page URL,Target URL
+Broken external links,1,https://www.theogdenver.com/press/?p=4,https://www.westword.com/restaurants/denver-fathers-day-2021-free-deals-restaurants-11983864
+Broken external links,1,https://www.theogdenver.com/press/?p=3,https://ingoodtastedenver.com/whats-in-good-taste-in-february-2022/
+Broken external links,1,https://www.theogdenver.com/press/?p=2,https://ingoodtastedenver.com/whats-in-good-taste-in-december-4/
+Duplicate meta descriptions,1,https://www.theogdenver.com/team-member/stephen-greer/,
+Duplicate meta descriptions,1,https://www.theogdenver.com/team-member/edward-de-decker/,
+Duplicate meta descriptions,1,https://www.theogdenver.com/event/eat-drink-support-local-1/,
+Structured data that contains markup errors,6,https://www.theogdenver.com/happenings/,
+Structured data that contains markup errors,1,https://www.theogdenver.com/event/thanksgiving-brunch/,
+Structured data that contains markup errors,1,https://www.theogdenver.com/event/talk-turkey-to-me/,
+Structured data that contains markup errors,1,https://www.theogdenver.com/event/seasons-eatings/,
+Structured data that contains markup errors,1,https://www.theogdenver.com/event/more-og-with-blackbird/,
+Structured data that contains markup errors,1,https://www.theogdenver.com/event/fully-stacked/,
+Structured data that contains markup errors,1,https://www.theogdenver.com/event/eat-drink-support-local-1/,
+Title element is too long,1,https://www.theogdenver.com/event/eat-drink-support-local-1/,
+Missing h1,1,https://www.theogdenver.com/accessibility-statement/,
+Duplicate content in h1 and title,1,https://www.theogdenver.com/event/more-og-with-blackbird/,
+Missing ALT attributes,1,https://www.theogdenver.com/event/fully-stacked/,"https://images.getbento.com/accounts/3c10e657dc5f2aa01b55394e8376688a/media/images/DSC02154_-_Edited.jpg"
+Low text to HTML ratio,23,https://www.theogdenver.com/,
+Low word count,1,https://www.theogdenver.com/accessibility-statement/,
+Uncompressed JavaScript and CSS files,1,https://www.theogdenver.com/private-events/,https://api.tripleseat.com/v1/leads/ts_script.js
+Llms.txt not found,1,https://www.theogdenver.com/,
+Disallowed external resources,1,https://www.theogdenver.com/accessibility-statement/,https://portal.audioeye.com/accessibility-statement.html
+Page crawl depth,1,https://www.theogdenver.com/press/?p=6,
+Page crawl depth,1,https://www.theogdenver.com/press/?p=5,
+Page crawl depth,1,https://www.theogdenver.com/press/?p=4,
+Pages with only one internal link,1,https://www.theogdenver.com/team-member/stephen-greer/,
+Pages with only one internal link,1,https://www.theogdenver.com/team-member/edward-de-decker/,
+Pages with only one internal link,1,https://www.theogdenver.com/press/?p=6,
+Pages with only one internal link,1,https://www.theogdenver.com/press/?p=1,
+Pages with only one internal link,1,https://www.theogdenver.com/event/thanksgiving-brunch/,
+Pages with only one internal link,1,https://www.theogdenver.com/event/talk-turkey-to-me/,
+Pages with only one internal link,1,https://www.theogdenver.com/event/seasons-eatings/,
+Pages with only one internal link,1,https://www.theogdenver.com/event/more-og-with-blackbird/,
+Pages with only one internal link,1,https://www.theogdenver.com/event/fully-stacked/,
+Pages with only one internal link,1,https://www.theogdenver.com/event/eat-drink-support-local-1/,
+Permanent redirects,1,https://www.theogdenver.com/,https://www.theogdenver.com/happenings
+Permanent redirects,1,https://www.theogdenver.com/,https://www.theogdenver.com/menus
+Links with no anchor text,1,https://www.theogdenver.com/event/eat-drink-support-local-1/,https://wagoncoffeeroasters.com/
+Links with non-descriptive anchor text,1,https://www.theogdenver.com/event/more-og-with-blackbird/,https://www.blackbird.xyz/
+Links with non-descriptive anchor text,1,https://www.theogdenver.com/,https://www.theogdenver.com/private-events/
+External pages or resources with 403 HTTP status code,1,https://www.theogdenver.com/event/eat-drink-support-local-1/,https://www.bakersway.com/
+Content not optimized,1,https://www.theogdenver.com/menus/,
+Content not optimized,1,https://www.theogdenver.com/faqs/,

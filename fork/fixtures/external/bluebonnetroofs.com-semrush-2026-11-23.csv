@@ -1,0 +1,11 @@
+Issue,Count,Page URL,Target URL
+4xx errors,1,https://bluebonnetroofs.com/www.jhcreativeconcepts.com,
+4xx errors,1,https://bluebonnetroofs.com/robots.txt,
+Broken internal links,1,https://bluebonnetroofs.com/,https://bluebonnetroofs.com/www.jhcreativeconcepts.com
+Low text to HTML ratio,1,https://bluebonnetroofs.com/,
+Llms.txt not found,1,https://bluebonnetroofs.com/,
+Nofollow attributes in external links,1,https://bluebonnetroofs.com/,http://unsplash.com
+Robots.txt not found,1,https://bluebonnetroofs.com/,
+No HSTS support,1,https://www.bluebonnetroofs.com/,
+No HSTS support,1,https://bluebonnetroofs.com/,
+Pages with only one internal link,1,https://bluebonnetroofs.com/,
