@@ -3,6 +3,7 @@ import { decide, parseRobots } from "@/server/features/handbook/engine/robots";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import {
+  retryAfterMs,
   sleep,
   withRetry,
 } from "@/server/features/handbook/engine/transient-retry";
@@ -287,17 +288,6 @@ export const llmsCollector: Collector<"llms"> = {
     return { status: "ok", files, mdMirrors };
   },
 };
-
-const VARIANT_RETRY_DEFAULT_MS = 10_000;
-const VARIANT_RETRY_MAX_MS = 15_000;
-
-/** `Retry-After` in seconds (capped), else 10 s (a common Crawl-delay). */
-function retryAfterMs(res: SafeFetchResult): number {
-  const seconds = Number(header(res, "retry-after"));
-  return Number.isFinite(seconds) && seconds > 0
-    ? Math.min(seconds * 1000, VARIANT_RETRY_MAX_MS)
-    : VARIANT_RETRY_DEFAULT_MS;
-}
 
 export const variantsCollector: Collector<"variants"> = {
   key: "variants",

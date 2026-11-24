@@ -149,6 +149,10 @@ async function crawl(
     ? Date.now() + options.maxMinutes * 60_000
     : Infinity;
   const outOfTime = () => Date.now() >= deadline;
+  let inFlight = CRAWL_CONCURRENCY;
+  const throttled = () => {
+    inFlight = 1;
+  };
   for (;;) {
     const room = options.maxPages - snapshots.length;
     const next = pending();
@@ -157,10 +161,11 @@ async function crawl(
       next.length > room ? stratifiedFill(groupByPattern(next), room) : next;
     // WO-B20-005: CRAWL_CONCURRENCY fetches in flight (safeFetch keeps its
     // per-host spacing); results handled in wave order as before.
+    // A 429 from the site: one page at a time for the rest of the crawl.
     const take = readAhead(
       wave,
-      () => Math.min(CRAWL_CONCURRENCY, options.maxPages - snapshots.length),
-      (url) => fetchPage(ctx, url, source.get(url) ?? "raw"),
+      () => Math.min(inFlight, options.maxPages - snapshots.length),
+      (url) => fetchPage(ctx, url, source.get(url) ?? "raw", throttled),
     );
     for (const [index, url] of wave.entries()) {
       if (snapshots.length >= options.maxPages || outOfTime()) break;
@@ -325,8 +330,9 @@ async function fetchPage(
   ctx: CollectorContext,
   url: string,
   discoveredBy: DiscoveredBy,
+  onThrottled?: () => void,
 ): Promise<{ snapshot: PageSnapshot; extra: PageExtra } | null> {
-  const res = await crawlFetch(ctx, url);
+  const res = await crawlFetch(ctx, url, onThrottled);
   if (!res) return null;
   const header = (name: string) =>
     res.headers.find(([k]) => k === name)?.[1] ?? null;

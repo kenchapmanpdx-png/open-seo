@@ -1,4 +1,5 @@
 import {
+  retryAfterMs,
   sleep,
   withRetry,
 } from "@/server/features/handbook/engine/transient-retry";
@@ -172,13 +173,15 @@ const INTERSTITIAL_RETRY_MS = 6000;
 export async function crawlFetch(
   ctx: CollectorContext,
   url: string,
+  /** Called when the site answers 429 (the crawl slows down for the rest of the run). */
+  onThrottled: () => void = () => {},
 ): Promise<SafeFetchResult | null> {
   const challengeOf = (r: SafeFetchResult) =>
     detectInterstitial(r.body, r.headers, r.finalUrl);
   let first: SafeFetchResult | null = null;
   const res = await withRetry(
     async () => {
-      const r = (await tryFetch(ctx, url)) ?? first;
+      const r = (await throttledFetch(ctx, url, onThrottled)) ?? first;
       first ??= r;
       return r;
     },
@@ -199,6 +202,28 @@ export async function crawlFetch(
     excerpt: still ? res.body.slice(0, 400) : null,
   });
   return res;
+}
+
+/**
+ * A page the site answered 429 is fetched again after its `Retry-After`
+ * (capped, else 10 s), up to twice (run 97: salonvata.com answered 6 → 28 of
+ * 79 crawled pages with 429 once the crawl read 4 pages at a time; each was
+ * left unread).
+ */
+function throttledFetch(
+  ctx: CollectorContext,
+  url: string,
+  onThrottled: () => void,
+) {
+  return withRetry(() => tryFetch(ctx, url), {
+    tries: 3,
+    retryable: (r) => r?.status === 429,
+    wait: (_next, last) => {
+      onThrottled();
+      ctx.log("handbook.crawl.throttled", { url });
+      return sleep(last ? retryAfterMs(last) : 0);
+    },
+  });
 }
 
 async function tryFetch(ctx: CollectorContext, url: string) {

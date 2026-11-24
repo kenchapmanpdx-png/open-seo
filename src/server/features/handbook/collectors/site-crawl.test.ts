@@ -4,6 +4,7 @@ import type {
   CollectorContext,
 } from "@/server/features/handbook/contracts/collectors";
 import { snapshot } from "@/server/features/handbook/checks/check-test-fixtures";
+import { sleep } from "@/server/features/handbook/engine/transient-retry";
 import {
   crawlSecondPass,
   createCrawlCollectors,
@@ -188,5 +189,50 @@ describe("crawl time budget", () => {
       redirectChain: [],
     });
     expect(page?.rawKey).not.toBeNull();
+  });
+
+  // Run 97 (salonvata.com): reading 4 pages at a time drew 429s (6 → 28 of
+  // 79 pages); each was kept as a 429 page, unread.
+  it("reads a page the site answered 429 on a retry, one page at a time from then on", async () => {
+    vi.useFakeTimers();
+    let inFlight = 0;
+    let most = 0;
+    const throttledOnce = new Set<string>();
+    const throttling: CollectorContext = {
+      ...ctx,
+      fetch: async (url, init) => {
+        inFlight += 1;
+        most = throttledOnce.size > 0 ? Math.max(most, inFlight) : most;
+        const res = await ctx.fetch(url, init);
+        await sleep(100);
+        inFlight -= 1;
+        if (url.endsWith("/a") && !throttledOnce.has(url)) {
+          throttledOnce.add(url);
+          return { ...res, status: 429, headers: [["retry-after", "2"]] };
+        }
+        return res;
+      },
+    };
+    const sitemap: CollectedData["sitemap"] = {
+      status: "ok",
+      sources: [],
+      urls: ["/a", "/b", "/c", "/d", "/e", "/f", "/g"].map((p) => ({
+        loc: ORIGIN + p,
+        lastmod: null,
+        source: "fixture",
+      })),
+    };
+    const { pages } = createCrawlCollectors({
+      followLinks: false,
+      maxPages: 100,
+    });
+    const done = pages.collect(throttling, { sitemap });
+    await vi.runAllTimersAsync();
+    const out = await done;
+    if (out.status !== "ok") throw new Error("expected pages");
+    expect(out.snapshots.find((p) => p.url === `${ORIGIN}/a`)?.status).toBe(
+      200,
+    );
+    expect(most).toBe(1);
   });
 });

@@ -64,3 +64,17 @@ export function fetchWithRetry(
     wait: (next) => sleep(BASE_MS * 2 ** (next - 2)),
   });
 }
+
+const RETRY_AFTER_DEFAULT_MS = 10_000;
+const RETRY_AFTER_MAX_MS = 15_000;
+
+/** A site's 429: its `Retry-After` in seconds (capped 15 s), else 10 s (a common Crawl-delay). */
+export function retryAfterMs(res: {
+  headers: readonly (readonly [string, string])[];
+}): number {
+  const value = res.headers.find(([k]) => k === "retry-after")?.[1];
+  const seconds = Number(value);
+  return value && Number.isFinite(seconds) && seconds > 0
+    ? Math.min(seconds * 1000, RETRY_AFTER_MAX_MS)
+    : RETRY_AFTER_DEFAULT_MS;
+}
