@@ -65,6 +65,31 @@ describe("depth + caps", () => {
     ]);
   });
 
+  // Field test 7 (theogdenver.com): the press list paginates with
+  // `/press/?p=2` (a real <a href> paginator); every numeric pagination
+  // parameter is pagination, not a parameter duplicate.
+  it("keeps numeric pagination parameters other than ?page=", () => {
+    const kept = infiniteSpaceGuard([
+      `${site}/press/`,
+      `${site}/press/?p=2`,
+      `${site}/press/?p=3`,
+      `${site}/blog/`,
+      `${site}/blog/?paged=2`,
+      `${site}/shop/`,
+      `${site}/shop/?pg=2`,
+      `${site}/shop/?sort=price`,
+    ]);
+    expect(kept).toEqual([
+      `${site}/press/`,
+      `${site}/press/?p=2`,
+      `${site}/press/?p=3`,
+      `${site}/blog/`,
+      `${site}/blog/?paged=2`,
+      `${site}/shop/`,
+      `${site}/shop/?pg=2`,
+    ]);
+  });
+
   it("flags partial coverage below 90 % read", () => {
     expect(depthLine("full", { discovered: 100, read: 89, capped: true })).toBe(
       "Depth: full · read 89 of 100 discovered · partial coverage",

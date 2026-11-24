@@ -6,7 +6,8 @@ import { createResult, normalizeUrl } from "./support";
  * A11Y via axe-core after full-page scroll (handbook §14, §15). P8-03: axe
  * ran on every template sample. P8-02: color-contrast. P8-06: label,
  * landmark-unique, scrollable-region-focusable, label-content-name-mismatch
- * (link-name / button-name belong to P8-04's raw-HTML check, so they are not
+ * (link-name / button-name belong to P8-04's raw-HTML check and image-alt to
+ * P8-04 too (a11y-markup reads it from this axe data), so they are not
  * reported twice). One finding per rule across pages, grouped by template
  * (`full` runs axe on every rendered page).
  */

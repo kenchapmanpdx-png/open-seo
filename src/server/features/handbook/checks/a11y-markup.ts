@@ -41,8 +41,12 @@ function fileAlt(image: PageSnapshot["images"][number]): boolean {
   );
 }
 
-function pageProblems(page: PageSnapshot): string[] {
+function pageProblems(page: PageSnapshot, axeNoAlt: number): string[] {
   const why: string[] = [];
+  // Field test 7: axe's image-alt is rendered truth (visible images only,
+  // so hidden tracking pixels do not count); P8-04 owns image alts.
+  if (axeNoAlt > 0)
+    why.push(`${axeNoAlt} image(s) without alt text (axe image-alt)`);
   for (const l of page.links)
     if (!l.text.trim() && !l.ariaLabel?.trim())
       why.push(`icon-only link without a name → ${l.href}`);
@@ -76,8 +80,15 @@ export const a11yMarkupCheck: HandbookCheck = {
     const noSkip = pagesLive.filter(
       (s) => !s.links.slice(0, 3).some((l) => isSkipLink(s, l)),
     );
+    const axe = ctx.collected.axe;
+    const noAlt = new Map(
+      (axe.status === "ok" ? axe.pages : []).flatMap((p) => {
+        const v = p.violations.find((x) => x.id === "image-alt");
+        return v ? [[normalizeUrl(p.url), v.nodes] as const] : [];
+      }),
+    );
     const hits = pagesLive.flatMap((s) => {
-      const why = pageProblems(s);
+      const why = pageProblems(s, noAlt.get(normalizeUrl(s.url)) ?? 0);
       if (noSkip.includes(s)) why.unshift("no skip link in the first 3 links");
       return why.length > 0 ? [{ s, why }] : [];
     });

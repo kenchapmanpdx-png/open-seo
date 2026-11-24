@@ -71,3 +71,36 @@ describe("a11y.markup", () => {
     ).toBe("OPEN");
   });
 });
+
+// Field test 7 (theogdenver.com /event/fully-stacked/): axe measured
+// image-alt (an <img> with no alt attribute in the event text) and no check
+// reported it. P8-04 owns image alts: axe's rendered result counts.
+describe("a11y.markup + axe image-alt", () => {
+  it("opens P8-04 on an image axe found without alt text", async () => {
+    const p = page();
+    const result = await a11yMarkupCheck.run(
+      context({
+        pages: { status: "ok", snapshots: [p] },
+        axe: {
+          status: "ok",
+          pages: [
+            {
+              url: p.url,
+              violations: [
+                {
+                  id: "image-alt",
+                  impact: "critical",
+                  help: "Images must have alternative text",
+                  nodes: 1,
+                  sampleTargets: [".fr-fic"],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    expect(statusOf(result, "P8-04")).toBe("OPEN");
+    expect(result.findings[0]?.detail).toContain("without alt text");
+  });
+});
