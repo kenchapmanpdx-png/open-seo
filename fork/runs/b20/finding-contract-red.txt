@@ -1,0 +1,5 @@
+fork/runs/bluebonnetroofs.com/field-2026-11-23 19 issues 0
+fork/runs/salonvata.com/b19r92 49 issues 1
+    P3-08 "Internal links point at redirected or retired URLs": link finding lists targets, not linking pages: https://salonvata.com/?page_id=15790, https://salonvata.com/portugal-2013-road-trip-gallery/?page_id=16404, https://salonvata.com/privacy-policy/?page_id
+golden-score fork/runs/salonvata.com/b19r92 (B19 code, before WO-014 b): exit 1
+finding contract: P3-08 "Internal links point at redirected or retired URLs": link finding lists targets, not linking pages: https://salonvata.com/?page_id=15790, https://salonvata.com/portugal-2013-road-trip-gallery/?page_id=16404, https://salonvata.com/privacy-policy/?page_id=16404, https://salonv

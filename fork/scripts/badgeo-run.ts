@@ -33,6 +33,7 @@ import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import { SUPP_REGISTRY } from "@/server/features/handbook/registry-supp";
 import { runCliAudit } from "./handbook-audit";
 import { BADGEO_ROOT, startBadgeo } from "./badgeo-serve";
+import { findingContractIssues } from "./lib/finding-contract";
 
 type Row = {
   page: string;
@@ -242,6 +243,16 @@ async function main() {
     console.log(`contract violations / check errors: ${violations.length}`);
     for (const v of violations) console.log(`  ${v.itemId}: ${v.note}`);
     if (violations.length > 0) process.exitCode = 1;
+    // WO-B20-015 (e): every finding says no more than its evidence.
+    const contract = findingContractIssues(
+      report,
+      JSON.parse(
+        readFileSync(join("fork/runs/badgeo", date, "collected.json"), "utf8"),
+      ),
+    );
+    console.log(`finding contract issues: ${contract.length}`);
+    for (const c of contract) console.log(`  ${c}`);
+    if (contract.length > 0) process.exitCode = 1;
     // WO-B9-001: infinite-space guard (warning only, not a failure).
     const calendarRead =
       result.collected.pages.status === "ok"

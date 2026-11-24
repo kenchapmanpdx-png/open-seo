@@ -24,6 +24,7 @@
  *
  *   pnpm exec tsx fork/scripts/golden-score.ts <report.json> <expected.yaml> [--report | --md <path>]
  */
+import { findingContractIssues } from "./lib/finding-contract";
 import { writeFormatted } from "./lib/write-formatted";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -437,6 +438,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       );
       for (const e of errors) console.log(`check error: ${e.itemId} ${e.note}`);
       if (errors.length > 0) process.exitCode = 1;
+      // WO-B20-015 (e): every finding says no more than its evidence.
+      const collectedPath = join(dirname(reportPath), "collected.json");
+      if (existsSync(collectedPath)) {
+        const contract = findingContractIssues(
+          report,
+          JSON.parse(readFileSync(collectedPath, "utf8")),
+        );
+        for (const c of contract) console.log(`finding contract: ${c}`);
+        if (contract.length > 0) process.exitCode = 1;
+      }
     })
     .catch((error) => {
       console.error(error);

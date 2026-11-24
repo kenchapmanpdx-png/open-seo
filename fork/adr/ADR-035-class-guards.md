@@ -1,6 +1,6 @@
 # ADR-035: Class guards for field-test defect classes (B20)
 
-- Status: accepted (run 93; (c) done run 95; (e) partial, see below)
+- Status: accepted (run 93; (c) and (e) done run 95)
 - Date: 2026-11-24 · Batch: B20 · `fork/batches/B20-heavy-cap-scope-speed.md` (WO-B20-015)
 
 ## Context
@@ -35,4 +35,4 @@ Retry call sites (c). One primitive, `engine/transient-retry.ts` `withRetry(atte
 
 Not retries, kept on purpose: the render throttle and the sidecar circuit breaker (`sidecar-per-url.ts`, state shared across pages), the per-host pacers (`safe-fetch.ts`, `bot-fetch.ts`), timeout races. Guard: `engine/transient-retry.test.ts` (withRetry: transient then success = result kept; last result after the last try; thrown errors only with `retryThrown`) and a source scan: a Handbook file that waits with `setTimeout(` outside that allow-list (each entry with its reason) fails `pnpm test`. Red: the run-94 tree fails it with 4 files (`fork/runs/b20/retry-guard-red.txt`).
 
-Open: the general finding contract test of (e).
+(e) finding says more than its evidence (run 95): `fork/scripts/lib/finding-contract.ts` `findingContractIssues(report, collected)`, run by `badgeo-run.ts` and `golden-score.ts` (exit 1 on any issue): every URL in `urls` was fetched by the run; a links finding lists the linking pages (crawled), the targets stay in the detail; "(n pages)" in a title equals `urls.length`; "Pages missing a, b" names only tags the detail shows; a finding on robots.txt / sitemap / llms.txt that answered non-200 says the status. Unit test `finding-contract.test.ts` (`pnpm exec vitest run --root fork/scripts lib/finding-contract.test.ts`). Red: the B19 salonvata golden run (`b19r92`, before WO-014 b) fails with P3-08 listing link targets (`fork/runs/b20/finding-contract-red.txt`); 22 other stored runs (BadGEO r6, eight goldens' B19 runs, field runs) pass.
