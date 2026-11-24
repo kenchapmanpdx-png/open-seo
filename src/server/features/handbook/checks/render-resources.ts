@@ -27,6 +27,13 @@ type RobotsEffect = NonNullable<
  */
 const ITEMS = ["P3-20"];
 
+/** A query variant (`/products/x?variant=…`) is the same page as its path. */
+function pathOf(url: string) {
+  const u = new URL(url);
+  u.search = "";
+  return u.toString();
+}
+
 export const renderResourcesCheck: HandbookCheck = {
   id: "robots.render-resources",
   itemIds: ITEMS,
@@ -79,11 +86,14 @@ export const renderResourcesCheck: HandbookCheck = {
         const key = templateOf.get(normalizeUrl(p.url));
         if (key && p.js.robotsBlocked) byTemplate.set(key, p.js.robotsBlocked);
       }
-      const effectOf = (url: string) => {
-        const own = render.pages.find((p) => p.url === url)?.js.robotsBlocked;
+      const measuredOf = (url: string) =>
+        render.pages.find((p) => p.url === url)?.js.robotsBlocked;
+      const effectFor = (url: string) => {
         const key = templateOf.get(normalizeUrl(url));
-        return own ?? (key ? byTemplate.get(key) : undefined);
+        return measuredOf(url) ?? (key ? byTemplate.get(key) : undefined);
       };
+      const effectOf = (url: string) =>
+        effectFor(url) ?? effectFor(pathOf(url));
       const groups = {
         changed: [] as string[],
         same: [] as string[],

@@ -31,6 +31,7 @@ import { createLimiter } from "./limiter";
 import {
   LIGHTHOUSE_BATCH_SIZE,
   livePageUrls,
+  effectRenderUrls,
   sampleUrls,
   screenshotTargets,
 } from "./sidecar-targets";
@@ -147,7 +148,7 @@ export function createSidecarCollectors(config: SidecarConfig) {
     collect: (ctx, collected) => {
       const samples = sampleUrls(collected);
       const urls = full && samples ? livePageUrls(collected) : samples;
-      const sampleSet = new Set((samples ?? []).map(normalizeUrl));
+      const effectSet = effectRenderUrls(collected, urls ?? []);
       const shots = full
         ? screenshotTargets(urls ?? [], samples ?? [])
         : new Set((samples ?? []).map(normalizeUrl));
@@ -155,6 +156,14 @@ export function createSidecarCollectors(config: SidecarConfig) {
       const retryThrottled = createRenderThrottle((retryInMs) =>
         ctx.log("handbook.sidecar.throttled", { retryInMs }),
       );
+      // WO-B19-016 retry for renders too: a sidecar restart mid-run (stall
+      // guard) otherwise drops every render in flight, effect renders included.
+      const renderCall = (body: RenderRequest) =>
+        withRestartRetry(
+          () => sidecar("/render", body, renderResponseSchema),
+          config.url,
+          () => ctx.log("handbook.sidecar.render_retry", { url: body.url }),
+        );
       return perUrl(ctx, "render", urls, async (url) => {
         const base = {
           url,
@@ -165,27 +174,19 @@ export function createSidecarCollectors(config: SidecarConfig) {
         const [js, noJs] = await retryThrottled(
           () =>
             Promise.all([
-              sidecar(
-                "/render",
-                {
-                  ...base,
-                  javascript: true,
-                  screenshot: shots.has(normalizeUrl(url))
-                    ? "firstScreen"
-                    : "none",
-                },
-                renderResponseSchema,
-              ),
-              sidecar(
-                "/render",
-                {
-                  ...base,
-                  scrollToEnd: false,
-                  javascript: false,
-                  screenshot: "none",
-                },
-                renderResponseSchema,
-              ),
+              renderCall({
+                ...base,
+                javascript: true,
+                screenshot: shots.has(normalizeUrl(url))
+                  ? "firstScreen"
+                  : "none",
+              }),
+              renderCall({
+                ...base,
+                scrollToEnd: false,
+                javascript: false,
+                screenshot: "none",
+              }),
             ]),
           (results) => results.some((r) => r.ok && r.value.status === 429),
         );
@@ -216,11 +217,10 @@ export function createSidecarCollectors(config: SidecarConfig) {
           screenshot: "none",
         } as const;
         const robotsBlocked = await robotsBlockedEffect(
-          (abortUrls) =>
-            sidecar("/render", { ...without, abortUrls }, renderResponseSchema),
+          (abortUrls) => renderCall({ ...without, abortUrls }),
           js.value,
           jsFacts.markup.text,
-          sampleSet.has(normalizeUrl(url)) ? collected.robots : undefined,
+          effectSet.has(normalizeUrl(url)) ? collected.robots : undefined,
           (reason) =>
             ctx.log("handbook.render.robots_effect_failed", { url, reason }),
         );

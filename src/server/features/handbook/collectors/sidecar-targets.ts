@@ -8,17 +8,51 @@ import { normalizeUrl } from "@/server/features/handbook/checks/support";
  */
 
 const MAX_SAMPLES = 16;
+const MAX_EFFECT_SAMPLES = 40;
+const MAX_UNTEMPLATED_EFFECTS = 10;
 const CONTACT_PATH = /\/contact/i;
 /** Lighthouse pages per stage batch in `all` mode (ADR-018). */
 export const LIGHTHOUSE_BATCH_SIZE = 25;
 
-/** Template rank-1 samples (max 16); null when templates are unavailable. */
-export function sampleUrls(collected: Partial<CollectedData>): string[] | null {
+/** Template rank-1 samples (max 16 unless `max`); null when templates are unavailable. */
+export function sampleUrls(
+  collected: Partial<CollectedData>,
+  max = MAX_SAMPLES,
+): string[] | null {
   const templates = collected.templates;
   if (!templates || templates.status !== "ok") return null;
   return templates.templates
     .flatMap((t) => t.samples.filter((s) => s.rank === 1).map((s) => s.url))
-    .slice(0, MAX_SAMPLES);
+    .slice(0, max);
+}
+
+/**
+ * Pages the render re-renders without their robots-blocked requests
+ * (WO-B19-004 effect): every template's first sample (up to 40, not only the
+ * 16 render samples, so a one-page template past the cap such as
+ * valentinecoffeeco /cart is measured, not S1 by type), plus up to 10
+ * rendered pages in no template (e.g. an app proxy page). Query variants
+ * take their path's result in the check. Only pages the render visits are
+ * measured (all live pages at full depth).
+ */
+export function effectRenderUrls(
+  collected: Partial<CollectedData>,
+  urls: string[],
+): Set<string> {
+  const templates = collected.templates;
+  const templated = new Set(
+    templates?.status === "ok"
+      ? templates.templates.flatMap((t) => t.urls.map(normalizeUrl))
+      : [],
+  );
+  const untemplated = urls
+    .filter((u) => !templated.has(normalizeUrl(u)) && !new URL(u).search)
+    .slice(0, MAX_UNTEMPLATED_EFFECTS);
+  return new Set(
+    [...(sampleUrls(collected, MAX_EFFECT_SAMPLES) ?? []), ...untemplated].map(
+      normalizeUrl,
+    ),
+  );
 }
 
 const HTML_TYPE = /html/i;

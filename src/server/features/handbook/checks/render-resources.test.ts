@@ -7,13 +7,13 @@ type Measured = {
   missing?: string[];
 };
 
-function run(
+function page(
+  path: string,
   script: string,
   resourceType = "script",
   measured?: Measured,
-  unmeasuredPath?: string,
 ) {
-  const page = (path: string, withEffect: boolean) => ({
+  return {
     url: `${ORIGIN}${path}`,
     js: {
       finalUrl: `${ORIGIN}${path}`,
@@ -23,7 +23,7 @@ function run(
       requests: [{ url: `${ORIGIN}${script}`, resourceType, status: 200 }],
       opacityZeroWords: 0,
       firstScreenActions: [],
-      ...(measured && withEffect
+      ...(measured
         ? {
             robotsBlocked: {
               urls: [`${ORIGIN}${script}`],
@@ -38,7 +38,10 @@ function run(
     noJs: { status: 200, nojsKey: "n", words: 100 },
     firstScreenKey: null,
     consoleErrors: [],
-  });
+  };
+}
+
+function runPages(pages: ReturnType<typeof page>[], templateUrls?: string[]) {
   return renderResourcesCheck.run(
     context({
       robots: {
@@ -60,15 +63,37 @@ function run(
           },
         ],
       },
-      render: {
-        status: "ok",
-        pages: [
-          page("/", true),
-          ...(unmeasuredPath ? [page(unmeasuredPath, false)] : []),
-        ],
-      },
+      render: { status: "ok", pages },
+      ...(templateUrls
+        ? {
+            templates: {
+              status: "ok" as const,
+              templates: [
+                {
+                  key: "products",
+                  urlPattern: "/products/*",
+                  skeletonHash: "h",
+                  urls: templateUrls.map((p) => `${ORIGIN}${p}`),
+                  samples: [],
+                },
+              ],
+            },
+          }
+        : {}),
     }),
   );
+}
+
+function run(
+  script: string,
+  resourceType = "script",
+  measured?: Measured,
+  unmeasuredPath?: string,
+) {
+  return runPages([
+    page("/", script, resourceType, measured),
+    ...(unmeasuredPath ? [page(unmeasuredPath, script, resourceType)] : []),
+  ]);
 }
 
 describe("renderResourcesCheck", () => {
@@ -127,6 +152,32 @@ describe("renderResourcesCheck", () => {
       "/cart",
     );
     expect(result.findings.map((f) => f.severity)).toEqual(["S1", "S1"]);
+  });
+
+  // valentinecoffeeco: /cart changed, so the rule is not cleared; the
+  // `?variant=` URL is its product page, measured through the template sample.
+  it("gives a query variant its path's measurement", async () => {
+    const script = "/assets/private/cart.js";
+    const result = await runPages(
+      [
+        page("/products/a", script, "script", { sameContent: true }),
+        page("/products/b", script),
+        page("/cart", script, "script", { sameContent: false }),
+        page("/products/b?variant=1", script),
+      ],
+      ["/products/a", "/products/b"],
+    );
+    expect(result.findings.map((f) => [f.severity, f.urls])).toEqual([
+      ["S1", [`${ORIGIN}/cart`]],
+      [
+        "S4",
+        [
+          `${ORIGIN}/products/a`,
+          `${ORIGIN}/products/b`,
+          `${ORIGIN}/products/b?variant=1`,
+        ],
+      ],
+    ]);
   });
 
   it("keeps an unmeasured page with a cleared script and an unmeasured fetch at S2", async () => {
