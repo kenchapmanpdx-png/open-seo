@@ -9,13 +9,13 @@
 
 Failing tests on the clean checkout: none.
 
-## Current (B19 run 92, 2026-11-24, `ken/main` on upstream v0.1.31)
+## Current (B20 run 98, 2026-11-24, `ken/main` on upstream v0.1.31)
 
 | Check                                                                                                                       | Result                                  |
 | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
 | `pnpm types:check`                                                                                                          | pass (0 errors)                         |
 | `pnpm lint`                                                                                                                 | pass (0 warnings, 0 errors)             |
-| `pnpm test`                                                                                                                 | pass: 440 files, 2720 tests, 0 failures |
+| `pnpm test`                                                                                                                 | pass: 445 files, 2827 tests, 0 failures |
 | `pnpm format:check`                                                                                                         | pass                                    |
 | `pnpm exec vitest run --root fork/sidecar`                                                                                  | pass: 2 files, 10 tests                 |
 | `bash fork/scripts/ops/ops-test.sh`                                                                                         | pass: 18 / 18                           |
