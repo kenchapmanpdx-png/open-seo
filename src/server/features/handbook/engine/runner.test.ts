@@ -190,8 +190,10 @@ describe("runHandbook invariants", () => {
     expect(status?.note).toContain(finding.urls[0]);
   });
 
-  it("blocks LLM items without a judge, and every later LLM item once the budget is spent", async () => {
-    const checks = [llmCheck("P5-01"), llmCheck("P5-04")];
+  it("blocks LLM items without a judge, and starts no LLM check once the budget is spent", async () => {
+    // Six LLM checks, four in flight at once: the first four call the judge
+    // before the budget error lands, the last two never start.
+    const checks = Array.from({ length: 6 }, () => llmCheck("P5-04"));
     expect(await run(checks, "P5-04")).toMatchObject({
       status: "BLOCKED",
       note: "no llm key",
@@ -205,7 +207,7 @@ describe("runHandbook invariants", () => {
       status: "BLOCKED",
       note: "llm budget",
     });
-    expect(calls).toBe(1);
+    expect(calls).toBe(4);
   });
 
   it("opens P1-03 when an OPEN item has no finding", async () => {

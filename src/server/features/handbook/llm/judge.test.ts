@@ -136,6 +136,17 @@ describe("createJudge", () => {
     expect(model.doGenerateCalls).toHaveLength(0);
   });
 
+  it("counts a call in flight against the budget, so parallel calls stop at the cap", async () => {
+    // One call's estimate (1,500 output tokens) ≈ $0.023: one fits in $0.035,
+    // two at once do not, one after the other do (the first spent $0.0045).
+    const model = modelReturning(fail("the best race team"));
+    const { judge } = judgeWith(model, 0.035);
+    const both = await Promise.allSettled([judge(input), judge(input)]);
+    expect(both.map((r) => r.status)).toEqual(["fulfilled", "rejected"]);
+    expect(model.doGenerateCalls).toHaveLength(1);
+    await expect(judge(input)).resolves.toMatchObject({ verdict: "fail" });
+  });
+
   it("retries a 429 after its retry-after delay", async () => {
     const model = modelReturning(
       httpError(429, { "retry-after": "1" }),

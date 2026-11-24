@@ -146,6 +146,7 @@ export function createJudge(options: {
   cache?: VerdictCache;
 }): Judge & { spentUsd: () => number } {
   let spent = 0;
+  let reserved = 0;
   const cost = (tokensIn: number, tokensOut: number) =>
     (tokensIn * options.price.input + tokensOut * options.price.output) / 1e6;
 
@@ -157,13 +158,16 @@ export function createJudge(options: {
     pages,
   }: Prompt): Promise<JudgeResult> => {
     // ~4 characters per token; checked before the call so a run never
-    // overshoots its cap by more than one call's estimate error.
+    // overshoots its cap by more than one call's estimate error. Calls in
+    // flight hold their estimate (checks run in parallel, WO-B20-005).
     const estimate = cost(
       Math.ceil((system.length + prompt.length) / 4),
       MAX_OUTPUT_TOKENS,
     );
     const budget = options.budgetUsd();
-    if (spent + estimate > budget) throw new LlmBudgetError(spent, budget);
+    if (spent + reserved + estimate > budget)
+      throw new LlmBudgetError(spent, budget);
+    reserved += estimate;
 
     const promptSha256 = createHash("sha256")
       .update(`${system}\n${prompt}`)
@@ -171,25 +175,29 @@ export function createJudge(options: {
     let tokensIn = 0;
     let tokensOut = 0;
     let parsed: LlmVerdict | null = null;
-    for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
-      try {
-        const result = await generateText({
-          model: options.model,
-          system,
-          prompt,
-          output: Output.object({ schema: llmVerdictSchema }),
-          maxOutputTokens: MAX_OUTPUT_TOKENS,
-          maxRetries: LLM_MAX_RETRIES,
-        });
-        tokensIn += result.usage.inputTokens ?? 0;
-        tokensOut += result.usage.outputTokens ?? 0;
-        parsed = result.output;
-      } catch (error) {
-        if (isCreditError(error)) throw new LlmCreditsError(spent, budget);
-        // Schema failure: retry once, then unsure. Anything else is a
-        // provider/network failure the caller reports as a checker error.
-        if (!isOutputError(error)) throw error;
+    try {
+      for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
+        try {
+          const result = await generateText({
+            model: options.model,
+            system,
+            prompt,
+            output: Output.object({ schema: llmVerdictSchema }),
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+            maxRetries: LLM_MAX_RETRIES,
+          });
+          tokensIn += result.usage.inputTokens ?? 0;
+          tokensOut += result.usage.outputTokens ?? 0;
+          parsed = result.output;
+        } catch (error) {
+          if (isCreditError(error)) throw new LlmCreditsError(spent, budget);
+          // Schema failure: retry once, then unsure. Anything else is a
+          // provider/network failure the caller reports as a checker error.
+          if (!isOutputError(error)) throw error;
+        }
       }
+    } finally {
+      reserved -= estimate;
     }
     const costUsd = cost(tokensIn, tokensOut);
     spent += costUsd;

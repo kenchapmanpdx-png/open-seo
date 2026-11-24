@@ -28,6 +28,11 @@ import { LlmBudgetError } from "../llm/judge";
 import type { PageMapper } from "../llm/map";
 import { collectRunUnit, stageFactMap, stageProfiles } from "./map-stage";
 import { checkerReproduction } from "./checker-reproduction";
+import {
+  missingInput,
+  scheduleChecks,
+  type CheckOutcome,
+} from "./check-schedule";
 import { appliesWithSupp } from "../registry-supp";
 import { runIntake, type Intake } from "./intake";
 import { processVerdicts } from "./process-items";
@@ -220,32 +225,11 @@ export async function evaluateRun(
   let llmBlocked: string | null = input.judge ? null : "no llm key";
   // WO-B19-009: per-check wall time, logged once (slowest first).
   const checkMs: Array<[string, number]> = [];
-  for (const [done, check] of input.checks.entries()) {
-    onCheck(done, input.checks.length);
-    const items = check.itemIds.filter(applies);
-    if (items.length === 0) continue;
-    if (check.class === "LLM" && llmBlocked) {
-      for (const id of items) addVerdict(id, "BLOCKED", llmBlocked, check.id);
-      continue;
-    }
-    const missing = check.requires.find(
-      (key) => collected[key]?.status !== "ok",
-    );
-    if (missing) {
-      const value = collected[missing];
-      const reason =
-        value && value.status === "unavailable"
-          ? value.reason
-          : "not collected";
-      for (const id of items)
-        addVerdict(
-          id,
-          "BLOCKED",
-          `${missing} unavailable: ${reason}`,
-          check.id,
-        );
-      continue;
-    }
+  const evaluate = async (check: HandbookCheck): Promise<CheckOutcome> => {
+    if (check.class === "LLM" && llmBlocked)
+      return { kind: "verdict", status: "BLOCKED", note: llmBlocked };
+    const missing = missingInput(check, collected);
+    if (missing) return missing;
     const ctx = {
       runId: input.runId,
       origin: input.origin,
@@ -260,30 +244,51 @@ export async function evaluateRun(
       ...(check.class === "LLM" && input.judge ? { judge: input.judge } : {}),
       fetchOffsite: cappedFetch(runtime.fetchOffsite, CHECK_OFFSITE_FETCHES),
     };
-    if (check.appliesTo && !check.appliesTo(ctx)) {
-      for (const id of items)
-        addVerdict(id, "NA", "check does not apply to this site", check.id);
-      continue;
-    }
-    let result: CheckResult;
+    if (check.appliesTo && !check.appliesTo(ctx))
+      return {
+        kind: "verdict",
+        status: "NA",
+        note: "check does not apply to this site",
+      };
     const startedAt = Date.now();
     try {
-      result = await check.run(ctx);
+      const result = await check.run(ctx);
       checkMs.push([check.id, Date.now() - startedAt]);
+      return { kind: "result", result };
     } catch (error) {
       if (error instanceof LlmBudgetError) {
-        // ADR-019: stop LLM checks at the cap or a 402; the rest are BLOCKED too.
+        // ADR-019: stop LLM checks at the cap or a 402; no later one starts.
         llmBlocked = error.note;
-        for (const id of items) addVerdict(id, "BLOCKED", llmBlocked, check.id);
-        continue;
+        return { kind: "verdict", status: "BLOCKED", note: llmBlocked };
       }
       const code =
         error instanceof Error ? error.message.slice(0, 120) : "unknown";
-      checkerErrors.push(`${check.id}: ${code}`);
+      return { kind: "error", code };
+    }
+  };
+
+  const outcomes = await scheduleChecks(
+    input.checks,
+    applies,
+    evaluate,
+    onCheck,
+  );
+  for (const [index, check] of input.checks.entries()) {
+    const outcome = outcomes[index];
+    if (!outcome) continue;
+    const items = check.itemIds.filter(applies);
+    if (outcome.kind === "verdict") {
       for (const id of items)
-        addVerdict(id, "BLOCKED", `check error: ${code}`, check.id);
+        addVerdict(id, outcome.status, outcome.note, check.id);
       continue;
     }
+    if (outcome.kind === "error") {
+      checkerErrors.push(`${check.id}: ${outcome.code}`);
+      for (const id of items)
+        addVerdict(id, "BLOCKED", `check error: ${outcome.code}`, check.id);
+      continue;
+    }
+    const { result } = outcome;
     const violation = contractViolation(check, result, registryById);
     if (violation) {
       checkerErrors.push(`${check.id}: ${violation}`);
@@ -310,7 +315,6 @@ export async function evaluateRun(
       },
     });
   }
-  onCheck(input.checks.length, input.checks.length);
   runtime.log("handbook.checks.timing", {
     totalMs: checkMs.reduce((sum, [, ms]) => sum + ms, 0),
     slowest: sort(checkMs, (a, b) => b[1] - a[1])
