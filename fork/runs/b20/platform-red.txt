@@ -1,0 +1,8 @@
+     × identifies Showit from its script host 4ms
+     × identifies GoDaddy from its script host 1ms
+     × identifies Duda from its script host 0ms
+     × identifies Weebly from its script host 0ms
+     × identifies Jimdo from its script host 0ms
+     × identifies Framer from its script host 0ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  6 failed | 2 passed (8)

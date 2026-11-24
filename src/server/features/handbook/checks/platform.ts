@@ -57,7 +57,7 @@ const HEADER_SIGNALS: {
 ];
 
 const GENERATOR_BUILDERS =
-  /wix|squarespace|webflow|shopify|weebly|godaddy|duda|jimdo|framer|carrd/i;
+  /wix|squarespace|webflow|shopify|weebly|godaddy|duda|jimdo|framer|carrd|showit/i;
 
 const SCRIPT_SIGNALS: { test: RegExp; platform: string; builder: boolean }[] = [
   {
@@ -70,6 +70,30 @@ const SCRIPT_SIGNALS: { test: RegExp; platform: string; builder: boolean }[] = [
   {
     test: /webflow\.(com|io)|website-files\.com/i,
     platform: "Webflow",
+    builder: true,
+  },
+  // Builders that print no generator meta (field test 8: Showit) are known
+  // only by the hosts their engine and media load from.
+  {
+    test: /lib\.showit\.com|static\.showit\.co/i,
+    platform: "Showit",
+    builder: true,
+  },
+  { test: /img1\.wsimg\.com/i, platform: "GoDaddy", builder: true },
+  {
+    test: /irp\.cdn-website\.com|multiscreensite\.com/i,
+    platform: "Duda",
+    builder: true,
+  },
+  { test: /editmysite\.com/i, platform: "Weebly", builder: true },
+  {
+    test: /jimstatic\.com|jimdo(cdn)?\.com/i,
+    platform: "Jimdo",
+    builder: true,
+  },
+  {
+    test: /framerusercontent\.com|events\.framer\.com/i,
+    platform: "Framer",
     builder: true,
   },
   { test: /\/wp-(content|includes)\//i, platform: "WordPress", builder: false },
