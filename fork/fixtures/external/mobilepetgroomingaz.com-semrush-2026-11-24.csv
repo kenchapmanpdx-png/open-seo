@@ -1,0 +1,40 @@
+Issue,Count,Page URL,Target URL
+Broken external links,1,https://www.mobilepetgroomingaz.com/services,http://jempetsupplies.com
+Broken external links,1,https://www.mobilepetgroomingaz.com/services,https://www.jempetsupplies.com/
+Broken external links,1,https://www.mobilepetgroomingaz.com/faq,http://jempetsupplies.com
+Broken external links,1,https://www.mobilepetgroomingaz.com/faq,https://www.jempetsupplies.com/
+Broken external links,1,https://www.mobilepetgroomingaz.com/contact,http://jempetsupplies.com
+Broken external links,1,https://www.mobilepetgroomingaz.com/contact,https://www.jempetsupplies.com/
+Broken external links,1,https://www.mobilepetgroomingaz.com/about,http://jempetsupplies.com
+Broken external links,1,https://www.mobilepetgroomingaz.com/about,https://www.jempetsupplies.com/
+Broken external links,1,https://www.mobilepetgroomingaz.com/,http://jempetsupplies.com
+Broken external links,1,https://www.mobilepetgroomingaz.com/,https://www.jempetsupplies.com/
+Broken external links,1,https://www.mobilepetgroomingaz.com,http://jempetsupplies.com
+Broken external links,1,https://www.mobilepetgroomingaz.com,https://www.jempetsupplies.com/
+Low word count,1,https://www.mobilepetgroomingaz.com/contact,
+Low word count,1,https://www.mobilepetgroomingaz.com/about,
+Low text to HTML ratio,1,https://www.mobilepetgroomingaz.com/services,
+Low text to HTML ratio,1,https://www.mobilepetgroomingaz.com/faq,
+Low text to HTML ratio,1,https://www.mobilepetgroomingaz.com/contact,
+Low text to HTML ratio,1,https://www.mobilepetgroomingaz.com/about,
+Low text to HTML ratio,1,https://www.mobilepetgroomingaz.com/,
+Low text to HTML ratio,1,https://www.mobilepetgroomingaz.com,
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/services,https://static.wixstatic.com/media/8ff826_e2129a80490f4efab222f4ced9613387~mv2.png
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/services,https://static.wixstatic.com/media/8ff826_6fa7f90c1512478ba1878a5081e6c2a8~mv2.jpg
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/faq,https://static.wixstatic.com/media/8ff826_e2129a80490f4efab222f4ced9613387~mv2.png
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/faq,https://static.wixstatic.com/media/8ff826_6fa7f90c1512478ba1878a5081e6c2a8~mv2.jpg
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/contact,https://static.wixstatic.com/media/8ff826_e2129a80490f4efab222f4ced9613387~mv2.png
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/contact,https://static.wixstatic.com/media/8ff826_6fa7f90c1512478ba1878a5081e6c2a8~mv2.jpg
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/about,https://static.wixstatic.com/media/8ff826_e2129a80490f4efab222f4ced9613387~mv2.png
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/about,https://static.wixstatic.com/media/8ff826_6fa7f90c1512478ba1878a5081e6c2a8~mv2.jpg
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/,https://static.wixstatic.com/media/8ff826_e2129a80490f4efab222f4ced9613387~mv2.png
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com/,https://static.wixstatic.com/media/8ff826_6fa7f90c1512478ba1878a5081e6c2a8~mv2.jpg
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com,https://static.wixstatic.com/media/8ff826_e2129a80490f4efab222f4ced9613387~mv2.png
+Resources formatted as page links,1,https://www.mobilepetgroomingaz.com,https://static.wixstatic.com/media/8ff826_6fa7f90c1512478ba1878a5081e6c2a8~mv2.jpg
+Links with no anchor text,1,https://www.mobilepetgroomingaz.com/,https://www.nuvet.com/70832
+Links with no anchor text,1,https://www.mobilepetgroomingaz.com/,https://player.vimeo.com/video/180076051?title=0&byline=0&portrait=0
+Links with no anchor text,1,https://www.mobilepetgroomingaz.com,https://www.nuvet.com/70832
+Links with no anchor text,1,https://www.mobilepetgroomingaz.com,https://player.vimeo.com/video/180076051?title=0&byline=0&portrait=0
+Pages with only one internal link,1,https://www.mobilepetgroomingaz.com/,
+Low Semantic HTML usage,1,https://www.mobilepetgroomingaz.com/services,
+Content not optimized,1,https://www.mobilepetgroomingaz.com/faq,

@@ -1,0 +1,99 @@
+Issue,Count,Page URL,Target URL
+Missing h1,1,https://www.aweandorderorganizing.com/testimonials.html,
+Missing h1,1,https://www.aweandorderorganizing.com/services.html,
+Missing h1,1,https://www.aweandorderorganizing.com/privacy-policy.html,
+Missing h1,1,https://www.aweandorderorganizing.com/photos.html,
+Missing h1,1,https://www.aweandorderorganizing.com/contact.html,
+Missing h1,1,https://www.aweandorderorganizing.com/about.html,
+Missing h1,1,https://www.aweandorderorganizing.com/,
+Missing meta description,1,https://www.aweandorderorganizing.com/testimonials.html,
+Missing meta description,1,https://www.aweandorderorganizing.com/services.html,
+Missing meta description,1,https://www.aweandorderorganizing.com/privacy-policy.html,
+Missing meta description,1,https://www.aweandorderorganizing.com/photos.html,
+Missing meta description,1,https://www.aweandorderorganizing.com/contact.html,
+Missing meta description,1,https://www.aweandorderorganizing.com/about.html,
+Low word count,1,https://www.aweandorderorganizing.com/photos.html,
+Low word count,1,https://www.aweandorderorganizing.com/contact.html,
+Low text to HTML ratio,1,https://www.aweandorderorganizing.com/services.html,
+Low text to HTML ratio,1,https://www.aweandorderorganizing.com/privacy-policy.html,
+Low text to HTML ratio,1,https://www.aweandorderorganizing.com/photos.html,
+Low text to HTML ratio,1,https://www.aweandorderorganizing.com/contact.html,
+Low text to HTML ratio,1,https://www.aweandorderorganizing.com/about.html,
+Low text to HTML ratio,1,https://www.aweandorderorganizing.com/,
+4xx errors,1,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection,
+Broken internal links,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection
+Broken internal links,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection
+Broken internal links,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection
+Broken internal links,1,https://www.aweandorderorganizing.com/photos.html,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection
+Broken internal links,1,https://www.aweandorderorganizing.com/contact.html,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection
+Broken internal links,1,https://www.aweandorderorganizing.com/about.html,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection
+Broken internal links,1,https://www.aweandorderorganizing.com/,https://www.aweandorderorganizing.com/cdn-cgi/l/email-protection
+HTTP URLs in sitemap.xml for HTTPS site,1,https://www.aweandorderorganizing.com/sitemap.xml,http://www.aweandorderorganizing.com/photos.html
+HTTP URLs in sitemap.xml for HTTPS site,1,https://www.aweandorderorganizing.com/sitemap.xml,http://www.aweandorderorganizing.com/index.html
+HTTP URLs in sitemap.xml for HTTPS site,1,https://www.aweandorderorganizing.com/sitemap.xml,http://www.aweandorderorganizing.com/privacy-policy.html
+HTTP URLs in sitemap.xml for HTTPS site,1,https://www.aweandorderorganizing.com/sitemap.xml,http://www.aweandorderorganizing.com/about.html
+HTTP URLs in sitemap.xml for HTTPS site,1,https://www.aweandorderorganizing.com/sitemap.xml,http://www.aweandorderorganizing.com/services.html
+HTTP URLs in sitemap.xml for HTTPS site,1,https://www.aweandorderorganizing.com/sitemap.xml,http://www.aweandorderorganizing.com/contact.html
+HTTP URLs in sitemap.xml for HTTPS site,1,https://www.aweandorderorganizing.com/sitemap.xml,http://www.aweandorderorganizing.com/testimonials.html
+No HSTS support,1,https://www.aweandorderorganizing.com/,
+No HSTS support,1,https://aweandorderorganizing.com/,
+Uncached JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Uncached JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Uncached JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Uncached JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Uncached JavaScript and CSS files,1,https://www.aweandorderorganizing.com/contact.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Uncached JavaScript and CSS files,1,https://www.aweandorderorganizing.com/about.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Uncached JavaScript and CSS files,1,https://www.aweandorderorganizing.com/,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Resources formatted as page links,1,https://www.aweandorderorganizing.com/,https://www.aweandorderorganizing.com/uploads/1/0/5/8/105852583/img-9459-1_orig.jpg
+Disallowed external resources,1,https://www.aweandorderorganizing.com/contact.html,https://www.weebly.com/weebly/apps/generateMap.php?map=google&elementid=768647016820892937&ineditor=0&control=3&width=auto&height=350px&overviewmap=0&scalecontrol=0&typecontrol=0&zoom=11&long=-112.07403729999998&lat=33.4483771&domain=www&point=1&align=1&reseller=false
+Llms.txt not found,1,https://www.aweandorderorganizing.com/llms.txt,
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://cdn2.editmysite.com/fonts/Karla/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://cdn2.editmysite.com/fonts/Lora/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://cdn2.editmysite.com/fonts/Lato/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://cdn2.editmysite.com/fonts/Amaranth/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/theme/custom-1.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/theme/plugins.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://cdn2.editmysite.com/fonts/Roboto_Mono/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://cdn2.editmysite.com/fonts/Oswald/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/theme/jquery.pxuMenu.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/theme/MutationObserver.js
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/theme/jquery.trend.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/testimonials.html,https://www.aweandorderorganizing.com/files/theme/jquery.revealer.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://cdn2.editmysite.com/fonts/Amaranth/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://cdn2.editmysite.com/fonts/Lora/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://cdn2.editmysite.com/fonts/Oswald/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/theme/MutationObserver.js
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://cdn2.editmysite.com/fonts/Lato/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/theme/plugins.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/theme/custom-1.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/theme/jquery.revealer.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://cdn2.editmysite.com/fonts/Roboto_Mono/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://cdn2.editmysite.com/fonts/Karla/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/theme/jquery.pxuMenu.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/services.html,https://www.aweandorderorganizing.com/files/theme/jquery.trend.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/theme/MutationObserver.js
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/theme/plugins.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/theme/jquery.revealer.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/theme/jquery.pxuMenu.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://cdn2.editmysite.com/fonts/Lato/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://cdn2.editmysite.com/fonts/Oswald/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/theme/jquery.trend.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://www.aweandorderorganizing.com/files/theme/custom-1.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://cdn2.editmysite.com/fonts/Amaranth/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://cdn2.editmysite.com/fonts/Roboto_Mono/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://cdn2.editmysite.com/fonts/Karla/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/privacy-policy.html,https://cdn2.editmysite.com/fonts/Lora/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://cdn2.editmysite.com/fonts/Amaranth/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://cdn2.editmysite.com/fonts/Lora/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://www.aweandorderorganizing.com/files/theme/plugins.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://www.aweandorderorganizing.com/files/theme/MutationObserver.js
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://cdn2.editmysite.com/fonts/Lato/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://www.aweandorderorganizing.com/files/main_style.css?1672701721
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://cdn2.editmysite.com/fonts/Roboto_Mono/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://www.aweandorderorganizing.com/files/theme/custom-1.js?1631129850
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://cdn2.editmysite.com/fonts/Oswald/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://cdn2.editmysite.com/fonts/Karla/font.css?2
+Unminified JavaScript and CSS files,1,https://www.aweandorderorganizing.com/photos.html,https://www.aweandorderorganizing.com/files/theme/jquery.revealer.js?1631129850
