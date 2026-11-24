@@ -220,6 +220,7 @@ type StageProgress = {
   batchesDone: number;
   batches: number;
   itemsDone: number;
+  itemsTotal: number;
   error: string | null;
 };
 
@@ -257,6 +258,7 @@ async function getRunProgress(projectId: string, runId: string) {
         batchesDone: finished.length,
         batches: batches.length,
         itemsDone: batches.reduce((n, b) => n + b.itemsDone, 0),
+        itemsTotal: batches.reduce((n, b) => n + b.itemsTotal, 0),
         error: batches.find((b) => b.error)?.error ?? null,
       },
     ];
@@ -265,10 +267,21 @@ async function getRunProgress(projectId: string, runId: string) {
     stages.find((s) => s.status === "running" || s.status === "pending") ??
     stages.at(-1) ??
     null;
+  // WO-B20-006: the last two steps count checks run / result rows saved,
+  // not pages.
+  const unit =
+    current?.stage === "checks"
+      ? "checks"
+      : current?.stage === "report"
+        ? "rows saved"
+        : "pages";
   const pagesTotal =
-    run.coverageRead ??
-    stages.find((s) => s.stage === "crawl" && s.status === "done")?.itemsDone ??
-    null;
+    unit !== "pages"
+      ? current?.itemsTotal || null
+      : (run.coverageRead ??
+        stages.find((s) => s.stage === "crawl" && s.status === "done")
+          ?.itemsDone ??
+        null);
 
   let queuedBehind: { sameProject: boolean; runId: string | null } | null =
     null;
@@ -290,6 +303,7 @@ async function getRunProgress(projectId: string, runId: string) {
     // Crawl: pages read so far (WO-B18-016); later stages: pages done.
     pagesDone: current ? current.itemsDone : null,
     pagesTotal,
+    unit,
     escalations: rows.botProbes,
     llmCostUsd: Math.max(rows.llmCostUsd, run.llmCostUsd),
     queuedBehind,

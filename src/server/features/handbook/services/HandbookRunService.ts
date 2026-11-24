@@ -3,7 +3,6 @@ import { scoreRun } from "./HandbookScore";
 import { z } from "zod";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
-import { sha256Hex } from "@/server/lib/audit/ids";
 import { getOpenRouterAccess } from "@/server/lib/openrouter";
 import { getOptionalEnvValue, getWorkersEnv } from "@/server/lib/runtime-env";
 import {
@@ -12,16 +11,12 @@ import {
 } from "@/server/features/handbook/registry";
 import { CONTRACTS_VERSION } from "@/server/features/handbook/contracts/version";
 import type { EvidenceStore } from "@/server/features/handbook/contracts/evidence-store";
-import type { Coverage } from "@/server/features/handbook/contracts/collectors";
 import {
   siteTierSchema,
   type HandbookMode,
   type SiteTier,
 } from "@/server/features/handbook/contracts/status";
-import {
-  LLM_BUDGET_ENV,
-  llmVerdictSchema,
-} from "@/server/features/handbook/contracts/llm";
+import { LLM_BUDGET_ENV } from "@/server/features/handbook/contracts/llm";
 import { createDefaultCollectors } from "@/server/features/handbook/collectors";
 import {
   probeSidecar,
@@ -62,10 +57,9 @@ import {
   resolveDepth,
   resolveMaxPages,
 } from "@/server/features/handbook/engine/depth";
-import type {
-  LlmCallLog,
-  VerdictCache,
-} from "@/server/features/handbook/llm/judge";
+import type { LlmCallLog } from "@/server/features/handbook/llm/judge";
+import { storeVerdictCache } from "./verdict-cache";
+import { throttledProgress } from "@/server/features/handbook/engine/stage-progress";
 import { createRunBudget } from "@/server/features/handbook/llm/budget";
 import {
   createHandbookJudge,
@@ -165,41 +159,6 @@ async function runStore(): Promise<EvidenceStore> {
   if (await supabaseConfig()) return evidenceStore();
   fallbackStore ??= await evidenceStore();
   return fallbackStore;
-}
-
-/**
- * Judge verdicts kept in the evidence store under
- * `<projectId>/_judge-cache/`, so an unchanged rerun of the project skips
- * its judge calls (FULL-READ §9 rerun cost). Outside any run folder, so
- * evidence retention keeps it; one small JSON object per verdict.
- */
-function storeVerdictCache(
-  store: EvidenceStore,
-  projectId: string,
-): VerdictCache {
-  const key = async (k: string) =>
-    `${projectId}/_judge-cache/${await sha256Hex(k)}.json`;
-  return {
-    async get(k) {
-      const bytes = await store.get(await key(k));
-      if (!bytes) return null;
-      try {
-        const parsed = llmVerdictSchema.safeParse(
-          JSON.parse(new TextDecoder().decode(bytes)),
-        );
-        return parsed.success ? parsed.data : null;
-      } catch {
-        return null;
-      }
-    },
-    async put(k, verdict) {
-      await store.put(
-        await key(k),
-        new TextEncoder().encode(JSON.stringify(verdict)),
-        "application/json",
-      );
-    },
-  };
 }
 
 /** Project setting wins when on; env `on` is the operator default (ADR-023). */
@@ -350,9 +309,6 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
   return { runInput, runtime, stageStore, ctx, llmCalls };
 }
 
-/** What the checks unit keeps for the report unit. */
-type RunSummary = { tier: SiteTier; coverage: Coverage | null };
-
 /** Batch count per stage, from the crawl unit's output. */
 async function planRun(input: HandbookRunParams, startedAt: string) {
   const { stageStore } = await prepareStage(input, startedAt);
@@ -387,17 +343,30 @@ async function runStage(
       collect: (s, prior, b) =>
         collectRunUnit(runInput, runtime, cctx, { stage: s, batch: b }, prior),
       evaluate: async (collected) => {
-        const result = await evaluateRun(runInput, runtime, collected);
+        const result = await evaluateRun(
+          runInput,
+          runtime,
+          collected,
+          throttledProgress(ctx.tracker, stage, batch),
+        );
         const saveStart = Date.now(); // WO-B19-009: save time of `checks`
-        await HandbookRepository.saveRunResult(input.runId, result);
-        runtime.log("handbook.checks.save_ms", { ms: Date.now() - saveStart });
+        const rowsSaved = await HandbookRepository.saveRunResult(
+          input.runId,
+          result,
+        );
+        runtime.log("handbook.checks.save_ms", {
+          ms: Date.now() - saveStart,
+          rows: rowsSaved,
+        });
         await HandbookRepository.saveLlmCalls(input.runId, llmCalls);
         const pages = result.collected.pages;
-        const summary: RunSummary = {
+        const summary: z.infer<typeof runSummarySchema> = {
           tier: result.intake.tier,
           coverage: pages.status === "ok" ? (pages.coverage ?? null) : null,
+          rowsSaved,
         };
         await stageStore.save("report", batch, summary);
+        return runInput.checks.length;
       },
       report: async () => {
         const summary = runSummarySchema.parse(
@@ -412,12 +381,14 @@ async function runStage(
           coverage: summary.coverage ?? undefined,
           score: score ?? undefined,
         });
+        return summary.rowsSaved;
       },
     },
     ctx,
   );
 }
 
+/** What the checks unit keeps for the report unit; `rowsSaved` = the report step's count (WO-B20-006). */
 const runSummarySchema = z.object({
   tier: siteTierSchema,
   coverage: z
@@ -427,6 +398,7 @@ const runSummarySchema = z.object({
       capped: z.boolean(),
     })
     .nullable(),
+  rowsSaved: z.number().optional(),
 });
 
 async function failRun(input: HandbookRunParams, error: unknown) {

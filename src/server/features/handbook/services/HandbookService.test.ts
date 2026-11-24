@@ -53,6 +53,22 @@ describe("HandbookService.getRunProgress", () => {
       llmCostUsd: 0.25,
     });
   });
+
+  // WO-B20-006: the checks step counts checks, not pages.
+  it("counts checks done of total while the checks step runs", async () => {
+    await testDb.client.executeMultiple(`
+      INSERT INTO handbook_run_stage (run_id, stage, batch, status, items_done, items_total)
+        VALUES ('run', 'crawl', 0, 'done', 60, 60), ('run', 'checks', 0, 'running', 40, 120);
+    `);
+    expect(
+      await HandbookService.getRunProgress("project", "run"),
+    ).toMatchObject({
+      currentStage: "checks",
+      pagesDone: 40,
+      pagesTotal: 120,
+      unit: "checks",
+    });
+  });
 });
 
 describe("HandbookService.publishToReports", () => {

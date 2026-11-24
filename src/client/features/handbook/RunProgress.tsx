@@ -40,7 +40,7 @@ function ProgressCard({ progress }: { progress: HandbookRunProgress }) {
     progress.pagesTotal !== null
       ? `${progress.pagesDone ?? 0} / ${progress.pagesTotal}`
       : progress.pagesDone
-        ? `${progress.pagesDone} read`
+        ? `${progress.pagesDone} ${progress.unit === "pages" ? "read" : progress.unit}`
         : "—";
   return (
     <Card>
@@ -53,7 +53,16 @@ function ProgressCard({ progress }: { progress: HandbookRunProgress }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <dl className="grid grid-cols-3 gap-2 text-sm">
-          <Stat label="Pages (current stage)" value={pages} />
+          <Stat
+            label={
+              progress.unit === "checks"
+                ? "Checks done"
+                : progress.unit === "rows saved"
+                  ? "Results saved"
+                  : "Pages (current stage)"
+            }
+            value={pages}
+          />
           <Stat label="Extra checks" value={String(progress.escalations)} />
           <Stat
             label="AI review cost"

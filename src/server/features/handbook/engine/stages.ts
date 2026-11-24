@@ -208,11 +208,12 @@ export type StageTracker = {
   finish: (stage: StageName, batch: number, itemsDone: number) => Promise<void>;
   fail: (stage: StageName, batch: number, error: string) => Promise<void>;
   skip: (stage: StageName, batch: number, reason: string) => Promise<void>;
-  /** Live items count of a running unit (WO-B18-016); absent = not tracked. */
+  /** Live items count of a running unit (WO-B18-016); absent = not tracked. `itemsTotal` when known (WO-B20-006). */
   progress?: (
     stage: StageName,
     batch: number,
     itemsDone: number,
+    itemsTotal?: number,
   ) => Promise<void>;
 };
 
@@ -337,9 +338,9 @@ export type StageEngine = {
    * Intake + checks + evidence over the full collected data. The engine
    * keeps the result (CLI: in memory; app: DB rows + a summary).
    */
-  evaluate: (collected: Partial<CollectedData>) => Promise<void>;
+  evaluate: (collected: Partial<CollectedData>) => Promise<number | void>;
   /** Finishes the run from what `evaluate` kept (app: run status). */
-  report: () => Promise<void>;
+  report: () => Promise<number | void>;
 };
 
 export type StageContext = {
@@ -468,14 +469,10 @@ async function runWork(
   engine: StageEngine,
   store: StageStore,
 ): Promise<number> {
-  if (stage === "checks") {
-    await engine.evaluate(await loadCollected(store, batches));
-    return 1;
-  }
-  if (stage === "report") {
-    await engine.report();
-    return 1;
-  }
+  // WO-B20-006: checks items = checks run; report items = result rows saved.
+  if (stage === "checks")
+    return (await engine.evaluate(await loadCollected(store, batches))) ?? 1;
+  if (stage === "report") return (await engine.report()) ?? 1;
   const prior =
     stage === "crawl" && batch === 0 ? {} : await loadCollected(store, batches);
   const patch = await engine.collect(stage, prior, batch);

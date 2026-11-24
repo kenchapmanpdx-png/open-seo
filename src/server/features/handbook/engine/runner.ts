@@ -182,6 +182,8 @@ export async function evaluateRun(
   input: RunInput,
   runtime: HandbookRuntime,
   partial: Partial<CollectedData>,
+  /** Checks done of total, before each check and once at the end (WO-B20-006). */
+  onCheck: (done: number, total: number) => void = () => {},
 ): Promise<RunResult> {
   const collected = completeCollected(partial);
   input.budget?.setPages(pagesRead(collected));
@@ -218,7 +220,8 @@ export async function evaluateRun(
   let llmBlocked: string | null = input.judge ? null : "no llm key";
   // WO-B19-009: per-check wall time, logged once (slowest first).
   const checkMs: Array<[string, number]> = [];
-  for (const check of input.checks) {
+  for (const [done, check] of input.checks.entries()) {
+    onCheck(done, input.checks.length);
     const items = check.itemIds.filter(applies);
     if (items.length === 0) continue;
     if (check.class === "LLM" && llmBlocked) {
@@ -307,6 +310,7 @@ export async function evaluateRun(
       },
     });
   }
+  onCheck(input.checks.length, input.checks.length);
   runtime.log("handbook.checks.timing", {
     totalMs: checkMs.reduce((sum, [, ms]) => sum + ms, 0),
     slowest: sort(checkMs, (a, b) => b[1] - a[1])

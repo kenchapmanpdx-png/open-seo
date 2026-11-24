@@ -142,11 +142,13 @@ function forRun(runId: string): StageTracker {
         finishedAt: now(),
       });
     },
-    async progress(stage, batch, itemsDone) {
+    async progress(stage, batch, itemsDone, itemsTotal) {
       if (!(await runLive(runId))) return;
       await db
         .update(handbookRunStages)
-        .set({ itemsDone })
+        .set(
+          itemsTotal === undefined ? { itemsDone } : { itemsDone, itemsTotal },
+        )
         .where(where(stage, batch));
     },
     async skip(stage, batch, reason) {
@@ -171,6 +173,7 @@ async function progressRows(runId: string) {
       batch: handbookRunStages.batch,
       status: handbookRunStages.status,
       itemsDone: handbookRunStages.itemsDone,
+      itemsTotal: handbookRunStages.itemsTotal,
       error: handbookRunStages.error,
     })
     .from(handbookRunStages)
