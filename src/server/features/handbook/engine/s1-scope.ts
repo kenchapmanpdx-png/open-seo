@@ -113,13 +113,24 @@ export function scopeS1ToIndexable(
         const list =
           reasons.slice(0, SHOWN).join("; ") +
           (reasons.length > SHOWN ? `; +${reasons.length - SHOWN} more` : "");
+        // A split half drops the detail lines that start with the other
+        // half's pages (WO-B21-007); lines naming no affected page stay.
+        const detailWithout = (others: string[]) =>
+          f.detail
+            .split("\n")
+            .filter((line) => !others.some((u) => line.startsWith(`${u} `)))
+            .join("\n");
         const lowered = {
           ...f,
           severity: "S3" as const,
           severityReason: `affects only pages search engines cannot index (${list})`,
           urls: blocked,
         };
-        return open.length === 0 ? [lowered] : [{ ...f, urls: open }, lowered];
+        if (open.length === 0) return [lowered];
+        return [
+          { ...f, urls: open, detail: detailWithout(blocked) },
+          { ...lowered, detail: detailWithout(open) },
+        ];
       }),
     },
   }));

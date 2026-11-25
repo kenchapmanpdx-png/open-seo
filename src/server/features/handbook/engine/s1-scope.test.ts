@@ -73,6 +73,23 @@ describe("scopeS1ToIndexable (ADR-034)", () => {
     expect([s3?.severity, s3?.urls]).toEqual(["S3", [`${ORIGIN}/cart`]]);
   });
 
+  it("gives each half of a split only the detail lines of its own pages", () => {
+    // valentinecoffeeco b21r100: the S3 half repeated the S1 page's lines.
+    const [s1, s3] = scopedAll({
+      ...finding("P3-20", ["/", "/cart"]),
+      detail: [
+        "Shared note",
+        `${ORIGIN}/ — content changes`,
+        `${ORIGIN}/cart — content changes`,
+        `${ORIGIN}/cart loads script ${ORIGIN}/a.js — disallow: /a`,
+      ].join("\n"),
+    });
+    expect(s1?.detail).toBe(`Shared note\n${ORIGIN}/ — content changes`);
+    expect(s3?.detail).toBe(
+      `Shared note\n${ORIGIN}/cart — content changes\n${ORIGIN}/cart loads script ${ORIGIN}/a.js — disallow: /a`,
+    );
+  });
+
   it("leaves access items S1 (noindex on content is the defect)", () => {
     expect(scoped(finding("P3-01", ["/private"]))?.severity).toBe("S1");
   });

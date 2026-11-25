@@ -39,6 +39,9 @@ export const ROBOTS_BOT_TOKENS = [
   "meta-externalagent",
 ] as const;
 
+/** Wait before the one retry of robots.txt and each sitemap. */
+const SITEMAP_RETRY_MS = 2000;
+
 const ROBOTS_PATHS = ["/", "/llms.txt", "/sitemap.xml"];
 const MAX_SITEMAPS = 50;
 const MAX_SITEMAP_URLS = 50_000;
@@ -67,10 +70,30 @@ export const robotsCollector: Collector<"robots"> = {
   async collect(ctx) {
     const hosts: RobotsHost[] = [];
     const decisions: RobotsDecision[] = [];
-    for (const host of siblingHosts(new URL(ctx.origin).host)) {
-      const url = `${new URL(ctx.origin).protocol}//${host}/robots.txt`;
-      const res = await tryFetch(ctx, url, { maxRedirects: 0 });
-      if (!res) continue;
+    const origin = new URL(ctx.origin);
+    for (const host of siblingHosts(origin.host)) {
+      const url = `${origin.protocol}//${host}/robots.txt`;
+      // One retry on a network failure or 5xx: a timed-out robots.txt read
+      // as "no Sitemap: line" on bluetreefunding.com (WO-B21-006).
+      const res = await withRetry(
+        () => tryFetch(ctx, url, { maxRedirects: 0 }),
+        {
+          tries: 2,
+          retryable: (r) => !r || r.status >= 500,
+          wait: () => sleep(SITEMAP_RETRY_MS),
+        },
+      );
+      if (!res) {
+        // The origin's own robots.txt decides every robots check; a sibling
+        // host's answer (often a 301) is no substitute.
+        if (host === origin.host) {
+          return {
+            status: "unavailable",
+            reason: `robots.txt fetch failed on ${host}`,
+          };
+        }
+        continue;
+      }
       const ok = res.status === 200;
       const parsed = parseRobots(ok ? res.body : "");
       const storageKey = ok
@@ -106,8 +129,6 @@ function asArray(value: unknown): unknown[] {
   if (value === undefined) return [];
   return Array.isArray(value) ? value : [value];
 }
-
-const SITEMAP_RETRY_MS = 2000;
 
 export const sitemapCollector: Collector<"sitemap"> = {
   key: "sitemap",
