@@ -25,7 +25,11 @@ export function createResult(itemIds: readonly string[]) {
   const findings: FindingDraft[] = [];
   const notes = new Map<
     string,
-    { status: "PASS" | "NA" | "BLOCKED"; note: string; refs: string[] }
+    {
+      status: "PASS" | "NA" | "BLOCKED" | "LIMITED";
+      note: string;
+      refs: string[];
+    }
   >();
 
   return {
@@ -53,6 +57,10 @@ export function createResult(itemIds: readonly string[]) {
     },
     na(itemId: string, note: string) {
       notes.set(itemId, { status: "NA", note, refs: [] });
+    },
+    /** Only part of what the item asks could be verified (scores 0.5). */
+    limited(itemId: string, note: string, refs: string[]) {
+      notes.set(itemId, { status: "LIMITED", note, refs });
     },
     /** An optional collector this item needs is missing: never PASS. */
     blocked(itemId: string, note: string) {

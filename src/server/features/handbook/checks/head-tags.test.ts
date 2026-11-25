@@ -89,8 +89,26 @@ describe("crawl.head-tags", () => {
     expect(statusOf(result, "P4-04")).toBe("OPEN");
   });
 
+  // WO-B23-005: only a year before the crawl's year reads stale; "Since 2005" is a founding year.
+  it("flags only past years in headings, judged by the crawl's Date header", async () => {
+    const dated = (h1: string): PageSnapshot => ({
+      ...page("/", {}, [h1]),
+      headers: [["date", "Wed, 25 Nov 2026 12:00:00 GMT"]],
+    });
+    const titles = async (h1: string) =>
+      (await run([dated(h1)])).findings
+        .filter((f) => f.itemIds[0] === "P4-06")
+        .map((f) => [f.severity, f.title]);
+    expect(await titles("Best plumbers of 2025")).toEqual([
+      ["S3", "Past year in listing / evergreen headings"],
+    ]);
+    expect(await titles("Best plumbers of 2026")).toEqual([]);
+    expect(await titles("Plumber in Mesa · Since 2005")).toEqual([]);
+    expect(await titles("Est. 2010 · © 2019 Mesa Plumbing")).toEqual([]);
+  });
+
   it("exempts event pages from the year rule", async () => {
-    const home = page("/", {}, ["Spring Run 2026"]);
+    const home = page("/", {}, ["Spring Run 2024"]);
     const result = await run([home], {
       jsonld: {
         status: "ok",

@@ -46,6 +46,22 @@ describe("robots.group-evaluation", () => {
     );
   });
 
+  // WO-B23-002: per-crawler groups are documented practice; the app cannot know intent → S3, no cap.
+  it("reports a real named-group gap as S3 'intended?' naming the bot and route", async () => {
+    const result = await run(
+      "User-agent: *\nDisallow: /admin/\n\nUser-agent: Googlebot\nAllow: /\n",
+    );
+    expect(result.findings.map((f) => [f.severity, f.title, f.detail])).toEqual(
+      [
+        [
+          "S3",
+          "Named robots.txt groups miss the * Disallow set (Googlebot) — intended?",
+          "A named group replaces `*` for that bot (RFC 9309), so these bots may crawl paths unlisted bots may not:\nGooglebot: /admin/",
+        ],
+      ],
+    );
+  });
+
   // WO-B21-005, aweandorderorganizing.com: `NerdyBot: Disallow: /` blocks
   // more than `*`, yet was reported as missing /ajax/, /apps/ (S1 cap).
   it("passes a named group whose own rules already block every * route", async () => {
@@ -66,7 +82,9 @@ describe("robots.group-evaluation", () => {
       result.findings
         .filter((f) => f.title.startsWith("Named"))
         .map((f) => f.title),
-    ).toEqual(["Named robots.txt groups miss the * Disallow set (dotbot)"]);
+    ).toEqual([
+      "Named robots.txt groups miss the * Disallow set (dotbot) — intended?",
+    ]);
   });
 
   it.each([
@@ -106,14 +124,14 @@ describe("robots.group-evaluation", () => {
     const named = minor.findings.filter((f) => f.title.startsWith("Named"));
     expect(named.map((f) => [f.title, f.severity])).toEqual([
       [
-        "Named robots.txt groups miss the * Disallow set (dotbot, AhrefsBot)",
+        "Named robots.txt groups miss the * Disallow set (dotbot, AhrefsBot) — intended?",
         "S3",
       ],
     ]);
     const gpt = await run(`${file}\n\nUser-agent: GPTBot\nAllow: /`);
     expect(
-      gpt.findings.find((f) => f.title.startsWith("Named"))?.severity,
-    ).toBe("S1");
+      gpt.findings.find((f) => f.title.startsWith("Named"))?.severityReason,
+    ).toMatch(/^the named group lets this crawler/);
   });
 
   // WO-B20-011; bluebonnetroofs.com: the www sibling only redirects (301) to the 404 host.

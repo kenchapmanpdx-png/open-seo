@@ -16,7 +16,10 @@ const ITEMS = ["P9-01", "P9-04"];
 
 type Row = NonNullable<BotFetchData["policyMap"]>[number];
 
-const BLOCK_STATUS = new Set([401, 403, 429, 503]);
+// WO-B23-006: 429 is "too many requests" (the collector already retried
+// once), not "this bot is refused"; such rows are listed, not judged.
+const BLOCK_STATUS = new Set([401, 403, 503]);
+const RATE_LIMITED = 429;
 
 const served = (r: Row) =>
   r.blockedReason?.startsWith("interstitial:")
@@ -54,9 +57,11 @@ export const aiBotPolicyCheck: HandbookCheck = {
         .map((c) => c.f.bot),
     );
     const unreported = splits.filter((r) => !inParity.has(r.token));
+    const throttled = rows.filter((r) => r.status === RATE_LIMITED);
+    const judged = (r: Row) => r.status !== RATE_LIMITED;
     out.blocked(
       "P9-04",
-      `Owner to record the AI-bot decisions: allowed ${list(rows.filter((r) => r.robotsAllowed && !served(r)))}; robots.txt disallows ${list(rows.filter((r) => !r.robotsAllowed))}; server blocks while robots.txt allows ${list(splits)}`,
+      `Owner to record the AI-bot decisions: allowed ${list(rows.filter((r) => judged(r) && r.robotsAllowed && !served(r)))}; robots.txt disallows ${list(rows.filter((r) => judged(r) && !r.robotsAllowed))}; server blocks while robots.txt allows ${list(splits)}${throttled.length > 0 ? `; rate-limited, not judged: ${list(throttled)}` : ""}`,
     );
     if (unreported.length === 0) return out.build();
     out.finding({

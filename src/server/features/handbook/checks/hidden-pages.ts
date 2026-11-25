@@ -43,7 +43,7 @@ export const hiddenPagesCheck: HandbookCheck = {
       if (!u) return null;
       const host = robots.hosts.find((h) => h.host === u.host);
       if (!host) return null;
-      const d = decide(u.host, host.groups, "*", u.pathname);
+      const d = decide(u.host, host.groups, "*", u.pathname + u.search);
       return d.allowed ? null : d.matchedRule;
     };
     const robotsRef = (url: string, rule: string) =>

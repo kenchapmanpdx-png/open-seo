@@ -43,12 +43,31 @@ describe("crawl.hreflang", () => {
     expect(statusOf(result, "P3-24")).toBe("OPEN");
   });
 
-  it("opens when x-default is missing", async () => {
+  // WO-B23-004: x-default is recommended, not required → its own S4 finding.
+  it("reports a missing x-default alone as S4, not as an incomplete set", async () => {
     const pair: [string, string][] = [
       ["en", "/en/"],
       ["de", "/de/"],
     ];
     const result = await run([page("/en/", pair), page("/de/", pair)]);
-    expect(statusOf(result, "P3-24")).toBe("OPEN");
+    expect(result.findings.map((f) => [f.severity, f.title])).toEqual([
+      ["S4", "Hreflang set has no x-default fallback"],
+    ]);
+  });
+
+  it("states how many alternates were checked, and is LIMITED when none were crawled", async () => {
+    const result = await run([page("/en/", full), page("/de/", full)]);
+    expect(result.statuses.find((s) => s.itemId === "P3-24")?.note).toMatch(
+      /^2\/2 alternates checked/,
+    );
+    const offsite: [string, string][] = [
+      ["en", "/en/"],
+      ["fr", "https://example.fr/"],
+      ["x-default", "/en/"],
+    ];
+    const limited = await run([page("/en/", offsite)]);
+    const verdict = limited.statuses.find((s) => s.itemId === "P3-24");
+    expect(verdict?.status).toBe("LIMITED");
+    expect(verdict?.note).toContain("alternates outside the crawl");
   });
 });

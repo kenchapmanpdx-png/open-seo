@@ -21,6 +21,11 @@ import {
   type CollectedData,
 } from "@/server/features/handbook/contracts/collectors";
 import { decide } from "@/server/features/handbook/engine/robots";
+import {
+  retryAfterMs,
+  sleep,
+  withRetry,
+} from "@/server/features/handbook/engine/transient-retry";
 import { AI_BOT_TOKENS } from "./ai-bot-tokens";
 import { tryFetch } from "./fetch-collectors";
 import { pool } from "./probe";
@@ -216,10 +221,23 @@ async function collectPolicyMap(
         )
       : undefined;
   const rows: NonNullable<BotFetchData["policyMap"]>[number][] = [];
+  // Still 429 after a retry = the site throttles the whole pass: later
+  // tokens are not waited on again (bounds the map at one Retry-After).
+  let throttled = false;
   for (const { token, userAgent } of AI_BOT_TOKENS) {
     await pace();
-    const res = await tryFetch(ctx, home.href, { userAgent });
+    // WO-B23-006: a 429 from this burst is rate limiting, not a per-bot
+    // policy: wait (Retry-After, capped) and ask that token once more.
+    const res = await withRetry(() => tryFetch(ctx, home.href, { userAgent }), {
+      tries: throttled ? 1 : 2,
+      retryable: (r) => r?.status === 429,
+      wait: (_next, last) => {
+        ctx.log("handbook.botfetch.policy_throttled", { token });
+        return sleep(last ? retryAfterMs(last) : 0);
+      },
+    });
     if (!res) continue;
+    if (res.status === 429) throttled = true;
     const hit =
       res.status === 200
         ? detectInterstitial(res.body, res.headers, res.finalUrl)
@@ -227,7 +245,8 @@ async function collectPolicyMap(
     rows.push({
       token,
       robotsAllowed: file
-        ? decide(home.host, file.groups, token, "/").allowed
+        ? // robots path: the policy map asks about the home page only.
+          decide(home.host, file.groups, token, "/").allowed
         : true,
       status: res.status,
       blockedReason: hit ? interstitialReason(hit) : null,

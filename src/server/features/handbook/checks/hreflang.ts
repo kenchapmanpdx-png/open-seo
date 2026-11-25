@@ -45,17 +45,23 @@ export const hreflangCheck: HandbookCheck = {
     if (withHreflang.length === 0) {
       out.na("P3-24", "no hreflang annotations found");
     } else {
+      // WO-B23-004: count what was verified; x-default is advice (S4).
+      let declared = 0;
+      let checked = 0;
+      const noFallback: PageSnapshot[] = [];
       const issues = withHreflang.flatMap((s) => {
         const self = normalizeUrl(s.url);
         const hrefs = s.head.hreflang.map((h) => normalizeUrl(h.href));
         const why: string[] = [];
         if (!hrefs.includes(self)) why.push("no self-reference");
         if (!s.head.hreflang.some((h) => h.lang.toLowerCase() === "x-default"))
-          why.push("no x-default");
+          noFallback.push(s);
         for (const href of new Set(hrefs)) {
           if (href === self) continue;
+          declared += 1;
           const alt = byUrl.get(href);
           if (!alt) continue; // not crawled within budget
+          checked += 1;
           if (alt.status !== 200 || !selfCanonical(alt)) {
             why.push(
               `${href} is ${alt.status}, canonical ${alt.head.canonical ?? "(none)"}`,
@@ -76,18 +82,37 @@ export const hreflangCheck: HandbookCheck = {
           detail: issues
             .map(({ s, why }) => `${s.url} — ${why.join("; ")}`)
             .join("\n"),
-          fix: "On every language version list all alternates including itself and x-default; each alternate must be a 200 self-canonical page that lists the others back.",
+          fix: "On every language version list all alternates including itself; each alternate must be a 200 self-canonical page that lists the others back.",
           fixability: "FIXABLE",
           effort: "M",
           urls: issues.map(({ s }) => s.url),
           evidenceRefs: issues.slice(0, 20).map(({ s }) => tagRef(s)),
         });
-      } else {
-        out.pass(
+      }
+      if (noFallback.length > 0) {
+        out.finding({
+          itemIds: ["P3-24"],
+          severity: "S4",
+          severityReason: "recommended by Google, not required",
+          title: "Hreflang set has no x-default fallback",
+          detail: noFallback.map((s) => `${s.url} — no x-default`).join("\n"),
+          fix: 'Add `hreflang="x-default"` pointing at the page for visitors whose language matches no version (often the language picker or the main version).',
+          fixability: "FIXABLE",
+          effort: "S",
+          urls: noFallback.map((s) => s.url),
+          evidenceRefs: noFallback.slice(0, 20).map(tagRef),
+        });
+      }
+      const note = `${checked}/${declared} alternates checked: reciprocal, self-referencing, x-default; IP auto-redirects not testable from one region`;
+      const refs = withHreflang.slice(0, 5).map(tagRef);
+      if (declared > 0 && checked === 0) {
+        out.limited(
           "P3-24",
-          `${withHreflang.length} page(s) with reciprocal, self-referencing hreflang + x-default; IP auto-redirects not testable from one region`,
-          withHreflang.slice(0, 5).map(tagRef),
+          `0/${declared} alternates checked: alternates outside the crawl; self-reference and x-default seen`,
+          refs,
         );
+      } else {
+        out.pass("P3-24", note, refs);
       }
     }
 
@@ -130,7 +155,7 @@ export const hreflangCheck: HandbookCheck = {
     } else {
       out.pass(
         "P3-25",
-        `${variants.length} variant URL(s), 200, ${selfCount === variants.length ? "all self-canonical" : "all canonical to the parent"}; contract record is owner evidence`,
+        `${variants.length} variant URL(s), 200, ${selfCount === variants.length ? "all self-canonical" : "none self-canonical (canonical targets not verified)"}; contract record is owner evidence`,
         refs(),
       );
     }

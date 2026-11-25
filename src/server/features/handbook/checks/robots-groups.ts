@@ -185,24 +185,21 @@ export const robotsGroupsCheck: HandbookCheck = {
           `${groupsText}\n\n# Evaluation\n${gaps.flatMap((g) => g.proof).join("\n")}`,
           host.storageKey,
         );
-        // Severity scales (§18, WO-B18-003): parameter-only leaks to
-        // crawlers that are neither search nor AI-answer bots do not touch
-        // Google or AI answers. Any search / AI bot or real route → S1.
+        // WO-B23-002 (ADR-038): per-crawler groups are documented practice
+        // and the app cannot know intent, so a real gap is S3 "intended?".
+        // Parameter-only leaks to non-search / non-AI bots keep their reason.
         const minor =
           !agents.some(isSearchOrAi) &&
           gaps.every((g) => g.missing.every(isParameterRule));
         out.finding({
           itemIds: ["P3-15", "P9-05"],
-          severity: minor ? "S3" : "S1",
-          ...(minor
-            ? {
-                severityReason:
-                  "only parameter rules leak, and only to crawlers that are not search or AI-answer bots",
-              }
-            : {}),
-          title: `Named robots.txt groups miss the * Disallow set (${agents.join(", ")})`,
+          severity: "S3",
+          severityReason: minor
+            ? "only parameter rules leak, and only to crawlers that are not search or AI-answer bots"
+            : "the named group lets this crawler into paths other crawlers are kept out of; deliberate per-crawler rules are valid",
+          title: `Named robots.txt groups miss the * Disallow set (${agents.join(", ")}) — intended?`,
           detail: `A named group replaces \`*\` for that bot (RFC 9309), so these bots may crawl paths unlisted bots may not:\n${gaps.map((g) => `${g.agents.join(", ")}: ${g.missing.join(", ")}`).join("\n")}`,
-          fix: `Copy every \`*\` Disallow line into each named group (or drop a named group that only restates \`Allow: /\`), then re-test one named and one unlisted bot per protected route shape.`,
+          fix: `If these crawlers should be kept out of the same paths as every other bot, copy the \`*\` Disallow lines into each named group (or drop a named group that only restates \`Allow: /\`), then re-test one named and one unlisted bot per protected route shape. If the difference is deliberate, record it (P9-04).`,
           fixability: "FIXABLE",
           effort: "S",
           urls: [url],
@@ -227,11 +224,9 @@ export const robotsGroupsCheck: HandbookCheck = {
         });
       }
       const ref = out.evidence("robotsTxt", url, groupsText, host.storageKey);
-      out.pass(
-        "P3-15",
-        "every named group carries the * Disallow set (or * has none)",
-        [ref],
-      );
+      out.pass("P3-15", "no named group lets a crawler into paths * blocks", [
+        ref,
+      ]);
       out.pass("P9-05", "robots.txt evaluated per group", [ref]);
     }
     return out.build();

@@ -79,7 +79,7 @@ async function collect(
   }
   const result = await run;
   if (result.status !== "ok") throw new Error("collector unavailable");
-  return result.fetches;
+  return result;
 }
 
 const count = (fetches: BotFetchData["fetches"], bot: string) =>
@@ -105,7 +105,7 @@ describe("botFetch escalation", () => {
     const { ctx } = site(
       (bot, url) => bot === "PerplexityBot" && url === href("/"),
     );
-    const fetches = await collect(ctx, templates(["/", "/a", "/b", "/c"]));
+    const { fetches } = await collect(ctx, templates(["/", "/a", "/b", "/c"]));
     for (const bot of [
       "Googlebot",
       "Bingbot",
@@ -125,7 +125,7 @@ describe("botFetch escalation", () => {
   it("stops a UA after 5 blocks in a row and spaces requests ≥ 300 ms", async () => {
     const { ctx, calls, log } = site((bot) => bot === "ClaudeBot");
     const paths = ["/", ...Array.from({ length: 9 }, (_, i) => `/p${i}`)];
-    const fetches = await collect(ctx, templates(paths));
+    const { fetches } = await collect(ctx, templates(paths));
     // 1 probe fetch + 5 escalated blocks, then no more ClaudeBot requests.
     expect(count(fetches, "ClaudeBot")).toBe(6);
     expect(log).toHaveBeenCalledWith(
@@ -140,6 +140,30 @@ describe("botFetch escalation", () => {
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(300);
   });
 
+  // WO-B23-006: aweandorder's policy-map burst drew Cloudflare 429s that were read as per-bot blocks.
+  it("fetches a policy-map token again after a 429 and keeps the second answer", async () => {
+    const { ctx } = site(() => false);
+    const fetch = ctx.fetch;
+    const tries = new Map<string, number>();
+    // Tokens the probe never sends, so every call for them is a policy-map call.
+    const probeUas = new Set<string>(Object.values(BOT_USER_AGENTS));
+    const mapOnly = AI_BOT_TOKENS.filter((t) => !probeUas.has(t.userAgent));
+    const [once, always] = mapOnly.map((t) => t.userAgent);
+    ctx.fetch = async (url, init) => {
+      const res = await fetch(url, init);
+      const ua = init?.userAgent ?? "";
+      const n = (tries.get(ua) ?? 0) + 1;
+      tries.set(ua, n);
+      const throttled = ua === always || (ua === once && n === 1);
+      return throttled ? { ...res, status: 429 } : res;
+    };
+    const { policyMap } = await collect(ctx, templates(["/"]));
+    const [first, second] = mapOnly.map(
+      (t) => policyMap?.find((r) => r.token === t.token)?.status,
+    );
+    expect([first, second]).toEqual([200, 429]);
+  });
+
   it("stops the whole pass on HTTP 429", async () => {
     const { ctx, log } = site(() => false);
     const fetch = ctx.fetch;
@@ -149,7 +173,7 @@ describe("botFetch escalation", () => {
       if (bot === "GPTBot") return { ...res, status: 403 };
       return url === href("/a") ? { ...res, status: 429 } : res;
     };
-    const fetches = await collect(ctx, templates(["/", "/a", "/b"]));
+    const { fetches } = await collect(ctx, templates(["/", "/a", "/b"]));
     expect(fetches.some((f) => f.url === href("/b"))).toBe(false);
     expect(log).toHaveBeenCalledWith(
       "handbook.botfetch.rate_limited",

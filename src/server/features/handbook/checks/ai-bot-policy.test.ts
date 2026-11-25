@@ -34,6 +34,15 @@ describe("botfetch.ai-bot-policy", () => {
     expect(result.findings).toEqual([]);
     expect(statusOf(result, "P9-04")).toBe("BLOCKED");
   });
+
+  // WO-B23-006: a 429 left after the collector's retry is rate limiting, not a per-bot block.
+  it("does not judge a token still rate-limited (429) and names it in the note", async () => {
+    const result = await run(true, 429);
+    expect(result.findings).toEqual([]);
+    expect(result.statuses.find((s) => s.itemId === "P9-04")?.note).toContain(
+      "rate-limited, not judged: Bytespider",
+    );
+  });
 });
 
 // WO-B21-004: aweandorderorganizing.com reported ClaudeBot's 403 twice

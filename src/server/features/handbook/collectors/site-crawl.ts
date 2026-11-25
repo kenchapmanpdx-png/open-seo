@@ -286,11 +286,12 @@ const nullStatus = (url: string) => ({ url, status: null });
 /** Robots verdict for `OpenSEO-Handbook`; hosts without a robots.txt read allowed. */
 function robotsAllowed(collected: Partial<CollectedData>, url: string) {
   const robots = collected.robots?.status === "ok" ? collected.robots : null;
-  const parsed = new URL(url);
-  const hostRobots = robots?.hosts.find((h) => h.host === parsed.host);
+  const { host, pathname, search } = new URL(url);
+  const hostRobots = robots?.hosts.find((h) => h.host === host);
+  // WO-B23-003: path + query, as Google matches rules like `/*?s=`.
   return (
     !hostRobots ||
-    decide(parsed.host, hostRobots.groups, "OpenSEO-Handbook", parsed.pathname)
+    decide(host, hostRobots.groups, "OpenSEO-Handbook", pathname + search)
       .allowed
   );
 }

@@ -109,6 +109,7 @@ export const robotsCollector: Collector<"robots"> = {
       });
       for (const bot of ROBOTS_BOT_TOKENS) {
         for (const path of ROBOTS_PATHS) {
+          // robots path: fixed ROBOTS_PATHS samples carry no query string.
           decisions.push(decide(host, parsed.groups, bot, path));
         }
       }

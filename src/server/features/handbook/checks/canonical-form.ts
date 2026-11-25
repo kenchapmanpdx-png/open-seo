@@ -163,6 +163,12 @@ export const canonicalFormCheck: HandbookCheck = {
       live
         .filter((s) => !s.head.canonical)
         .map((page) => ({ page, why: "no canonical" })),
+      // WO-B23-001 (ADR-038): canonicals are recommended, not required.
+      {
+        severity: "S3",
+        severityReason:
+          "no canonical declared: Google chooses one itself; a self-referencing canonical is recommended, not required",
+      },
     );
     const notSelf = live.filter(
       (s) =>

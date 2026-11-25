@@ -50,9 +50,11 @@ export function compareBotFetches(
   const robotsAllows = (bot: string, url: string) => {
     const u = parseUrl(url);
     if (robots.status !== "ok" || !u) return true;
-    const { host, pathname } = u;
+    const { host, pathname, search } = u;
     const file = robots.hosts.find((h) => h.host === host && h.status === 200);
-    return file ? decide(host, file.groups, bot, pathname).allowed : true;
+    return file
+      ? decide(host, file.groups, bot, pathname + search).allowed
+      : true;
   };
   // The first browser fetch of a URL is the reference; a URL the browser
   // does not get as 200 (plain-HTTP redirect probes) is not compared.

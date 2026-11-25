@@ -153,6 +153,48 @@ describe("crawl time budget", () => {
     expect(fetched).toEqual([`${ORIGIN}/`, `${ORIGIN}/services`]);
   });
 
+  // WO-B23-003: `Disallow: /*?s=` must match the query string, as Google does.
+  it("skips URLs a robots.txt query rule disallows", async () => {
+    fetched.length = 0;
+    const sitemap: CollectedData["sitemap"] = {
+      status: "ok",
+      sources: [],
+      urls: ["/search?s=dogs", "/shop?ref=1&s=x", "/about"].map((p) => ({
+        loc: ORIGIN + p,
+        lastmod: null,
+        source: "fixture",
+      })),
+    };
+    const robots: CollectedData["robots"] = {
+      status: "ok",
+      hosts: [
+        {
+          host: "example.com",
+          status: 200,
+          storageKey: null,
+          groups: [
+            {
+              userAgents: ["*"],
+              rules: [
+                { type: "disallow", path: "/*?s=" },
+                { type: "disallow", path: "/*&s=" },
+              ],
+            },
+          ],
+          sitemaps: [],
+          parseWarnings: [],
+        },
+      ],
+      decisions: [],
+    };
+    const { pages } = createCrawlCollectors({
+      followLinks: false,
+      maxPages: 100,
+    });
+    await pages.collect(ctx, { sitemap, robots });
+    expect(fetched).toEqual([`${ORIGIN}/`, `${ORIGIN}/about`]);
+  });
+
   // Field test 6 (samanthaco.ca): /blogs/x 301 → /blog/%20x, linked nowhere
   // else. The page was stored only under /blogs/x (finalUrl ≠ url), which
   // every page-fact check skips, so its duplicate title went unreported.

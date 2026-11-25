@@ -57,6 +57,28 @@ describe("crawl.canonical-form", () => {
     );
   });
 
+  // WO-B23-001: canonicals are recommended, not required (Google picks one itself) → S3, no cap.
+  it("grades a missing canonical S3 and a canonical to another page S1", async () => {
+    const result = await run([
+      snapshot("/", { canonical: null, links: ["/about/", "/team/"] }),
+      snapshot("/about/", { canonical: null, links: ["/"] }),
+      snapshot("/team/", { canonical: "/" }),
+    ]);
+    expect(graded(result)).toEqual([
+      [
+        "S3",
+        "Indexable pages without a canonical",
+        "https://example.com/",
+        "https://example.com/about/",
+      ],
+      [
+        "S1",
+        "Indexable pages are not self-canonical",
+        "https://example.com/team/",
+      ],
+    ]);
+  });
+
   it("opens on a tracking parameter in the canonical", async () => {
     const result = await run([snapshot("/", { canonical: "/?utm_source=x" })]);
     expect(result.findings.map((f) => f.title)).toContain(

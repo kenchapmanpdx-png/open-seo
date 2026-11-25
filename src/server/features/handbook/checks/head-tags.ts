@@ -3,19 +3,41 @@ import type {
   HandbookCheck,
 } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl, pathOf } from "./support";
+import { createResult, headerValue, normalizeUrl, pathOf } from "./support";
 
 /**
  * CRAWL (handbook §2, §14): unique title / meta description / single H1 with
  * a consistent brand suffix (P4-01), a non-empty meta description (P4-03), a
  * zoomable `width=device-width, initial-scale=1` viewport (P4-04), and no
- * hard-coded year in listing/evergreen headings (P4-06; event pages exempt,
+ * past year in listing/evergreen headings (P4-06; event pages exempt,
  * "evergreen" judgment beyond templates is LLM work in B3).
  */
 const ITEMS = ["P4-01", "P4-03", "P4-04", "P4-06"];
 
 const SUFFIX = /\s[|·•–—-]\s([^|·•–—-]+)$/;
-const YEAR = /\b20\d{2}\b/;
+const YEAR = /\b20\d{2}\b/g;
+/** A founding / copyright year ("Since 2005", "Est. 2010", "© 2019") is not staleness. */
+const FOUNDED = /(?:since|est\.?|established|founded|©)\s*$/i;
+
+/**
+ * WO-B23-005: a heading year before the crawl's year reads stale. The year
+ * comes from the HTTP `Date` header the site sent (stored evidence), not
+ * the wall clock, so a stored crawl judges the same on every rerun.
+ */
+function staleYear(text: string, runYear: number): string | null {
+  for (const m of text.matchAll(YEAR)) {
+    if (Number(m[0]) >= runYear) continue;
+    if (FOUNDED.test(text.slice(0, m.index))) continue;
+    return m[0];
+  }
+  return null;
+}
+
+const dateYear = (s: PageSnapshot) => {
+  const date = headerValue(s.headers ?? [], "date");
+  const year = date ? new Date(date).getUTCFullYear() : NaN;
+  return Number.isFinite(year) ? year : null;
+};
 /** Handbook §2: 150–160 [HEURISTIC]; flag only clear overshoots. */
 const DESCRIPTION_MAX = 170;
 /** Handbook §2: ~50–65 characters / < 600 px [HEURISTIC]; clear overshoots only (B18 WO-004). */
@@ -234,10 +256,13 @@ export const headTagsCheck: HandbookCheck = {
             .flatMap((t) => t.urls.map(normalizeUrl))
         : [],
     );
+    const crawlYear =
+      Math.max(0, ...live.map(dateYear).filter((y) => y !== null)) ||
+      new Date().getUTCFullYear();
     report(
       "P4-06",
-      "Hard-coded years in listing/evergreen headings",
-      "Drop the year from evergreen titles/H1s (or render it from the content date) so the page does not look stale next year.",
+      "Past year in listing / evergreen headings",
+      "Drop the year from evergreen titles / H1s, or keep it current so the page does not read as out of date.",
       live
         .filter(
           (s) =>
@@ -245,8 +270,9 @@ export const headTagsCheck: HandbookCheck = {
             !eventUrls.has(normalizeUrl(s.url)),
         )
         .flatMap((page) => {
-          const hit = [page.head.title ?? "", ...page.h1].find((t) =>
-            YEAR.test(t),
+          const year = dateYear(page) ?? crawlYear;
+          const hit = [page.head.title ?? "", ...page.h1].find(
+            (t) => staleYear(t, year) !== null,
           );
           return hit ? [{ page, why: `"${hit}"` }] : [];
         }),
@@ -267,7 +293,7 @@ export const headTagsCheck: HandbookCheck = {
     );
     out.pass(
       "P4-06",
-      "no year in home/listing-template headings (evergreen judgment pending, LLM B3)",
+      "no past year in home / listing-template headings (evergreen judgment pending, LLM B3)",
       sample,
     );
     return out.build();
