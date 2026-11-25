@@ -36,4 +36,4 @@ Depends: 001, 002, 003, 005 independent. 004 after B21 exit, 001 and 005. 006 af
 
 - `fork/reports/B22.md`: per WO table (what changed · guard · replay diff), decisions with "For Ken", the effect-map counts (items per effect), grade-spread findings with proposals for Ken, convergence table as of exit.
 - Replay: every golden's finding list unchanged (effect map and ledger fix change presentation only); fix-list default-visible count per site before / after in the report.
-- Tag `handbook-v3.11.0`. STATE per protocol 6: next batch none → `status: done`; `needs_ken:` lists BLOCKED-KEN rows (WO-B22-004 round 3 needs the Project chat; WO-B22-006 needs Ken's Google sign-in).
+- Tag `handbook-v3.11.0`. STATE per protocol 6: next batch B23 (`fork/batches/B23-heavy-external-review-fixes.md`); `needs_ken:` lists BLOCKED-KEN rows (WO-B22-004 round 3 needs the Project chat; WO-B22-006 needs Ken's Google sign-in).
