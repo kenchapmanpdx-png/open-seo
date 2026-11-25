@@ -56,6 +56,19 @@ describe("robots.group-evaluation", () => {
     expect(statusOf(result, "P3-15")).toBe("PASS");
   });
 
+  // mobilepetgroomingaz.com: `*?lightbox=` sampled as "x?lightbox=" (no
+  // leading slash), so PetalBot's `Disallow: /` never matched it.
+  it("evaluates a pattern that starts with * as a path under /", async () => {
+    const result = await run(
+      "User-agent: *\nDisallow: *?lightbox=\n\nUser-agent: PetalBot\nDisallow: /\n\nUser-agent: dotbot\nCrawl-delay: 10\n",
+    );
+    expect(
+      result.findings
+        .filter((f) => f.title.startsWith("Named"))
+        .map((f) => f.title),
+    ).toEqual(["Named robots.txt groups miss the * Disallow set (dotbot)"]);
+  });
+
   it.each([
     ["broader own rule", "User-agent: Googlebot\nDisallow: /private\n"],
     [

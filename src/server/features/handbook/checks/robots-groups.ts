@@ -25,9 +25,13 @@ const disallows = (groups: readonly RobotsGroup[]) =>
     ),
   );
 
-/** A concrete path a rule pattern matches (`*` → `x`, `$` dropped). */
+/**
+ * A concrete path a rule pattern matches (`*` → `x`, `$` dropped). A pattern
+ * written without the leading `/` (`*?lightbox=`) still means a path, so the
+ * sample starts with `/` (WO-B21-005, mobilepetgroomingaz.com).
+ */
 const samplePath = (pattern: string) =>
-  pattern.replace(/\$$/, "").replaceAll("*", "x") || "/";
+  `/${pattern.replace(/\$$/, "").replaceAll("*", "x").replace(/^\//, "")}`;
 
 const formatGroup = (g: RobotsGroup) =>
   [
