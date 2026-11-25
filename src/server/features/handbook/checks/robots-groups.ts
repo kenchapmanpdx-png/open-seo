@@ -81,14 +81,24 @@ function namedGroupGaps(host: RobotsHost): Gap[] {
         g.userAgents.some((ua) => ua.toLowerCase() === bot.toLowerCase()),
       ),
     );
-    const missing = [...star].filter((p) => !merged.has(p));
-    if (missing.length === 0) continue;
-    const proof = missing.map((pattern) => {
-      const path = samplePath(pattern);
-      const named = decide(host.host, host.groups, bot, path);
-      const unlisted = decide(host.host, host.groups, UNLISTED_BOT, path);
-      return `${path}: ${bot} ${named.allowed ? "allowed" : "blocked"} (group ${named.matchedGroup}) · unlisted bot ${unlisted.allowed ? "allowed" : "blocked"} (group ${unlisted.matchedGroup})`;
-    });
+    // WO-B21-005: a gap is a route the named bot may crawl and an unlisted
+    // bot may not, by evaluation; a broader own rule (`Disallow: /`) covers it.
+    const evaluated = [...star]
+      .filter((p) => !merged.has(p))
+      .map((pattern) => {
+        const path = samplePath(pattern);
+        const named = decide(host.host, host.groups, bot, path);
+        const unlisted = decide(host.host, host.groups, UNLISTED_BOT, path);
+        return {
+          pattern,
+          leaks: named.allowed && !unlisted.allowed,
+          proof: `${path}: ${bot} ${named.allowed ? "allowed" : "blocked"} (group ${named.matchedGroup}) · unlisted bot ${unlisted.allowed ? "allowed" : "blocked"} (group ${unlisted.matchedGroup})`,
+        };
+      })
+      .filter((e) => e.leaks);
+    if (evaluated.length === 0) continue;
+    const missing = evaluated.map((e) => e.pattern);
+    const proof = evaluated.map((e) => e.proof);
     gaps.push({ agents: [...group.userAgents], missing, proof });
   }
   return gaps;

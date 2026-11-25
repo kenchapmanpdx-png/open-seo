@@ -46,6 +46,32 @@ describe("robots.group-evaluation", () => {
     );
   });
 
+  // WO-B21-005, aweandorderorganizing.com: `NerdyBot: Disallow: /` blocks
+  // more than `*`, yet was reported as missing /ajax/, /apps/ (S1 cap).
+  it("passes a named group whose own rules already block every * route", async () => {
+    const result = await run(
+      "User-agent: NerdyBot\nDisallow: /\n\nUser-agent: *\nDisallow: /ajax/\nDisallow: /apps/\n",
+    );
+    expect(result.findings).toEqual([]);
+    expect(statusOf(result, "P3-15")).toBe("PASS");
+  });
+
+  it.each([
+    ["broader own rule", "User-agent: Googlebot\nDisallow: /private\n"],
+    [
+      "same route through a longer rule",
+      "User-agent: Googlebot\nAllow: /\nDisallow: /private/x\nDisallow: /private/\n",
+    ],
+  ])(
+    "passes a named group that blocks every * route by evaluation (%s)",
+    async (_, named) => {
+      const result = await run(
+        `User-agent: *\nDisallow: /private/\n\n${named}`,
+      );
+      expect(result.findings).toEqual([]);
+    },
+  );
+
   it("passes when named and * agents share one group, and flags a ?param= rule without its &param= shape", async () => {
     const result = await run(
       "User-agent: GPTBot\nUser-agent: *\nDisallow: /api/\nDisallow: /*?sort=\n",

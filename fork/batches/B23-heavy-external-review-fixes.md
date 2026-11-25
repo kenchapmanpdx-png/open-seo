@@ -21,14 +21,15 @@ Runs after B22 (STATE order B22 → B23). Inputs: this file, `fork/work-orders/W
 
 ## Work orders
 
-| WO         | Item                                                                                   | Detail                           |
-| ---------- | -------------------------------------------------------------------------------------- | -------------------------------- |
-| WO-B23-001 | P3-04: a missing canonical alone is S3, not S1 (no cap)                                | `fork/work-orders/WO-B23-001.md` |
-| WO-B23-002 | P3-15 / P9-05: named-group gaps judged by crawl outcome, not rule text; S3 "intended?" | `fork/work-orders/WO-B23-002.md` |
-| WO-B23-003 | Crawl robots verdict uses path + query string                                          | `fork/work-orders/WO-B23-003.md` |
-| WO-B23-004 | Hreflang: x-default is advice (S4); PASS states what was verified; P3-25 PASS wording  | `fork/work-orders/WO-B23-004.md` |
-| WO-B23-005 | P4-06: "year in heading" wording, past years only, fix text that clears the finding    | `fork/work-orders/WO-B23-005.md` |
-| WO-B23-090 | Exit                                                                                   | below                            |
+| WO         | Item                                                                                                                            | Detail                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| WO-B23-001 | P3-04: a missing canonical alone is S3, not S1 (no cap)                                                                         | `fork/work-orders/WO-B23-001.md` |
+| WO-B23-002 | P3-15 / P9-05: named-group gaps judged by crawl outcome, not rule text (steps 1–2 done B21 run 100, WO-B21-005); S3 "intended?" | `fork/work-orders/WO-B23-002.md` |
+| WO-B23-003 | Crawl robots verdict uses path + query string                                                                                   | `fork/work-orders/WO-B23-003.md` |
+| WO-B23-004 | Hreflang: x-default is advice (S4); PASS states what was verified; P3-25 PASS wording                                           | `fork/work-orders/WO-B23-004.md` |
+| WO-B23-005 | P4-06: "year in heading" wording, past years only, fix text that clears the finding                                             | `fork/work-orders/WO-B23-005.md` |
+| WO-B23-006 | P9-01 policy split: an HTTP 429 from the audit's own burst is not a block (added B21 run 100, live red)                         | `fork/work-orders/WO-B23-006.md` |
+| WO-B23-090 | Exit                                                                                                                            | below                            |
 
 Depends: 001–005 independent; 090 after all. Order 001 → 002 → 003 (grade effect first).
 
