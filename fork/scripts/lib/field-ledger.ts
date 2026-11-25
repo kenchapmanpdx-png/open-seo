@@ -226,3 +226,67 @@ export function upsertLedger(text: string, row: LedgerRow): string {
   }
   return lines.join("\n");
 }
+
+const cellsOfLine = (l: string) =>
+  l
+    .split("|")
+    .slice(1, -1)
+    .map((c) => c.trim());
+
+/** Ledger data rows (site, date, last cell = "Open rows"). */
+function ledgerLines(text: string) {
+  return text.split("\n").flatMap((line, at) => {
+    const c = cellsOfLine(line);
+    if (c.length < 3 || !/^\d{4}-\d{2}-\d{2}$/.test(c[1])) return [];
+    return [{ at, site: c[0], date: c[1], open: c[c.length - 1] }];
+  });
+}
+
+export type LedgerDrift = {
+  site: string;
+  date: string;
+  ledger: string;
+  header: number | null;
+  table: number | null;
+};
+
+/**
+ * Ledger rows whose "Open rows" cell or report header disagrees with the
+ * report's verdict table (WO-B22-003). The table is the only source: the
+ * other two are rendered from it. A row whose cell is not a number is a
+ * pre-ledger backfill and has no table to check.
+ */
+export function ledgerDrift(
+  ledgerText: string,
+  readReport: (site: string, date: string) => string | null,
+): LedgerDrift[] {
+  return ledgerLines(ledgerText).flatMap(({ site, date, open }) => {
+    if (!/^\d+$/.test(open)) return [];
+    const text = readReport(site, date);
+    const table = text
+      ? openRows([...readVerdicts(text).values()]).length
+      : null;
+    const m = text?.match(/Open rows: (\d+)\./);
+    const header = m ? Number(m[1]) : null;
+    return table === Number(open) && header === table
+      ? []
+      : [{ site, date, ledger: open, header, table }];
+  });
+}
+
+/** Ledger text with the "Open rows" cell of site + date set to `open`. */
+export function setLedgerOpen(
+  text: string,
+  site: string,
+  date: string,
+  open: number,
+): string {
+  const lines = text.split("\n");
+  for (const row of ledgerLines(text)) {
+    if (row.site !== site || row.date !== date) continue;
+    const c = cellsOfLine(lines[row.at]);
+    c[c.length - 1] = String(open);
+    lines[row.at] = `| ${c.join(" | ")} |`;
+  }
+  return lines.join("\n");
+}

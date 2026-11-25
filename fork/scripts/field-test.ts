@@ -12,6 +12,10 @@
 // --run: reuse a report.json instead of running the engine.
 // --exclude: sections left out of the run (same scope as the external export).
 // --close: fail (exit 1) while any verdict row is open; no run, no import.
+//   On success the report header and the ledger row are rewritten from the
+//   verdict table (WO-B22-003).
+// --verify-ledgers (no site): every ledger row's open count equals its
+//   report's table and header; exit 1 listing the drifted rows.
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -26,11 +30,13 @@ import {
 } from "./lib/external-audit";
 import {
   buildRows,
+  ledgerDrift,
   ledgerRow,
   mergeVerdicts,
   openRows,
   readVerdicts,
   renderSection,
+  setLedgerOpen,
   upsertLedger,
   upsertSection,
 } from "./lib/field-ledger";
@@ -47,8 +53,27 @@ const { values, positionals } = parseArgs({
     exclude: { type: "string" },
     preflight: { type: "boolean", default: false },
     close: { type: "boolean", default: false },
+    "verify-ledgers": { type: "boolean", default: false },
   },
 });
+const ledgerPath = "fork/FIELD-TESTS.md";
+const reportFile = (host: string, date: string) =>
+  join("fork/reports", `field-${host}-${date}.md`);
+
+if (values["verify-ledgers"]) {
+  const drift = ledgerDrift(readFileSync(ledgerPath, "utf8"), (h, d) =>
+    existsSync(reportFile(h, d))
+      ? readFileSync(reportFile(h, d), "utf8")
+      : null,
+  );
+  for (const d of drift)
+    console.error(
+      `${d.site} ${d.date}: ledger ${d.ledger} · header ${d.header ?? "none"} · table ${d.table ?? "no report"}`,
+    );
+  console.log(`${ledgerPath}: ${drift.length} drifted row(s)`);
+  process.exit(drift.length > 0 ? 1 : 0);
+}
+
 const [site] = positionals;
 if (!site) {
   console.error(
@@ -58,8 +83,7 @@ if (!site) {
 }
 const origin = new URL(site.includes("://") ? site : `https://${site}`).origin;
 const host = new URL(origin).hostname.replace(/^www\./, "");
-const reportPath = join("fork/reports", `field-${host}-${values.date}.md`);
-const ledgerPath = "fork/FIELD-TESTS.md";
+const reportPath = reportFile(host, values.date);
 
 if (values.preflight) {
   await preflight();
@@ -74,6 +98,19 @@ if (values.close) {
     for (const r of open) console.error(`  ${r.key}`);
     process.exit(1);
   }
+  // Header and ledger row rendered from the table, never kept by hand.
+  // Only the count line: the table itself is never re-rendered here.
+  await writeFormatted(
+    reportPath,
+    readFileSync(reportPath, "utf8").replace(
+      /Open rows: \d+\./,
+      "Open rows: 0.",
+    ),
+  );
+  await writeFormatted(
+    ledgerPath,
+    setLedgerOpen(readFileSync(ledgerPath, "utf8"), host, values.date, 0),
+  );
   console.log(`${reportPath}: ${rows.length} rows, 0 open — closed`);
   process.exit(0);
 }

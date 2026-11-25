@@ -38,3 +38,8 @@ for (const [name, result, badgeo] of failing) {
     assert.equal(evaluate(result, badgeo).ok, false);
   });
 }
+
+test("fails: a field-test ledger row drifted (or the count is unreadable)", () => {
+  assert.equal(evaluate(e2e(), clean, undefined, 1).ok, false);
+  assert.equal(evaluate(e2e(), clean, undefined, null).ok, false);
+});

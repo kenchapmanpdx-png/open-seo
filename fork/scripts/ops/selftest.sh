@@ -71,6 +71,11 @@ missing=$(printf '%s' "$summary" | sed -nE 's/.*missing ([0-9]+).*/\1/p')
 unexpected=$(printf '%s' "$summary" | sed -nE 's/.*unexpected ([0-9]+).*/\1/p')
 log "BadGEO missing=${missing:-?} unexpected=${unexpected:-?}"
 
+# --- field-test ledgers (WO-B22-003) --------------------------------------
+ledger_out=$(pnpm exec tsx fork/scripts/field-test.ts --verify-ledgers 2>&1)
+drift=$(printf '%s\n' "$ledger_out" | sed -nE 's/.*: ([0-9]+) drifted row.*/\1/p' | tail -1)
+log "field-test ledgers drifted=${drift:-?}"
+
 # --- live in-app run ------------------------------------------------------
 e2e_file="-"
 if [ "${SELFTEST_INAPP:-1}" = 0 ]; then
@@ -103,7 +108,7 @@ else
   fi
 fi
 
-result=$(node "$EVAL" "$e2e_file" "${missing:-x}" "${unexpected:-x}")
+result=$(node "$EVAL" "$e2e_file" "${missing:-x}" "${unexpected:-x}" "${drift:-x}")
 code=$?
 # Pretty-printed: fork/runs is inside prettier's scope (format:check).
 printf '%s' "$result" |

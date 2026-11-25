@@ -2,13 +2,19 @@
 // fork/runs/_ops/selftest.json from the in-app E2E result (E2EResult, written
 // by inapp-audit.mjs; null when SELFTEST_INAPP=0 skips the live part) and the
 // BadGEO counts. ok = BadGEO 0 missing / 0 unexpected and, when the live part
-// ran, audit completed, Handbook completed, a grade, not provisional.
+// ran, audit completed, Handbook completed, a grade, not provisional; and no
+// field-test ledger row drifted from its verdict table (WO-B22-003).
 //
-//   node fork/scripts/ops/selftest-eval.mjs <e2e.json|-> <missing> <unexpected>
+//   node fork/scripts/ops/selftest-eval.mjs <e2e.json|-> <missing> <unexpected> [<ledger drift>]
 //   (prints the selftest JSON; exit 0 when ok, 1 when not, 2 on usage)
 import { readFileSync } from "node:fs";
 
-export function evaluate(e2e, badgeo, at = new Date().toISOString()) {
+export function evaluate(
+  e2e,
+  badgeo,
+  at = new Date().toISOString(),
+  ledgerDrift = 0,
+) {
   const h = e2e?.handbook ?? null;
   const live = e2e
     ? {
@@ -25,13 +31,19 @@ export function evaluate(e2e, badgeo, at = new Date().toISOString()) {
       live.handbookStatus === "completed" &&
       live.grade !== null &&
       live.provisional === false);
-  return { at, badgeo, e2e: live, ok: badgeoOk && liveOk };
+  return {
+    at,
+    badgeo,
+    e2e: live,
+    ledgerDrift,
+    ok: badgeoOk && liveOk && ledgerDrift === 0,
+  };
 }
 
 const count = (v) => (/^\d+$/.test(v ?? "") ? Number(v) : null);
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const [file, missing, unexpected] = process.argv.slice(2);
+  const [file, missing, unexpected, drift = "0"] = process.argv.slice(2);
   if (!file) {
     console.error(
       "usage: selftest-eval.mjs <e2e.json|-> <missing> <unexpected>",
@@ -47,10 +59,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       e2e = { audit: null, handbook: null };
     }
   }
-  const result = evaluate(e2e, {
-    missing: count(missing),
-    unexpected: count(unexpected),
-  });
+  const result = evaluate(
+    e2e,
+    { missing: count(missing), unexpected: count(unexpected) },
+    undefined,
+    count(drift),
+  );
   console.log(JSON.stringify(result));
   process.exit(result.ok ? 0 : 1);
 }
