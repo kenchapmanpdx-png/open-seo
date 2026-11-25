@@ -432,7 +432,10 @@ async function readRunPage(projectId, runId) {
     // handled below
   }
   if (findingsPageCount < 0) note("run page: findings tab count not found");
-  const banner = page.getByRole("alert").filter({ hasText: /provisional/i });
+  // B16 renamed the banner "This grade is not final"; WO-B24-001 found the old match stale.
+  const banner = page
+    .getByRole("alert")
+    .filter({ hasText: /provisional|not final/i });
   const provisional = (await banner.count()) > 0;
   let provisionalReason = null;
   if (provisional) {
