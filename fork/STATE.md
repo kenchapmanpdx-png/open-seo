@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: done (not-started | in-progress | needs-ken | done)
+status: not-started (not-started | in-progress | needs-ken | done)
 needs_ken: All batches done (B22 run 103 tag handbook-v3.11.0; B23 run 103 tag handbook-v3.12.0). BLOCKED-KEN left in fork/queue.md: WO-B22-004 round 3 (needs the Project chat's Semrush half); WO-B22-006 fix-list ordering (needs your Google sign-in); WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); WO-B9-026 in-app perf half. Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Decisions for you: B23 revert phrases (fork/reports/B23.md § Exit: "missing canonical stays S1", "named-group gap stays S1", "x-default required", "any year in headings", "429 counts as a block"); B22 "429 is not a sitemap error" (P3-12); B22 grade-spread / effect-map phrases (fork/reports/B22.md); B20 handbook wording (fork/reports/B20.md § Exit). Look C is live. Closed 2026-11-25: K1 Windows autostart installed (`install-autostart.ps1` printed `unchanged`; reboot test still open); `wip/b16-run81`, `ken/rebase-v0.1.31`, `ken/rebase-v0.1.31-m1` deleted
-current_batch: B23
-batch_file: fork/batches/B23-heavy-external-review-fixes.md
+current_batch: B24
+batch_file: fork/batches/B24-heavy-site-refuses-helper.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 103
-next_action: none (all batches done). Weekly MAINT M1 (BLUEPRINT §9) due 2026-11-28: upstream v0.1.32 (`6f68494e`, 14 commits; merge-tree conflicts only in drizzle pg 0052 / sqlite 0074 snapshots + journals → `fork/scripts/migration-renumber.mjs`). M1-2026-11-20 is closed: `ken/main` has been on v0.1.31 (`af3f995f`) since the 2026-11-21 force-push (MAINTENANCE log). WO-B22-004 round 3 when Ken runs the Semrush half.
+next_action: B24 WO-B24-001 step 1 (diagnose render HTTP 403 on aweandorderorganizing.com), then 090 exit. After B24: weekly MAINT M1 (BLUEPRINT §9) due 2026-11-28: upstream v0.1.32 (`6f68494e`, 14 commits; merge-tree conflicts only in drizzle pg 0052 / sqlite 0074 snapshots + journals → `fork/scripts/migration-renumber.mjs`). WO-B22-004 round 3 when Ken runs the Semrush half.
 contracts_version: 1.11.0 (B19 run 89: ADR-033 K3 abortUrls / mainWords / aborted robots, RenderData js.mainWords + js.robotsBlocked; 1.10.0 B17 run 84: ADR-032 PageSnapshot `redirectChain` + `doctype`, SUPP-21…26; 1.9.0 B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -29,8 +29,8 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 3. Set `status: in-progress`. Open `batch_file`; resume at `next_action`.
 4. Missing credential or access (run `bash fork/scripts/preflight.sh`; never read `.env*`) → mark only the dependent WOs/steps `BLOCKED-KEN` and continue everything else.
 5. End of run scope or ~70% context: commit (every run must produce ≥1 commit; it is the autopilot progress signal), update this file (run log, next_action). AUTOPILOT → exit. INTERACTIVE → keep going (auto-compact handles context).
-6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch in table order (B15 → B17 → B16 → B18 → B19 → B20 → B21 → B22 → B23), skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
-7. Last batch in the sequence with a batch file (B23) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
+6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch in table order (B15 → B17 → B16 → B18 → B19 → B20 → B21 → B22 → B23 → B24), skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
+7. Last batch in the sequence with a batch file (B24) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
 8. `status: needs-ken` only when no remaining work in the current or any later batch can proceed without Ken.
 9. Ken switches to SPLIT (weekly usage low) → follow SPLIT rules from the next run. Weekly limit fully reached → autopilot stops; resume later with the same command.
 
@@ -61,6 +61,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done   |
 | B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done   |
 | B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | done   |
+| B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | todo   |
 
 ## Run log
 
