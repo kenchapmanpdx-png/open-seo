@@ -7,6 +7,7 @@ import {
   createResult,
   missingRobotsHosts,
   normalizeUrl,
+  sitemapKey,
   originUrl,
   parseUrl,
   pathOf,
@@ -81,12 +82,30 @@ function inventoryIssues(
   }
   const issues: Issue[] = [];
   const locSet = new Set(locs.map(normalizeUrl));
+  const locKeys = new Set(locs.map(sitemapKey));
+  // WO-B21-003: the 200 page a `<loc>` names on either scheme.
+  const pageByKey = new Map(
+    snapshots
+      .filter((s) => s.status === 200)
+      .map((s) => [sitemapKey(s.url), s]),
+  );
   for (const loc of locSet) {
-    const snap = byUrl.get(loc);
+    const exact = byUrl.get(loc);
+    // A `<loc>` whose only difference from the page is its scheme is P3-19's
+    // finding, not a redirect: read the page it names.
+    const otherScheme =
+      !exact ||
+      (sitemapKey(exact.finalUrl) === sitemapKey(loc) &&
+        normalizeUrl(exact.finalUrl) !== loc);
+    const snap = otherScheme
+      ? (pageByKey.get(sitemapKey(loc)) ?? exact)
+      : exact;
     if (!snap) continue; // not crawled within the page budget
+    const page = normalizeUrl(snap.url);
     if (TEST_PATH.test(pathOf(loc)))
       issues.push({ kind: "test", url: loc, why: "test/draft path" });
-    if (snap.status !== 200 || normalizeUrl(snap.finalUrl) !== loc) {
+    if (otherScheme && snap.status !== 200) continue;
+    if (snap.status !== 200 || normalizeUrl(snap.finalUrl) !== page) {
       issues.push({
         kind: "status",
         url: loc,
@@ -98,7 +117,7 @@ function inventoryIssues(
       issues.push({ kind: "noindex", url: loc, why: "noindex" });
       continue;
     }
-    if (snap.head.canonical && normalizeUrl(snap.head.canonical) !== loc) {
+    if (snap.head.canonical && normalizeUrl(snap.head.canonical) !== page) {
       issues.push({
         kind: "canonical",
         url: loc,
@@ -106,7 +125,7 @@ function inventoryIssues(
       });
       continue;
     }
-    const from = inlinks.get(loc) ?? [];
+    const from = inlinks.get(page) ?? [];
     if (pathOf(loc) === "/") continue;
     if (from.length === 0)
       issues.push({ kind: "orphan", url: loc, why: "0 internal inlinks" });
@@ -126,7 +145,7 @@ function inventoryIssues(
       normalizeUrl(s.finalUrl) === url &&
       !noindex(s) &&
       selfCanonical &&
-      !locSet.has(url) &&
+      !locKeys.has(sitemapKey(url)) &&
       /html/i.test(s.contentType ?? "html")
     ) {
       issues.push({ kind: "unlisted", url, why: "indexable, not in sitemap" });
@@ -237,7 +256,7 @@ function oneInlinkPages(
         (!s.head.canonical ||
           normalizeUrl(s.head.canonical) === normalizeUrl(s.url)) &&
         /html/i.test(s.contentType ?? "html") &&
-        !skip.has(normalizeUrl(s.url)),
+        !skip.has(sitemapKey(s.url)),
     )
     .map((s) => s.url);
   const weak = inventoryIssues(indexable, snapshots).filter(
@@ -303,15 +322,17 @@ export const urlInventoryCheck: HandbookCheck = {
     oneInlinkPages(
       out,
       pages.snapshots,
-      new Set(sitemap.urls.map((u) => normalizeUrl(u.loc))),
+      new Set(sitemap.urls.map((u) => sitemapKey(u.loc))),
     );
 
-    // P3-19 — host consistency + robots Sitemap: lines.
+    // P3-19 — scheme + host consistency + robots Sitemap: lines.
     const home = pages.snapshots.find(
       (s) => pathOf(s.url) === "/" && s.status === 200,
     );
-    const canonicalHost =
-      parseUrl(home?.head.canonical ?? "")?.host ?? originUrl(ctx.origin).host;
+    const canonical =
+      parseUrl(home?.head.canonical ?? "") ?? originUrl(ctx.origin);
+    const canonicalHost = canonical.host;
+    const canonicalScheme = canonical.protocol;
     const offHost = sitemap.urls.filter((u) => {
       const host = parseUrl(u.loc, ctx.origin)?.host;
       return host !== undefined && host !== canonicalHost;
@@ -329,6 +350,28 @@ export const urlInventoryCheck: HandbookCheck = {
         evidenceRefs: [listing(offHost.slice(0, 50).map((u) => u.loc))],
       });
     }
+    // WO-B21-003: one finding for `<loc>` on the other scheme (P3-12 and
+    // P3-13 match them to their pages with `sitemapKey`).
+    const offScheme = sitemap.urls.filter((u) => {
+      const scheme = parseUrl(u.loc, ctx.origin)?.protocol;
+      return scheme !== undefined && scheme !== canonicalScheme;
+    });
+    if (offScheme.length > 0) {
+      out.finding({
+        itemIds: ["P3-19"],
+        severity: "S3",
+        title: "Sitemap <loc> scheme differs from the canonical scheme",
+        detail: `canonical scheme ${canonicalScheme}//; ${offScheme.length} <loc> on another scheme:\n${offScheme
+          .slice(0, 50)
+          .map((u) => u.loc)
+          .join("\n")}`,
+        fix: `Emit every <loc> with the canonical scheme (${canonicalScheme}//${canonicalHost}/…).`,
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: [source.url],
+        evidenceRefs: [listing(offScheme.slice(0, 50).map((u) => u.loc))],
+      });
+    }
     robotsSitemapLine(out, ctx);
 
     const ref = listing(sitemap.urls.slice(0, 50).map((u) => u.loc));
@@ -337,7 +380,11 @@ export const urlInventoryCheck: HandbookCheck = {
       `${sitemap.urls.length} <loc> reconciled with ${pages.snapshots.length} crawled pages (thin/duplicate judgment manual)`,
       [ref],
     );
-    out.pass("P3-19", `<loc> host = canonical host ${canonicalHost}`, [ref]);
+    out.pass(
+      "P3-19",
+      `<loc> scheme + host = canonical ${canonicalScheme}//${canonicalHost}`,
+      [ref],
+    );
     return out.build();
   },
 };

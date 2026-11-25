@@ -2,7 +2,13 @@ import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { estimateJaccard } from "../engine/minhash";
 import { listPage } from "../engine/pagination";
-import { bareHost, createResult, normalizeUrl, parseUrl } from "./support";
+import {
+  bareHost,
+  createResult,
+  normalizeUrl,
+  sitemapKey,
+  parseUrl,
+} from "./support";
 
 /**
  * CRAWL (handbook §10): every indexable page is self-canonical, and the
@@ -99,9 +105,7 @@ export const canonicalFormCheck: HandbookCheck = {
     const { pages, sitemap } = ctx.collected;
     if (pages.status !== "ok") return out.build();
     const locs = new Set(
-      sitemap.status === "ok"
-        ? sitemap.urls.map((u) => normalizeUrl(u.loc))
-        : [],
+      sitemap.status === "ok" ? sitemap.urls.map((u) => sitemapKey(u.loc)) : [],
     );
     const live = pages.snapshots.filter(indexable);
     if (live.length === 0) {
@@ -164,7 +168,7 @@ export const canonicalFormCheck: HandbookCheck = {
       (s) =>
         s.head.canonical &&
         normalizeUrl(s.head.canonical) !== normalizeUrl(s.finalUrl) &&
-        !locs.has(normalizeUrl(s.url)) &&
+        !locs.has(sitemapKey(s.url)) &&
         !duplicateOf.has(normalizeUrl(s.url)),
     );
     // §11 "Don't canonical-tag a paginated series back to page 1": the risk is

@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl, pathOf } from "./support";
+import { createResult, normalizeUrl, sitemapKey, pathOf } from "./support";
 
 /**
  * Root-cause rules (B17 §9 #8, T5 / T6 / T17). One finding per cause instead
@@ -55,12 +55,12 @@ export const rootCausesCheck: HandbookCheck = {
       sitemap.status === "ok"
         ? sitemap.urls.filter((u) => ATTACHMENT_SITEMAP.test(u.source))
         : [];
-    const listed = new Set(attachmentLocs.map((u) => normalizeUrl(u.loc)));
+    const listed = new Set(attachmentLocs.map((u) => sitemapKey(u.loc)));
     const attachments = pagesLive.flatMap((s) => {
       const rest = s.markup.headLinks.find(
         (l) => l.rel === "alternate" && MEDIA_REST.test(l.href),
       );
-      const inSitemap = listed.has(normalizeUrl(s.url));
+      const inSitemap = listed.has(sitemapKey(s.url));
       if (!rest && !inSitemap) return [];
       if (noindex(s) && !inSitemap) return [];
       return [{ s, rest: rest?.href ?? null, inSitemap }];

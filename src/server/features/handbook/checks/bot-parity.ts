@@ -1,5 +1,12 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import type { BotFetchData } from "@/server/features/handbook/contracts/collectors";
+import {
+  type BotFetchData,
+  type CollectedData,
+} from "@/server/features/handbook/contracts/collectors";
+import {
+  AI_BOTS,
+  SEARCH_BOTS,
+} from "@/server/features/handbook/contracts/bot-classes";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { createResult, parseUrl } from "./support";
 
@@ -30,6 +37,43 @@ function mismatch(bot: Fetch, browser: Fetch): string | null {
 /** URLs listed in the finding detail and evidence. */
 const MAX_LISTED = 20;
 
+/**
+ * Bot fetches compared with the browser's: robots-allowed bots on URLs the
+ * browser got as 200, 429s left out. `why` = the mismatch, null = same page.
+ * Shared with `ai-bot-policy` so one block is reported once (WO-B21-004).
+ */
+export function compareBotFetches(
+  collected: Pick<CollectedData, "botFetch" | "robots">,
+) {
+  const { botFetch, robots } = collected;
+  if (botFetch.status !== "ok") return { urls: [], compared: [] };
+  const robotsAllows = (bot: string, url: string) => {
+    const u = parseUrl(url);
+    if (robots.status !== "ok" || !u) return true;
+    const { host, pathname } = u;
+    const file = robots.hosts.find((h) => h.host === host && h.status === 200);
+    return file ? decide(host, file.groups, bot, pathname).allowed : true;
+  };
+  // The first browser fetch of a URL is the reference; a URL the browser
+  // does not get as 200 (plain-HTTP redirect probes) is not compared.
+  const browserOf = new Map<string, Fetch>();
+  for (const f of botFetch.fetches)
+    if (f.bot === "browser" && !browserOf.has(f.url)) browserOf.set(f.url, f);
+  const urls = [...browserOf.values()]
+    .filter((b) => b.status === 200)
+    .map((b) => b.url);
+  const compared = botFetch.fetches.flatMap((f) => {
+    const browser = browserOf.get(f.url);
+    if (f.bot === "browser" || browser?.status !== 200) return [];
+    // 429 = the audit's own request rate was throttled (the escalation
+    // stops on it); a deliberate bot block shows as 403 or a challenge.
+    if (f.status === 429) return [];
+    if (!robotsAllows(f.bot, f.url)) return [];
+    return [{ f, why: mismatch(f, browser) }];
+  });
+  return { urls, compared };
+}
+
 const pct = (n: number, d: number) => `${Math.round((n / d) * 100)} %`;
 
 export const botParityCheck: HandbookCheck = {
@@ -39,38 +83,13 @@ export const botParityCheck: HandbookCheck = {
   requires: ["botFetch"],
   run(ctx) {
     const out = createResult(ITEMS);
-    const { botFetch, robots } = ctx.collected;
+    const { botFetch } = ctx.collected;
     if (botFetch.status !== "ok") return out.build();
-    const robotsAllows = (bot: string, url: string) => {
-      const u = parseUrl(url);
-      if (robots.status !== "ok" || !u) return true;
-      const { host, pathname } = u;
-      const file = robots.hosts.find(
-        (h) => h.host === host && h.status === 200,
-      );
-      return file ? decide(host, file.groups, bot, pathname).allowed : true;
-    };
-    // The first browser fetch of a URL is the reference; a URL the browser
-    // does not get as 200 (plain-HTTP redirect probes) is not compared.
-    const browserOf = new Map<string, Fetch>();
-    for (const f of botFetch.fetches)
-      if (f.bot === "browser" && !browserOf.has(f.url)) browserOf.set(f.url, f);
-    const urls = [...browserOf.values()]
-      .filter((b) => b.status === 200)
-      .map((b) => b.url);
+    const { urls, compared } = compareBotFetches(ctx.collected);
     if (urls.length === 0) {
       out.na("P9-01", "no URL returned 200 to the browser UA");
       return out.build();
     }
-    const compared = botFetch.fetches.flatMap((f) => {
-      const browser = browserOf.get(f.url);
-      if (f.bot === "browser" || browser?.status !== 200) return [];
-      // 429 = the audit's own request rate was throttled (the escalation
-      // stops on it); a deliberate bot block shows as 403 or a challenge.
-      if (f.status === 429) return [];
-      if (!robotsAllows(f.bot, f.url)) return [];
-      return [{ f, why: mismatch(f, browser) }];
-    });
     const ref = (url: string) =>
       out.evidence(
         "botFetch",
@@ -106,6 +125,15 @@ export const botParityCheck: HandbookCheck = {
       },
     );
     const intermittent = pairs.every((always) => !always);
+    const failingBots = new Set(failing.map((c) => c.f.bot));
+    const searchFailing = SEARCH_BOTS.filter((b) => failingBots.has(b));
+    const aiFailing = AI_BOTS.filter((b) => failingBots.has(b));
+    const byClass = [
+      ...(searchFailing.length
+        ? [`search crawlers: ${searchFailing.join(", ")}`]
+        : []),
+      ...(aiFailing.length ? [`AI crawlers: ${aiFailing.join(", ")}`] : []),
+    ];
     const failingUrls = [...new Set(failing.map((c) => c.f.url))];
     const lines = failingUrls.slice(0, MAX_LISTED).map((url) => {
       const reasons = [
@@ -123,15 +151,24 @@ export const botParityCheck: HandbookCheck = {
         : [];
     out.finding({
       itemIds: ITEMS,
+      // WO-B21-004: S1 only when a search crawler is consistently refused;
+      // an AI-crawler-only block cannot stop indexing (ADR-037).
       ...(intermittent
         ? {
             severity: "S2" as const,
             severityReason: `intermittent: every failing bot got the full page on another fetch of the same URL (${failing.length} of ${compared.length} bot fetches, ${pct(failing.length, compared.length)})`,
           }
-        : { severity: "S1" as const }),
+        : searchFailing.length === 0
+          ? {
+              severity: "S2" as const,
+              severityReason:
+                "AI-crawler-only block: Googlebot and Bingbot receive the page; a deliberate block is allowed (record it under P9-04)",
+            }
+          : { severity: "S1" as const }),
       title: "Bots allowed by robots.txt do not get the browser response",
       detail: [
         `${failing.length} of ${compared.length} bot fetches blocked (${pct(failing.length, compared.length)})`,
+        ...byClass,
         ...rates,
         ...lines,
         ...more,

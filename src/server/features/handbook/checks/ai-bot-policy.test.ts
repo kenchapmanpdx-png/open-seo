@@ -35,3 +35,39 @@ describe("botfetch.ai-bot-policy", () => {
     expect(statusOf(result, "P9-04")).toBe("BLOCKED");
   });
 });
+
+// WO-B21-004: aweandorderorganizing.com reported ClaudeBot's 403 twice
+// (P9-01 parity + this S4 split). The parity finding owns a token it names.
+const page = (bot: "browser" | "ClaudeBot", status: number) => ({
+  url: "https://example.com/",
+  bot,
+  status,
+  finalUrl: "https://example.com/",
+  bytes: 1000,
+  words: 300,
+  bodySha256: "abc",
+  blockedReason: null,
+});
+const row = (token: string) => ({
+  token,
+  robotsAllowed: true,
+  status: 403,
+  blockedReason: null,
+});
+
+describe("botfetch.ai-bot-policy with a parity finding", () => {
+  it("does not repeat a token the parity check failed; others still split", async () => {
+    const result = await aiBotPolicyCheck.run(
+      context({
+        botFetch: {
+          status: "ok",
+          fetches: [page("browser", 200), page("ClaudeBot", 403)],
+          policyMap: [row("ClaudeBot"), row("Bytespider")],
+        },
+      }),
+    );
+    expect(result.findings.map((f) => f.detail)).toEqual([
+      "Bytespider: HTTP 403",
+    ]);
+  });
+});

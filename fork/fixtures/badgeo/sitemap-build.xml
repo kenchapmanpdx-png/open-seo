@@ -6,4 +6,6 @@
   <url><loc>{{ORIGIN}}/events/spring-run-2026.html</loc><lastmod>2026-11-01</lastmod></url>
   <url><loc>{{ORIGIN}}/broken-jsonld.html</loc><lastmod>2026-11-01</lastmod></url>
   <url><loc>{{ORIGIN}}/placeholder.html</loc><lastmod>2026-11-01</lastmod></url>
+  <!-- WO-B21-003: same page on the other scheme (P3-19:S3, no P3-12 for it) -->
+  <url><loc>{{ORIGIN_OTHER_SCHEME}}/about/</loc><lastmod>2026-11-01</lastmod></url>
 </urlset>

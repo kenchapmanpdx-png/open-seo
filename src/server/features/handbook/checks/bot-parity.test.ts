@@ -1,5 +1,13 @@
+import { sort } from "remeda";
 import { describe, expect, it } from "vitest";
-import type { BotFetchData } from "@/server/features/handbook/contracts/collectors";
+import {
+  BOT_USER_AGENTS,
+  type BotFetchData,
+} from "@/server/features/handbook/contracts/collectors";
+import {
+  AI_BOTS,
+  SEARCH_BOTS,
+} from "@/server/features/handbook/contracts/bot-classes";
 import { parseRobots } from "@/server/features/handbook/engine/robots";
 import { context, ORIGIN, statusOf } from "./check-test-fixtures";
 import { botParityCheck } from "./bot-parity";
@@ -78,6 +86,49 @@ describe("botfetch.parity", () => {
     expect(result.findings[0]?.severity).toBe("S2");
     expect(result.findings[0]?.detail).toContain(
       "PerplexityBot: 1 of 2 fetches (50 %)",
+    );
+  });
+});
+
+// WO-B21-004: aweandorderorganizing.com (Cloudflare) answered ClaudeBot 403
+// on every fetch while Googlebot / Bingbot got the page; the S1 capped the
+// grade at 39. Only a failing search crawler can stop indexing.
+describe("botfetch.parity severity by crawler class", () => {
+  const severityOf = async (bots: Fetch["bot"][]) =>
+    (
+      await run([
+        fetchOf("browser"),
+        ...(["Googlebot", "Bingbot"] as const)
+          .filter((bot) => !bots.includes(bot))
+          .map((bot) => fetchOf(bot)),
+        ...bots.map((bot) => fetchOf(bot, blocked)),
+      ])
+    ).findings.map((f) => f.severity);
+
+  it("is S2 when only AI crawlers are blocked", async () => {
+    expect(await severityOf(["ClaudeBot"])).toEqual(["S2"]);
+  });
+
+  it("is S1 when a search crawler is blocked, alone or with AI crawlers", async () => {
+    expect(await severityOf(["Googlebot"])).toEqual(["S1"]);
+    const mixed = await run([
+      fetchOf("browser"),
+      fetchOf("Bingbot", blocked),
+      fetchOf("GPTBot", blocked),
+    ]);
+    expect(mixed.findings[0]?.severity).toBe("S1");
+    expect(mixed.findings[0]?.detail).toMatch(/search crawlers: Bingbot/);
+    expect(mixed.findings[0]?.detail).toMatch(/AI crawlers: GPTBot/);
+  });
+});
+
+const byName = (a: string, b: string) => a.localeCompare(b);
+
+describe("bot classes", () => {
+  it("put every fetched bot in exactly one class", () => {
+    const classes = [...SEARCH_BOTS, ...AI_BOTS];
+    expect(sort(classes, byName)).toEqual(
+      sort(Object.keys(BOT_USER_AGENTS), byName),
     );
   });
 });

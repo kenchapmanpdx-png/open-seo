@@ -5,6 +5,7 @@ import {
   bareHost,
   createResult,
   normalizeUrl,
+  sitemapKey,
   parseUrl,
   pathOf,
   siteUrl,
@@ -103,11 +104,17 @@ export const hiddenPagesCheck: HandbookCheck = {
     }
 
     // (b) hidden URLs listed in the sitemap.
+    // WO-B21-003: a `<loc>` names its page on either scheme.
+    const pageByKey = new Map(
+      pages.snapshots
+        .filter((s) => s.status === 200)
+        .map((s) => [sitemapKey(s.url), s]),
+    );
     const listedHidden =
       sitemap.status === "ok"
         ? sitemap.urls.flatMap((u) => {
             const rule = disallowRule(u.loc);
-            const snap = byUrl.get(normalizeUrl(u.loc));
+            const snap = pageByKey.get(sitemapKey(u.loc));
             if (rule) return [{ url: u.loc, why: rule }];
             if (snap && noindex(snap)) return [{ url: u.loc, why: "noindex" }];
             return [];

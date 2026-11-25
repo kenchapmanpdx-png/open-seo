@@ -1,5 +1,8 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
-import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import type {
+  CollectedData,
+  PageSnapshot,
+} from "@/server/features/handbook/contracts/collectors";
 import {
   createResult,
   formatHeaders,
@@ -103,6 +106,61 @@ const SCRIPT_SIGNALS: { test: RegExp; platform: string; builder: boolean }[] = [
 const scriptSrcs = (p: PageSnapshot) =>
   p.markup.scripts.map((x) => x.src).filter((x): x is string => !!x);
 
+type HeaderResponse = { headers: readonly (readonly [string, string])[] };
+
+/** Platform signals from response headers, generator meta and script hosts. */
+function platformSignals(
+  live: readonly PageSnapshot[],
+  responses: readonly HeaderResponse[],
+) {
+  const signals: Signal[] = [];
+  for (const r of responses.slice(0, 5))
+    for (const s of HEADER_SIGNALS) {
+      const value = headerValue(r.headers, s.header);
+      if (value !== null && s.test.test(value))
+        signals.push({
+          platform: s.platform,
+          builder: s.builder,
+          via: `${s.header}: ${value}`,
+        });
+    }
+  const generators = new Set(
+    live.map((p) => p.head.meta.generator).filter((g): g is string => !!g),
+  );
+  for (const g of generators)
+    signals.push({
+      platform: g,
+      builder: GENERATOR_BUILDERS.test(g),
+      via: `<meta name="generator" content="${g}">`,
+    });
+  for (const src of new Set(live.slice(0, 10).flatMap(scriptSrcs)))
+    for (const s of SCRIPT_SIGNALS)
+      if (s.test.test(src))
+        signals.push({
+          platform: s.platform,
+          builder: s.builder,
+          via: `script ${src}`,
+        });
+  return { signals, generators };
+}
+
+/**
+ * The hosted builder serving the site (Weebly, Wix, Showit …), or null: its
+ * owner cannot change what the platform controls (headers, markup).
+ */
+export function hostedBuilder(
+  collected: Pick<CollectedData, "pages" | "headers">,
+): string | null {
+  const { pages, headers } = collected;
+  if (pages.status !== "ok") return null;
+  const live = pages.snapshots.filter((s) => s.status === 200);
+  const responses = headers.status === "ok" ? headers.responses : [];
+  return (
+    platformSignals(live, responses).signals.find((s) => s.builder)?.platform ??
+    null
+  );
+}
+
 export const platformCheck: HandbookCheck = {
   id: "crawl.platform",
   itemIds: ITEMS,
@@ -119,38 +177,11 @@ export const platformCheck: HandbookCheck = {
       return out.build();
     }
 
-    const signals: Signal[] = [];
     const responses = headers.status === "ok" ? headers.responses : [];
     const homeResponse =
       responses.find((r) => normalizeUrl(r.url) === normalizeUrl(home.url)) ??
       responses[0];
-    for (const r of responses.slice(0, 5))
-      for (const s of HEADER_SIGNALS) {
-        const value = headerValue(r.headers, s.header);
-        if (value !== null && s.test.test(value))
-          signals.push({
-            platform: s.platform,
-            builder: s.builder,
-            via: `${s.header}: ${value}`,
-          });
-      }
-    const generators = new Set(
-      live.map((p) => p.head.meta.generator).filter((g): g is string => !!g),
-    );
-    for (const g of generators)
-      signals.push({
-        platform: g,
-        builder: GENERATOR_BUILDERS.test(g),
-        via: `<meta name="generator" content="${g}">`,
-      });
-    for (const src of new Set(live.slice(0, 10).flatMap(scriptSrcs)))
-      for (const s of SCRIPT_SIGNALS)
-        if (s.test.test(src))
-          signals.push({
-            platform: s.platform,
-            builder: s.builder,
-            via: `script ${src}`,
-          });
+    const { signals, generators } = platformSignals(live, responses);
 
     const unique = [
       ...new Map(

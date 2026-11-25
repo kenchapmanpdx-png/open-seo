@@ -92,3 +92,16 @@ describe("crawl.coverage", () => {
     );
   });
 });
+
+// WO-B21-003: http <loc> on an https site match their https pages.
+describe("crawl.coverage sitemap scheme", () => {
+  it("counts an http <loc> as the crawled https page", async () => {
+    const result = await run(
+      [snapshot("/"), snapshot("/a"), snapshot("/b")],
+      ["http://example.com/", "http://example.com/a", "http://example.com/b"],
+    );
+    const note = result.statuses.find((s) => s.itemId === "P3-13")?.note;
+    expect(note).toContain("both 3 · sitemap-only 0 · crawled-only 0");
+    expect(note).toContain("3 <loc> on another scheme (see P3-19)");
+  });
+});

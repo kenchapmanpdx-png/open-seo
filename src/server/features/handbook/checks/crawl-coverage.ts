@@ -3,9 +3,11 @@ import type { PageSnapshot } from "@/server/features/handbook/contracts/collecto
 import {
   createResult,
   normalizeUrl,
+  originUrl,
   pathOf,
   parseUrl,
   siteUrl,
+  sitemapKey,
 } from "./support";
 
 /**
@@ -76,14 +78,26 @@ export const crawlCoverageCheck: HandbookCheck = {
 
     // P3-13 — coverage counts.
     if (sitemap.status === "ok" && sitemap.urls.length > 0) {
-      const locs = new Set(sitemap.urls.map((u) => normalizeUrl(u.loc)));
-      const both = [...locs].filter((l) => crawledSet.has(l));
-      const sitemapOnly = [...locs].filter((l) => !crawledSet.has(l));
-      const crawledOnly = [...crawledSet].filter((c) => !locs.has(c));
+      // WO-B21-003: matched with the scheme folded; P3-19 reports the scheme.
+      const crawledKeys = new Map(
+        crawled.map((s) => [sitemapKey(s.url), s.url]),
+      );
+      const locs = new Map(sitemap.urls.map((u) => [sitemapKey(u.loc), u.loc]));
+      const both = [...locs.keys()].filter((l) => crawledKeys.has(l));
+      const sitemapOnly = [...locs]
+        .filter(([l]) => !crawledKeys.has(l))
+        .map(([, loc]) => loc);
+      const crawledOnly = [...crawledKeys]
+        .filter(([c]) => !locs.has(c))
+        .map(([, url]) => url);
+      const scheme = originUrl(ctx.origin).protocol;
+      const otherScheme = [...locs.values()].filter(
+        (loc) => parseUrl(loc)?.protocol !== scheme,
+      ).length;
       const jsOnly = pages.snapshots
         .filter((s) => s.discoveredBy === "render")
         .map((s) => s.url);
-      const note = `sitemap ${locs.size} · crawled ${crawledSet.size} · both ${both.length} · sitemap-only ${sitemapOnly.length} · crawled-only ${crawledOnly.length} · JS-only links: ${jsOnly.length}`;
+      const note = `sitemap ${locs.size} · crawled ${crawledKeys.size} · both ${both.length} · sitemap-only ${sitemapOnly.length} · crawled-only ${crawledOnly.length} · JS-only links: ${jsOnly.length}${otherScheme > 0 ? ` · ${otherScheme} <loc> on another scheme (see P3-19)` : ""}`;
       out.pass("P3-13", note, [
         out.evidence(
           "sitemap",

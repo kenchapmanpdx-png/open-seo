@@ -27,5 +27,6 @@
     "referrer-policy": "strict-origin-when-cross-origin",
     "permissions-policy": "camera=(), microphone=()",
     "cache-control": "no-cache"
-  }
+  },
+  "/assets/plain.css": {}
 }

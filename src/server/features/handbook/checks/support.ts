@@ -131,6 +131,16 @@ export function normalizeUrl(url: string): string {
 }
 
 /**
+ * WO-B21-003: key for matching sitemap `<loc>` against crawled pages: the
+ * normalized URL with its scheme folded (`http://x/a` = `https://x/a`). The
+ * scheme difference itself is P3-19's finding; the host is not folded (www vs
+ * bare stays P3-19's host rule). Everything else compares with `normalizeUrl`.
+ */
+export function sitemapKey(url: string): string {
+  return normalizeUrl(url).replace(/^https?:\/\//i, "//");
+}
+
+/**
  * WO-B20-011: the robots.txt hosts that answer 4xx when the site has none at
  * all (no host answers 200, at least one answers 4xx, the rest only redirect,
  * e.g. `www.` → bare host). Empty otherwise: one shared rule for P3-15 and P3-19.

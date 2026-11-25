@@ -39,3 +39,49 @@ describe("headers.cache-policy", () => {
     expect(statusOf(result, "P7-07")).toBe("PASS");
   });
 });
+
+// WO-B21-002: aweandorderorganizing.com (Weebly) served
+// `/files/main_style.css?1672701721` with no Cache-Control; P7-07 read PASS
+// "0 hashed asset(s) immutable for a year".
+describe("headers.cache-policy unhashed static files", () => {
+  const css = (path: string, headers: [string, string][]) => ({
+    url: `${ORIGIN}${path}`,
+    status: 200,
+    headers: [["content-type", "text/css"], ...headers] as const,
+  });
+  const html = response("/", "text/html", "no-cache");
+
+  it("reports a probed static file with no caching header (S4)", async () => {
+    const result = await cachePolicyCheck.run(
+      context({
+        headers: {
+          status: "ok",
+          responses: [html, css("/files/main_style.css?1672701721", [])],
+        },
+      }),
+    );
+    expect(statusOf(result, "P7-07")).not.toBe("PASS");
+    expect(result.findings.map((f) => [f.severity, f.urls])).toEqual([
+      ["S4", [`${ORIGIN}/files/main_style.css?1672701721`]],
+    ]);
+  });
+
+  it.each([
+    ["no-cache", css("/a.css", [["cache-control", "no-cache"]])],
+    ["max-age", css("/a.css", [["cache-control", "max-age=3600"]])],
+    [
+      "Expires only",
+      css("/a.css", [["expires", "Wed, 21 Oct 2026 07:28:00 GMT"]]),
+    ],
+    ["404", { ...css("/a.css", []), status: 404 }],
+    [
+      "cross-origin",
+      { ...css("/a.css", []), url: "https://cdn.example.net/a.css" },
+    ],
+  ])("raises no finding for an unhashed file with %s", async (_, asset) => {
+    const result = await cachePolicyCheck.run(
+      context({ headers: { status: "ok", responses: [html, asset] } }),
+    );
+    expect(result.findings).toEqual([]);
+  });
+});

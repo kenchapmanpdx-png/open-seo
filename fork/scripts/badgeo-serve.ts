@@ -5,7 +5,7 @@
  * entries get a 200 openresty-style bot-check page instead; with `every: N`
  * only the 1st, N+1th, … matching request is challenged), answers the
  * redirects `_redirects.json` lists (path or path?query → [status, location]), substitutes
- * `{{ORIGIN}}` in text files, 404 for anything missing. `{{OFFSITE}}` names
+ * `{{ORIGIN}}` (and `{{ORIGIN_OTHER_SCHEME}}`) in text files, 404 for anything missing. `{{OFFSITE}}` names
  * a second stub host (WO-B9-012): `/gone/*` → 404, `/down/*` → 502, anything else → 200.
  *
  *   pnpm exec tsx fork/scripts/badgeo-serve.ts [--port 4455]
@@ -244,7 +244,10 @@ export async function startBadgeo(
       return;
     }
     if (pathname === VIDEO_THUMB) {
+      // Site-wide headers like every other file (WO-B21-002: only
+      // /assets/plain.css is the header-less static file).
       res.writeHead(200, {
+        ...headerMap["*"],
         "content-type": "image/png",
         "content-length": String(ONE_PIXEL_PNG.length),
       });
@@ -274,6 +277,13 @@ export async function startBadgeo(
         ? raw
             .toString("utf8")
             .replaceAll("{{ORIGIN}}", origin)
+            // WO-B21-003: the same host on the other scheme (sitemap <loc>).
+            .replaceAll(
+              "{{ORIGIN_OTHER_SCHEME}}",
+              origin.replace(/^http(s?):/, (_, s: string) =>
+                s ? "http:" : "https:",
+              ),
+            )
             .replaceAll("{{OFFSITE}}", offsiteOrigin)
         : raw;
     res.writeHead(200, {

@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl, pathOf } from "./support";
+import { createResult, sitemapKey, pathOf } from "./support";
 
 /**
  * SUPP-05 / SUPP-06 (ADR-020, FULL-READ §6, handbook §2/§10/§17):
@@ -49,15 +49,13 @@ export const suppPagesCheck: HandbookCheck = {
 
     // SUPP-05 — test / dev / numbered slugs, indexable and in the sitemap.
     const listed = new Set(
-      sitemap.status === "ok"
-        ? sitemap.urls.map((u) => normalizeUrl(u.loc))
-        : [],
+      sitemap.status === "ok" ? sitemap.urls.map((u) => sitemapKey(u.loc)) : [],
     );
     const devPages = pages.snapshots.filter(
       (s) =>
         s.status === 200 &&
         !noindex(s) &&
-        listed.has(normalizeUrl(s.url)) &&
+        listed.has(sitemapKey(s.url)) &&
         DEV_SLUG.test(slugOf(s.url)),
     );
     if (devPages.length > 0) {

@@ -1,5 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { BotFetchData } from "@/server/features/handbook/contracts/collectors";
+import { compareBotFetches } from "./bot-parity";
 import { createResult, siteUrl } from "./support";
 
 /**
@@ -45,11 +46,19 @@ export const aiBotPolicyCheck: HandbookCheck = {
       .join("\n");
     const ref = out.evidence("botFetch", home, table);
     const splits = rows.filter((r) => r.robotsAllowed && served(r));
+    // WO-B21-004: a token the bot-parity finding already names is reported
+    // there once; the split lists only the others.
+    const inParity = new Set<string>(
+      compareBotFetches(ctx.collected)
+        .compared.filter((c) => c.why !== null)
+        .map((c) => c.f.bot),
+    );
+    const unreported = splits.filter((r) => !inParity.has(r.token));
     out.blocked(
       "P9-04",
       `Owner to record the AI-bot decisions: allowed ${list(rows.filter((r) => r.robotsAllowed && !served(r)))}; robots.txt disallows ${list(rows.filter((r) => !r.robotsAllowed))}; server blocks while robots.txt allows ${list(splits)}`,
     );
-    if (splits.length === 0) return out.build();
+    if (unreported.length === 0) return out.build();
     out.finding({
       itemIds: ["P9-01"],
       severity: "S4",
@@ -57,7 +66,7 @@ export const aiBotPolicyCheck: HandbookCheck = {
         "policy split: a deliberate block is allowed; the defect is that robots.txt does not state it",
       title:
         "AI-bot policy split: robots.txt allows crawlers the server blocks",
-      detail: splits.map((r) => `${r.token}: ${served(r)}`).join("\n"),
+      detail: unreported.map((r) => `${r.token}: ${served(r)}`).join("\n"),
       fix: "Decide per crawler. To block, add a Disallow group for the token in robots.txt so the stated policy matches the server; to allow, remove the UA rule from the server/WAF. Record the decision (P9-04).",
       fixability: "FIXABLE",
       effort: "S",
