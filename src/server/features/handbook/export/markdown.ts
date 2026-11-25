@@ -5,6 +5,7 @@ import { copyQualityMd } from "./copy-quality-md";
 import {
   gradeView,
   NOT_GRADED_LABEL,
+  provisionalRenderNote,
 } from "@/server/features/handbook/contracts/grade-view";
 import { scaledContentRows } from "@/server/features/handbook/contracts/scaled-copy";
 import { depthLine } from "../engine/depth";
@@ -53,14 +54,12 @@ function counts(items: readonly Item[]) {
 
 /**
  * WO-B4-006: without the render collector the grade cannot see JS-only
- * content or S1 render defects. Detected from the runner's BLOCKED notes
- * ("render unavailable: …"), as ReportJson has no collector field.
+ * content or S1 render defects (site refusal excepted, WO-B24-001).
  */
-function provisionalLine(report: ReportJson): string | null {
-  return report.items.some((i) => i.note?.startsWith("render unavailable"))
-    ? "Grade provisional: render evidence missing (JS-only content and S1 render defects cannot be seen)"
-    : null;
-}
+const PROVISIONAL =
+  "Grade provisional: render evidence missing (JS-only content and S1 render defects cannot be seen)";
+const provisionalLine = (report: ReportJson) =>
+  provisionalRenderNote(report) ? PROVISIONAL : null;
 
 const phasesOf = (report: ReportJson) => [
   ...new Set(report.items.map((i) => i.phase)),

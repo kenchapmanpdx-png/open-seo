@@ -8,7 +8,9 @@ import {
   loadDone,
   newerCompletedRun,
   notFinalNote,
+  provisionalReason,
   saveDone,
+  siteRefusalNote,
   topFixes,
   type Finding,
 } from "./fixList";
@@ -286,6 +288,79 @@ describe("notFinalNote (WO-B16-003)", () => {
     ];
     expect(newerCompletedRun(runs, run)).toBe("r3");
     expect(newerCompletedRun(runs.slice(0, 1), run)).toBeNull();
+  });
+});
+
+// WO-B24-001: aweandorderorganizing.com refuses the helper's render (403,
+// helper healthy). Live notes from runs hb-76a1d2fa / hb-d604e7d9.
+describe("site refuses the browser helper (WO-B24-001)", () => {
+  const refused = blockedReport([
+    "render unavailable: render HTTP 403 (no-JS 403)",
+    "total page weight not measured: render unavailable (7 pages, HTML ≤ 500 KB)",
+  ]);
+
+  it("names the site as the cause, not a stopped helper", () => {
+    const [cause] = blockedCauses(refused);
+    expect(cause.items).toHaveLength(2);
+    expect(cause.label).toBe("The site refused the browser helper");
+    expect(cause.expected).toBe(true);
+    expect(cause.action).toMatch(/Check again will not change this/);
+  });
+
+  it("keeps the grade final with an info note naming the limit", () => {
+    expect(provisionalReason(refused)).toBeNull();
+    expect(siteRefusalNote(refused)?.body).toMatch(
+      /^2 checks could not run: the site blocks automated browsers \(HTTP 403\)/,
+    );
+  });
+
+  it("keeps helper faults, 5xx and 429 provisional with the helper action", () => {
+    for (const note of [
+      "render unavailable: render HTTP 503 (no-JS 503)",
+      "render unavailable: render HTTP 429 (no-JS 200)",
+      "render unavailable: collector not configured",
+    ]) {
+      const report = blockedReport([note]);
+      expect(provisionalReason(report)).not.toBeNull();
+      expect(siteRefusalNote(report)).toBeNull();
+      expect(blockedCauses(report)[0].key).toBe("browser");
+    }
+  });
+
+  it("states a refused render in plain words if it ever reaches the banner", () => {
+    const note = notFinalNote({
+      reason: "render HTTP 403 (no-JS 403)",
+      runDate: "2026-11-25T10:00:00Z",
+      newerRunId: null,
+    });
+    expect(note?.body).toMatch(/\(the site refused it \(HTTP 403\)\)/);
+  });
+
+  it("only offers Check again where a re-check can help", () => {
+    const notes = [
+      "render unavailable: render HTTP 403 (no-JS 403)",
+      "lighthouse unavailable: x",
+      "render unavailable: collector not configured",
+      "llm budget",
+      "no llm key",
+      "llm unsure (m, 0.4): x",
+      "CRUX_API_KEY not set",
+      "dataforseo credit",
+      'gate "X" = ?',
+      "Owner to record x",
+      "operator: off",
+      "pages unavailable: x",
+      "check error: x",
+      "something new",
+    ];
+    // Each note alone: a refusal note groups the others into its own cause.
+    const causes = notes.flatMap((n) => blockedCauses(blockedReport([n])));
+    expect(causes).toHaveLength(notes.length);
+    for (const c of causes)
+      expect([c.key, /Check again[.;]/.test(c.action)]).toEqual([
+        c.key,
+        !c.expected && c.key !== "other",
+      ]);
   });
 });
 

@@ -40,6 +40,44 @@ export function notGradedReasonOf(report: {
   return read === undefined ? note : null;
 }
 
+/** The render collector's note when the site answered a non-2xx status. */
+const RENDER_HTTP =
+  /^render unavailable: render HTTP (\d{3}) \(no-JS (\d{3})\)/;
+
+/**
+ * WO-B24-001: the status the target site refused the browser helper with, or
+ * null. A refusal is a 4xx other than 429 on the JS or no-JS render (the
+ * helper ran; the site blocks automated browsers). 5xx, 429, timeouts and
+ * helper faults are not refusals.
+ */
+export function siteRefusedStatus(
+  items: ReadonlyArray<{ note?: string | null }>,
+): number | null {
+  for (const item of items) {
+    const m = RENDER_HTTP.exec(item.note ?? "");
+    if (!m) continue;
+    const bad = [m[1], m[2]].map(Number).filter((s) => s < 200 || s > 299);
+    if (bad.length > 0 && bad.every((s) => s >= 400 && s < 500 && s !== 429))
+      return bad[0];
+  }
+  return null;
+}
+
+/**
+ * The runner note that makes a grade provisional (render evidence missing,
+ * "render unavailable: …"), or null. A site refusal is final with limits
+ * (WO-B24-001): a re-check cannot change it. Read by the app and the exports.
+ */
+export function provisionalRenderNote(report: {
+  items: ReadonlyArray<{ note?: string | null }>;
+}): string | null {
+  if (siteRefusedStatus(report.items) !== null) return null;
+  return (
+    report.items.find((i) => i.note?.startsWith("render unavailable"))?.note ??
+    null
+  );
+}
+
 /** Runner note on an item BLOCKED because a collector it needs was unavailable. */
 const COLLECTOR_UNAVAILABLE = /^\w+ unavailable: /;
 

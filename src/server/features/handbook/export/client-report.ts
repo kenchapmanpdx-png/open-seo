@@ -2,6 +2,7 @@ import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import {
   gradeView,
   NOT_GRADED_LABEL,
+  provisionalRenderNote,
 } from "@/server/features/handbook/contracts/grade-view";
 import { renderResultsSection } from "./client-report-results";
 import type { FollowupBatch } from "./followups";
@@ -158,9 +159,7 @@ function render(
   const kinds = [
     ...new Set(report.findings.flatMap((f) => f.evidence.map((e) => e.kind))),
   ];
-  const provisional = report.items.some((i) =>
-    i.note?.startsWith("render unavailable"),
-  );
+  const provisional = provisionalRenderNote(report) !== null;
 
   const parts: string[] = [
     `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>SEO &amp; AI search review — ${esc(host)}</title><style>${CSS}${brandCss(budget.brand)}</style></head><body>`,

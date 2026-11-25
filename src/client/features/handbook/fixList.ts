@@ -4,6 +4,10 @@ import type {
   HandbookCategory,
   ReportJson,
 } from "@/server/features/handbook/contracts/exports";
+import {
+  provisionalRenderNote,
+  siteRefusedStatus,
+} from "@/server/features/handbook/contracts/grade-view";
 import { SEVERITY_LABELS } from "./labels";
 
 /**
@@ -202,6 +206,19 @@ const BLOCKED_CAUSES = [
   },
 ] as const;
 
+/**
+ * WO-B24-001: the site refused the helper's render (4xx, helper healthy). Every
+ * "render unavailable" note of that run shares the cause; a re-check cannot fix
+ * it. Mirrored in fork/RUNBOOK.md § "Couldn't check".
+ */
+const SITE_REFUSED_CAUSE = {
+  key: "site-refused",
+  label: "The site refused the browser helper",
+  action:
+    "Expected for this site. Its server blocks automated browsers; these checks cannot run here. Check again will not change this.",
+  expected: true,
+};
+
 const OTHER_CAUSE = {
   key: "other",
   label: "Could not be checked (other)",
@@ -223,21 +240,29 @@ export function blockedCauses(
   report: Pick<ReportJson, "items">,
 ): BlockedCause[] {
   const groups = new Map<string, BlockedCause>();
+  const refused = siteRefusedStatus(report.items) !== null;
   for (const item of blockedItems(report)) {
     const found = BLOCKED_CAUSES.find((c) => c.match.test(item.note ?? ""));
-    const cause = found
-      ? {
-          key: found.key,
-          label: found.label,
-          action: found.action,
-          expected: found.expected,
-        }
-      : OTHER_CAUSE;
+    const cause =
+      refused && /render unavailable/.test(item.note ?? "")
+        ? SITE_REFUSED_CAUSE
+        : found
+          ? {
+              key: found.key,
+              label: found.label,
+              action: found.action,
+              expected: found.expected,
+            }
+          : OTHER_CAUSE;
     const group = groups.get(cause.key) ?? { ...cause, items: [] };
     group.items.push(item);
     groups.set(cause.key, group);
   }
-  const order = [...BLOCKED_CAUSES.map((c) => c.key), OTHER_CAUSE.key];
+  const order = [
+    SITE_REFUSED_CAUSE.key,
+    ...BLOCKED_CAUSES.map((c) => c.key),
+    OTHER_CAUSE.key,
+  ];
   return sort(
     [...groups.values()],
     (a, b) => order.indexOf(a.key) - order.indexOf(b.key),
@@ -339,10 +364,10 @@ export function capNote(report: {
   return `Capped at ${report.score.final} by: ${causes.length > 0 ? causes.join("; ") : reason}`;
 }
 
-export function provisionalReason(report: ReportJson): string | null {
-  const note = report.items.find((i) =>
-    i.note?.startsWith("render unavailable"),
-  )?.note;
+export function provisionalReason(
+  report: Pick<ReportJson, "items">,
+): string | null {
+  const note = provisionalRenderNote(report);
   if (!note) return null;
   return (
     note.replace(/^render unavailable:?\s*/, "").replace(/\.$/, "") ||
@@ -372,8 +397,26 @@ export function notFinalNote(input: {
   };
 }
 
+/**
+ * WO-B24-001: info note for a run whose site refused the browser helper. The
+ * grade is final (a re-check cannot change it); the note names the limit.
+ */
+export function siteRefusalNote(report: Pick<ReportJson, "items">) {
+  const status = siteRefusedStatus(report.items);
+  if (status === null) return null;
+  const n =
+    blockedCauses(report).find((c) => c.key === SITE_REFUSED_CAUSE.key)?.items
+      .length ?? 0;
+  return {
+    title: "Some checks cannot run on this site",
+    body: `${checksCount(n)} could not run: the site blocks automated browsers (HTTP ${status}). The grade covers everything else and is final.`,
+  };
+}
+
 /** The stored reason in plain words; the raw text stays under Details. */
 function helperProblem(reason: string) {
+  const refused = /render HTTP (4\d\d)/.exec(reason);
+  if (refused) return `the site refused it (HTTP ${refused[1]})`;
   if (/not configured/i.test(reason)) return "it was not set up";
   if (/unreachable|fetch failed|no sidecar/i.test(reason))
     return "it was not running";

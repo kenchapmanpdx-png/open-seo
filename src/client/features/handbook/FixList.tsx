@@ -32,6 +32,7 @@ import {
   notFinalNote,
   provisionalReason,
   saveDone,
+  siteRefusalNote,
   type CategoryFilter,
   type FixRow as FixRowData,
 } from "./fixList";
@@ -79,6 +80,7 @@ export function FixList({
     runDate,
     newerRunId,
   });
+  const refusal = siteRefusalNote(report);
 
   /** Merged rows toggle all their findings at once. */
   const toggle = (codes: string[], checked: boolean) => {
@@ -147,6 +149,12 @@ export function FixList({
               ) : null}
             </div>
           </AlertDescription>
+        </Alert>
+      ) : null}
+      {refusal ? (
+        <Alert>
+          <AlertTitle>{refusal.title}</AlertTitle>
+          <AlertDescription>{refusal.body}</AlertDescription>
         </Alert>
       ) : null}
       {notes.map((note) => (

@@ -178,20 +178,21 @@ A run started by a new shell does not know the running sidecar's token: rotate a
 
 The Fix List shows one line per cause with a count; ids and raw notes are under "Details". First matching rule wins (`BLOCKED_CAUSES` in `fixList.ts`); an unknown note → "Could not be checked (other)".
 
-| Runner note (start / contains)                                               | Shown as                                   | What to do                                       |
-| ---------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------ |
-| `lighthouse unavailable` (first)                                             | Speed checks did not run                   | Check again                                      |
-| `render unavailable`, `render` / `axe` / `lighthouse unavailable`, `sidecar` | Needs the browser helper                   | Start it, then Check again                       |
-| `llm budget`, `llm credits`, `… requires more credits`                       | The AI review ran out of budget or credits | Add credits or raise the AI budget               |
-| `no llm key`, `… LLM map stage (not run)`                                    | Needs the AI review                        | Optional: add an AI key                          |
-| `llm unsure (…)`                                                             | The AI reviewer was not sure               | Look yourself (expected)                         |
-| `CRUX_API_KEY not set`, `CrUX API failed`                                    | Needs a free Google key (CrUX)             | Optional: `CRUX_API_KEY`                         |
-| `serp pages unavailable`, `dataforseo credit`                                | Needs search-results data                  | Add DataForSEO credit                            |
-| `gate "…" = ? (…)`                                                           | Needs a fact only you know                 | Expected; the question is under Details          |
-| `Owner to record the AI-bot decisions…`                                      | Needs your decision                        | Expected; decide which AI bots may read the site |
-| `operator: …`                                                                | Turned off in this app                     | Expected                                         |
-| `pages unavailable…`, `stats on fewer than two pages`                        | Not enough pages were read                 | Check again                                      |
-| `check error: …`, `check contract violation: …`                              | The check itself failed                    | Check again; a repeat is a bug                   |
+| Runner note (start / contains)                                                 | Shown as                                   | What to do                                       |
+| ------------------------------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------ |
+| `render unavailable: render HTTP 4xx` (not 429; every render note of that run) | The site refused the browser helper        | Expected; the grade is final (WO-B24-001)        |
+| `lighthouse unavailable` (first)                                               | Speed checks did not run                   | Check again                                      |
+| `render unavailable`, `render` / `axe` / `lighthouse unavailable`, `sidecar`   | Needs the browser helper                   | Start it, then Check again                       |
+| `llm budget`, `llm credits`, `… requires more credits`                         | The AI review ran out of budget or credits | Add credits or raise the AI budget               |
+| `no llm key`, `… LLM map stage (not run)`                                      | Needs the AI review                        | Optional: add an AI key                          |
+| `llm unsure (…)`                                                               | The AI reviewer was not sure               | Look yourself (expected)                         |
+| `CRUX_API_KEY not set`, `CrUX API failed`                                      | Needs a free Google key (CrUX)             | Optional: `CRUX_API_KEY`                         |
+| `serp pages unavailable`, `dataforseo credit`                                  | Needs search-results data                  | Add DataForSEO credit                            |
+| `gate "…" = ? (…)`                                                             | Needs a fact only you know                 | Expected; the question is under Details          |
+| `Owner to record the AI-bot decisions…`                                        | Needs your decision                        | Expected; decide which AI bots may read the site |
+| `operator: …`                                                                  | Turned off in this app                     | Expected                                         |
+| `pages unavailable…`, `stats on fewer than two pages`                          | Not enough pages were read                 | Check again                                      |
+| `check error: …`, `check contract violation: …`                                | The check itself failed                    | Check again; a repeat is a bug                   |
 
 ### Pick a look
 
