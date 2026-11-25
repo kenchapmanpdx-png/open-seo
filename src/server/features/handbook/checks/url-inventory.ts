@@ -368,7 +368,8 @@ export const urlInventoryCheck: HandbookCheck = {
         fix: `Emit every <loc> with the canonical scheme (${canonicalScheme}//${canonicalHost}/…).`,
         fixability: "FIXABLE",
         effort: "S",
-        urls: [source.url],
+        // The sitemap file(s) that hold the off-scheme <loc>.
+        urls: [...new Set(offScheme.map((u) => u.source))],
         evidenceRefs: [listing(offScheme.slice(0, 50).map((u) => u.loc))],
       });
     }

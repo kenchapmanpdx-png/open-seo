@@ -105,6 +105,7 @@ Rules [Ken 2026-11-23, B20 WO-B20-015 g]:
 
 - **Pre-flight recorded first**: sitemap URL count (`--preflight`), robots.txt status and groups, and the platform go into the field-test report before any run.
 - **Valid run only**: a comparison counts only when the app run has 0 `check error` and 0 collector errors (`golden-score` / `badgeo-run` exit 1 on them). Otherwise fix the cause, rerun, then compare.
+- **Size gate for a new field-test site** [Ken 2026-11-24, B21 WO-B21-090]: before a site is taken as a field test, all of: sitemap ≲ 20 `<loc>` (`--preflight`), no link trap (relative-link 404 chains, endless query variants), the app's Details carry no "Site audit stopped at its 50-page limit" note, and the Semrush crawl finished under 50 pages. A site that fails the gate is a scoped test (Leave out sections) or a larger-site round (B22 WO-B22-004), not a small-site comparison.
 - **Live check before a verdict**: every tool-only or conflicting row is checked against the live page (browser or a fetch with the stored headers) before it gets a verdict, and every `fixed` verdict names its red case (failing BadGEO page or unit test) and its guard.
 
 0. Pre-flight (B18 WO-B18-021): `pnpm exec tsx fork/scripts/field-test.ts <site> --preflight` counts sitemap URLs per section. Over 100 URLs: pick the scope before any run (in-app: Check a site "Leave out sections"; Semrush masks are `/path/`, not `/path/*`) and use the same scope on both sides.
