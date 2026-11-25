@@ -25,6 +25,10 @@
  *   pnpm exec tsx fork/scripts/golden-score.ts <report.json> <expected.yaml> [--report | --md <path>]
  */
 import { findingContractIssues } from "./lib/finding-contract";
+import {
+  gradeView,
+  NOT_GRADED_LABEL,
+} from "@/server/features/handbook/contracts/grade-view";
 import { writeFormatted } from "./lib/write-formatted";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -307,9 +311,13 @@ export async function scoreGolden(reportPath: string, expectedPath: string) {
   const passes = expected.passes.map((entry) => scorePass(report, entry));
   // Re-scored from the saved items, so runs from before K6 get a grade too.
   const score = scoreReport(report);
-  const gradeLine = expected.grade
-    ? `Grade: run ${score.final} ${score.grade} (uncapped ${score.uncapped}) · golden ${expected.grade.final} (uncapped ${expected.grade.uncapped}) · delta ${round1(score.final - expected.grade.final)} (uncapped ${round1(score.uncapped - expected.grade.uncapped)}) · tolerance ±10`
-    : `Grade: run ${score.final} ${score.grade} (uncapped ${score.uncapped})`;
+  const view = gradeView(score);
+  const gradeLine =
+    view.kind !== "graded"
+      ? `Grade: run ${NOT_GRADED_LABEL}${view.kind === "not-graded" ? ` (${view.reason})` : ""}`
+      : expected.grade
+        ? `Grade: run ${view.final} ${view.grade} (uncapped ${score.uncapped}) · golden ${expected.grade.final} (uncapped ${expected.grade.uncapped}) · delta ${round1(view.final - expected.grade.final)} (uncapped ${round1(score.uncapped - expected.grade.uncapped)}) · tolerance ±10`
+        : `Grade: run ${view.final} ${view.grade} (uncapped ${score.uncapped})`;
   const md = [
     `# Golden score — ${expected.site}`,
     "",

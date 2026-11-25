@@ -1,4 +1,5 @@
 import { sort } from "remeda";
+import { noFindingsText } from "@/server/features/handbook/contracts/grade-view";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/client/components/PageHeader";
@@ -173,7 +174,11 @@ export function HandbookRunPage({
                       <TabsContent value="findings">
                         <FindingsTable
                           findings={detail.report.findings}
-                          finished={detail.run.status === "completed"}
+                          emptyText={
+                            detail.run.status === "completed"
+                              ? noFindingsText(detail.report)
+                              : "This check has not finished, so no findings are recorded."
+                          }
                         />
                         {detail.report.additionalFindings?.length ? (
                           <div className="mt-6 space-y-2">

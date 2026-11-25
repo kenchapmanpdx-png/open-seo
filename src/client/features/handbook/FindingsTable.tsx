@@ -25,22 +25,18 @@ export const findingAnchor = (code: string) => `finding-${code}`;
 /** Findings grouped by severity (S1 first), each group by F-code. */
 export function FindingsTable({
   findings,
-  finished = true,
+  emptyText = "No findings recorded.",
 }: {
   findings: Finding[];
-  /** False for a running or failed run: an empty list proves nothing. */
-  finished?: boolean;
+  /** What an empty list means (`noFindingsText`; a running run proves nothing). */
+  emptyText?: string;
 }) {
   if (findings.length === 0)
     return (
       <EmptyState
         icon={ListChecks}
         title="No findings"
-        description={
-          finished
-            ? "Every automated check passed or was not applicable."
-            : "This check has not finished, so no findings are recorded."
-        }
+        description={emptyText}
       />
     );
   return (

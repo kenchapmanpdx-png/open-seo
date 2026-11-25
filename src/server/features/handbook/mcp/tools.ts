@@ -1,4 +1,8 @@
 import { sort } from "remeda";
+import {
+  gradeView,
+  NOT_GRADED_LABEL,
+} from "@/server/features/handbook/contracts/grade-view";
 import { z } from "zod";
 import {
   handbookAuditRunInput,
@@ -166,6 +170,7 @@ export const findingsGetTool = {
     );
     const findings = matching.slice(0, args.limit);
     const { score } = report;
+    const view = gradeView(score);
     const status = report.run.finishedAt ? "completed" : "running";
     // ADR-024: content findings point the agent at the copy rules pack.
     const needsCopyRules = findings.some(
@@ -187,9 +192,12 @@ export const findingsGetTool = {
         runId: report.run.id,
         handbookVersion: report.handbookVersion,
         status,
-        grade: score?.grade ?? null,
-        score: score?.final ?? null,
-        capReason: score?.capReason ?? null,
+        grade: view.kind === "graded" ? view.grade : null,
+        score: view.kind === "graded" ? view.final : null,
+        capReason:
+          view.kind === "not-graded"
+            ? `${NOT_GRADED_LABEL}: ${view.reason}`
+            : (score?.capReason ?? null),
         phases: (score?.phases ?? []).map((p) => ({
           phase: p.phase,
           score: p.score,
@@ -221,11 +229,14 @@ function findingsText(
   total: number,
 ) {
   const { score } = report;
+  const view = gradeView(score);
   const lines = [
     `Handbook run ${report.run.id} · ${report.site.origin} · ${report.run.mode} · handbook v${report.handbookVersion}`,
-    score
-      ? `Grade ${score.grade} (${score.final}/100)${score.capReason ? `, capped from ${score.uncapped}: ${score.capReason}` : ""}. Phases: ${score.phases.map((p) => `${p.phase} ${p.score ?? "—"}`).join(", ")}`
-      : "Not scored yet.",
+    view.kind === "not-graded"
+      ? `${NOT_GRADED_LABEL}: no page was read (${view.reason}).`
+      : score && view.kind === "graded"
+        ? `Grade ${view.grade} (${view.final}/100)${score.capReason ? `, capped from ${score.uncapped}: ${score.capReason}` : ""}. Phases: ${score.phases.map((p) => `${p.phase} ${p.score ?? "—"}`).join(", ")}`
+        : "Not scored yet.",
     `${total} matching finding(s); top fixes first:`,
   ];
   // Text covers the top fixes only; structuredContent lists every returned

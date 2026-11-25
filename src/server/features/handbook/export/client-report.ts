@@ -1,4 +1,8 @@
 import type { ReportJson } from "@/server/features/handbook/contracts/exports";
+import {
+  gradeView,
+  NOT_GRADED_LABEL,
+} from "@/server/features/handbook/contracts/grade-view";
 import { renderResultsSection } from "./client-report-results";
 import type { FollowupBatch } from "./followups";
 import type { AgencyBrand } from "@/server/features/agency/contracts";
@@ -164,9 +168,14 @@ function render(
     `<h1>SEO &amp; AI search review — ${esc(host)}</h1>`,
     `<p class="muted">${esc(date)} · handbook v${esc(report.handbookVersion)} · ${esc(report.run.mode)} · tier ${esc(report.run.tier)}${report.site.platform ? ` · platform ${esc(report.site.platform)}` : ""}</p>`,
   ];
-  if (score)
+  const view = gradeView(score);
+  if (view.kind === "not-graded")
     parts.push(
-      `<div class="card"><div class="grade">${esc(score.grade)}</div><div><strong>${score.final} / 100</strong>${
+      `<div class="card"><div class="grade">—</div><div><strong>${NOT_GRADED_LABEL}</strong><br>No page was read, so the site has no grade. Reason: ${esc(view.reason)}</div></div>`,
+    );
+  if (score && view.kind === "graded")
+    parts.push(
+      `<div class="card"><div class="grade">${esc(view.grade)}</div><div><strong>${view.final} / 100</strong>${
         score.capReason
           ? `<br>Capped from ${score.uncapped}: a critical problem limits the grade until it is fixed (${esc(score.capReason)}).`
           : ""
@@ -174,7 +183,9 @@ function render(
     );
   parts.push(
     "<h2>What we checked</h2>",
-    `<p>${report.items.length} handbook checks on ${esc(host)}: ${passes.length} passed, ${report.findings.length} problems found on ${pages} page(s), ${blocked.length} need your access. Evidence collected: ${esc(kinds.join(", ") || "none")}.</p>`,
+    view.kind === "not-graded"
+      ? `<p>No page of ${esc(host)} could be read, so the page checks did not run. Evidence collected: ${esc(kinds.join(", ") || "none")}.</p>`
+      : `<p>${report.items.length} handbook checks on ${esc(host)}: ${passes.length} passed, ${report.findings.length} problems found on ${pages} page(s), ${blocked.length} need your access. Evidence collected: ${esc(kinds.join(", ") || "none")}.</p>`,
     renderResultsSection(budget.outcomes ?? [], report.generatedAt, esc),
     "<h2>Top fixes</h2>",
   );
@@ -198,7 +209,12 @@ function render(
       `<p class="muted">${findings.length - budget.maxFindings} more findings are in the full report file.</p>`,
     );
   parts.push(
-    `<h2>What passed (${passes.length})</h2><ul>${passes
+    // A run that read no page lists no passes (WO-B21-001).
+    `<h2>What passed (${view.kind === "not-graded" ? 0 : passes.length})</h2><ul>${(view.kind ===
+    "not-graded"
+      ? []
+      : passes
+    )
       .slice(0, 15)
       .map((i) => `<li>${esc(textOf.get(i.itemId) ?? i.itemId)}</li>`)
       .join(

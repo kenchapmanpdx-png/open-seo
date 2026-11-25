@@ -1,4 +1,8 @@
 import {
+  gradeView,
+  NOT_GRADED_LABEL,
+} from "@/server/features/handbook/contracts/grade-view";
+import {
   Alert,
   AlertDescription,
   AlertTitle,
@@ -31,7 +35,17 @@ type Score = NonNullable<ReportJson["score"]>;
  */
 export function ScoreCard({ report }: { report: ReportJson }) {
   const { score } = report;
-  if (!score) return null;
+  const view = gradeView(score);
+  if (!score || view.kind === "none") return null;
+  if (view.kind === "not-graded")
+    return (
+      <Alert variant="warning">
+        <AlertTitle>{NOT_GRADED_LABEL}</AlertTitle>
+        <AlertDescription>
+          No page was read, so the site has no grade. Reason: {view.reason}
+        </AlertDescription>
+      </Alert>
+    );
   const reason = provisionalReason(report);
   return (
     <div className="space-y-3">
@@ -52,8 +66,8 @@ export function ScoreCard({ report }: { report: ReportJson }) {
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="flex items-baseline gap-3">
-              <span className="text-4xl font-bold">{score.grade}</span>
-              <span className="text-lg">{score.final} / 100</span>
+              <span className="text-4xl font-bold">{view.grade}</span>
+              <span className="text-lg">{view.final} / 100</span>
             </div>
             {score.capReason ? (
               <p

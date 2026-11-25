@@ -1,4 +1,5 @@
 import { REGISTRY } from "@/server/features/handbook/registry";
+import { gradeLabel } from "@/server/features/handbook/contracts/grade-view";
 import {
   backfillGrades,
   buildReport,
@@ -184,7 +185,7 @@ async function publishToReports(input: {
     organizationId: input.organizationId,
     ...(existing ? { reportId: existing.id } : {}),
     title,
-    summary: `${report.score?.grade ?? "?"} · ${report.findings.length} findings`,
+    summary: `${gradeLabel(report.score)} · ${report.findings.length} findings`,
     html: renderClientReportHtml(report, REGISTRY, {
       brand: await AgencyService.getBrandForRender(input.organizationId),
       outcomes: await OutcomeService.getOutcomeRecord(input),

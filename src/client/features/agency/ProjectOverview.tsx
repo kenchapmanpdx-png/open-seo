@@ -78,10 +78,7 @@ function Cards({ projectId, data }: { projectId: string; data: Overview }) {
       >
         {handbook && (
           <>
-            <Stat
-              label="Grade"
-              value={`${handbook.grade ?? "—"} ${handbook.score ?? ""}`}
-            />
+            <Stat label="Grade" value={handbook.grade} />
             <Stat label="Findings" value={String(handbook.findings)} />
             <Stat
               label="S1 / S2"

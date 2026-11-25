@@ -321,22 +321,6 @@ export function capNote(report: {
   return `Capped at ${report.score.final} by: ${causes.length > 0 ? causes.join("; ") : reason}`;
 }
 
-/**
- * WO-B20-010: a run that read no page has no grade and nothing to fix; the
- * page says the site could not be read and why. Null when pages were read.
- */
-export function unreadSiteReason(report: {
-  run: { coverage?: { read: number } };
-  items: ReadonlyArray<{ note?: string | null }>;
-}): string | null {
-  const note = report.items.find((i) =>
-    /^pages unavailable/i.test(i.note ?? ""),
-  )?.note;
-  const read = report.run.coverage?.read;
-  if (read === 0) return note ?? "no page of the site answered the crawler";
-  return read === undefined && note ? note : null;
-}
-
 export function provisionalReason(report: ReportJson): string | null {
   const note = report.items.find((i) =>
     i.note?.startsWith("render unavailable"),

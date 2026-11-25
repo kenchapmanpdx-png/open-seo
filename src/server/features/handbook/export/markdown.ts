@@ -2,6 +2,10 @@ import type { ReportJson } from "@/server/features/handbook/contracts/exports";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { ItemStatus } from "@/server/features/handbook/contracts/status";
 import { copyQualityMd } from "./copy-quality-md";
+import {
+  gradeView,
+  NOT_GRADED_LABEL,
+} from "@/server/features/handbook/contracts/grade-view";
 import { scaledContentRows } from "@/server/features/handbook/contracts/scaled-copy";
 import { depthLine } from "../engine/depth";
 
@@ -243,9 +247,17 @@ export function renderReviewMd(
     ...(provisional ? [`- ${provisional}`] : []),
     "",
   ];
-  if (score) {
+  const view = gradeView(score);
+  if (view.kind === "not-graded")
     lines.push(
-      `## Grade: ${score.final} / 100 — ${score.grade}${score.capReason ? ` (capped; ${score.uncapped} uncapped — ${score.capReason})` : ""}`,
+      `## Grade: ${NOT_GRADED_LABEL}`,
+      "",
+      `No page was read, so the site has no grade. Reason: ${view.reason}`,
+      "",
+    );
+  if (score && view.kind === "graded") {
+    lines.push(
+      `## Grade: ${view.final} / 100 — ${view.grade}${score.capReason ? ` (capped; ${score.uncapped} uncapped — ${score.capReason})` : ""}`,
       "",
       `Handbook v${report.handbookVersion}. Scores compare only between runs on the same handbook version.`,
       "",

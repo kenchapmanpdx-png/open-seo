@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import {
+  gradeView,
+  noFindingsText,
+} from "@/server/features/handbook/contracts/grade-view";
 import { Link } from "@tanstack/react-router";
 import { ListChecks } from "lucide-react";
 import { EmptyState } from "@/client/components/EmptyState";
@@ -28,7 +32,6 @@ import {
   notFinalNote,
   provisionalReason,
   saveDone,
-  unreadSiteReason,
   type CategoryFilter,
 } from "./fixList";
 import { STATUS_LABELS } from "./labels";
@@ -88,8 +91,8 @@ export function FixList({
     if (storage) saveDone(runId, next, storage);
   };
 
-  const unread = unreadSiteReason(report);
-  if (unread)
+  const view = gradeView(report.score);
+  if (view.kind === "not-graded")
     return (
       <div className="space-y-4">
         <Alert variant="warning">
@@ -97,7 +100,7 @@ export function FixList({
           <AlertDescription className="space-y-2">
             <p>
               No page was read, so there is no grade and no fix list. Reason:{" "}
-              {unread}
+              {view.reason}
             </p>
             <RunFullAuditButton projectId={projectId} label="Check again" />
           </AlertDescription>
@@ -164,7 +167,7 @@ export function FixList({
         <EmptyState
           icon={ListChecks}
           title="Nothing to fix"
-          description="Every automated check passed or did not apply."
+          description={noFindingsText(report)}
         />
       ) : (
         groups.map((group) => (
@@ -236,14 +239,13 @@ export function FixList({
 }
 
 function FixListHeader({ report }: { report: ReportJson }) {
+  const view = gradeView(report.score);
   return (
     <div className="grid gap-3 sm:grid-cols-4">
       <ScoreTile
         label="Overall"
-        score={report.score?.final ?? null}
-        value={
-          report.score ? `${report.score.grade} · ${report.score.final}` : "—"
-        }
+        score={view.kind === "graded" ? view.final : null}
+        value={view.kind === "graded" ? `${view.grade} · ${view.final}` : "—"}
         note={
           report.score?.capReason
             ? `${report.score.uncapped} before the must-fix cap. ${capNote(report)}`

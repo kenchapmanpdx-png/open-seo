@@ -1,4 +1,5 @@
 import { AiTrafficService } from "@/server/features/ai-traffic/aiTrafficService";
+import { gradeLabel } from "@/server/features/handbook/contracts/grade-view";
 import { listRuns } from "@/server/features/handbook/repositories/HandbookReportRepository";
 import { HandbookService } from "@/server/features/handbook/services/HandbookService";
 import {
@@ -34,8 +35,8 @@ async function latestHandbook(projectId: string) {
   return {
     runId: latest.id,
     finishedAt: latest.finishedAt,
-    grade: detail.report.score?.grade ?? null,
-    score: detail.report.score?.final ?? null,
+    // WO-B21-001: "Not graded" when the run read no page.
+    grade: gradeLabel(detail.report.score),
     findings: detail.report.findings.length,
     bySeverity,
     blocked: detail.report.items.filter((i) => i.status === "BLOCKED").length,

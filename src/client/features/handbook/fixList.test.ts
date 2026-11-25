@@ -10,7 +10,6 @@ import {
   notFinalNote,
   saveDone,
   topFixes,
-  unreadSiteReason,
   type Finding,
 } from "./fixList";
 
@@ -264,19 +263,6 @@ describe("notFinalNote (WO-B16-003)", () => {
     ];
     expect(newerCompletedRun(runs, run)).toBe("r3");
     expect(newerCompletedRun(runs.slice(0, 1), run)).toBeNull();
-  });
-});
-
-// WO-B20-010: a 0-page run showed "F · 0" and "Nothing to fix".
-describe("unreadSiteReason", () => {
-  it("names why no page was read, and stays null once a page was", () => {
-    const items = [{ note: "pages unavailable: home page HTTP 403" }];
-    expect(unreadSiteReason({ run: { coverage: { read: 0 } }, items })).toBe(
-      "pages unavailable: home page HTTP 403",
-    );
-    expect(
-      unreadSiteReason({ run: { coverage: { read: 3 } }, items }),
-    ).toBeNull();
   });
 });
 

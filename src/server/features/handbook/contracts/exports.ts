@@ -130,6 +130,12 @@ export const reportJsonSchema = z.object({
       uncapped: z.number(),
       grade: z.enum(["A", "B", "C", "D", "F"]),
       capReason: z.string().nullable(),
+      /**
+       * WO-B21-001 (ADR-036): set when the run read no page; `grade` and
+       * `final` are then not shown (read them through `gradeView`). Absent
+       * on older reports = graded. Additive, report-only; 1.11.0 kept.
+       */
+      notGradedReason: z.string().nullable().optional(),
       phases: z.array(
         z.object({
           phase: z.string(),

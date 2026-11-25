@@ -9,6 +9,10 @@ import { scoreReport } from "@/server/features/handbook/engine/report";
 import { withCategories } from "@/server/features/handbook/engine/categories";
 import { isSuppOnly } from "../registry-supp";
 import { unreadCoverage } from "@/server/features/handbook/engine/unread";
+import {
+  gradeView,
+  NOT_GRADED_LABEL,
+} from "@/server/features/handbook/contracts/grade-view";
 import { HandbookGradeRepository } from "@/server/features/handbook/repositories/HandbookGradeRepository";
 
 /**
@@ -135,12 +139,17 @@ export function buildReport(rows: ReportRows): ReportJson {
  */
 export async function backfillGrades() {
   const runs = await HandbookGradeRepository.listUngradedRuns();
-  const updated: { runId: string; grade: string; final: number }[] = [];
+  const updated: { runId: string; grade: string; final: number | null }[] = [];
   for (const run of runs) {
     const score = await scoreRun(run.projectId, run.id);
     if (!score) continue;
     await HandbookGradeRepository.saveRunScore(run.projectId, run.id, score);
-    updated.push({ runId: run.id, grade: score.grade, final: score.final });
+    const view = gradeView(score);
+    updated.push(
+      view.kind === "graded"
+        ? { runId: run.id, grade: view.grade, final: view.final }
+        : { runId: run.id, grade: NOT_GRADED_LABEL, final: null },
+    );
   }
   return { found: runs.length, updated };
 }

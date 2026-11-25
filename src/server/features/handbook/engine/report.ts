@@ -5,6 +5,7 @@ import {
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
 import { CONTRACTS_VERSION } from "@/server/features/handbook/contracts/version";
+import { notGradedReasonOf } from "@/server/features/handbook/contracts/grade-view";
 import type { RegistryEntry } from "@/server/features/handbook/contracts/registry-types";
 import type { HandbookMode } from "@/server/features/handbook/contracts/status";
 import type { RunResult } from "./runner";
@@ -351,6 +352,7 @@ export function scoreReport(
     uncapped: score.uncapped,
     grade: score.grade,
     capReason: score.capReason,
+    notGradedReason: notGradedReasonOf(report),
     phases: score.phases.map((p) => ({
       phase: p.phase,
       weight: p.weight,
