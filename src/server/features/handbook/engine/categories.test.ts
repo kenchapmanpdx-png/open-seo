@@ -93,4 +93,20 @@ describe("withCategories", () => {
     );
     expect(out.findings[0].categories).toEqual(["SEO", "GEO"]);
   });
+
+  it("gives each finding the strongest effect of its items (WO-B22-001)", () => {
+    // registry-effect.json: P4-01 search, P9-02 ai, P8-01 / P8-05 hygiene.
+    const effects = withCategories(
+      report(
+        [],
+        [
+          finding({ code: "F01", itemIds: ["P8-01", "P8-05"] }),
+          finding({ code: "F02", itemIds: ["P8-01", "P4-01"] }),
+          finding({ code: "F03", itemIds: ["P4-01", "P9-02"] }),
+          finding({ code: "F04", itemIds: [] }),
+        ],
+      ),
+    ).findings.map((f) => f.effect);
+    expect(effects).toEqual(["hygiene", "search", "both", undefined]);
+  });
 });

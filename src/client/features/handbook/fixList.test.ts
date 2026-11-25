@@ -67,6 +67,26 @@ describe("buildFixGroups", () => {
   });
 });
 
+const rowCodes = (rows: { findings: Finding[] }[]) =>
+  rows.map((r) => r.findings[0].code);
+
+describe("housekeeping fold (WO-B22-001)", () => {
+  it("folds only hygiene S3 / S4 findings; totals unchanged", () => {
+    const findings = [
+      finding({ code: "H3", severity: "S3", effect: "hygiene", title: "a" }),
+      finding({ code: "H4", severity: "S4", effect: "hygiene", title: "b" }),
+      finding({ code: "M3", severity: "S3", effect: "search", title: "c" }),
+      finding({ code: "H2", severity: "S2", effect: "hygiene", title: "d" }),
+    ];
+    const [, should, nice] = buildFixGroups(findings, "all", new Set());
+    expect(rowCodes(should.rows)).toEqual(["H2"]);
+    expect(should.housekeeping).toEqual([]);
+    expect(rowCodes(nice.rows)).toEqual(["M3"]);
+    expect(rowCodes(nice.housekeeping)).toEqual(["H3", "H4"]);
+    expect(nice.findings).toHaveLength(3);
+  });
+});
+
 describe("topFixes", () => {
   it("lists at most 5 open fixes, Must before Should, no Nice to have", () => {
     const findings = [
@@ -90,6 +110,7 @@ describe("fixListCsv", () => {
       finding({
         severity: "S1",
         categories: ["SEO", "GEO"],
+        effect: "both",
         title: 'Say "hi", world',
         fix: "Line one\nline two",
         urls: urls(60),
@@ -99,19 +120,21 @@ describe("fixListCsv", () => {
     expect(header).toEqual([
       "priority",
       "categories",
+      "effect",
       "title",
       "how_to_fix",
       "pages_count",
       "pages",
     ]);
-    expect(row.slice(0, 5)).toEqual([
+    expect(row.slice(0, 6)).toEqual([
       "Must fix",
       "SEO GEO",
+      "both",
       'Say "hi", world',
       "Line one\nline two",
       "60",
     ]);
-    expect(row[5].split(" ")).toHaveLength(50);
+    expect(row[6].split(" ")).toHaveLength(50);
   });
 });
 

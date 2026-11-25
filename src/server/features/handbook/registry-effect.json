@@ -1,0 +1,622 @@
+{
+  "P0-01": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (audit status record)"
+  },
+  "P0-02": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (owner question list)"
+  },
+  "P0-03": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (platform record)"
+  },
+  "P1-01": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §26 (tool access for measurement)"
+  },
+  "P1-02": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (audit baseline record)"
+  },
+  "P1-03": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (evidence reconciliation)"
+  },
+  "P1-04": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (checker verification step)"
+  },
+  "P1-05": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §27 (AI answer panel is measurement, not used in REVIEW)"
+  },
+  "P2-01": {
+    "effect": "both",
+    "reason": "§14: content rendered client-side is invisible to AI crawlers; Bingbot renders partially"
+  },
+  "P2-02": {
+    "effect": "both",
+    "reason": "§14: API-driven content needs server HTML that crawlers and AI bots read"
+  },
+  "P2-03": {
+    "effect": "both",
+    "reason": "§14: stale facts served as current to crawlers and AI answers"
+  },
+  "P2-04": {
+    "effect": "search",
+    "reason": "§14: loading / error strings in raw HTML get indexed as page copy"
+  },
+  "P2-05": {
+    "effect": "search",
+    "reason": "§15: page weight drives LCP, a Core Web Vitals signal (§14)"
+  },
+  "P2-06": {
+    "effect": "search",
+    "reason": "§24: Event structured data for Google event rich results"
+  },
+  "P2-07": {
+    "effect": "both",
+    "reason": "§14: content hidden until JS animation runs is missing for non-JS crawlers"
+  },
+  "P2-08": {
+    "effect": "both",
+    "reason": "§17: raw vs rendered parity is what non-JS crawlers see"
+  },
+  "P2-09": {
+    "effect": "both",
+    "reason": "§14/§17: raw and rendered text must match for crawlers and AI bots"
+  },
+  "P2-10": {
+    "effect": "search",
+    "reason": "§12: detail pages need a crawlable HTML link to be discovered"
+  },
+  "P2-11": {
+    "effect": "search",
+    "reason": "§8: header nav links pass discovery and weight to core hubs"
+  },
+  "P2-12": {
+    "effect": "search",
+    "reason": "§9: URL structure and slug rules"
+  },
+  "P2-13": {
+    "effect": "both",
+    "reason": "§14: sitemap, robots and llms.txt stale after deploy"
+  },
+  "P3-01": {
+    "effect": "search",
+    "reason": "§10: host / protocol variants must 301 in one hop to one canonical"
+  },
+  "P3-02": {
+    "effect": "search",
+    "reason": "§2: one trailing-slash form avoids duplicate URLs"
+  },
+  "P3-03": {
+    "effect": "search",
+    "reason": "§2: /index.html and query variants create duplicate URLs"
+  },
+  "P3-04": {
+    "effect": "search",
+    "reason": "§10: canonical, internal links and sitemap agree on one URL form"
+  },
+  "P3-05": {
+    "effect": "search",
+    "reason": "§10: moved URLs redirect to the closest relevant page, never home (soft 404)"
+  },
+  "P3-06": {
+    "effect": "search",
+    "reason": "§10: legacy URL map keeps old URLs' signals in a migration"
+  },
+  "P3-07": {
+    "effect": "search",
+    "reason": "§10: retired items redirect or return 410"
+  },
+  "P3-08": {
+    "effect": "search",
+    "reason": "§10: internal links to redirected URLs waste crawl and dilute signals"
+  },
+  "P3-09": {
+    "effect": "search",
+    "reason": "§10: hacked / spam URLs must return 404 / 410"
+  },
+  "P3-10": {
+    "effect": "search",
+    "reason": "§10: unknown URLs return a real 404 (soft 404s)"
+  },
+  "P3-11": {
+    "effect": "search",
+    "reason": "§10: a live page served as the 404 body is a soft 404"
+  },
+  "P3-12": {
+    "effect": "search",
+    "reason": "§17: sitemap, links and canonicals reconciled; no test or thin pages published"
+  },
+  "P3-13": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §17 (audit crawl step)"
+  },
+  "P3-14": {
+    "effect": "search",
+    "reason": "§10/§12: hidden pages noindex or Disallow, out of the sitemap"
+  },
+  "P3-15": {
+    "effect": "both",
+    "reason": "§18: every named robots group, search and AI bots, carries the full Disallow set"
+  },
+  "P3-16": {
+    "effect": "search",
+    "reason": "§18: admin paths X-Robots-Tag noindex, no public links"
+  },
+  "P3-17": {
+    "effect": "search",
+    "reason": "§19: Google uses lastmod only if consistently and verifiably accurate"
+  },
+  "P3-18": {
+    "effect": "search",
+    "reason": "§10: evergreen archive content kept on own domain"
+  },
+  "P3-19": {
+    "effect": "search",
+    "reason": "§17: sitemap host matches canonical host; robots Sitemap line correct"
+  },
+  "P3-20": {
+    "effect": "search",
+    "reason": "§18: Disallowed render resources break Google rendering"
+  },
+  "P3-21": {
+    "effect": "search",
+    "reason": "§11: crawlable pagination links, self-canonical pages"
+  },
+  "P3-22": {
+    "effect": "search",
+    "reason": "§11/§18: low-value facet combinations kept out of the index"
+  },
+  "P3-23": {
+    "effect": "search",
+    "reason": "§11: internal search results Disallow or noindex, never both"
+  },
+  "P3-24": {
+    "effect": "search",
+    "reason": "§13: reciprocal hreflang for international variants"
+  },
+  "P3-25": {
+    "effect": "search",
+    "reason": "§10: variant URL contract for feed-linked product variants"
+  },
+  "P4-01": {
+    "effect": "search",
+    "reason": "§2: unique title, meta description and H1 per page"
+  },
+  "P4-02": {
+    "effect": "search",
+    "reason": "§2: titles state offer or topic before the brand"
+  },
+  "P4-03": {
+    "effect": "search",
+    "reason": "§2: meta description present on every indexable page (snippet)"
+  },
+  "P4-04": {
+    "effect": "search",
+    "reason": "§14: viewport meta for mobile rendering"
+  },
+  "P4-05": {
+    "effect": "search",
+    "reason": "§2: titles and H1s use the names people search"
+  },
+  "P4-06": {
+    "effect": "search",
+    "reason": "§2: hard-coded years date evergreen headings"
+  },
+  "P4-07": {
+    "effect": "search",
+    "reason": "§2: hub titles state brand plus a specific promise"
+  },
+  "P4-08": {
+    "effect": "ai",
+    "reason": "§3 content structure: H1→H2→H3, one H2 = one extractable claim"
+  },
+  "P4-09": {
+    "effect": "search",
+    "reason": "§2: Google uses og:image as a thumbnail source for Search and Discover"
+  },
+  "P4-10": {
+    "effect": "search",
+    "reason": "§2: article og:type with published and modified times"
+  },
+  "P4-11": {
+    "effect": "search",
+    "reason": "§2: Discover large image previews need max-image-preview:large"
+  },
+  "P4-12": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §12 (noopener on new-tab links is browser security)"
+  },
+  "P5-01": {
+    "effect": "both",
+    "reason": "§3: BLUF opening names brand, subject and what the page gives"
+  },
+  "P5-02": {
+    "effect": "both",
+    "reason": "§6: stats single-sourced, sourced and dated for citation"
+  },
+  "P5-03": {
+    "effect": "both",
+    "reason": "§6: every citation and stat confirmed at the source"
+  },
+  "P5-04": {
+    "effect": "both",
+    "reason": "§6: no placeholder copy or unsupported superlatives"
+  },
+  "P5-05": {
+    "effect": "both",
+    "reason": "§3/§7: page-specific FAQ only"
+  },
+  "P5-06": {
+    "effect": "both",
+    "reason": "§7: page-type matrix: no article furniture on non-article pages"
+  },
+  "P5-07": {
+    "effect": "both",
+    "reason": "§25: entity names spelled one way; entity test passes"
+  },
+  "P5-08": {
+    "effect": "both",
+    "reason": "§7/§25: address, phone and hours in server HTML for local entity"
+  },
+  "P5-09": {
+    "effect": "both",
+    "reason": "§7/§9: one page per real service or location; no doorway variants"
+  },
+  "P5-10": {
+    "effect": "both",
+    "reason": "§33: editorial standards page linked from footer and bylines"
+  },
+  "P5-11": {
+    "effect": "both",
+    "reason": "§6: awards and press as HTML text with source links"
+  },
+  "P5-12": {
+    "effect": "both",
+    "reason": "§14: prices, menus, hours in table or list markup, one copy"
+  },
+  "P5-13": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §12 (outbound link status; bot-only blocks are recorded, not site defects)"
+  },
+  "P5-14": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §8 (primary action placement is conversion UX)"
+  },
+  "P5-15": {
+    "effect": "both",
+    "reason": "§6/§7: unique primary-source facts on detail pages"
+  },
+  "P5-16": {
+    "effect": "both",
+    "reason": "§7: verified contact channels in server HTML"
+  },
+  "P5-17": {
+    "effect": "both",
+    "reason": "§7: About page named people with Person schema"
+  },
+  "P5-18": {
+    "effect": "search",
+    "reason": "§1: one primary query per URL; cannibalization check"
+  },
+  "P6-01": {
+    "effect": "both",
+    "reason": "§24: WebSite node (name, url, alternateName) for site name"
+  },
+  "P6-02": {
+    "effect": "both",
+    "reason": "§24: platform schema with absolute URLs, no empty fields"
+  },
+  "P6-03": {
+    "effect": "both",
+    "reason": "§24: one stable Organization @id; no duplicate node"
+  },
+  "P6-04": {
+    "effect": "both",
+    "reason": "§24: Article markup with verified dates"
+  },
+  "P6-05": {
+    "effect": "both",
+    "reason": "§24: Event markup for event rich results"
+  },
+  "P6-06": {
+    "effect": "both",
+    "reason": "§24: ItemList and BreadcrumbList markup"
+  },
+  "P6-07": {
+    "effect": "both",
+    "reason": "§24: FAQPage only for real, visible Q&A"
+  },
+  "P6-08": {
+    "effect": "both",
+    "reason": "§24: every JSON-LD block parses; Rich Results Test per template"
+  },
+  "P6-09": {
+    "effect": "both",
+    "reason": "§25: generic-word brand disambiguated with alternateName and sameAs"
+  },
+  "P6-10": {
+    "effect": "both",
+    "reason": "§24: LocalBusiness node structure for the organization"
+  },
+  "P6-11": {
+    "effect": "both",
+    "reason": "§24: specific LocalBusiness subtype with name and address"
+  },
+  "P6-12": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §33 (Knowledge Panel claim is an owner action)"
+  },
+  "P6-13": {
+    "effect": "both",
+    "reason": "§24/§36: Product offers consistent across page, markup and feed"
+  },
+  "P6-14": {
+    "effect": "both",
+    "reason": "§24: Review and VideoObject only for real, visible content"
+  },
+  "P6-15": {
+    "effect": "both",
+    "reason": "§24: no placeholder sentinels in HTML or JSON-LD"
+  },
+  "P7-01": {
+    "effect": "search",
+    "reason": "§15: hero video weight and poster affect LCP"
+  },
+  "P7-02": {
+    "effect": "search",
+    "reason": "§15: image dimensions prevent CLS; hero priority improves LCP"
+  },
+  "P7-03": {
+    "effect": "search",
+    "reason": "§15: hero LCP image in initial HTML"
+  },
+  "P7-04": {
+    "effect": "search",
+    "reason": "§14: deferred third-party tags protect load performance"
+  },
+  "P7-05": {
+    "effect": "search",
+    "reason": "§14: render-blocking scripts and fonts delay LCP"
+  },
+  "P7-06": {
+    "effect": "search",
+    "reason": "§33: resource hints must not regress lab LCP"
+  },
+  "P7-07": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §14 (cache headers; field note: repeat-visit speed only)"
+  },
+  "P7-08": {
+    "effect": "search",
+    "reason": "§14: CLS is a Core Web Vitals metric"
+  },
+  "P7-09": {
+    "effect": "search",
+    "reason": "§14/§32: LCP ≤ 2.5 s and CLS ≤ 0.1 Core Web Vitals"
+  },
+  "P7-10": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (lab environment record)"
+  },
+  "P8-01": {
+    "effect": "hygiene",
+    "reason": "§14: security headers are not a documented Google ranking signal; hygiene"
+  },
+  "P8-02": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §14 (colour contrast is accessibility)"
+  },
+  "P8-03": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §14 (axe-core run is an audit step)"
+  },
+  "P8-04": {
+    "effect": "ai",
+    "reason": "§14: accessibility fixes help AI agents that read the accessibility tree"
+  },
+  "P8-05": {
+    "effect": "hygiene",
+    "reason": "§14: security headers are not a documented Google ranking signal; hygiene"
+  },
+  "P8-06": {
+    "effect": "ai",
+    "reason": "§14: accessibility fixes help AI agents that read the accessibility tree"
+  },
+  "P8-07": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §30 (legal review of pixels)"
+  },
+  "P8-08": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §30 (sensitive-form data flow is compliance)"
+  },
+  "P8-09": {
+    "effect": "search",
+    "reason": "§14: consent banner must not block LCP"
+  },
+  "P9-01": {
+    "effect": "ai",
+    "reason": "§18: AI bots get 200 + full HTML; CDN / firewall checked"
+  },
+  "P9-02": {
+    "effect": "ai",
+    "reason": "§20: llms.txt numbers match the site"
+  },
+  "P9-03": {
+    "effect": "ai",
+    "reason": "§22: .md mirrors canonical or noindex with key facts"
+  },
+  "P9-04": {
+    "effect": "ai",
+    "reason": "§16/§18: AI-feature controls and training-bot decisions"
+  },
+  "P9-05": {
+    "effect": "both",
+    "reason": "§18: robots.txt groups evaluated per bot, search and AI"
+  },
+  "P9-06": {
+    "effect": "ai",
+    "reason": "§36: agentic commerce readiness for AI checkout channels"
+  },
+  "P10-01": {
+    "effect": "search",
+    "reason": "§26: sitemap resubmitted, IndexNow pinged for faster indexing"
+  },
+  "P10-02": {
+    "effect": "search",
+    "reason": "§26: sitemaps submitted to Google and Bing; IndexNow key"
+  },
+  "P10-03": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §27 (analytics is measurement)"
+  },
+  "P10-04": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §27 (key events are measurement)"
+  },
+  "P10-05": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §33 (BigQuery export is measurement)"
+  },
+  "P10-06": {
+    "effect": "search",
+    "reason": "§17/§24: Validate Fix asks Google to recrawl fixed issues"
+  },
+  "P10-07": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (release check is process)"
+  },
+  "P11-01": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §26 (monitoring)"
+  },
+  "P11-02": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §26 (re-baseline is measurement)"
+  },
+  "P11-03": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (outcome record)"
+  },
+  "P11-04": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §28 (traffic attribution is measurement)"
+  },
+  "RV-01": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (REVIEW completeness record)"
+  },
+  "RV-02": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §0 (REVIEW score record)"
+  },
+  "SUPP-01": {
+    "effect": "search",
+    "reason": "§12: descriptive anchor text on internal links"
+  },
+  "SUPP-02": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §12 (new-tab internal links are UX)"
+  },
+  "SUPP-03": {
+    "effect": "ai",
+    "reason": "§14: one instance of each fact in the HTML for extraction"
+  },
+  "SUPP-04": {
+    "effect": "both",
+    "reason": "§6/§14: numbers in raw HTML differ from rendered page"
+  },
+  "SUPP-05": {
+    "effect": "search",
+    "reason": "§10/§17: test and draft pages kept out of sitemap and index"
+  },
+  "SUPP-06": {
+    "effect": "search",
+    "reason": "§2: empty social meta; drop the tag rather than content=\"\""
+  },
+  "SUPP-07": {
+    "effect": "both",
+    "reason": "§18: bot-check page served as 200 content to crawlers"
+  },
+  "SUPP-08": {
+    "effect": "search",
+    "reason": "§14/§15: non-hero video weight affects load performance"
+  },
+  "SUPP-09": {
+    "effect": "search",
+    "reason": "§14/§15: unreserved video size causes CLS"
+  },
+  "SUPP-10": {
+    "effect": "search",
+    "reason": "§14/§15: player loaded with the page delays load"
+  },
+  "SUPP-11": {
+    "effect": "ai",
+    "reason": "§15: transcript as page text is critical for AI ingestion"
+  },
+  "SUPP-12": {
+    "effect": "search",
+    "reason": "§15/§24: eligibility for Google video results"
+  },
+  "SUPP-13": {
+    "effect": "both",
+    "reason": "§16: snippet blockers remove the page from snippets and AI answers"
+  },
+  "SUPP-14": {
+    "effect": "ai",
+    "reason": "§3/§16: list markup for extractable steps"
+  },
+  "SUPP-15": {
+    "effect": "ai",
+    "reason": "§3/§16: question headings and answer-first sections"
+  },
+  "SUPP-16": {
+    "effect": "ai",
+    "reason": "§3/§16: FAQ answers stand alone and are in raw HTML"
+  },
+  "SUPP-17": {
+    "effect": "search",
+    "reason": "§6/§29: templated pages sharing most text (scaled content)"
+  },
+  "SUPP-18": {
+    "effect": "search",
+    "reason": "§6/§33: page adds nothing the top results lack"
+  },
+  "SUPP-19": {
+    "effect": "both",
+    "reason": "§23/§29: text addressed to AI assistants is a non-working technique"
+  },
+  "SUPP-20": {
+    "effect": "search",
+    "reason": "§10/§14: broken resources break rendering"
+  },
+  "SUPP-21": {
+    "effect": "search",
+    "reason": "§10/§14: mixed content is blocked on HTTPS pages"
+  },
+  "SUPP-22": {
+    "effect": "search",
+    "reason": "§10: internal http:// links go through redirects"
+  },
+  "SUPP-23": {
+    "effect": "search",
+    "reason": "§10: meta refresh instead of a server 301"
+  },
+  "SUPP-24": {
+    "effect": "search",
+    "reason": "§12: malformed link URLs cannot be crawled"
+  },
+  "SUPP-25": {
+    "effect": "search",
+    "reason": "§10: temporary redirects instead of 301 / 308"
+  },
+  "SUPP-26": {
+    "effect": "hygiene",
+    "reason": "no search or AI effect stated in handbook §14 (no doctype rule in handbook)"
+  }
+}

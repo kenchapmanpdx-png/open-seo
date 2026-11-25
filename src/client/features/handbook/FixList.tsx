@@ -33,6 +33,7 @@ import {
   provisionalReason,
   saveDone,
   type CategoryFilter,
+  type FixRow as FixRowData,
 } from "./fixList";
 import { STATUS_LABELS } from "./labels";
 import { FixRow, MergedFixRow } from "./FixRows";
@@ -90,6 +91,23 @@ export function FixList({
     const storage = browserStorage();
     if (storage) saveDone(runId, next, storage);
   };
+
+  const renderRow = (row: FixRowData) =>
+    row.findings.length === 1 ? (
+      <FixRow
+        key={row.findings[0].code}
+        finding={row.findings[0]}
+        done={row.done}
+        onDone={(checked) => toggle([row.findings[0].code], checked)}
+      />
+    ) : (
+      <MergedFixRow
+        key={row.findings[0].code}
+        row={row}
+        doneCodes={done}
+        onDone={toggle}
+      />
+    );
 
   const view = gradeView(report.score);
   if (view.kind === "not-graded")
@@ -182,23 +200,18 @@ export function FixList({
                 helpText={group.help}
               />
             </h3>
-            {group.rows.map((row) =>
-              row.findings.length === 1 ? (
-                <FixRow
-                  key={row.findings[0].code}
-                  finding={row.findings[0]}
-                  done={row.done}
-                  onDone={(checked) => toggle([row.findings[0].code], checked)}
-                />
-              ) : (
-                <MergedFixRow
-                  key={row.findings[0].code}
-                  row={row}
-                  doneCodes={done}
-                  onDone={toggle}
-                />
-              ),
-            )}
+            {group.rows.map(renderRow)}
+            {group.housekeeping.length ? (
+              <details className="space-y-3">
+                <summary className="cursor-pointer text-sm text-muted-foreground">
+                  Housekeeping: no direct search or AI effect (
+                  {group.housekeeping.length})
+                </summary>
+                <div className="mt-3 space-y-3">
+                  {group.housekeeping.map(renderRow)}
+                </div>
+              </details>
+            ) : null}
           </section>
         ))
       )}

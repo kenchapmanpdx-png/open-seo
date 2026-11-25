@@ -46,6 +46,10 @@ export function buildFixGroups(
         Number(a.source === "llm") - Number(b.source === "llm") ||
         b.urls.length - a.urls.length,
     );
+    // WO-B22-001: S3 / S4 findings with no stated search or AI effect fold
+    // into a collapsed "Housekeeping" section; S1 / S2 never fold.
+    const folds = (f: Finding) =>
+      group.key === "nice" && f.effect === "hygiene";
     return {
       key: group.key,
       label: SEVERITY_LABELS[group.severities[0]].label,
@@ -53,7 +57,12 @@ export function buildFixGroups(
       /** One per finding: the CSV and the counts behind the grade. */
       findings: sorted,
       /** What the list shows: same-title findings as one row (WO-B16-004). */
-      rows: mergeSameTitle(sorted, done),
+      rows: mergeSameTitle(
+        sorted.filter((f) => !folds(f)),
+        done,
+      ),
+      /** Folded rows, shown collapsed under the group. */
+      housekeeping: mergeSameTitle(sorted.filter(folds), done),
     };
   });
 }
@@ -246,6 +255,7 @@ export function fixListCsv(findings: Finding[]): string {
     group.findings.map((f) => [
       group.label,
       (f.categories ?? []).join(" "),
+      f.effect ?? "",
       f.title,
       f.fix,
       f.urls.length,
@@ -253,7 +263,15 @@ export function fixListCsv(findings: Finding[]): string {
     ]),
   );
   return buildCsv(
-    ["priority", "categories", "title", "how_to_fix", "pages_count", "pages"],
+    [
+      "priority",
+      "categories",
+      "effect",
+      "title",
+      "how_to_fix",
+      "pages_count",
+      "pages",
+    ],
     rows,
   );
 }

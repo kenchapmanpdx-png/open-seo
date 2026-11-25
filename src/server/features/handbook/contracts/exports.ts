@@ -40,6 +40,15 @@ export const HANDBOOK_CATEGORIES = ["SEO", "GEO", "AEO"] as const;
 export const handbookCategorySchema = z.enum(HANDBOOK_CATEGORIES);
 export type HandbookCategory = z.infer<typeof handbookCategorySchema>;
 
+/**
+ * Search or AI effect of a registry item (B22 WO-B22-001,
+ * `registry-effect.json`); `hygiene` = no effect stated in the handbook.
+ * Report-only, additive; no contracts version bump (ACCURACY §0).
+ */
+export const HANDBOOK_EFFECTS = ["both", "search", "ai", "hygiene"] as const;
+export const handbookEffectSchema = z.enum(HANDBOOK_EFFECTS);
+export type HandbookEffect = z.infer<typeof handbookEffectSchema>;
+
 const findingSchema = z.object({
   code: z.string().regex(/^F\d{2,3}$/),
   severity: severitySchema,
@@ -59,6 +68,8 @@ const findingSchema = z.object({
   ),
   /** Union of the finding's items' tags (ADR-029). 1.8.0 */
   categories: z.array(handbookCategorySchema).optional(),
+  /** Strongest effect of the finding's items (WO-B22-001). */
+  effect: handbookEffectSchema.optional(),
 });
 
 /**

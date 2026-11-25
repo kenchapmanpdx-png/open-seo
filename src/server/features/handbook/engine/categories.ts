@@ -1,12 +1,14 @@
 import {
   HANDBOOK_CATEGORIES,
   type HandbookCategory,
+  type HandbookEffect,
   type ReportJson,
 } from "@/server/features/handbook/contracts/exports";
 import {
   ITEM_SCORE,
   S1_CAP,
 } from "@/server/features/handbook/contracts/scoring";
+import registryEffect from "../registry-effect.json";
 import registryTags from "../registry-tags.json";
 import { SUPP_BY_ID } from "../registry-supp";
 
@@ -16,13 +18,28 @@ const TAGS: Readonly<Record<string, readonly string[]>> = registryTags;
 const itemCategories = (itemId: string): HandbookCategory[] =>
   HANDBOOK_CATEGORIES.filter((c) => TAGS[itemId]?.includes(c));
 
+const EFFECTS: Readonly<Record<string, { effect: string }>> = registryEffect;
+
+/**
+ * WO-B22-001: strongest effect of a finding's items, `both` > `search` /
+ * `ai` > `hygiene`; `search` + `ai` together = `both`. No known item → none.
+ */
+const effectOf = (itemIds: readonly string[]): HandbookEffect | undefined => {
+  const all = new Set(itemIds.map((id) => EFFECTS[id]?.effect));
+  if (all.has("both") || (all.has("search") && all.has("ai"))) return "both";
+  if (all.has("search")) return "search";
+  if (all.has("ai")) return "ai";
+  return all.has("hygiene") ? "hygiene" : undefined;
+};
+
 const unionOf = (itemIds: readonly string[]): HandbookCategory[] => {
   const all = new Set(itemIds.flatMap(itemCategories));
   return HANDBOOK_CATEGORIES.filter((c) => all.has(c));
 };
 
 /**
- * ADR-029: finding `categories` (union of its items' tags) and report
+ * ADR-029: finding `categories` (union of its items' tags), WO-B22-001
+ * finding `effect`, and report
  * `categoryScores` — pass share of the scored §41 items carrying the tag
  * (ITEM_SCORE, SUPP excluded like the overall score), capped at S1_CAP when
  * an OPEN / PARTIAL tagged item links a non-LLM S1 finding; null with no
@@ -55,10 +72,14 @@ export function withCategories(report: ReportJson): ReportJson {
     const score = Math.round((points / applicable) * 100);
     return capped ? Math.min(score, S1_CAP) : score;
   };
-  const tag = <F extends { itemIds: string[] }>(f: F) => ({
-    ...f,
-    categories: unionOf(f.itemIds),
-  });
+  const tag = <F extends { itemIds: string[] }>(f: F) => {
+    const effect = effectOf(f.itemIds);
+    return {
+      ...f,
+      categories: unionOf(f.itemIds),
+      ...(effect ? { effect } : {}),
+    };
+  };
   return {
     ...report,
     findings: report.findings.map(tag),
