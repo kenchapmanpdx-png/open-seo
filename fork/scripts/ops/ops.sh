@@ -100,7 +100,11 @@ cmd_status() {
   else
     echo "backup_age_h=none"
   fi
-  echo "backup_unit=$(systemctl --user is-failed openseo-backup.service 2>/dev/null || echo unknown)"
+  # is-failed exits non-zero for every state but "failed" and still prints the
+  # state, so `|| echo unknown` added a second line after "inactive".
+  local bu
+  bu=$(systemctl --user is-failed openseo-backup.service 2>/dev/null) || true
+  echo "backup_unit=${bu:-unknown}"
   echo "disk_free_gb=$(df -BG --output=avail . | tail -n 1 | tr -dc '0-9')"
   local health
   health=$(curl -s -m 5 -o /dev/null -w '%{http_code}' "$APP_URL/api/fork-health" 2>/dev/null)
