@@ -10,6 +10,7 @@ import { basename, join } from "node:path";
 import { parseArgs } from "node:util";
 import { reportJsonSchema } from "@/server/features/handbook/contracts/exports";
 import { REGISTRY } from "@/server/features/handbook/registry";
+import effects from "@/server/features/handbook/registry-effect.json";
 import {
   gradeSpread,
   renderGradeSpread,
@@ -63,7 +64,12 @@ const out = `fork/reports/grade-spread-${date}.md`;
 const spread = gradeSpread(reports);
 await writeFormatted(
   out,
-  renderGradeSpread(spread, date, (id) => severity.get(id) ?? "SUPP"),
+  renderGradeSpread(
+    spread,
+    date,
+    (id) => severity.get(id) ?? "SUPP",
+    (id) => (effects as Record<string, { effect: string }>)[id]?.effect ?? "—",
+  ),
 );
 console.log(
   `${spread.sites.length} sites graded, ${spread.skipped.length} skipped, ${spread.universal?.length ?? "—"} items ≥ 80 % → ${out}`,

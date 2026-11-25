@@ -14,6 +14,8 @@
 // --close: fail (exit 1) while any verdict row is open; no run, no import.
 //   On success the report header and the ledger row are rewritten from the
 //   verdict table (WO-B22-003).
+// --convergence (no site): fork/reports/convergence.md from the Rounds table
+//   and the verdict tables (WO-B22-005, MAINTENANCE M6 Convergence).
 // --verify-ledgers (no site): every ledger row's open count equals its
 //   report's table and header; exit 1 listing the drifted rows.
 import { execFileSync } from "node:child_process";
@@ -40,7 +42,9 @@ import {
   upsertLedger,
   upsertSection,
 } from "./lib/field-ledger";
+import { convergence, readRounds, renderConvergence } from "./lib/convergence";
 import { writeFormatted } from "./lib/write-formatted";
+import effects from "@/server/features/handbook/registry-effect.json";
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -54,11 +58,46 @@ const { values, positionals } = parseArgs({
     preflight: { type: "boolean", default: false },
     close: { type: "boolean", default: false },
     "verify-ledgers": { type: "boolean", default: false },
+    convergence: { type: "boolean", default: false },
   },
 });
 const ledgerPath = "fork/FIELD-TESTS.md";
 const reportFile = (host: string, date: string) =>
   join("fork/reports", `field-${host}-${date}.md`);
+
+if (values.convergence) {
+  const effectById: Record<string, { effect: string }> = effects;
+  const result = convergence({
+    rounds: readRounds(readFileSync(ledgerPath, "utf8")),
+    readReport: (h, d) =>
+      existsSync(reportFile(h, d))
+        ? readFileSync(reportFile(h, d), "utf8")
+        : null,
+    runErrors: (text) => {
+      const dir = text.match(/^Run: `([^`]+)`/m)?.[1];
+      const path = dir && join(dir, "report.json");
+      if (!path || !existsSync(path)) return null;
+      const report = JSON.parse(readFileSync(path, "utf8")) as {
+        checkerErrors?: unknown[];
+      };
+      return report.checkerErrors?.length ?? 0;
+    },
+    itemsOf: (check) => {
+      const mapping = compareExport([{ name: check, failed: 1, urls: [] }])
+        .issues[0]?.mapping;
+      return mapping && "ids" in mapping ? mapping.ids : [];
+    },
+    effectOf: (id) => effectById[id]?.effect,
+  });
+  await writeFormatted(
+    "fork/reports/convergence.md",
+    renderConvergence(result),
+  );
+  console.log(
+    `fork/reports/convergence.md: done ${result.done ? "yes" : "no"}, streak ${result.streak}`,
+  );
+  process.exit(0);
+}
 
 if (values["verify-ledgers"]) {
   const drift = ledgerDrift(readFileSync(ledgerPath, "utf8"), (h, d) =>

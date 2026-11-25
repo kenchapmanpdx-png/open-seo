@@ -215,6 +215,7 @@ export function renderGradeSpread(
   g: GradeSpread,
   date: string,
   severityOf: (itemId: string) => string,
+  effectOf: (itemId: string) => string = () => "—",
 ) {
   const lines = [
     `# Grade spread — ${date}`,
@@ -261,7 +262,7 @@ export function renderGradeSpread(
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
       ...g.universal.map((r) => {
         const scored = r.open + r.partial + r.pass;
-        return `| ${r.itemId} | ${severityOf(r.itemId)} | — | ${r.open} | ${scored} | ${pct(r.openRate)} | ${r.meanPointsLost} | fails on ${r.open} of ${scored} sites; keep, or re-read the check |`;
+        return `| ${r.itemId} | ${severityOf(r.itemId)} | ${effectOf(r.itemId)} | ${r.open} | ${scored} | ${pct(r.openRate)} | ${r.meanPointsLost} | fails on ${r.open} of ${scored} sites; keep, or re-read the check |`;
       }),
       "",
     );

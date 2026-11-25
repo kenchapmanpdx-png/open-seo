@@ -16,3 +16,21 @@ One row per comparison of the app against an external audit tool on a live site.
 | aweandorderorganizing.com | 2026-11-24 | Semrush | 16        | 11         | 8     | 18       | 5         | 0             | WO-B21-004, WO-B23-006                                                             | 0                                                                                                                                  |
 | love4pawsrescue.com       | 2026-11-24 | Semrush | 22        | 16         | 6     | 29       | 5         | 0             | —                                                                                  | 0                                                                                                                                  |
 | mobilepetgroomingaz.com   | 2026-11-24 | Semrush | 5         | 6          | 3     | 20       | 7         | 0             | —                                                                                  | 0                                                                                                                                  |
+
+## Rounds (WO-B22-005)
+
+Input to `field-test.ts --convergence` (rule: `fork/MAINTENANCE.md` M6 Convergence). A round is ≥ 3 matched-scope comparisons on one release; Scope is `matched` or `unmatched: <reason>`; Sitemap URLs from `--preflight` (`?` = not recorded). Recorded misses: `<item> <WO>` per Semrush miss found on the first pass (a verdict table rerun after the fix reads `agree`); hygiene items do not count. R0–R2 backfilled run 102 from the ledger above.
+
+| Round | Tag             | Site                      | Date       | Scope                                  | Sitemap URLs | Recorded misses                                      |
+| ----- | --------------- | ------------------------- | ---------- | -------------------------------------- | ------------ | ---------------------------------------------------- |
+| R0    | B18 / B19       | spoiledspaandsalon.com    | 2026-11-22 | matched                                | ?            | —                                                    |
+| R0    | B18 / B19       | nwpersonaltraining.com    | 2026-11-22 | unmatched: app 131 pages vs Semrush 60 | 1500         | —                                                    |
+| R0    | B18 / B19       | wsparkdental.com          | 2026-11-23 | matched                                | ?            | —                                                    |
+| R0    | B18 / B19       | valentinecoffeeco.com     | 2026-11-23 | unmatched: app 61 pages vs Semrush 20  | ?            | —                                                    |
+| R0    | B18 / B19       | aircorheatingcooling.com  | 2026-11-23 | unmatched: app 238 pages vs Semrush 23 | ?            | —                                                    |
+| R1    | pre-B20         | bluebonnetroofs.com       | 2026-11-23 | matched                                | ?            | —                                                    |
+| R1    | pre-B20         | theogdenver.com           | 2026-11-23 | matched                                | ?            | —                                                    |
+| R1    | pre-B20         | samanthaco.ca             | 2026-11-23 | matched                                | ?            | —                                                    |
+| R2    | handbook-v3.9.0 | love4pawsrescue.com       | 2026-11-24 | matched                                | ?            | —                                                    |
+| R2    | handbook-v3.9.0 | mobilepetgroomingaz.com   | 2026-11-24 | matched                                | ?            | —                                                    |
+| R2    | handbook-v3.9.0 | aweandorderorganizing.com | 2026-11-24 | matched                                | ?            | P7-07 WO-B21-002; P3-19 WO-B21-003; P9-01 WO-B21-004 |

@@ -49,27 +49,27 @@ With an open S1 (capped at 39): 6 of 15.
 
 items OPEN on ≥ 80 % of the ≥ 8 sites where they were scored.
 
-| Item  | Severity default | Effect | OPEN | Scored on | OPEN rate | Mean points lost | Proposal for Ken                                    |
-| ----- | ---------------- | ------ | ---- | --------- | --------- | ---------------- | --------------------------------------------------- |
-| P4-01 | S2               | —      | 15   | 15        | 100 %     | 1.8              | fails on 15 of 15 sites; keep, or re-read the check |
-| P5-13 | S4               | —      | 15   | 15        | 100 %     | 2.6              | fails on 15 of 15 sites; keep, or re-read the check |
-| P7-09 | S2               | —      | 15   | 15        | 100 %     | 1.1              | fails on 15 of 15 sites; keep, or re-read the check |
-| P8-01 | S4               | —      | 15   | 15        | 100 %     | 1.5              | fails on 15 of 15 sites; keep, or re-read the check |
-| P5-17 | S3               | —      | 14   | 14        | 100 %     | 2.5              | fails on 14 of 14 sites; keep, or re-read the check |
-| P6-09 | S3               | —      | 12   | 12        | 100 %     | 1.7              | fails on 12 of 12 sites; keep, or re-read the check |
-| P3-12 | S3               | —      | 14   | 15        | 93 %      | 1                | fails on 14 of 15 sites; keep, or re-read the check |
-| P4-08 | S2               | —      | 14   | 15        | 93 %      | 1.8              | fails on 14 of 15 sites; keep, or re-read the check |
-| P6-01 | S2               | —      | 14   | 15        | 93 %      | 2.7              | fails on 14 of 15 sites; keep, or re-read the check |
-| P7-02 | S3               | —      | 14   | 15        | 93 %      | 1.1              | fails on 14 of 15 sites; keep, or re-read the check |
-| P8-04 | S2               | —      | 14   | 15        | 93 %      | 1.4              | fails on 14 of 15 sites; keep, or re-read the check |
-| P8-05 | S4               | —      | 14   | 15        | 93 %      | 1.5              | fails on 14 of 15 sites; keep, or re-read the check |
-| P2-10 | S3               | —      | 7    | 8         | 88 %      | 1.7              | fails on 7 of 8 sites; keep, or re-read the check   |
-| P6-06 | S2               | —      | 7    | 8         | 88 %      | 1.5              | fails on 7 of 8 sites; keep, or re-read the check   |
-| P4-09 | S3               | —      | 13   | 15        | 87 %      | 1.8              | fails on 13 of 15 sites; keep, or re-read the check |
-| P6-03 | S2               | —      | 12   | 15        | 80 %      | 2.8              | fails on 12 of 15 sites; keep, or re-read the check |
-| P7-05 | S3               | —      | 12   | 15        | 80 %      | 1.1              | fails on 12 of 15 sites; keep, or re-read the check |
-| P7-07 | S3               | —      | 12   | 15        | 80 %      | 1.1              | fails on 12 of 15 sites; keep, or re-read the check |
-| P6-11 | S2               | —      | 8    | 10        | 80 %      | 1.9              | fails on 8 of 10 sites; keep, or re-read the check  |
+| Item  | Severity default | Effect  | OPEN | Scored on | OPEN rate | Mean points lost | Proposal for Ken                                    |
+| ----- | ---------------- | ------- | ---- | --------- | --------- | ---------------- | --------------------------------------------------- |
+| P4-01 | S2               | search  | 15   | 15        | 100 %     | 1.8              | fails on 15 of 15 sites; keep, or re-read the check |
+| P5-13 | S4               | hygiene | 15   | 15        | 100 %     | 2.6              | fails on 15 of 15 sites; keep, or re-read the check |
+| P7-09 | S2               | search  | 15   | 15        | 100 %     | 1.1              | fails on 15 of 15 sites; keep, or re-read the check |
+| P8-01 | S4               | hygiene | 15   | 15        | 100 %     | 1.5              | fails on 15 of 15 sites; keep, or re-read the check |
+| P5-17 | S3               | both    | 14   | 14        | 100 %     | 2.5              | fails on 14 of 14 sites; keep, or re-read the check |
+| P6-09 | S3               | both    | 12   | 12        | 100 %     | 1.7              | fails on 12 of 12 sites; keep, or re-read the check |
+| P3-12 | S3               | search  | 14   | 15        | 93 %      | 1                | fails on 14 of 15 sites; keep, or re-read the check |
+| P4-08 | S2               | ai      | 14   | 15        | 93 %      | 1.8              | fails on 14 of 15 sites; keep, or re-read the check |
+| P6-01 | S2               | both    | 14   | 15        | 93 %      | 2.7              | fails on 14 of 15 sites; keep, or re-read the check |
+| P7-02 | S3               | search  | 14   | 15        | 93 %      | 1.1              | fails on 14 of 15 sites; keep, or re-read the check |
+| P8-04 | S2               | ai      | 14   | 15        | 93 %      | 1.4              | fails on 14 of 15 sites; keep, or re-read the check |
+| P8-05 | S4               | hygiene | 14   | 15        | 93 %      | 1.5              | fails on 14 of 15 sites; keep, or re-read the check |
+| P2-10 | S3               | search  | 7    | 8         | 88 %      | 1.7              | fails on 7 of 8 sites; keep, or re-read the check   |
+| P6-06 | S2               | both    | 7    | 8         | 88 %      | 1.5              | fails on 7 of 8 sites; keep, or re-read the check   |
+| P4-09 | S3               | search  | 13   | 15        | 87 %      | 1.8              | fails on 13 of 15 sites; keep, or re-read the check |
+| P6-03 | S2               | both    | 12   | 15        | 80 %      | 2.8              | fails on 12 of 15 sites; keep, or re-read the check |
+| P7-05 | S3               | search  | 12   | 15        | 80 %      | 1.1              | fails on 12 of 15 sites; keep, or re-read the check |
+| P7-07 | S3               | hygiene | 12   | 15        | 80 %      | 1.1              | fails on 12 of 15 sites; keep, or re-read the check |
+| P6-11 | S2               | both    | 8    | 10        | 80 %      | 1.9              | fails on 8 of 10 sites; keep, or re-read the check  |
 
 ### All scored items by OPEN rate
 

@@ -120,6 +120,16 @@ Rules [Ken 2026-11-23, B20 WO-B20-015 g]:
 7. Write the misses both ways into `fork/reports/` as the next backlog (one queue row per WO); a new check gets a BadGEO page (M3 step 6). Commit and push.
 8. Importer tests: `pnpm exec vitest run --root fork/scripts lib/external-audit.test.ts`.
 
+### Convergence (B22 WO-B22-005)
+
+"Done" for the field-test loop. `pnpm exec tsx fork/scripts/field-test.ts --convergence` writes `fork/reports/convergence.md` from the Rounds table in `fork/FIELD-TESTS.md` and each comparison's verdict table; never edit it by hand. Every batch report quotes its rounds table, misses by class and rounds left.
+
+- **Round**: ≥ 3 field tests with matched scope (size gate above) on one release tag, listed in the Rounds table. A round with fewer matched sites neither counts nor resets.
+- **Ranking-relevant miss**: a Semrush-only row whose verdict is `fixed` or names a WO, or a first-pass miss in the Rounds table's "Recorded misses", mapped to an item whose effect (`registry-effect.json`, WO-B22-001) is not `hygiene`.
+- **Error**: any check error in the run named by the report's `Run:` line (`golden-score` exit-1 rule); a run not on this computer counts as unknown, not clean.
+- **Unexplained finding**: an app-only row without a verdict, or whose note records no live check (live / manual / fetch / browser).
+- **Done** = two consecutive valid rounds, each with 0 ranking-relevant misses, 0 errors and 0 unexplained findings, and a matched site with ≥ 100 sitemap URLs in one of them. A round with a miss resets the streak; the fix goes through the prevention rule and the same sites rerun in the next round.
+
 ## Drill results (B7 R2, 2026-11-14)
 
 - **M1 rebase**: `git fetch upstream` → 0 new commits; `git merge-tree --write-tree --name-only upstream/main HEAD` → clean; `git rebase upstream/main` → "Current branch ken/main is up to date". Steps 3–4 verified as commands; no conflict to resolve this week.
