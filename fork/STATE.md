@@ -4,8 +4,8 @@ autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken 
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
 status: in-progress (not-started | in-progress | needs-ken | done)
 needs_ken: B21 done (run 101, tag handbook-v3.10.0); B22 in progress (nothing needs Ken to continue; WO-B22-004 round 3 needs the Project chat's Semrush half, WO-B22-006 needs your Google sign-in). BLOCKED-KEN left in fork/queue.md: WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); M1-2026-11-20 upstream rebase onto v0.1.31 pushed as `ken/rebase-v0.1.31-m1`, `ken/main` needs your "push" (force-with-lease), and upstream has 14 newer commits; WO-B9-026 in-app perf half; WO-B13-015 Windows autostart install (K1). Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Handbook decisions for you (fork/reports/B20.md § Exit): proposed wording "S1 applies where the defect affects at least one indexable page"; whether cart / account / checkout pages leave S1 by page type (valentinecoffeeco `/cart` is indexable and still caps). Revert lines: "link form always S1", "pagination canonical always S1". Look C is live (A / B / upstream to switch); local branch `wip/b16-run81` can be deleted
-current_batch: B22
-batch_file: fork/batches/B22-heavy-relevance-convergence.md
+current_batch: B23
+batch_file: fork/batches/B23-heavy-external-review-fixes.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 102
 next_action: B22 (run 103): WO-B22-090 exit only (001, 002, 003, 005 done; 004 / 006 BLOCKED-KEN do not hold it). Steps: replay `SUFFIX=b22r103 bash fork/runs/b21/goldens.sh` (sidecar 4777; BadGEO sidecar 4778): BadGEO 0/0, GoodGEO 0, goldens caught Δ >= 0, grades Δ 0 vs b21r100/b21r101 (effect map is presentation only); add the fix-list visible-before/after table (already in fork/reports/B22.md § Effect map) and the convergence table; write the B22 exit section; tag handbook-v3.11.0; STATE → B23 (`fork/batches/B23-heavy-external-review-fixes.md`, WO-B23-006 added), then MAINT M1.
@@ -59,8 +59,8 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done   |
 | B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done   |
 | B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done   |
-| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | doing  |
-| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | todo   |
+| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done   |
+| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | doing  |
 
 ## Run log
 
