@@ -31,6 +31,21 @@ export type HtmlFacts = Pick<
 
 const SKIP_TEXT = new Set(["script", "style", "noscript", "template", "svg"]);
 
+/**
+ * A tracking-pixel `<img>` (WO-B25-001): width or height 1 (attribute or
+ * inline style) or hidden inline. Skipped only inside `<noscript>` (Meta
+ * pixel fallback); Showit-style `<noscript>` content images stay.
+ */
+function isPixel(attrs: Record<string, string>): boolean {
+  const style = (attrs.style ?? "").toLowerCase().replace(/\s+/g, "");
+  return (
+    attrs.width?.trim() === "1" ||
+    attrs.height?.trim() === "1" ||
+    /(^|;)(width|height):1px/.test(style) ||
+    /(^|;)(display:none|visibility:hidden)/.test(style)
+  );
+}
+
 const LANDMARKS = ["header", "nav", "footer", "aside"] as const;
 const isLandmark = (tag: string): tag is (typeof LANDMARKS)[number] =>
   (LANDMARKS as readonly string[]).includes(tag);
@@ -280,7 +295,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
             text: [],
           };
         }
-        if (name === "img") {
+        if (name === "img" && !(stack.includes("noscript") && isPixel(attrs))) {
           images.push({
             src: resolve(attrs.src ?? ""),
             dataSrc: attrs["data-src"] ? resolve(attrs["data-src"]) : null,
