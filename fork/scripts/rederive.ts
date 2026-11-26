@@ -3,11 +3,12 @@
 //   pnpm exec tsx fork/scripts/rederive.ts <check-id>[,<check-id>] <dir>...
 //
 // <dir> = a raw-dl output dir (`index.tsv`: status \t file \t url, files =
-// stored raw HTML of one run). Pages are rebuilt with the current
+// stored raw HTML of one run, plain or gzipped). Pages are rebuilt with the current
 // `extractHtmlFacts` (the crawl's own parser), then the named checks run with
 // only `pages` collected. Prints each finding: item, severity, title, URLs.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { gunzipSync } from "node:zlib";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import { context } from "@/server/features/handbook/checks/check-test-fixtures";
@@ -32,8 +33,11 @@ function loadPages(dir: string): PageSnapshot[] {
     .filter(Boolean)
     .map((l) => l.split("\t"));
   return rows.flatMap(([status, file, url]) => {
-    if (!file.endsWith(".html")) return [];
-    const html = readFileSync(join(dir, file), "utf8");
+    if (!/\.html(\.gz)?$/.test(file)) return [];
+    const bytes = readFileSync(join(dir, file));
+    const html = (file.endsWith(".gz") ? gunzipSync(bytes) : bytes).toString(
+      "utf8",
+    );
     const facts = extractHtmlFacts(html, url);
     return [
       {

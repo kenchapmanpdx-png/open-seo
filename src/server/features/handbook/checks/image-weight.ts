@@ -1,7 +1,7 @@
 import { sort } from "remeda";
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
-import { imageUrl } from "@/server/features/handbook/engine/html-facts";
+import { imageUrl } from "@/server/features/handbook/engine/page-images";
 import { createResult, normalizeUrl } from "./support";
 
 /**

@@ -24,6 +24,10 @@ const live = (s: PageSnapshot) =>
   /html/i.test(s.contentType ?? "html");
 
 const norm = (t: string) => t.toLowerCase().replace(/\s+/g, " ");
+/** Links to one number over all its `tel:` href formats. */
+const linksOf = (hrefs: Map<string, number>) =>
+  [...hrefs.values()].reduce((a, b) => a + b, 0);
+
 const digits = (tel: string) => tel.replace(/^tel:/i, "").replace(/\D/g, "");
 
 function addressOf(nodes: readonly JsonLdNode[]): string | null {
@@ -116,8 +120,6 @@ export const rawCopyCheck: HandbookCheck = {
     const local = ctx.siteProfile.some(
       (a) => a.code === "SP7" && a.value === "Y",
     );
-    const linksOf = (hrefs: Map<string, number>) =>
-      [...hrefs.values()].reduce((a, b) => a + b, 0);
     const ownNumber = [...formats].reduce<[string, number]>(
       (best, [num, hrefs]) =>
         linksOf(hrefs) > best[1] ? [num, linksOf(hrefs)] : best,

@@ -85,6 +85,9 @@ type LayoutRules = {
   byMedia: Map<string, Set<string>>;
 };
 
+const addTo = (map: Map<string, Set<string>>, key: string, value: string) =>
+  map.set(key, (map.get(key) ?? new Set()).add(value));
+
 const STYLE = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
 const HIDES = /display\s*:\s*none/i;
 
@@ -92,18 +95,16 @@ function layoutRules(html: string): LayoutRules {
   const family = new Map<string, Set<string>>();
   const scopeHides: [string, string][] = [];
   const byMedia = new Map<string, Set<string>>();
-  const add = (map: Map<string, Set<string>>, key: string, value: string) =>
-    map.set(key, (map.get(key) ?? new Set()).add(value));
   const rule = (selectors: string, body: string, media: string | null) => {
     for (const raw of selectors.split(",")) {
       const sel = raw.trim();
       const scoped = /^\.([\w-]+)\s+\.([\w-]+)$/.exec(sel);
       if (!media && scoped) {
-        add(family, scoped[2], scoped[1]);
+        addTo(family, scoped[2], scoped[1]);
         if (HIDES.test(body)) scopeHides.push([scoped[2], scoped[1]]);
       }
       const single = /^\.([\w-]+)$/.exec(sel);
-      if (media && single && HIDES.test(body)) add(byMedia, single[1], media);
+      if (media && single && HIDES.test(body)) addTo(byMedia, single[1], media);
     }
   };
   // Top-level rules and one level of @media; other at-rules are skipped.
@@ -129,14 +130,14 @@ function layoutRules(html: string): LayoutRules {
   };
   for (const m of html.matchAll(STYLE))
     scan(m[1].replace(/\/\*[\s\S]*?\*\//g, ""), null);
-  const layouts = new Set(
+  const families = new Set(
     [...family.values()].filter((f) => f.size >= 2).flatMap((f) => [...f]),
   );
   const byScope = new Map<string, Set<string>>();
   for (const [cls, scope] of scopeHides)
-    if (layouts.has(scope)) add(byScope, cls, scope);
+    if (families.has(scope)) addTo(byScope, cls, scope);
   return {
-    scopes: [...layouts],
+    scopes: [...families],
     medias: [...new Set([...byMedia.values()].flatMap((m) => [...m]))],
     byScope,
     byMedia,

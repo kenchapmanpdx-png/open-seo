@@ -46,7 +46,8 @@ export function compareBotFetches(
   collected: Pick<CollectedData, "botFetch" | "robots">,
 ) {
   const { botFetch, robots } = collected;
-  if (botFetch.status !== "ok") return { urls: [], compared: [] };
+  if (botFetch.status !== "ok")
+    return { urls: [], compared: [], failing: [], notTested: [] };
   const robotsAllows = (bot: string, url: string) => {
     const u = parseUrl(url);
     if (robots.status !== "ok" || !u) return true;

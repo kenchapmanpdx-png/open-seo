@@ -10,6 +10,7 @@ import { aspectRatio, embedOf } from "./video-embeds";
 import { createProseReader } from "./prose-reader";
 import { readLink, readMeta } from "./html-head";
 import { hiddenTextTracker } from "./hidden-text";
+import { readImage } from "./page-images";
 
 /**
  * One streaming pass over raw HTML → the parsed facts every raw-HTML check
@@ -30,35 +31,6 @@ export type HtmlFacts = Pick<
 };
 
 const SKIP_TEXT = new Set(["script", "style", "noscript", "template", "svg"]);
-
-/**
- * The URL an `<img>` loads (WO-B25-010): `src` when it is http(s), else the
- * lazy-load URL (`dataSrc`) when that is; a `data:` / `about:blank`
- * placeholder `src` never hides the real image. null = no fetchable URL.
- */
-export function imageUrl(img: {
-  src: string;
-  dataSrc: string | null;
-}): string | null {
-  const http = (u: string | null): u is string => !!u && /^https?:/i.test(u);
-  if (http(img.src)) return img.src;
-  return http(img.dataSrc) ? img.dataSrc : null;
-}
-
-/**
- * A tracking-pixel `<img>` (WO-B25-001): width or height 1 (attribute or
- * inline style) or hidden inline. Skipped only inside `<noscript>` (Meta
- * pixel fallback); Showit-style `<noscript>` content images stay.
- */
-function isPixel(attrs: Record<string, string>): boolean {
-  const style = (attrs.style ?? "").toLowerCase().replace(/\s+/g, "");
-  return (
-    attrs.width?.trim() === "1" ||
-    attrs.height?.trim() === "1" ||
-    /(^|;)(width|height):1px/.test(style) ||
-    /(^|;)(display:none|visibility:hidden)/.test(style)
-  );
-}
 
 const LANDMARKS = ["header", "nav", "footer", "aside"] as const;
 const isLandmark = (tag: string): tag is (typeof LANDMARKS)[number] =>
@@ -309,24 +281,9 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
             text: [],
           };
         }
-        if (name === "img" && !(stack.includes("noscript") && isPixel(attrs))) {
-          const lazySrc =
-            attrs["data-src"] ||
-            attrs["data-lazy-src"] ||
-            attrs["data-original"];
-          images.push({
-            // An empty or missing `src` stays "" (resolving it gives the
-            // page URL). Lazy loaders keep the real URL in `data-src`,
-            // `data-lazy-src` or `data-original` (WO-B25-010).
-            src: attrs.src?.trim() ? resolve(attrs.src) : "",
-            dataSrc: lazySrc ? resolve(lazySrc) : null,
-            srcset: attrs.srcset ?? null,
-            alt: attrs.alt ?? null,
-            width: attrs.width ?? null,
-            height: attrs.height ?? null,
-            loading: attrs.loading ?? null,
-            fetchpriority: attrs.fetchpriority ?? null,
-          });
+        if (name === "img") {
+          const image = readImage(attrs, stack, resolve);
+          if (image) images.push(image);
           if (anchor && attrs.alt) anchor.text.push(attrs.alt);
         }
       },

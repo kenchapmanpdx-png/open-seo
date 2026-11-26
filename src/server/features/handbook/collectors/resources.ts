@@ -3,7 +3,7 @@ import type {
   Collector,
   ResourcesData,
 } from "@/server/features/handbook/contracts/collectors";
-import { imageUrl } from "@/server/features/handbook/engine/html-facts";
+import { imageUrl } from "@/server/features/handbook/engine/page-images";
 import { hostPacer, pool, probeUrl } from "./probe";
 
 /**

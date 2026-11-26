@@ -25,6 +25,11 @@ function page(
 const run = (snapshots: PageSnapshot[]) =>
   rawCopyCheck.run(context({ pages: { status: "ok", snapshots } }));
 
+const titles = async (r: ReturnType<typeof run>) =>
+  (await r).findings
+    .filter((f) => f.itemIds.includes("P5-08"))
+    .map((f) => f.title);
+
 describe("crawl.raw-copy", () => {
   it("opens P2-04 on loading copy in server text", async () => {
     const result = await run([
@@ -80,10 +85,6 @@ describe("crawl.raw-copy", () => {
           { code: "SP7", value: "Y", evidence: "test", confidence: "high" },
         ],
       });
-    const titles = async (r: ReturnType<typeof run>) =>
-      (await r).findings
-        .filter((f) => f.itemIds.includes("P5-08"))
-        .map((f) => f.title);
 
     it("does not count link text: one tel: format is consistent (nwpersonaltraining.com)", async () => {
       expect(

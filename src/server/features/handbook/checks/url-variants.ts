@@ -45,6 +45,21 @@ function hopProblem(p: Probe, target: (url: string) => boolean) {
   return null;
 }
 
+/** A redirect chain that ends in 404 / 410 (WO-B25-004). */
+const endsGone = (p: Probe) =>
+  p.redirectChain.length > 0 && (p.status === 404 || p.status === 410);
+
+/** Why the `/index.html` probe is a live duplicate of `/`, or null. */
+function indexHtmlProblem(index: Probe) {
+  if (index.redirectChain.length === 0)
+    return index.status === 200
+      ? "/index.html answers 200 (duplicate of /)"
+      : null;
+  // WO-B25-004: a chain that ends in 404 / 410 serves no duplicate.
+  if (endsGone(index)) return null;
+  return hopProblem(index, (url) => pathOf(url) === "/");
+}
+
 /** Plain-HTTP URLs that answered a bot with an interstitial, not a redirect. */
 function plainHttpChallenges(botFetch: CollectedData["botFetch"]) {
   if (botFetch.status !== "ok") return [];
@@ -221,15 +236,7 @@ export const urlVariantsCheck: HandbookCheck = {
     const index = variants.probes.find((p) => p.kind === "index-html");
     const passRefs: string[] = [];
     if (index) {
-      // WO-B25-004: a chain that ends in 404 / 410 serves no duplicate.
-      const why =
-        index.redirectChain.length === 0
-          ? index.status === 200
-            ? "/index.html answers 200 (duplicate of /)"
-            : null
-          : index.status === 404 || index.status === 410
-            ? null
-            : hopProblem(index, (url) => pathOf(url) === "/");
+      const why = indexHtmlProblem(index);
       if (why) {
         out.finding({
           itemIds: ["P3-03"],
@@ -283,7 +290,7 @@ export const urlVariantsCheck: HandbookCheck = {
     if (passRefs.length > 0) {
       out.pass(
         "P3-03",
-        `/index.html → ${index?.status ?? "not fetched"}${index && index.redirectChain.length > 0 && (index.status === 404 || index.status === 410) ? ` (ends in ${index.status})` : ""}; no internal links to index.html; query variants not probed${upperNote}`,
+        `/index.html → ${index?.status ?? "not fetched"}${index && endsGone(index) ? ` (ends in ${index.status})` : ""}; no internal links to index.html; query variants not probed${upperNote}`,
         passRefs,
       );
     } else if (!index) {

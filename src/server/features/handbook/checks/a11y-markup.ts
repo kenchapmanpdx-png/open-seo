@@ -1,7 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { createResult, normalizeUrl, parseUrl } from "./support";
-import { imageUrl } from "@/server/features/handbook/engine/html-facts";
+import { imageUrl } from "@/server/features/handbook/engine/page-images";
 
 /**
  * A11Y (raw HTML, handbook §14, §15): a skip link among the first three

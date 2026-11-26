@@ -48,6 +48,11 @@ function run(authorId: string) {
   );
 }
 
+type Result = ReturnType<typeof aboutPeopleCheck.run>;
+const noAbout = async (r: Result) =>
+  (await r).findings.some((f) => f.title === "No About page found");
+const cited = async (r: Result) => (await r).findings.flatMap((f) => f.urls);
+
 describe("crawl.about-people", () => {
   it("passes P5-17 when About has a Person with jobTitle and authors link to it", async () => {
     expect(statusOf(await run(person["@id"]), "P5-17")).toBe("PASS");
@@ -77,10 +82,6 @@ describe("crawl.about-people", () => {
         }),
       );
     };
-    const noAbout = async (r: ReturnType<typeof crawl>) =>
-      (await r).findings.some((f) => f.title === "No About page found");
-    const cited = async (r: ReturnType<typeof crawl>) =>
-      (await r).findings.flatMap((f) => f.urls);
 
     it("takes /our-story/ linked as 'Our Story' (theogdenver.com)", async () => {
       const r = crawl(
