@@ -130,7 +130,7 @@ describe("botfetch.parity refusals that did not reproduce", () => {
     url: `${ORIGIN}${path}`,
     finalUrl: `${ORIGIN}${path}`,
   });
-  const paths = ["/", "/contact/", "/a/", "/b/", "/c/"];
+  const paths = ["/", "/contact/", "/a/", "/b/", "/c/", "/d/", "/e/"];
   const nginx = { ...blocked, bytes: 146, bodySha256: "nginx" };
   const lockout = { ...blocked, bytes: 9292, bodySha256: "defender" };
 
@@ -150,7 +150,7 @@ describe("botfetch.parity refusals that did not reproduce", () => {
     expect(finding?.detail).toContain("AI crawlers: ClaudeBot");
     expect(finding?.detail).not.toContain("search crawlers");
     expect(finding?.detail).toContain(
-      "Googlebot: not tested from our IP (3 of 5 fetches refused after 2 full pages",
+      "Googlebot: not tested from our IP (5 of 7 fetches refused after 2 full pages",
     );
   });
 
@@ -162,14 +162,31 @@ describe("botfetch.parity refusals that did not reproduce", () => {
       ),
     ]);
     expect(result.findings[0]?.severity).toBe("S2");
-    expect(result.findings[0]?.detail).toContain("ClaudeBot: 5 of 5 fetches");
+    expect(result.findings[0]?.detail).toContain("ClaudeBot: 7 of 7 fetches");
+  });
+
+  // BadGEO /partners/acme.html: GPTBot (probe only, round 1) refused on one
+  // URL and served full pages after it. Not a lockout: the refusal keys on
+  // the URL, so the bot stays refused.
+  it("keeps a bot refused on one URL that still gets full pages after it", async () => {
+    const result = await run([
+      ...paths.map((p) => fetchOf("browser", at(p))),
+      fetchOf("GPTBot", at("/")),
+      fetchOf("GPTBot", { ...at("/a/"), ...blocked }),
+      ...paths.slice(3).map((p) => fetchOf("GPTBot", at(p))),
+    ]);
+    expect(result.findings[0]?.severity).toBe("S2");
+    expect(result.findings[0]?.detail).toContain("AI crawlers: GPTBot");
+    expect(result.findings[0]?.detail).not.toContain("not tested");
   });
 
   it("passes with a note when the only refusing bot was not tested", async () => {
     const result = await run([
       ...paths.map((p) => fetchOf("browser", at(p))),
       fetchOf("Googlebot", at("/")),
-      fetchOf("Googlebot", { ...at("/a/"), ...lockout }),
+      ...paths
+        .slice(2)
+        .map((p) => fetchOf("Googlebot", { ...at(p), ...lockout })),
     ]);
     expect(statusOf(result, "P9-01")).toBe("PASS");
     expect(result.statuses[0]?.note).toContain("Googlebot: not tested");

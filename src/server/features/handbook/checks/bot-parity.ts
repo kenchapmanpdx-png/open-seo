@@ -7,6 +7,7 @@ import {
   AI_BOTS,
   SEARCH_BOTS,
 } from "@/server/features/handbook/contracts/bot-classes";
+import { BOT_PARITY_STOP_AFTER } from "@/server/features/handbook/engine/escalations";
 import { decide } from "@/server/features/handbook/engine/robots";
 import { createResult, parseUrl } from "./support";
 
@@ -74,11 +75,15 @@ export function compareBotFetches(
     if (!robotsAllows(f.bot, f.url)) return [];
     return [{ f, why: mismatch(f, browser) }];
   });
-  // WO-B25-008: a bot that got the browser's page on some URLs and a refusal
-  // on others, with no URL that failed and then passed (intermittent), was
-  // refused for our IP or request history, not for its UA: a UA-spoofed
-  // fetch cannot reproduce how the site treats the real crawler (handbook
-  // §0 Mode 1). It is "not tested"; only the other bots count as refused.
+  // WO-B25-008: a bot that got the browser's page on its first fetches and
+  // was then locked out (its last BOT_PARITY_STOP_AFTER fetches refused, the
+  // collector's own stop rule), with no URL that failed and then passed
+  // (intermittent), was refused for our IP or request history, not for its
+  // UA: a UA-spoofed fetch cannot reproduce how the site treats the real
+  // crawler (handbook §0 Mode 1). It is "not tested"; only the other bots
+  // count as refused. A bot still served full pages after a refusal (one
+  // URL refused, BadGEO /partners/acme.html) stays refused. Fetches are in
+  // request order (the escalation fetches one at a time).
   const notTested = [...new Set(compared.map((c) => c.f.bot))].flatMap(
     (bot) => {
       const all = compared.filter((c) => c.f.bot === bot);
@@ -88,7 +93,11 @@ export function compareBotFetches(
       const intermittent = [...failedUrls].some((url) =>
         all.some((c) => c.f.url === url && c.why === null),
       );
-      return bad.length > 0 && full > 0 && !intermittent
+      const tail = all.slice(-BOT_PARITY_STOP_AFTER);
+      const lockedOut =
+        tail.length === BOT_PARITY_STOP_AFTER &&
+        tail.every((c) => c.why !== null);
+      return full > 0 && lockedOut && !intermittent
         ? [{ bot, refused: bad.length, all: all.length, full }]
         : [];
     },
