@@ -35,6 +35,51 @@ describe("minhash", () => {
     ]);
   });
 
+  describe("hidden layout copies (WO-B25-007)", () => {
+    const copy =
+      "We partner with select companies such as Owens Corning GAF and CertainTeed to install";
+    // bluebonnetroofs.com (Showit): one copy per layout, hidden by page rules.
+    const showit = `<style>.d .sie-a {left:1px;} .m .sie-a {display:none;} .d .sie-b {display:none;} .m .sie-b {top:2px;}</style>
+      <div class="d"><div class="sie-a se"><p>${copy}</p></div><div class="sie-b se"><p>${copy}</p></div></div>`;
+
+    it("does not count a copy each layout hides once (Showit .d / .m)", () => {
+      expect(mainTextFacts(showit).duplicateBlocks).toEqual([]);
+    });
+
+    it("does not count an aria-hidden marquee copy (valentinecoffeeco.com)", () => {
+      const facts = mainTextFacts(
+        `<main><div class="marquee__content"><p>${copy}</p></div><div aria-hidden="true" class="marquee__content"><p>${copy}</p></div></main>`,
+      );
+      expect(facts.duplicateBlocks).toEqual([]);
+    });
+
+    it("keeps mainWords and the minhash", () => {
+      const plain = `<div><p>${copy}</p><p>${copy}</p></div>`;
+      expect(mainTextFacts(showit).mainWords).toBe(
+        mainTextFacts(plain).mainWords,
+      );
+      expect(mainTextFacts(showit).minhash).toEqual(
+        mainTextFacts(plain).minhash,
+      );
+    });
+
+    it("still counts copies visible in the same layout (tinycat, aircor blog meta)", () => {
+      // A rule that hides neither copy, and a lone descendant rule that is
+      // not a layout family (`.menu .x`), leave both copies counted.
+      const facts = mainTextFacts(
+        `<style>.blog-meta-secondary {color:red} .menu .sie-a {display:none}</style><div class="sie-a"><p>${copy}</p></div><div class="blog-meta-secondary"><p>${copy}</p></div>`,
+      );
+      expect(facts.duplicateBlocks).toEqual([{ text: copy, count: 2 }]);
+    });
+
+    it("hides per @media layout when two queries hide one copy each", () => {
+      const facts = mainTextFacts(
+        `<style>@media (max-width: 600px) { .desk {display:none} } @media (min-width: 601px) { .mob { display: none; } }</style><div class="desk"><p>${copy}</p></div><div class="mob"><p>${copy}</p></div>`,
+      );
+      expect(facts.duplicateBlocks).toEqual([]);
+    });
+  });
+
   it("handles 1000 pages in under 2 s", () => {
     const start = performance.now();
     const sigs = Array.from(

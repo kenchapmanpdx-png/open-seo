@@ -11,7 +11,9 @@ import { join } from "node:path";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { HANDBOOK_CHECKS } from "@/server/features/handbook/checks";
 import { context } from "@/server/features/handbook/checks/check-test-fixtures";
+import { pageBlocks } from "@/server/features/handbook/engine/boilerplate";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
+import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
 
 const [ids, ...dirs] = process.argv.slice(2);
 if (!ids || dirs.length === 0) {
@@ -49,6 +51,7 @@ function loadPages(dir: string): PageSnapshot[] {
         xRobotsTag: null,
         markup: facts.markup,
         doctype: facts.doctype,
+        ...mainTextFacts(html, pageBlocks(html)),
       },
     ];
   });
@@ -65,7 +68,7 @@ for (const dir of dirs) {
     });
     for (const f of result.findings)
       console.log(
-        `${f.itemIds.join("+")} ${f.severity} ${f.title} — ${f.urls.length} url(s): ${f.urls.slice(0, 6).join(" ")}`,
+        `${f.itemIds.join("+")} ${f.severity} ${f.title} — ${f.urls.length} url(s): ${f.urls.slice(0, 6).join(" ")}${process.env.DETAIL ? `\n${f.detail}` : ""}`,
       );
   }
 }

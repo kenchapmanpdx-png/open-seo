@@ -72,28 +72,134 @@ const B = Array.from({ length: PERMUTATIONS }, (_, i) => fnv1a(`b${i}`));
 const words = (text: string) =>
   text.toLowerCase().match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)?/gu) ?? [];
 
+/**
+ * Page `<style>` rules that hide a class in one layout (WO-B25-007): a
+ * `.<scope> .<class>{display:none}` rule whose scope belongs to a layout
+ * family (≥ 2 scopes prefix the same class: Showit `.d` / `.m`), or
+ * `@media (…) { .<class>{display:none} }`. Raw HTML only, no external CSS.
+ */
+type LayoutRules = {
+  scopes: string[];
+  medias: string[];
+  byScope: Map<string, Set<string>>;
+  byMedia: Map<string, Set<string>>;
+};
+
+const STYLE = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+const HIDES = /display\s*:\s*none/i;
+
+function layoutRules(html: string): LayoutRules {
+  const family = new Map<string, Set<string>>();
+  const scopeHides: [string, string][] = [];
+  const byMedia = new Map<string, Set<string>>();
+  const add = (map: Map<string, Set<string>>, key: string, value: string) =>
+    map.set(key, (map.get(key) ?? new Set()).add(value));
+  const rule = (selectors: string, body: string, media: string | null) => {
+    for (const raw of selectors.split(",")) {
+      const sel = raw.trim();
+      const scoped = /^\.([\w-]+)\s+\.([\w-]+)$/.exec(sel);
+      if (!media && scoped) {
+        add(family, scoped[2], scoped[1]);
+        if (HIDES.test(body)) scopeHides.push([scoped[2], scoped[1]]);
+      }
+      const single = /^\.([\w-]+)$/.exec(sel);
+      if (media && single && HIDES.test(body)) add(byMedia, single[1], media);
+    }
+  };
+  // Top-level rules and one level of @media; other at-rules are skipped.
+  const scan = (css: string, media: string | null) => {
+    let i = 0;
+    while (i < css.length) {
+      const open = css.indexOf("{", i);
+      if (open < 0) return;
+      const prelude = css.slice(i, open).trim();
+      let depth = 1;
+      let j = open + 1;
+      while (j < css.length && depth > 0) {
+        if (css[j] === "{") depth += 1;
+        else if (css[j] === "}") depth -= 1;
+        j += 1;
+      }
+      const body = css.slice(open + 1, j - 1);
+      if (prelude.startsWith("@media") && !media)
+        scan(body, prelude.replace(/\s+/g, " "));
+      else if (!prelude.startsWith("@")) rule(prelude, body, media);
+      i = j;
+    }
+  };
+  for (const m of html.matchAll(STYLE))
+    scan(m[1].replace(/\/\*[\s\S]*?\*\//g, ""), null);
+  const layouts = new Set(
+    [...family.values()].filter((f) => f.size >= 2).flatMap((f) => [...f]),
+  );
+  const byScope = new Map<string, Set<string>>();
+  for (const [cls, scope] of scopeHides)
+    if (layouts.has(scope)) add(byScope, cls, scope);
+  return {
+    scopes: [...layouts],
+    medias: [...new Set([...byMedia.values()].flatMap((m) => [...m]))],
+    byScope,
+    byMedia,
+  };
+}
+
+/** Where a block is hidden: everywhere, or in some scope / media layouts. */
+type Hidden = { all: boolean; scopes: Set<string>; medias: Set<string> };
+type Block = { text: string; hidden: Hidden };
+
 /** Main-text blocks of raw HTML, whitespace collapsed, empty blocks dropped. */
-function mainTextBlocks(html: string): string[] {
-  const blocks: string[] = [];
+function mainTextBlocks(html: string, rules: LayoutRules): Block[] {
+  const blocks: Block[] = [];
   let buf: string[] = [];
+  let bufHidden: Hidden | null = null;
   let skip = 0;
+  const stack: { name: string; hidden: Hidden }[] = [];
+  const none: Hidden = { all: false, scopes: new Set(), medias: new Set() };
   const flush = () => {
     const text = buf.join("").replace(/\s+/g, " ").trim();
-    if (text) blocks.push(text);
+    if (text) blocks.push({ text, hidden: bufHidden ?? none });
     buf = [];
+    bufHidden = null;
   };
   const parser = new Parser(
     {
-      onopentag(name) {
+      onopentag(name, attrs) {
         if (BLOCK.has(name)) flush();
         if (SKIP.has(name)) skip += 1;
+        const parent = stack.at(-1)?.hidden ?? none;
+        const classes = (attrs.class ?? "").split(/\s+/).filter(Boolean);
+        const scopes = classes.flatMap((c) => [
+          ...(rules.byScope.get(c) ?? []),
+        ]);
+        const medias = classes.flatMap((c) => [
+          ...(rules.byMedia.get(c) ?? []),
+        ]);
+        const all =
+          "hidden" in attrs ||
+          attrs["aria-hidden"] === "true" ||
+          /display\s*:\s*none/i.test(attrs.style ?? "");
+        stack.push({
+          name,
+          hidden:
+            all || scopes.length > 0 || medias.length > 0
+              ? {
+                  all: parent.all || all,
+                  scopes: new Set([...parent.scopes, ...scopes]),
+                  medias: new Set([...parent.medias, ...medias]),
+                }
+              : parent,
+        });
       },
       ontext(text) {
-        if (skip === 0) buf.push(text);
+        if (skip > 0) return;
+        buf.push(text);
+        if (!bufHidden && text.trim()) bufHidden = stack.at(-1)?.hidden ?? none;
       },
       onclosetag(name) {
         if (SKIP.has(name)) skip = Math.max(0, skip - 1);
         if (BLOCK.has(name)) flush();
+        const at = stack.map((e) => e.name).lastIndexOf(name);
+        if (at >= 0) stack.length = at;
       },
     },
     { decodeEntities: true, lowerCaseTags: true },
@@ -102,6 +208,22 @@ function mainTextBlocks(html: string): string[] {
   parser.end();
   flush();
   return blocks;
+}
+
+/**
+ * Layouts to count copies in: each scope of a layout family (the page is in
+ * exactly one), crossed with each `@media` layout (two or more queries are
+ * taken to split the screens; one query also leaves the screens outside it).
+ */
+function layouts(rules: LayoutRules) {
+  const scopes = rules.scopes.length > 0 ? rules.scopes : [null];
+  const medias =
+    rules.medias.length >= 2
+      ? rules.medias
+      : rules.medias.length === 1
+        ? [rules.medias[0], null]
+        : [null];
+  return scopes.flatMap((scope) => medias.map((media) => ({ scope, media })));
 }
 
 /** 128 MinHash values over 5-word shingles; empty text → []. */
@@ -168,12 +290,23 @@ export function similarPairs(
  * `blocks` (`pageBlocks`) feed the SUPP-17 sentence hashes (ADR-022).
  */
 export function mainTextFacts(html: string, blocks: readonly string[] = []) {
-  const main = mainTextBlocks(html);
-  const text = main.join(" ");
+  const rules = layoutRules(html);
+  const main = mainTextBlocks(html, rules);
+  // mainWords and the minhash keep every copy (near-duplicate / thin pages).
+  const text = main.map((b) => b.text).join(" ");
+  // SUPP-03: a block repeats when ≥ 2 copies are visible in one layout.
   const counts = new Map<string, number>();
-  for (const block of main) {
-    if (words(block).length < BLOCK_MIN_WORDS) continue;
-    counts.set(block, (counts.get(block) ?? 0) + 1);
+  for (const { scope, media } of layouts(rules)) {
+    const here = new Map<string, number>();
+    for (const { text: block, hidden } of main) {
+      if (hidden.all) continue;
+      if (scope && hidden.scopes.has(scope)) continue;
+      if (media && hidden.medias.has(media)) continue;
+      if (words(block).length < BLOCK_MIN_WORDS) continue;
+      here.set(block, (here.get(block) ?? 0) + 1);
+    }
+    for (const [block, n] of here)
+      counts.set(block, Math.max(counts.get(block) ?? 0, n));
   }
   return {
     mainWords: words(text).length,
