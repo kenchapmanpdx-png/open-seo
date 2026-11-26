@@ -75,6 +75,25 @@ export const notFoundCheck: HandbookCheck = {
     const home = pages.snapshots.find(
       (s) => pathOf(s.url) === "/" && s.status === 200,
     );
+    // The site's bare brand: the majority `og:site_name`, and the segments of
+    // a home title that has a separator ("Brand | Tagline").
+    const siteNames = new Map<string, number>();
+    for (const s of pages.snapshots) {
+      const name = s.head.og.site_name?.trim().toLowerCase();
+      if (name) siteNames.set(name, (siteNames.get(name) ?? 0) + 1);
+    }
+    const siteName = [...siteNames].reduce(
+      (best, cur) => (cur[1] > best[1] ? cur : best),
+      ["", 0],
+    )[0];
+    const homeSegments = (home?.head.title ?? "")
+      .split(/\s[|·•–—-]\s/)
+      .map((t) => t.trim().toLowerCase());
+    const brands = new Set(
+      [siteName, ...(homeSegments.length > 1 ? homeSegments : [])].filter(
+        Boolean,
+      ),
+    );
     const liveByTitle = new Map(
       pages.snapshots
         .filter((s) => s.status === 200 && s.head.title)
@@ -83,8 +102,16 @@ export const notFoundCheck: HandbookCheck = {
     const livePage = real.flatMap((p): LiveHit[] => {
       // The probe has no canonical field (contracts 1.2.0): cite the live
       // page with the same title and its canonical instead (ryan F16).
-      const twin = p.title ? liveByTitle.get(p.title.trim()) : undefined;
-      if (twin) {
+      const title = p.title?.trim();
+      const twin = title ? liveByTitle.get(title) : undefined;
+      // WO-B25-003: a bare-brand title is shared by the 404 template and any
+      // page without its own title (Squarespace `/cart`); it is a twin only
+      // when the word counts agree too (±10 %).
+      const bareBrand = title && brands.has(title.toLowerCase());
+      if (
+        twin &&
+        (!bareBrand || Math.abs(p.words - twin.wordsRaw) <= twin.wordsRaw * 0.1)
+      ) {
         const canonical = twin.head.canonical ?? twin.url;
         return [
           {

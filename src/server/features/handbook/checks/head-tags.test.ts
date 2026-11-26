@@ -62,6 +62,28 @@ describe("crawl.head-tags", () => {
     expect(suffix?.urls).toEqual([snapshot("/d").url]);
   });
 
+  it("counts a title carrying og:site_name as branded when a keyword tagline is the suffix (WO-B25-002)", async () => {
+    const site = { og: { site_name: "Brand Co" } };
+    const tagged = (path: string) =>
+      page(path, {
+        ...site,
+        title: `${path} — Brand Co | Keyword City Tagline`,
+      });
+    const result = await run([
+      page("/", { ...site, title: "Brand Co | Something else" }),
+      tagged("/a"),
+      tagged("/b"),
+      tagged("/c"),
+      tagged("/d"),
+      tagged("/e"),
+      // nwpersonaltraining.com home: neither the suffix nor the site name.
+      page("/f", { ...site, title: "Home | Northwest Personal Training" }),
+    ]);
+    const suffix = result.findings.find((f) => f.title.includes("suffix"));
+    expect(suffix?.urls).toEqual([snapshot("/f").url]);
+    expect(suffix?.title).toContain('or site name "Brand Co"');
+  });
+
   it("flags titles over 70 characters only", async () => {
     const result = await run([
       // spoiledspaandsalon.com product page, 84 characters (B18 WO-004).

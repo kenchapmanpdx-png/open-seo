@@ -85,4 +85,78 @@ describe("crawl.not-found", () => {
     );
     expect(result.findings[0]?.urls).toEqual([URL_, `${ORIGIN}/about-rms`]);
   });
+
+  it("does not take a shared bare-brand title as a twin unless the word counts agree (WO-B25-003)", async () => {
+    const page = (path: string, title: string, words: number) => {
+      const s = snapshot(path);
+      return {
+        ...s,
+        wordsRaw: words,
+        head: { ...s.head, title, og: { site_name: "Brand" } },
+      };
+    };
+    const probe = (title: string, words: number) =>
+      notFoundCheck.run(
+        context({
+          variants: {
+            status: "ok",
+            probes: [
+              {
+                kind: "unknown-path",
+                url: URL_,
+                finalUrl: URL_,
+                status: 404,
+                redirectChain: [],
+                title,
+                words,
+              },
+            ],
+          },
+          pages: {
+            status: "ok",
+            snapshots: [
+              page("/", "Brand | Tagline", 600),
+              page("/cart", "Brand", 120),
+            ],
+          },
+        }),
+      );
+    // love4pawsrescue.com: the 404 template and /cart share the bare brand.
+    expect(statusOf(await probe("Brand", 209), "P3-11")).toBe("PASS");
+    // The 404 body is /cart itself: same bare title, same size.
+    expect(statusOf(await probe("Brand", 125), "P3-11")).toBe("OPEN");
+  });
+
+  it("still takes a non-brand shared title as a twin (example.com)", async () => {
+    const home = snapshot("/");
+    const result = await notFoundCheck.run(
+      context({
+        variants: {
+          status: "ok",
+          probes: [
+            {
+              kind: "unknown-path",
+              url: URL_,
+              finalUrl: URL_,
+              status: 404,
+              redirectChain: [],
+              title: "Example Domain",
+              words: 27,
+            },
+          ],
+        },
+        pages: {
+          status: "ok",
+          snapshots: [
+            {
+              ...home,
+              wordsRaw: 27,
+              head: { ...home.head, title: "Example Domain" },
+            },
+          ],
+        },
+      }),
+    );
+    expect(statusOf(result, "P3-11")).toBe("OPEN");
+  });
 });

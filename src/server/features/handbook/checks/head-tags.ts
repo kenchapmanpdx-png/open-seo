@@ -155,18 +155,35 @@ export const headTagsCheck: HandbookCheck = {
       (best, cur) => (cur[1] > best[1] ? cur : best),
       ["", 0],
     );
+    // WO-B25-002: the majority `og:site_name` is the site's own name. When a
+    // keyword tagline is the majority suffix, a title carrying the site name
+    // is branded too; either one satisfies the check.
+    const siteNames = new Map<string, number>();
+    for (const s of live) {
+      const name = s.head.og.site_name?.trim();
+      if (name) siteNames.set(name, (siteNames.get(name) ?? 0) + 1);
+    }
+    const [siteName] = [...siteNames].reduce(
+      (best, cur) => (cur[1] > best[1] ? cur : best),
+      ["", 0],
+    );
+    const names = [brand, siteName].filter(Boolean).map((n) => n.toLowerCase());
+    const otherName =
+      siteName && siteName.toLowerCase() !== brand.toLowerCase()
+        ? ` or site name "${siteName}"`
+        : "";
     // A simple majority sets the brand; a title that names the brand elsewhere
     // (the home page's "Brand | tagline") is consistent enough.
     if (brand && brandCount >= 3 && brandCount > live.length / 2) {
       report(
         "P4-01",
-        `Titles missing the brand suffix "${brand}"`,
+        `Titles missing the brand suffix "${brand}"${otherName}`,
         `End every title with the same brand suffix ("… · ${brand}").`,
         live
-          .filter(
-            (s) =>
-              !(s.head.title ?? "").toLowerCase().includes(brand.toLowerCase()),
-          )
+          .filter((s) => {
+            const title = (s.head.title ?? "").toLowerCase();
+            return !names.some((n) => title.includes(n));
+          })
           .map((page) => ({ page, why: `title "${page.head.title ?? ""}"` })),
         { severity: "S3", severityReason: "brand-suffix consistency only" },
       );
