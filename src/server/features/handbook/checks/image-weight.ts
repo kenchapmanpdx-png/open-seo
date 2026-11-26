@@ -1,6 +1,7 @@
 import { sort } from "remeda";
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
+import { imageUrl } from "@/server/features/handbook/engine/html-facts";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -25,9 +26,10 @@ const kb = (bytes: number) => `${Math.round(bytes / 1000)} KB`;
 
 /** Byte budget from markup width/height: 2× density at ~0.5 byte per pixel. */
 function budget(snap: PageSnapshot | undefined, url: string): number | null {
-  const img = snap?.images.find(
-    (i) => i.src && normalizeUrl(i.src) === normalizeUrl(url),
-  );
+  const img = snap?.images.find((i) => {
+    const src = imageUrl(i);
+    return src !== null && normalizeUrl(src) === normalizeUrl(url);
+  });
   const w = Number.parseInt(img?.width ?? "", 10);
   const h = Number.parseInt(img?.height ?? "", 10);
   if (!(w > 0 && h > 0)) return null;

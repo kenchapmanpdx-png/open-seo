@@ -77,3 +77,30 @@ describe("resources → SUPP-20 (WO-B25-001)", () => {
     expect(result.status).toBe("OPEN");
   });
 });
+
+describe("resources → SUPP-20, lazy images (WO-B25-010)", () => {
+  it("probes the data-src behind a data: placeholder src", async () => {
+    const result = await brokenImages(
+      `<body><img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-src="https://example.com/missing.png" alt="x"></body>`,
+    );
+    expect(result.status).toBe("OPEN");
+    expect(result.detail).toContain("https://example.com/missing.png");
+  });
+
+  it("reads data-lazy-src and data-original too", async () => {
+    for (const attr of ["data-lazy-src", "data-original"]) {
+      const result = await brokenImages(
+        `<body><img src="about:blank" ${attr}="https://example.com/lazy.png"></body>`,
+      );
+      expect(result.detail).toContain("https://example.com/lazy.png");
+    }
+  });
+
+  it("prefers an http src over data-src", async () => {
+    const result = await brokenImages(
+      `<body><img src="https://example.com/a.png" data-src="https://example.com/b.png"></body>`,
+    );
+    expect(result.detail).toContain("a.png");
+    expect(result.detail).not.toContain("b.png");
+  });
+});

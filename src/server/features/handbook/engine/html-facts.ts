@@ -32,6 +32,20 @@ export type HtmlFacts = Pick<
 const SKIP_TEXT = new Set(["script", "style", "noscript", "template", "svg"]);
 
 /**
+ * The URL an `<img>` loads (WO-B25-010): `src` when it is http(s), else the
+ * lazy-load URL (`dataSrc`) when that is; a `data:` / `about:blank`
+ * placeholder `src` never hides the real image. null = no fetchable URL.
+ */
+export function imageUrl(img: {
+  src: string;
+  dataSrc: string | null;
+}): string | null {
+  const http = (u: string | null): u is string => !!u && /^https?:/i.test(u);
+  if (http(img.src)) return img.src;
+  return http(img.dataSrc) ? img.dataSrc : null;
+}
+
+/**
  * A tracking-pixel `<img>` (WO-B25-001): width or height 1 (attribute or
  * inline style) or hidden inline. Skipped only inside `<noscript>` (Meta
  * pixel fallback); Showit-style `<noscript>` content images stay.
@@ -296,9 +310,16 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
           };
         }
         if (name === "img" && !(stack.includes("noscript") && isPixel(attrs))) {
+          const lazySrc =
+            attrs["data-src"] ||
+            attrs["data-lazy-src"] ||
+            attrs["data-original"];
           images.push({
-            src: resolve(attrs.src ?? ""),
-            dataSrc: attrs["data-src"] ? resolve(attrs["data-src"]) : null,
+            // An empty or missing `src` stays "" (resolving it gives the
+            // page URL). Lazy loaders keep the real URL in `data-src`,
+            // `data-lazy-src` or `data-original` (WO-B25-010).
+            src: attrs.src?.trim() ? resolve(attrs.src) : "",
+            dataSrc: lazySrc ? resolve(lazySrc) : null,
             srcset: attrs.srcset ?? null,
             alt: attrs.alt ?? null,
             width: attrs.width ?? null,

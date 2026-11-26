@@ -3,10 +3,12 @@ import type {
   Collector,
   ResourcesData,
 } from "@/server/features/handbook/contracts/collectors";
+import { imageUrl } from "@/server/features/handbook/engine/html-facts";
 import { hostPacer, pool, probeUrl } from "./probe";
 
 /**
- * Page resources (ADR-031, SUPP-20): unique `<img src>` (else `data-src`),
+ * Page resources (ADR-031, SUPP-20): unique `<img>` URLs (`imageUrl`: http
+ * `src`, else the lazy `data-src`),
  * stylesheet `<link href>` and `<script src>` URLs on read pages, most pages
  * first, capped at 300. Own-host URLs go through `ctx.fetch`, other hosts
  * through `ctx.fetchOffsite`; 1 request / s per host.
@@ -44,8 +46,7 @@ export const resourcesCollector: Collector<"resources"> = {
       found.set(u.href, entry);
     };
     for (const s of collected.pages.snapshots) {
-      for (const img of s.images)
-        add(img.src || img.dataSrc, "img", s.finalUrl, s.url);
+      for (const img of s.images) add(imageUrl(img), "img", s.finalUrl, s.url);
       for (const l of s.markup.headLinks)
         if (/\bstylesheet\b/i.test(l.rel))
           add(l.href, "css", s.finalUrl, s.url);

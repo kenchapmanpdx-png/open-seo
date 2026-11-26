@@ -1,6 +1,7 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { PageSnapshot } from "@/server/features/handbook/contracts/collectors";
 import { createResult, normalizeUrl, parseUrl } from "./support";
+import { imageUrl } from "@/server/features/handbook/engine/html-facts";
 
 /**
  * A11Y (raw HTML, handbook §14, §15): a skip link among the first three
@@ -32,7 +33,7 @@ function isSkipLink(page: PageSnapshot, link: PageSnapshot["links"][number]) {
 function fileAlt(image: PageSnapshot["images"][number]): boolean {
   const alt = image.alt?.trim();
   if (!alt) return false;
-  const file = (image.dataSrc ?? image.src).split(/[?#]/)[0].split("/").pop();
+  const file = (imageUrl(image) ?? "").split(/[?#]/)[0].split("/").pop();
   const base = file?.replace(/\.[a-z0-9]+$/i, "");
   return (
     IMAGE_EXT.test(alt) ||
