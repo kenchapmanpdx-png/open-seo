@@ -122,6 +122,60 @@ describe("botfetch.parity severity by crawler class", () => {
   });
 });
 
+// WO-B25-008: nwpersonaltraining.com. ClaudeBot got the nginx 403 on every
+// fetch (reproduced live); Googlebot got full pages, then a WP Defender
+// lockout keyed on our IP (not reproduced live): not tested from our IP.
+describe("botfetch.parity refusals that did not reproduce", () => {
+  const at = (path: string) => ({
+    url: `${ORIGIN}${path}`,
+    finalUrl: `${ORIGIN}${path}`,
+  });
+  const paths = ["/", "/contact/", "/a/", "/b/", "/c/"];
+  const nginx = { ...blocked, bytes: 146, bodySha256: "nginx" };
+  const lockout = { ...blocked, bytes: 9292, bodySha256: "defender" };
+
+  it("names only bots refused on every fetch; a lockout bot is 'not tested'", async () => {
+    const result = await run([
+      ...paths.map((p) => fetchOf("browser", at(p))),
+      ...paths
+        .slice(2)
+        .map((p) => fetchOf("ClaudeBot", { ...at(p), ...nginx })),
+      ...paths.slice(0, 2).map((p) => fetchOf("Googlebot", at(p))),
+      ...paths
+        .slice(2)
+        .map((p) => fetchOf("Googlebot", { ...at(p), ...lockout })),
+    ]);
+    const finding = result.findings[0];
+    expect(finding?.severity).toBe("S2");
+    expect(finding?.detail).toContain("AI crawlers: ClaudeBot");
+    expect(finding?.detail).not.toContain("search crawlers");
+    expect(finding?.detail).toContain(
+      "Googlebot: not tested from our IP (3 of 5 fetches refused after 2 full pages",
+    );
+  });
+
+  it("keeps a bot refused on every fetch with different bodies (aweandorder)", async () => {
+    const result = await run([
+      ...paths.map((p) => fetchOf("browser", at(p))),
+      ...paths.map((p, i) =>
+        fetchOf("ClaudeBot", { ...at(p), ...blocked, bodySha256: `cf${i}` }),
+      ),
+    ]);
+    expect(result.findings[0]?.severity).toBe("S2");
+    expect(result.findings[0]?.detail).toContain("ClaudeBot: 5 of 5 fetches");
+  });
+
+  it("passes with a note when the only refusing bot was not tested", async () => {
+    const result = await run([
+      ...paths.map((p) => fetchOf("browser", at(p))),
+      fetchOf("Googlebot", at("/")),
+      fetchOf("Googlebot", { ...at("/a/"), ...lockout }),
+    ]);
+    expect(statusOf(result, "P9-01")).toBe("PASS");
+    expect(result.statuses[0]?.note).toContain("Googlebot: not tested");
+  });
+});
+
 const byName = (a: string, b: string) => a.localeCompare(b);
 
 describe("bot classes", () => {

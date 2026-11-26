@@ -73,8 +73,37 @@ export function compareBotFetches(
     if (!robotsAllows(f.bot, f.url)) return [];
     return [{ f, why: mismatch(f, browser) }];
   });
-  return { urls, compared };
+  // WO-B25-008: a bot that got the browser's page on some URLs and a refusal
+  // on others, with no URL that failed and then passed (intermittent), was
+  // refused for our IP or request history, not for its UA: a UA-spoofed
+  // fetch cannot reproduce how the site treats the real crawler (handbook
+  // §0 Mode 1). It is "not tested"; only the other bots count as refused.
+  const notTested = [...new Set(compared.map((c) => c.f.bot))].flatMap(
+    (bot) => {
+      const all = compared.filter((c) => c.f.bot === bot);
+      const bad = all.filter((c) => c.why !== null);
+      const full = all.length - bad.length;
+      const failedUrls = new Set(bad.map((c) => c.f.url));
+      const intermittent = [...failedUrls].some((url) =>
+        all.some((c) => c.f.url === url && c.why === null),
+      );
+      return bad.length > 0 && full > 0 && !intermittent
+        ? [{ bot, refused: bad.length, all: all.length, full }]
+        : [];
+    },
+  );
+  const skip = new Set(notTested.map((n) => n.bot));
+  const failing = compared.filter((c) => c.why !== null && !skip.has(c.f.bot));
+  return { urls, compared, failing, notTested };
 }
+
+const notTestedLine = (n: {
+  bot: string;
+  refused: number;
+  all: number;
+  full: number;
+}) =>
+  `${n.bot}: not tested from our IP (${n.refused} of ${n.all} fetches refused after ${n.full} full page${n.full === 1 ? "" : "s"}; a UA-spoofed fetch cannot reproduce how the site treats the real crawler, handbook §0 Mode 1)`;
 
 const pct = (n: number, d: number) => `${Math.round((n / d) * 100)} %`;
 
@@ -87,7 +116,10 @@ export const botParityCheck: HandbookCheck = {
     const out = createResult(ITEMS);
     const { botFetch } = ctx.collected;
     if (botFetch.status !== "ok") return out.build();
-    const { urls, compared } = compareBotFetches(ctx.collected);
+    const { urls, compared, failing, notTested } = compareBotFetches(
+      ctx.collected,
+    );
+    const notTestedLines = notTested.map(notTestedLine);
     if (urls.length === 0) {
       out.na("P9-01", "no URL returned 200 to the browser UA");
       return out.build();
@@ -104,11 +136,10 @@ export const botParityCheck: HandbookCheck = {
           )
           .join("\n"),
       );
-    const failing = compared.filter((c) => c.why !== null);
     if (failing.length === 0) {
       out.pass(
         "P9-01",
-        `${urls.length} URLs, ${compared.length} bot fetches: every robots-allowed bot UA gets 200 + comparable HTML (CDN dashboard + verified-bot logs manual)`,
+        `${urls.length} URLs, ${compared.length} bot fetches: every robots-allowed bot UA gets 200 + comparable HTML (CDN dashboard + verified-bot logs manual)${notTestedLines.length > 0 ? `; ${notTestedLines.join("; ")}` : ""}`,
         urls.slice(0, MAX_LISTED).map(ref),
       );
       return out.build();
@@ -172,6 +203,7 @@ export const botParityCheck: HandbookCheck = {
         `${failing.length} of ${compared.length} bot fetches blocked (${pct(failing.length, compared.length)})`,
         ...byClass,
         ...rates,
+        ...notTestedLines,
         ...lines,
         ...more,
       ].join("\n"),

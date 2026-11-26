@@ -52,9 +52,7 @@ export const aiBotPolicyCheck: HandbookCheck = {
     // WO-B21-004: a token the bot-parity finding already names is reported
     // there once; the split lists only the others.
     const inParity = new Set<string>(
-      compareBotFetches(ctx.collected)
-        .compared.filter((c) => c.why !== null)
-        .map((c) => c.f.bot),
+      compareBotFetches(ctx.collected).failing.map((c) => c.f.bot),
     );
     const unreported = splits.filter((r) => !inParity.has(r.token));
     const throttled = rows.filter((r) => r.status === RATE_LIMITED);
