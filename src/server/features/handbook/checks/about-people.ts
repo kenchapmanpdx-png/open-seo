@@ -30,7 +30,34 @@ const str = (value: unknown) =>
 const live = (s: PageSnapshot) =>
   s.status === 200 && normalizeUrl(s.finalUrl) === normalizeUrl(s.url);
 
-const isAbout = (url: string) => /about/i.test(pathOf(url));
+/** One-segment About-like paths ("/our-story/", "/our-team"; WO-B25-005). */
+const ABOUT_SEGMENT =
+  /^(our-story|story|who-we-are|our-team|team|meet-the-team|company|history|mission)$/i;
+/** Home-page link text that names the About page. */
+const ABOUT_TEXT =
+  /^(about( us)?|our story|who we are|our team|meet the team)$/i;
+
+const segments = (url: string) => pathOf(url).split("/").filter(Boolean);
+
+/**
+ * The About page (P5-17): a path containing "about" (preferred), else a
+ * one-segment About-like path, else a one-segment page the home page links
+ * to with About-like text ("Our Story"). For Ken: "About page by path only".
+ */
+function findAbout(pages: PageSnapshot[]): PageSnapshot | undefined {
+  const byPath = pages.find((s) => /about/i.test(pathOf(s.url)));
+  if (byPath) return byPath;
+  const oneSegment = pages.filter((s) => segments(s.url).length === 1);
+  const named = oneSegment.find((s) => ABOUT_SEGMENT.test(segments(s.url)[0]));
+  if (named) return named;
+  const home = pages.find((s) => pathOf(s.url) === "/");
+  const linked = new Set(
+    (home?.links ?? [])
+      .filter((l) => ABOUT_TEXT.test(l.text.trim()))
+      .map((l) => normalizeUrl(l.href)),
+  );
+  return oneSegment.find((s) => linked.has(normalizeUrl(s.url)));
+}
 
 /** Person objects anywhere in a value (top-level nodes, employee, founder…). */
 function collectPeople(value: unknown, out: Person[]) {
@@ -95,13 +122,13 @@ export const aboutPeopleCheck: HandbookCheck = {
     const jsonPages = jsonld.status === "ok" ? jsonld.pages : [];
 
     // P5-17
-    const about = pagesLive.find((s) => isAbout(s.url));
+    const about = findAbout(pagesLive);
     if (!about) {
       out.finding({
         itemIds: ["P5-17"],
         severity: "S3",
         title: "No About page found",
-        detail: `none of ${pagesLive.length} crawled page(s) has "about" in its path`,
+        detail: `none of ${pagesLive.length} crawled page(s) has "about" in its path, an About-like one-segment path (our-story, our-team, …) or an About-like home link`,
         fix: "Publish an About page naming the people behind the site with their roles, marked up as Person nodes.",
         fixability: "FIXABLE",
         effort: "M",
