@@ -82,6 +82,8 @@ const SCRIPT_SIGNALS: { test: RegExp; platform: string; builder: boolean }[] = [
     platform: "Showit",
     builder: true,
   },
+  // BentoBox (restaurant builder; theogdenver.com, WO-B25-006).
+  { test: /(^|[/.])getbento\.com/i, platform: "BentoBox", builder: true },
   { test: /img1\.wsimg\.com/i, platform: "GoDaddy", builder: true },
   {
     test: /irp\.cdn-website\.com|multiscreensite\.com/i,

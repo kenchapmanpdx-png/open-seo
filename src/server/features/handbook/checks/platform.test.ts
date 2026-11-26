@@ -35,6 +35,11 @@ describe("platformCheck", () => {
     ["Jimdo", "https://assets.jimstatic.com/web.js"],
     ["Framer", "https://framerusercontent.com/sites/x/script.mjs"],
     ["Wix", "https://static.parastorage.com/services/wix.js"],
+    // theogdenver.com (WO-B25-006): BentoBox prints no generator meta.
+    [
+      "BentoBox",
+      "https://theme-assets.getbento.com/sensei/abc/assets/js/head.min.js",
+    ],
   ])("identifies %s from its script host", async (platform, src) => {
     const page = snapshot("/");
     const markup = {
@@ -51,5 +56,38 @@ describe("platformCheck", () => {
     const verdict = result.statuses.find((s) => s.itemId === "P0-03");
     expect(verdict?.status).toBe("PASS");
     expect(verdict?.note).toContain(platform);
+  });
+
+  it("keeps a header platform over a BentoBox script (WO-B25-006)", async () => {
+    const page = snapshot("/");
+    const markup = {
+      ...page.markup,
+      scripts: [
+        {
+          src: "https://app-assets.getbento.com/widget.js",
+          type: null,
+          async: false,
+          defer: false,
+          inHead: true,
+        },
+      ],
+    };
+    const result = await platformCheck.run(
+      context({
+        pages: { status: "ok", snapshots: [{ ...page, markup }] },
+        headers: {
+          status: "ok",
+          responses: [
+            {
+              url: `${ORIGIN}/`,
+              status: 200,
+              headers: [["x-wix-request-id", "1"]],
+            },
+          ],
+        },
+      }),
+    );
+    const verdict = result.statuses.find((s) => s.itemId === "P0-03");
+    expect(verdict?.note).toContain("Wix");
   });
 });
