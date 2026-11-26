@@ -101,25 +101,44 @@ export const rawCopyCheck: HandbookCheck = {
     );
     // Key on the national number (last 10 digits) so `tel:+14805550100`
     // and `tel:4805550100` count as one number in two formats.
-    const formats = new Map<string, Set<string>>();
+    // WO-B25-009: the rule fixes the `tel:` format (§25, §7), not the link
+    // text, so only href formats count.
+    const formats = new Map<string, Map<string, number>>();
     for (const t of tels) {
       const key = digits(t.href).slice(-10);
-      const set = formats.get(key) ?? new Set<string>();
-      set.add(`href "${t.href.replace(/^tel:/i, "")}"`);
-      // Link text counts only when it shows the number ("Call now" does not).
-      if (t.text.replace(/\D/g, "").length >= 7) set.add(`text "${t.text}"`);
-      formats.set(key, set);
+      const hrefs = formats.get(key) ?? new Map<string, number>();
+      const href = t.href.replace(/^tel:/i, "");
+      hrefs.set(href, (hrefs.get(href) ?? 0) + 1);
+      formats.set(key, hrefs);
     }
     const p508: { s: PageSnapshot; why: string }[] = [];
-    for (const [num, shown] of formats) {
-      const hrefs = [...shown].filter((x) => x.startsWith("href"));
-      const texts = [...shown].filter((x) => x.startsWith("text"));
-      if (hrefs.length > 1 || texts.length > 1) {
-        const sample = tels.find((t) => digits(t.href).slice(-10) === num);
-        if (sample)
-          p508.push({
+    const notE164: { s: PageSnapshot; why: string }[] = [];
+    const local = ctx.siteProfile.some(
+      (a) => a.code === "SP7" && a.value === "Y",
+    );
+    const linksOf = (hrefs: Map<string, number>) =>
+      [...hrefs.values()].reduce((a, b) => a + b, 0);
+    const ownNumber = [...formats].reduce<[string, number]>(
+      (best, [num, hrefs]) =>
+        linksOf(hrefs) > best[1] ? [num, linksOf(hrefs)] : best,
+      ["", 0],
+    )[0];
+    for (const [num, hrefs] of formats) {
+      const sample = tels.find((t) => digits(t.href).slice(-10) === num);
+      if (!sample) continue;
+      if (hrefs.size > 1)
+        p508.push({
+          s: sample.s,
+          why: `${num} written as ${[...hrefs.keys()].map((h) => `href "${h}"`).join(", ")}`,
+        });
+      // §7 SP7: one `tel:` format sitewide, E.164 (`tel:+1…`), for the
+      // site's own number (the most-linked one; partner listings are not NAP).
+      else if (local && num === ownNumber) {
+        const [[href, count]] = [...hrefs];
+        if (!href.startsWith("+"))
+          notE164.push({
             s: sample.s,
-            why: `${num} written as ${[...shown].join(", ")}`,
+            why: `tel:${href} on ${count} link(s) has no +country code`,
           });
       }
     }
@@ -153,22 +172,36 @@ export const rawCopyCheck: HandbookCheck = {
         severity: "S3",
         title: "NAP facts inconsistent or missing from server HTML",
         detail: p508.map(({ s, why }) => `${s.url} — ${why}`).join("\n"),
-        fix: "Show the address as one postal-format text block, one tel: display format sitewide, and the opening hours in server HTML.",
+        fix: "Show the address as one postal-format text block, one tel: link format sitewide, and the opening hours in server HTML.",
         fixability: "FIXABLE",
         effort: "S",
         urls: [...new Set(p508.map(({ s }) => s.url))],
         evidenceRefs: p508.map(({ s, why }) => textRef(s, why)),
       });
-    } else if (tels.length > 0 || street) {
-      out.pass(
-        "P5-08",
-        `tel formats ${formats.size} number(s), one display each; address/hours in server text where declared (postal-format judgment pending, LLM B3)`,
-        factPages
-          .slice(0, 1)
-          .map((s) => textRef(s, s.markup.text.slice(0, 600))),
-      );
-    } else {
-      out.na("P5-08", "no tel: links or JSON-LD address");
+    }
+    if (notE164.length > 0) {
+      out.finding({
+        itemIds: ["P5-08"],
+        severity: "S3",
+        title: "Phone links are not in E.164 form (tel:+1…)",
+        detail: notE164.map(({ s, why }) => `${s.url} — ${why}`).join("\n"),
+        fix: "Write every phone link in E.164 form with the country code (tel:+1…), one format sitewide.",
+        fixability: "FIXABLE",
+        effort: "S",
+        urls: [...new Set(notE164.map(({ s }) => s.url))],
+        evidenceRefs: notE164.map(({ s, why }) => textRef(s, why)),
+      });
+    }
+    if (p508.length === 0 && notE164.length === 0) {
+      if (tels.length > 0 || street)
+        out.pass(
+          "P5-08",
+          `tel formats ${formats.size} number(s), one tel: format each; address/hours in server text where declared (postal-format judgment pending, LLM B3)`,
+          factPages
+            .slice(0, 1)
+            .map((s) => textRef(s, s.markup.text.slice(0, 600))),
+        );
+      else out.na("P5-08", "no tel: links or JSON-LD address");
     }
 
     // P5-16

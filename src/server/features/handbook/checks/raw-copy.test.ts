@@ -66,6 +66,59 @@ describe("crawl.raw-copy", () => {
     expect(statusOf(result, "P5-08")).toBe("OPEN");
   });
 
+  describe("phone part of P5-08 (WO-B25-009)", () => {
+    const pages = (hrefs: string[]) =>
+      hrefs.map((href, i) =>
+        page(`/p${i}`, "Call us", [
+          { href, text: ["(360) 574-7292", "360.574.7292"][i % 2] },
+        ]),
+      );
+    const local = (snapshots: PageSnapshot[]) =>
+      rawCopyCheck.run({
+        ...context({ pages: { status: "ok", snapshots } }),
+        siteProfile: [
+          { code: "SP7", value: "Y", evidence: "test", confidence: "high" },
+        ],
+      });
+    const titles = async (r: ReturnType<typeof run>) =>
+      (await r).findings
+        .filter((f) => f.itemIds.includes("P5-08"))
+        .map((f) => f.title);
+
+    it("does not count link text: one tel: format is consistent (nwpersonaltraining.com)", async () => {
+      expect(
+        await titles(run(pages(["tel:3605747292", "tel:3605747292"]))),
+      ).toEqual([]);
+    });
+
+    it("keeps several tel: href formats open, listing hrefs only (mobilepetgroomingaz.com)", async () => {
+      const result = await run(
+        pages([
+          "tel:16026220510",
+          "tel:1-602-622-0510",
+          "tel:6026220510",
+          "tel:602-622-0510",
+        ]),
+      );
+      const finding = result.findings.find((f) => f.itemIds.includes("P5-08"));
+      expect(finding?.title).toBe(
+        "NAP facts inconsistent or missing from server HTML",
+      );
+      expect(finding?.detail).not.toContain("text ");
+    });
+
+    it("opens the E.164 rule on SP7 sites only", async () => {
+      const one = pages(["tel:3605747292", "tel:3605747292"]);
+      expect(await titles(local(one))).toEqual([
+        "Phone links are not in E.164 form (tel:+1…)",
+      ]);
+      expect(await titles(run(one))).toEqual([]);
+      expect(
+        await titles(local(pages(["tel:+13605747292", "tel:+13605747292"]))),
+      ).toEqual([]);
+    });
+  });
+
   it("passes P5-16 on a contact page with a mailto link", async () => {
     const result = await run([
       page("/contact", "Write to us", [

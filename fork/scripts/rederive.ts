@@ -61,7 +61,21 @@ for (const dir of dirs) {
   const snapshots = loadPages(dir);
   console.log(`== ${dir} (${snapshots.length} pages)`);
   for (const check of checks) {
-    const ctx = context({ pages: { status: "ok", snapshots } });
+    // SP7=Y in the environment = a local business site (SP7 rules run).
+    const ctx = {
+      ...context({ pages: { status: "ok", snapshots } }),
+      siteProfile:
+        process.env.SP7 === "Y"
+          ? [
+              {
+                code: "SP7" as const,
+                value: "Y" as const,
+                evidence: "rederive",
+                confidence: "high" as const,
+              },
+            ]
+          : [],
+    };
     const result = await check.run({
       ...ctx,
       origin: new URL(snapshots[0].url).origin,
