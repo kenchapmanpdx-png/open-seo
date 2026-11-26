@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: All batches done (B22 run 103 tag handbook-v3.11.0; B23 run 103 tag handbook-v3.12.0; B24 run 104 tag handbook-v3.13.0). BLOCKED-KEN left in fork/queue.md: WO-B22-004 round 3 (needs the Project chat's Semrush half); WO-B22-006 fix-list ordering (needs your Google sign-in); WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); WO-B9-026 in-app perf half. Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Decisions for you: B24 "site refusal stays provisional" / "429 counts as a site refusal" (fork/reports/B24.md); B23 revert phrases (fork/reports/B23.md § Exit: "missing canonical stays S1", "named-group gap stays S1", "x-default required", "any year in headings", "429 counts as a block"); B22 "429 is not a sitemap error" (P3-12); B22 grade-spread / effect-map phrases (fork/reports/B22.md); B20 handbook wording (fork/reports/B20.md § Exit). Look C is live. Closed 2026-11-25: K1 Windows autostart installed (`install-autostart.ps1` printed `unchanged`; reboot test still open); `wip/b16-run81`, `ken/rebase-v0.1.31`, `ken/rebase-v0.1.31-m1` deleted
+status: done (not-started | in-progress | needs-ken | done)
+needs_ken: All batches done (B25 run 106 tag handbook-v3.14.0; B22 run 103 tag handbook-v3.11.0; B23 run 103 tag handbook-v3.12.0; B24 run 104 tag handbook-v3.13.0). BLOCKED-KEN left in fork/queue.md: WO-B22-004 round 3 (needs the Project chat's Semrush half); WO-B22-006 fix-list ordering (needs your Google sign-in); WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); WO-B9-026 in-app perf half. Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Decisions for you: B25 revert phrases (fork/reports/B25.md § Decisions, incl. "any full page means not tested"); B24 "site refusal stays provisional" / "429 counts as a site refusal" (fork/reports/B24.md); B23 revert phrases (fork/reports/B23.md § Exit: "missing canonical stays S1", "named-group gap stays S1", "x-default required", "any year in headings", "429 counts as a block"); B22 "429 is not a sitemap error" (P3-12); B22 grade-spread / effect-map phrases (fork/reports/B22.md); B20 handbook wording (fork/reports/B20.md § Exit). Look C is live. Closed 2026-11-25: K1 Windows autostart installed (`install-autostart.ps1` printed `unchanged`; reboot test still open); `wip/b16-run81`, `ken/rebase-v0.1.31`, `ken/rebase-v0.1.31-m1` deleted
 current_batch: B25
 batch_file: fork/batches/B25-heavy-precision-fixes.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 105
-next_action: B25 WO-B25-090 exit. WO-B25-001…010 done run 105 (red → fix → guard, Cases re-derived; fork/reports/B25.md draft). Replay `fork/runs/b25/r105.sh` was started detached in run 105 (log `fork/runs/b25/r105.log`, goldens `fork/runs/<site>/b25r105*`): if it finished, read BadGEO/GoodGEO/contract gate + eight goldens vs `b24r104` (caught Δ, grades Δ, attribute each change to a WO; expected: nwpt not a golden); if not finished or dead, rerun it. Then the in-app re-check (4 sites, batch file § Exit), `grade-spread.ts`, report replay table, tag handbook-v3.14.0, STATE done. Also: weekly MAINT M1 (BLUEPRINT §9) due 2026-11-28: upstream v0.1.32 (`6f68494e`, 14 commits; merge-tree conflicts only in drizzle pg 0052 / sqlite 0074 snapshots + journals → `fork/scripts/migration-renumber.mjs`). WO-B22-004 round 3 when Ken runs the Semrush half.
+current_run: 106
+next_action: All batches done. Weekly MAINT M1 (BLUEPRINT §9) due 2026-11-28: upstream v0.1.32 (`6f68494e`, 14 commits; merge-tree conflicts only in drizzle pg 0052 / sqlite 0074 snapshots + journals → `fork/scripts/migration-renumber.mjs`). WO-B22-004 round 3 when Ken runs the Semrush half. Optional follow-up: the B25 in-app nwpersonaltraining.com resource-cap note (WO-010, 315 > 300) was not visible in stored item rows (UNVERIFIED in-app).
 contracts_version: 1.11.0 (B19 run 89: ADR-033 K3 abortUrls / mainWords / aborted robots, RenderData js.mainWords + js.robotsBlocked; 1.10.0 B17 run 84: ADR-032 PageSnapshot `redirectChain` + `doctype`, SUPP-21…26; 1.9.0 B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -36,33 +36,33 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                             | Model (SPLIT) | Status      |
-| ----- | ------------------------------------------------ | ------------- | ----------- |
-| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done        |
-| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done        |
-| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done        |
-| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done        |
-| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done        |
-| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done        |
-| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done        |
-| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done        |
-| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done        |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done        |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done        |
-| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done        |
-| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done        |
-| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done        |
-| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done        |
-| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | done        |
-| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | done        |
-| B18   | fork/batches/B18-heavy-field-test-1.md           | HEAVY         | done        |
-| B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done        |
-| B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done        |
-| B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done        |
-| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done        |
-| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | done        |
-| B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | done        |
-| B25   | fork/batches/B25-heavy-precision-fixes.md        | HEAVY         | in-progress |
+| Batch | File                                             | Model (SPLIT) | Status |
+| ----- | ------------------------------------------------ | ------------- | ------ |
+| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done   |
+| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done   |
+| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done   |
+| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done   |
+| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done   |
+| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done   |
+| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done   |
+| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done   |
+| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done   |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done   |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done   |
+| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done   |
+| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done   |
+| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done   |
+| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done   |
+| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | done   |
+| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | done   |
+| B18   | fork/batches/B18-heavy-field-test-1.md           | HEAVY         | done   |
+| B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done   |
+| B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done   |
+| B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done   |
+| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done   |
+| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | done   |
+| B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | done   |
+| B25   | fork/batches/B25-heavy-precision-fixes.md        | HEAVY         | done   |
 
 ## Run log
 
@@ -173,6 +173,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 103 | 2026-11-25 | Opus 5.5 (autopilot) | B22 exit (replay b22r103: BadGEO 0/0, GoodGEO 0, goldens caught Δ 0, grades Δ 0 except bluetree +1.0 lab CLS; tag handbook-v3.11.0). B23 all six WOs (red → class fix → guard; built in a worktree during the B22 replay): P3-04 no-canonical S3, named-group gap S3 'intended?', robots verdict path+query (3 call sites + source scan), hreflang x-default S4 + LIMITED, P4-06 past years only, policy-map 429 retry; ADR-038. Replay b23r103: BadGEO 0/0, GoodGEO 0, caught Δ 0; wspark uncapped (37.2); grade-spread rerun (capped 6 → 5; predicted aweandorder F 47.1, samanthaco D 50). Checks: types 0, lint 0, 2866 tests, format clean. Tag handbook-v3.12.0; status done                                                                                                                                                                                                                                                                                                        |
 | 104 | 2026-11-25 | Opus 5.5 (autopilot) | B24 WO-B24-001: aweandorder render 403 (helper healthy; plain fetch 200 for every UA string → UA not the trigger, render UA unchanged). Class fix at grade-view siteRefusedStatus / provisionalRenderNote (app + both exports): site refusal (4xx ≠ 429) is final with an info note and cause "The site refused the browser helper"; red 4/5 → green + guards. In-app rerun hb-1566ec0c: D 46.4 final, note quoted. e2e harness banner match fixed (/provisional                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | not final/). Replay b24r104: BadGEO 0/0, GoodGEO 0, goldens caught Δ 0, grades Δ 0; grade-spread unchanged. Tag handbook-v3.13.0. | M1 v0.1.32 due 2026-11-28 |
 | 105 | 2026-11-25 | Opus 5.5 (autopilot) | B25 WO-B25-001…010: red test at the public entry point → class fix → guards for all ten (noscript pixel; og:site_name brand; bare-brand 404 twin; /index.html → 404; About by one-segment path / home link; BentoBox; SUPP-03 per layout; P9-01 not-tested bots, nwpt S1 → S2; P5-08 tel: href formats + SP7 E.164; lazy data-src images, empty src no longer the page URL). Cases re-derived from stored raw HTML / bot-fetch rows of every latest in-app run (`fork/scripts/rederive.ts`). Session checks pass (2899 tests). Replay r105 started detached.                                                                                                                                                                                                                                                                                                                                                                                                                              | exit: replay, in-app re-check, grade-spread, tag v3.14.0                                                                          |
+| 106 | 2026-11-26 | Opus 5.5 (autopilot) | B25 exit. Replay r105: BadGEO missing 1 / unexpected 1 → exit fix: P9-01 "not tested" only for a lockout (last 5 compared fetches refused; BadGEO acme GPTBot refused on one URL stays refused), BadGEO lazy-hero expects SUPP-20 (WO-010 positive); BadGEO r106 0 / 0, GoodGEO 0. Goldens caught Δ 0, grades Δ 0, changes attributed (E.164 009, brand wording 002, rest lab variance). App build had failed on a scratch type error (already fixed) → restarted, build `f7e05f8ad06f`. In-app re-check og / l4p / bb / nwpt (`fork/runs/b25/check-site.mjs`): every fixed finding gone or narrowed; nwpt P9-01 S1 → S2, F 39 → F 37.9 uncapped. grade-spread: no letter change. Checks pass (2900 tests). Tag handbook-v3.14.0.                                                                                                                                                                                                                                                         | M1 due 2026-11-28                                                                                                                 |
 
 ## Batch history
 
@@ -201,3 +202,4 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B22   | Opus 5.5 | 2026-11-25 | 2026-11-25 | fork/reports/B22.md |
 | B23   | Opus 5.5 | 2026-11-25 | 2026-11-25 | fork/reports/B23.md |
 | B24   | Opus 5.5 | 2026-11-25 | 2026-11-25 | fork/reports/B24.md |
+| B25   | Opus 5.5 | 2026-11-25 | 2026-11-26 | fork/reports/B25.md |
