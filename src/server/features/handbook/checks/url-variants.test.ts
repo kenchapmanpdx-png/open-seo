@@ -109,6 +109,25 @@ describe("crawl.url-variants", () => {
     expect(statusOf(await run([index], ["/index.html"]), "P3-03")).toBe("OPEN");
   });
 
+  it("passes P3-03 when /index.html redirects to a 404 (WO-B25-004)", async () => {
+    const gone = `${ORIGIN}/index.html/`;
+    const to404 = probe(
+      "index-html",
+      `${ORIGIN}/index.html`,
+      [[`${ORIGIN}/index.html`, 301]],
+      404,
+      gone,
+    );
+    expect(statusOf(await run([to404]), "P3-03")).toBe("PASS");
+    // Guards: a 200 without redirect and a temporary hop to / still open.
+    const served = probe("index-html", `${ORIGIN}/index.html`, [], 200);
+    expect(statusOf(await run([served]), "P3-03")).toBe("OPEN");
+    const temporary = probe("index-html", `${ORIGIN}/index.html`, [
+      [`${ORIGIN}/index.html`, 302],
+    ]);
+    expect(statusOf(await run([temporary]), "P3-03")).toBe("OPEN");
+  });
+
   it("opens P3-12 at S4 when /page/2/ serves the homepage, nothing on 404", async () => {
     const home = snapshot("/");
     const pages = {

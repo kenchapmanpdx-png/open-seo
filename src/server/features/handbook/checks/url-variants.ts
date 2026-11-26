@@ -221,12 +221,15 @@ export const urlVariantsCheck: HandbookCheck = {
     const index = variants.probes.find((p) => p.kind === "index-html");
     const passRefs: string[] = [];
     if (index) {
+      // WO-B25-004: a chain that ends in 404 / 410 serves no duplicate.
       const why =
         index.redirectChain.length === 0
           ? index.status === 200
             ? "/index.html answers 200 (duplicate of /)"
             : null
-          : hopProblem(index, (url) => pathOf(url) === "/");
+          : index.status === 404 || index.status === 410
+            ? null
+            : hopProblem(index, (url) => pathOf(url) === "/");
       if (why) {
         out.finding({
           itemIds: ["P3-03"],
@@ -280,7 +283,7 @@ export const urlVariantsCheck: HandbookCheck = {
     if (passRefs.length > 0) {
       out.pass(
         "P3-03",
-        `/index.html → ${index?.status ?? "not fetched"}; no internal links to index.html; query variants not probed${upperNote}`,
+        `/index.html → ${index?.status ?? "not fetched"}${index && index.redirectChain.length > 0 && (index.status === 404 || index.status === 410) ? ` (ends in ${index.status})` : ""}; no internal links to index.html; query variants not probed${upperNote}`,
         passRefs,
       );
     } else if (!index) {
