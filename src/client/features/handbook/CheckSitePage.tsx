@@ -131,7 +131,11 @@ function CheckForm({ projectId }: { projectId: string }) {
       }
       return checkSite(
         {
-          currentProject: { id: projectId, domain: current?.domain ?? null },
+          currentProject: {
+            id: projectId,
+            domain: current?.domain ?? null,
+            name: current?.name ?? "",
+          },
           website: site,
           size,
           fullCheck,
@@ -291,7 +295,7 @@ function ScopeNotice({ scope }: { scope: ScopeView }) {
 const getProjects = async (queryClient: ReturnType<typeof useQueryClient>) =>
   (
     await queryClient.fetchQuery({ ...projectsQueryOptions(), staleTime: 0 })
-  ).map((p) => ({ id: p.id, domain: p.domain ?? null }));
+  ).map((p) => ({ id: p.id, domain: p.domain ?? null, name: p.name }));
 
 /** Step 1: the site audit crawl. Step 2: the Handbook run it starts. */
 function CheckProgress({

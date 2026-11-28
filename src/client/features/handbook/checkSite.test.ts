@@ -20,11 +20,14 @@ const deps = {
   startAudit: vi.fn<CheckSiteDeps["startAudit"]>(),
 };
 
-const current = { id: "p1", domain: "acme.com" };
+const current = { id: "p1", domain: "acme.com", name: "acme.com" };
 
 beforeEach(() => {
   deps.verifyWebsite.mockResolvedValue({ domain: "acme.com" });
-  deps.listProjects.mockResolvedValue([current, { id: "p2", domain: "b.io" }]);
+  deps.listProjects.mockResolvedValue([
+    current,
+    { id: "p2", domain: "b.io", name: "b.io" },
+  ]);
   deps.createProject.mockResolvedValue({ id: "new" });
   deps.getSettings.mockResolvedValue(settings);
   deps.startAudit.mockResolvedValue({ auditId: "a1" });
@@ -100,7 +103,7 @@ describe("checkSite", () => {
   it("gives a project with no site this site instead of creating a second project", async () => {
     const result = await checkSite(
       {
-        currentProject: { id: "empty", domain: null },
+        currentProject: { id: "empty", domain: null, name: "Shop" },
         website: "new.dev",
         size: "quick",
         fullCheck: true,
@@ -165,5 +168,20 @@ describe("checkSite", () => {
     );
     expect(deps.previewScope).toHaveBeenCalledWith("acme.com", 500);
     expect(deps.startAudit.mock.calls[0][0].excludePaths).toEqual(["/blogs/"]);
+  });
+
+  it("leaves the empty Default project alone and creates one named for the site", async () => {
+    const result = await checkSite(
+      {
+        currentProject: { id: "default", domain: null, name: "Default" },
+        website: "new.dev",
+        size: "quick",
+        fullCheck: true,
+      },
+      deps,
+    );
+    expect(deps.createProject).toHaveBeenCalledWith("new.dev");
+    expect(result.projectId).toBe("new");
+    expect(deps.setProjectDomain).toHaveBeenCalledWith("new", "new.dev");
   });
 });

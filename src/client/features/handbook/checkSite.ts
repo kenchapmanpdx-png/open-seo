@@ -13,7 +13,7 @@ export const CHECK_SIZES = {
 export type CheckSize = keyof typeof CHECK_SIZES;
 export const CHECK_SIZE_KEYS: readonly CheckSize[] = ["whole", "quick"];
 
-type Project = { id: string; domain: string | null };
+type Project = { id: string; domain: string | null; name: string };
 type Settings = {
   enabled: boolean;
   mode: "BUILD" | "AUDIT" | "MAINTAIN";
@@ -87,7 +87,14 @@ export async function checkSite(
   const isNew = projectId === null;
   // A project with no site yet takes this one instead of a second project
   // for the same site (B18 WO-B18-008).
-  if (projectId === null && current.domain === null) projectId = current.id;
+  // The workspace's auto-created "Default" project stays as it is: a site
+  // gets its own project named for it (B27 exit, B26 side effect).
+  if (
+    projectId === null &&
+    current.domain === null &&
+    current.name !== "Default"
+  )
+    projectId = current.id;
   if (projectId === null) projectId = (await deps.createProject(domain)).id;
 
   const settings = await deps.getSettings(projectId);
