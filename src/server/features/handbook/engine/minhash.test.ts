@@ -78,6 +78,30 @@ describe("minhash", () => {
       );
       expect(facts.duplicateBlocks).toEqual([]);
     });
+
+    // wellnessforzebras.com (WO-B26-003): the rules live in an external
+    // stylesheet, so the utility class names are the only evidence.
+    it.each([
+      ["Tailwind", "hidden md:block", "md:hidden"],
+      ["Tailwind max-", "max-lg:hidden", "lg:hidden"],
+      ["Bootstrap", "d-none d-md-block", "d-md-none"],
+    ])(
+      "does not count responsive copies hidden by %s utility classes",
+      (_, a, b) => {
+        const facts = mainTextFacts(
+          `<div class="${a}"><p>${copy}</p></div><div class="${b}"><p>${copy}</p></div>`,
+        );
+        expect(facts.duplicateBlocks).toEqual([]);
+      },
+    );
+
+    it("counts utility copies that are both shown in one layout", () => {
+      // md:hidden and lg:hidden are both shown below md.
+      const facts = mainTextFacts(
+        `<div class="md:hidden"><p>${copy}</p></div><div class="lg:hidden"><p>${copy}</p></div>`,
+      );
+      expect(facts.duplicateBlocks).toEqual([{ text: copy, count: 2 }]);
+    });
   });
 
   it("handles 1000 pages in under 2 s", () => {

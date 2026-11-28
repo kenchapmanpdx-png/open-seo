@@ -144,8 +144,64 @@ function layoutRules(html: string): LayoutRules {
   };
 }
 
-/** Where a block is hidden: everywhere, or in some scope / media layouts. */
-type Hidden = { all: boolean; scopes: Set<string>; medias: Set<string> };
+/**
+ * Screen bands of the Tailwind / Bootstrap breakpoints (WO-B26-003); Bootstrap
+ * `xxl` is read as `2xl`. Utility classes hide an element from a band upward
+ * (`md:hidden`, `d-md-none`), below one (`max-lg:hidden`), or from the base
+ * band until a display class shows it again (`hidden md:block`,
+ * `d-none d-md-block`). The rules sit in an external stylesheet the check
+ * does not fetch, so the class names are the evidence.
+ */
+const SCREENS = ["base", "sm", "md", "lg", "xl", "2xl"];
+const TW_DISPLAY =
+  "block|flex|grid|inline|inline-block|inline-flex|inline-grid|table|contents";
+const BS_DISPLAY =
+  "block|flex|grid|inline|inline-block|inline-flex|inline-grid|table|table-cell|table-row";
+const TW_AT = new RegExp(`^(sm|md|lg|xl|2xl):(hidden|${TW_DISPLAY})$`);
+const TW_BELOW = /^max-(sm|md|lg|xl|2xl):hidden$/;
+const BS_AT = new RegExp(`^d-(sm|md|lg|xl|xxl)-(none|${BS_DISPLAY})$`);
+const band = (bp: string) => SCREENS.indexOf(bp === "xxl" ? "2xl" : bp);
+
+/** Bands a class list hides its element in; [] when it hides none. */
+function utilityHiddenBands(classes: readonly string[]): string[] {
+  // shownFrom[i]: the display state a class sets from band i upward.
+  const shownFrom: (boolean | undefined)[] = SCREENS.map(() => undefined);
+  const below: number[] = [];
+  let hides = false;
+  for (const c of classes) {
+    if (c === "hidden" || c === "d-none") {
+      shownFrom[0] = false;
+      hides = true;
+      continue;
+    }
+    const at = TW_AT.exec(c) ?? BS_AT.exec(c);
+    if (at) {
+      const hide = at[2] === "hidden" || at[2] === "none";
+      shownFrom[band(at[1])] = !hide;
+      hides ||= hide;
+      continue;
+    }
+    const max = TW_BELOW.exec(c);
+    if (max) {
+      below.push(band(max[1]));
+      hides = true;
+    }
+  }
+  if (!hides) return [];
+  let shown = true;
+  return SCREENS.filter((_, i) => {
+    shown = shownFrom[i] ?? shown;
+    return !shown || below.some((b) => i < b);
+  });
+}
+
+/** Where a block is hidden: everywhere, or in some scope / media / band layouts. */
+type Hidden = {
+  all: boolean;
+  scopes: Set<string>;
+  medias: Set<string>;
+  bands: Set<string>;
+};
 type Block = { text: string; hidden: Hidden };
 
 /** Main-text blocks of raw HTML, whitespace collapsed, empty blocks dropped. */
@@ -155,7 +211,12 @@ function mainTextBlocks(html: string, rules: LayoutRules): Block[] {
   let bufHidden: Hidden | null = null;
   let skip = 0;
   const stack: { name: string; hidden: Hidden }[] = [];
-  const none: Hidden = { all: false, scopes: new Set(), medias: new Set() };
+  const none: Hidden = {
+    all: false,
+    scopes: new Set(),
+    medias: new Set(),
+    bands: new Set(),
+  };
   const flush = () => {
     const text = buf.join("").replace(/\s+/g, " ").trim();
     if (text) blocks.push({ text, hidden: bufHidden ?? none });
@@ -175,18 +236,21 @@ function mainTextBlocks(html: string, rules: LayoutRules): Block[] {
         const medias = classes.flatMap((c) => [
           ...(rules.byMedia.get(c) ?? []),
         ]);
+        const bands = utilityHiddenBands(classes);
         const all =
           "hidden" in attrs ||
           attrs["aria-hidden"] === "true" ||
-          /display\s*:\s*none/i.test(attrs.style ?? "");
+          /display\s*:\s*none/i.test(attrs.style ?? "") ||
+          bands.length === SCREENS.length;
         stack.push({
           name,
           hidden:
-            all || scopes.length > 0 || medias.length > 0
+            all || scopes.length > 0 || medias.length > 0 || bands.length > 0
               ? {
                   all: parent.all || all,
                   scopes: new Set([...parent.scopes, ...scopes]),
                   medias: new Set([...parent.medias, ...medias]),
+                  bands: new Set([...parent.bands, ...bands]),
                 }
               : parent,
         });
@@ -214,9 +278,10 @@ function mainTextBlocks(html: string, rules: LayoutRules): Block[] {
 /**
  * Layouts to count copies in: each scope of a layout family (the page is in
  * exactly one), crossed with each `@media` layout (two or more queries are
- * taken to split the screens; one query also leaves the screens outside it).
+ * taken to split the screens; one query also leaves the screens outside it),
+ * crossed with each breakpoint band when a block is utility-hidden in one.
  */
-function layouts(rules: LayoutRules) {
+function layouts(rules: LayoutRules, banded: boolean) {
   const scopes = rules.scopes.length > 0 ? rules.scopes : [null];
   const medias =
     rules.medias.length >= 2
@@ -224,7 +289,10 @@ function layouts(rules: LayoutRules) {
       : rules.medias.length === 1
         ? [rules.medias[0], null]
         : [null];
-  return scopes.flatMap((scope) => medias.map((media) => ({ scope, media })));
+  const bands = banded ? SCREENS : [null];
+  return scopes.flatMap((scope) =>
+    medias.flatMap((media) => bands.map((band) => ({ scope, media, band }))),
+  );
 }
 
 /** 128 MinHash values over 5-word shingles; empty text → []. */
@@ -297,12 +365,14 @@ export function mainTextFacts(html: string, blocks: readonly string[] = []) {
   const text = main.map((b) => b.text).join(" ");
   // SUPP-03: a block repeats when ≥ 2 copies are visible in one layout.
   const counts = new Map<string, number>();
-  for (const { scope, media } of layouts(rules)) {
+  const banded = main.some((b) => b.hidden.bands.size > 0);
+  for (const { scope, media, band } of layouts(rules, banded)) {
     const here = new Map<string, number>();
     for (const { text: block, hidden } of main) {
       if (hidden.all) continue;
       if (scope && hidden.scopes.has(scope)) continue;
       if (media && hidden.medias.has(media)) continue;
+      if (band && hidden.bands.has(band)) continue;
       if (words(block).length < BLOCK_MIN_WORDS) continue;
       here.set(block, (here.get(block) ?? 0) + 1);
     }
