@@ -37,7 +37,26 @@ export type Spec = {
   title: string;
   fix: string;
   effort: Effort;
+  /**
+   * A fail whose rationale starts "Spelling:" stands only when two different
+   * quotes each appear in their page's text exactly: case, spacing and
+   * punctuation kept, only whitespace runs collapsed (WO-B26-007).
+   */
+  exactSpelling?: boolean;
 };
+
+const exact = (t: string) => t.replace(/\s+/g, " ").trim();
+
+/** Two different quotes, each printed exactly on the page it cites. */
+function spellingShown(
+  quotes: readonly { url: string; text: string }[],
+  views: readonly View[],
+) {
+  const shown = quotes.filter((q) =>
+    views.some((v) => v.url === q.url && exact(v.text).includes(exact(q.text))),
+  );
+  return new Set(shown.map((q) => exact(q.text))).size >= 2;
+}
 
 /** Home first, then one rank-1 sample per template, then crawl order. */
 export function samplePages(ctx: CheckContext, max: number): PageSnapshot[] {
@@ -89,6 +108,19 @@ export async function judged(
       evidence: [],
     };
   }
+  if (
+    spec.exactSpelling &&
+    result.verdict === "fail" &&
+    /^spelling\b/i.test(result.rationale.trim()) &&
+    !spellingShown(result.quotes, views)
+  )
+    return only(
+      spec.itemId,
+      "BLOCKED",
+      clip(
+        `llm spelling claim not shown by two exact quotes (${tag}): ${result.rationale}`,
+      ).slice(0, 500),
+    );
   const quoted = result.verdict === "fail" ? result.quotes : [];
   const evidence: EvidenceDraft[] =
     quoted.length > 0
@@ -264,6 +296,7 @@ const entityTestCheck = llmCheck(
   {
     itemId: "P5-07",
     rubricId: "entity-test",
+    exactSpelling: true,
     title: "Entity test fails or names are spelled more than one way",
     fix: "State the business category (+ place for local businesses) in the home title, meta description and H1; spell the brand and people's names one way everywhere (§25).",
     effort: "S",

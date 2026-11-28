@@ -48,6 +48,23 @@ const LINE_BREAKS = new Set(
   ),
 );
 const REAL_LIST = new Set(["ul", "ol", "dl", "table"]);
+/**
+ * Text-level (inline) tags: the browser prints the text either side of them
+ * with no gap, so `Zebra<span>Thrive</span>` reads "ZebraThrive" and
+ * `1<sup>st</sup>` "1st" (WO-B26-007). Every other tag is an element boundary
+ * and adds a space. A utility class that makes one of these a box (Tailwind
+ * `block`, Bootstrap `d-block`), or a flex / grid parent (which blockifies
+ * its children), makes it a boundary too.
+ */
+const INLINE = new Set(
+  "span abbr b bdi bdo cite code data dfn em i kbd mark q s samp small strong sub sup time u var font del ins wbr".split(
+    " ",
+  ),
+);
+const BOX_CLASS =
+  /^(?:[\w-]+:)?(?:block|flex|grid|table|list-item|flow-root)$|^d-(?:\w+-)?(?:block|flex|grid|table)$/;
+const FLEX_CLASS =
+  /^(?:[\w-]+:)?(?:inline-)?(?:flex|grid)$|^d-(?:\w+-)?(?:inline-)?(?:flex|grid)$/;
 const MIN_FAKE_LIST_LINES = 3;
 /** A `<p>` this long is the page's first answer block (SUPP-13). */
 const FIRST_ANSWER_MIN_WORDS = 15;
@@ -240,7 +257,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     }
     if (name === "button" && button) {
       buttons.push({
-        text: collapse(button.text.join(" ")),
+        text: collapse(button.text.join("")),
         ariaLabel: button.ariaLabel,
       });
       button = null;
@@ -255,10 +272,15 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
    * Spaces are added only between runs, i.e. at element boundaries.
    */
   let textRun: string[] = [];
+  /** A block boundary passed since the last text run: the next run starts with a space. */
+  let gap = false;
+  /** Per open element (parallel to `stack`): boundary? flex/grid container? */
+  const boxes: { boundary: boolean; flex: boolean }[] = [];
   function endText() {
     if (textRun.length === 0) return;
-    const text = textRun.join("");
+    const text = (gap ? " " : "") + textRun.join("");
     textRun = [];
+    gap = false;
     readText(text);
   }
   function readText(text: string) {
@@ -287,6 +309,13 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
       onopentag(name, attrs) {
         endText();
         if (LINE_BREAKS.has(name)) endLine();
+        const classes = (attrs.class ?? "").split(/\s+/);
+        const boundary =
+          !INLINE.has(name) ||
+          boxes.at(-1)?.flex === true ||
+          classes.some((c) => BOX_CLASS.test(c));
+        boxes.push({ boundary, flex: classes.some((c) => FLEX_CLASS.test(c)) });
+        gap ||= boundary;
         hidden.open(attrs, stack.push(name)); // push returns the new depth
         if (nosnippetAt === 0 && "data-nosnippet" in attrs)
           nosnippetAt = stack.length;
@@ -320,7 +349,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         if (name === "img") {
           const image = readImage(attrs, stack, resolve);
           if (image) images.push(image);
-          if (anchor && attrs.alt) anchor.text.push(attrs.alt);
+          if (anchor && attrs.alt) anchor.text.push(` ${attrs.alt} `);
         }
       },
       onprocessinginstruction(name, data) {
@@ -336,11 +365,15 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         if (LINE_BREAKS.has(name)) endLine();
         // htmlparser2 closes implied tags in order; pop to the matching one.
         const at = stack.lastIndexOf(name);
-        if (at >= 0) stack.length = at;
+        if (at >= 0) {
+          gap ||= boxes.slice(at).some((b) => b.boundary);
+          stack.length = at;
+          boxes.length = at;
+        }
         if (nosnippetAt > stack.length) nosnippetAt = 0;
         hidden.close(stack.length);
         if (para && para.at > stack.length) {
-          const text = collapse(para.text.join(" "));
+          const text = collapse(para.text.join(""));
           if (countWords(text) >= FIRST_ANSWER_MIN_WORDS)
             firstAnswer = { nosnippet: para.nosnippet, text };
           para = null;
@@ -363,7 +396,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         if (name === "a" && anchor) {
           links.push({
             href: anchor.href,
-            text: collapse(anchor.text.join(" ")),
+            text: collapse(anchor.text.join("")),
             rel: anchor.rel,
             target: anchor.target,
             ariaLabel: anchor.ariaLabel,
@@ -399,7 +432,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
       videos,
       embeds,
       counts,
-      text: collapse(textParts.join(" ")).slice(0, MAX_TEXT),
+      text: collapse(textParts.join("")).slice(0, MAX_TEXT),
       ...hidden.result(),
       ...(nosnippetWords ? { nosnippetWords } : {}),
       ...(firstAnswer?.nosnippet

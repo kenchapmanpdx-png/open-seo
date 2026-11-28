@@ -49,12 +49,13 @@ const list: Rubric[] = [
   },
   {
     id: "entity-test",
-    version: 2,
+    version: 3,
     instructions: [
       "Handbook §25 entity test: the home page's title, meta description and first H1 alone must reveal what kind of business this is and, when facts.local is true, where it operates. A person-named or place-named brand must state its business category beside the name.",
       "Also: the brand name and key-person and event names are spelled one way across all pages given (case, spacing, punctuation, abbreviations, '&' vs 'and').",
       "'Name mentions:' blocks list body-text sentences that contain a spelling of the brand or of a schema event/person name, one per page per spelling. Use them to judge spelling consistency: different case alone (WHY vs Why) counts when the brand writes itself one way in its logo/title. A plain English word that happens to match (\"why we race\") is not a mention.",
-      "fail when the home page's title + description + H1 do not reveal the business type (or place when local), or a brand, person or event name is spelled two ways. Quote the lines that show it (both spellings).",
+      "fail when the home page's title + description + H1 do not reveal the business type (or place when local), or a brand, person or event name is spelled two ways. Quote the lines that show it (both spellings, each copied exactly as the page prints it: same case, spacing and punctuation).",
+      'When a name spelled two ways is among the reasons for a fail, start the rationale with "Spelling:".',
       "pass when both parts hold.",
     ].join("\n"),
   },

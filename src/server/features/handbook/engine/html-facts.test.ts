@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { extractHtmlFacts } from "./html-facts";
 
 describe("extractHtmlFacts markup", () => {
+  it("adds a space between block elements only, not inside a word split by inline tags (WO-B26-007)", () => {
+    const facts = extractHtmlFacts(
+      `<body><a href="/"><span>Zebra<span class="c">Thrive</span></span></a><nav><a href="/a">One</a><a href="/b">Two</a></nav><h1><span class="block">Built</span><span class="block">for You</span></h1><p>1<sup>st</sup> <b>W</b>ord</p><p>Next</p></body>`,
+      "https://example.com/",
+    );
+    expect(facts.markup.text).toBe(
+      "ZebraThrive One Two Built for You 1st Word Next",
+    );
+    expect(facts.links[0].text).toBe("ZebraThrive");
+  });
+
   it("records headings with their landmark, scripts, head links and link targets", () => {
     const facts = extractHtmlFacts(
       `<html><head>

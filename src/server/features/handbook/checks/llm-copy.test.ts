@@ -149,4 +149,41 @@ describe("LLM copy checks", () => {
     expect(text).toContain("Join WHY Racing Events today.");
     expect(text).toContain("Why Racing events are fun for all.");
   });
+
+  describe("entity-test spelling claims (WO-B26-007)", () => {
+    // Only the home view carries body text; both cases quote from it.
+    const pages = [
+      textPage(
+        "/",
+        "ZebraThrive is a supplement system. WHY Racing hosts events. Why Racing events are fun.",
+      ),
+    ];
+    const spelling = (quotes: { url: string; text: string }[]) =>
+      entityCheck.run(
+        llmContext(
+          { pages: { status: "ok", snapshots: pages } },
+          stubJudge({
+            verdict: "fail",
+            rationale: "Spelling: the brand is written two ways.",
+            quotes,
+          }),
+        ),
+      );
+
+    it("blocks a spelling fail whose second spelling is not printed exactly", async () => {
+      const result = await spelling([
+        { url: pages[0].url, text: "ZebraThrive" },
+        { url: pages[0].url, text: "Zebra Thrive" },
+      ]);
+      expect(statusOf(result, "P5-07")).toBe("BLOCKED");
+    });
+
+    it("keeps a spelling fail when both spellings are printed exactly", async () => {
+      const result = await spelling([
+        { url: pages[0].url, text: "WHY Racing hosts events." },
+        { url: pages[0].url, text: "Why Racing events are fun." },
+      ]);
+      expect(statusOf(result, "P5-07")).toBe("OPEN");
+    });
+  });
 });
