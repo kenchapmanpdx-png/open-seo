@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { JsonLdNode } from "@/server/features/handbook/contracts/collectors";
 import { context, ORIGIN, snapshot, statusOf } from "./check-test-fixtures";
+import { extractHtmlFacts } from "../engine/html-facts";
 import { schemaVisibilityCheck } from "./schema-visibility";
 
 const TEXT = "Do you ship? Yes, worldwide. Widget costs $25.";
 
-function run(pages: Record<string, JsonLdNode[]>) {
+function run(pages: Record<string, JsonLdNode[]>, text = TEXT) {
   const snapshots = Object.keys(pages).map((path) => {
     const s = snapshot(path);
-    return { ...s, markup: { ...s.markup, text: TEXT } };
+    return { ...s, markup: { ...s.markup, text } };
   });
   return schemaVisibilityCheck.run(
     context({
@@ -50,6 +51,17 @@ const product = (price: string): JsonLdNode => ({
 });
 
 describe("schema.visibility", () => {
+  it("finds FAQ text that contains character references or React text separators", async () => {
+    const answer =
+      "It's simple & quick, isn't it? Yes. Fish 'n chips. a3 items";
+    const { markup } = extractHtmlFacts(
+      "<body><p>Do you ship?</p><p>It&#x27;s simple &amp; quick, isn&#39;t it?&nbsp;Yes. Fish &rsquo;n chips. a<!-- -->3<!-- --> items</p></body>",
+      `${ORIGIN}/`,
+    );
+    expect(
+      statusOf(await run({ "/a": [faq(answer)] }, markup.text), "P6-07"),
+    ).toBe("PASS");
+  });
   it("opens P6-07 when the marked-up answer is not visible", async () => {
     expect(
       statusOf(await run({ "/a": [faq("Yes, worldwide.")] }), "P6-07"),

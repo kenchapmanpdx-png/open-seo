@@ -247,9 +247,45 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     }
   }
 
+  /**
+   * One text run = the text between two tags. htmlparser2 emits a decoded
+   * character reference (`&#x27;`, `&amp;`) and the text either side of a
+   * comment (React's `a<!-- -->b`) as separate chunks; they join with no
+   * separator so `what&#x27;s` reads `what's`, not `what ' s` (WO-B26-001).
+   * Spaces are added only between runs, i.e. at element boundaries.
+   */
+  let textRun: string[] = [];
+  function endText() {
+    if (textRun.length === 0) return;
+    const text = textRun.join("");
+    textRun = [];
+    readText(text);
+  }
+  function readText(text: string) {
+    if (jsonLdBuf) jsonLdBuf.push(text);
+    if (titleBuf) titleBuf.push(text);
+    if (skipDepth > 0) return;
+    if (h1Buf) h1Buf.push(text);
+    if (anchor) anchor.text.push(text);
+    if (headingBuf) headingBuf.text.push(text);
+    if (button) button.text.push(text);
+    if (textLength < MAX_TEXT) {
+      textParts.push(text);
+      textLength += text.length;
+      hidden.text(text);
+    }
+    const n = countWords(text);
+    words += n;
+    if (nosnippetAt > 0) nosnippetWords += n;
+    if (para) para.text.push(text);
+    prose.text(text);
+    line.push(text);
+  }
+
   const parser = new Parser(
     {
       onopentag(name, attrs) {
+        endText();
         if (LINE_BREAKS.has(name)) endLine();
         hidden.open(attrs, stack.push(name)); // push returns the new depth
         if (nosnippetAt === 0 && "data-nosnippet" in attrs)
@@ -288,30 +324,15 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         }
       },
       onprocessinginstruction(name, data) {
+        endText();
         if (name.toLowerCase() === "!doctype" && doctype === null)
           doctype = data;
       },
       ontext(text) {
-        if (jsonLdBuf) jsonLdBuf.push(text);
-        if (titleBuf) titleBuf.push(text);
-        if (skipDepth > 0) return;
-        if (h1Buf) h1Buf.push(text);
-        if (anchor) anchor.text.push(text);
-        if (headingBuf) headingBuf.text.push(text);
-        if (button) button.text.push(text);
-        if (textLength < MAX_TEXT) {
-          textParts.push(text);
-          textLength += text.length;
-          hidden.text(text);
-        }
-        const n = countWords(text);
-        words += n;
-        if (nosnippetAt > 0) nosnippetWords += n;
-        if (para) para.text.push(text);
-        prose.text(text);
-        line.push(text);
+        textRun.push(text);
       },
       onclosetag(name) {
+        endText();
         if (LINE_BREAKS.has(name)) endLine();
         // htmlparser2 closes implied tags in order; pop to the matching one.
         const at = stack.lastIndexOf(name);
@@ -359,6 +380,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   );
   parser.write(html);
   parser.end();
+  endText();
   endLine();
   endRun();
   head.hreflang = hreflang;

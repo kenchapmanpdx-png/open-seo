@@ -8,6 +8,7 @@ import {
   type PageProfile,
 } from "@/server/features/handbook/contracts/page-profile";
 import type { Severity } from "@/server/features/handbook/contracts/registry-types";
+import { foldText } from "../engine/text-fold";
 import { createResult, normalizeUrl, siteUrl } from "./support";
 
 /**
@@ -250,7 +251,7 @@ function questionHeadings(
   });
 }
 
-const squash = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+const squash = foldText;
 /** markup.text is capped at 20 000 chars: past it "missing" cannot be told. */
 const RAW_TEXT_CAP = 20_000;
 

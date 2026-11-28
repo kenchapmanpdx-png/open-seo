@@ -1,3 +1,4 @@
+import { foldText } from "../engine/text-fold";
 import { createHash } from "node:crypto";
 import {
   APICallError,
@@ -103,21 +104,8 @@ const SYSTEM = [
   "confidence is 0 to 1. rationale: at most three sentences, no advice beyond the rubric.",
 ].join("\n");
 
-/**
- * Quote matching ignores whitespace, case and typography (WO-B19-014): pages
- * print curly apostrophes and dashes, models quote them straight, and CSS
- * may upper-case a heading the text stores in mixed case.
- */
-const normalize = (s: string) =>
-  s
-    .normalize("NFKC")
-    .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")
-    .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')
-    .replace(/[\u2010-\u2015\u2212]/g, "-")
-    .replace(/\u2026/g, "...")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+/** Quote matching ignores whitespace, case and typography (`foldText`). */
+const normalize = foldText;
 const clip = (s: string) => s.slice(0, 1_000);
 
 export const verifyQuote: QuoteVerifier = (quote, pages) => {

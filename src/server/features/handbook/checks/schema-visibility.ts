@@ -5,6 +5,7 @@ import type {
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
 import { isOrganizationType } from "./schema-localbusiness";
+import { foldText } from "../engine/text-fold";
 import { createResult, normalizeUrl } from "./support";
 
 /**
@@ -30,7 +31,7 @@ const list = (value: unknown): unknown[] =>
   Array.isArray(value) ? value : value === undefined ? [] : [value];
 const first = (value: unknown): unknown => list(value)[0];
 
-const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase();
+const norm = foldText;
 const visible = (needle: string, text: string) =>
   text.includes(norm(needle).slice(0, 80));
 
