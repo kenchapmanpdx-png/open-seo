@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { OutboundData } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, parseUrl } from "./support";
 
 /**
  * BOTFETCH/CRAWL (handbook §12): outbound and third-party conversion links
@@ -29,14 +29,24 @@ const moved = (link: Link) =>
 /** A server error that survived the probe's retry; 503 is usually a bot wall. */
 const serverError = (status: number) => status >= 500 && !BLOCKED.has(status);
 
+/** A host with no dot (and not IPv6) is not a public domain name: provably unresolvable. */
+const noDomain = (url: string) => {
+  const host = parseUrl(url)?.hostname ?? ".";
+  return !host.includes(".") && !host.startsWith("[");
+};
+
 /**
  * Dead = an HTTP answer that says so: 404, 410 or 5xx (ADR-031). No answer
  * at all (DNS, connect or timeout, twice, ≥ 30 s apart) is not proof from one
  * machine (WO-B26-006): the probe cannot tell a name that does not exist
- * from a timeout, so every no-answer is "not confirmed dead".
+ * from a timeout, so every no-answer is "not confirmed dead", except a host
+ * with no domain (B26 exit).
  */
 function deadReason(link: Link): string | null {
-  if (!link.browser) return null;
+  if (!link.browser)
+    return noDomain(link.url)
+      ? "no answer; the host name has no domain, so it cannot resolve"
+      : null;
   const s = link.browser.status;
   if (DEAD.has(s) || serverError(s)) return `browser gets ${s}`;
   return null;
@@ -133,7 +143,7 @@ export const outboundLinksCheck: HandbookCheck = {
       return why ? [`${l.url} — ${why}`] : [];
     });
     const unreached = outbound.links
-      .filter((l) => !l.browser)
+      .filter((l) => !l.browser && !noDomain(l.url))
       .map((l) => l.url);
     const infoNote = [
       `info, not findings (bot or platform blocks, other statuses): ${info.length ? info.slice(0, 20).join("; ") : "none"}`,
@@ -158,7 +168,9 @@ export const outboundLinksCheck: HandbookCheck = {
             (l) =>
               `${l.url} → ${l.browser && isRedirect(l.browser.status) ? l.browser.status : l.browser?.finalUrl} (on ${l.sourceUrls.slice(0, 3).join(", ")})`,
           )
-          .join("\n"),
+          .join("\n")
+          // No dead finding to carry the info lines: keep them visible here.
+          .concat(dead.length === 0 ? `\n${infoNote}` : ""),
         fix: "Low priority: update each link to its final URL.",
         fixability: "FIXABLE",
         effort: "S",
@@ -177,7 +189,7 @@ export const outboundLinksCheck: HandbookCheck = {
               `${l.url} — ${why} (on ${l.sourceUrls.slice(0, 3).join(", ")})`,
           )
           .join("\n")}\n${infoNote}`,
-        fix: "Fix or remove dead outbound links (the target answers 404 / 410 or a server error).",
+        fix: "Fix or remove dead outbound links (the target answers 404 / 410 or a server error, or its host name has no domain).",
         fixability: "FIXABLE",
         effort: "S",
         urls: [...new Set(dead.flatMap(({ l }) => l.sourceUrls))],

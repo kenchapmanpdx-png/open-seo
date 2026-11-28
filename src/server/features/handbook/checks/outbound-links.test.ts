@@ -83,6 +83,46 @@ describe("botfetch.outbound-links", () => {
     );
   });
 
+  const outboundLinks = (
+    links: [string, OutboundData["links"][number]["browser"]][],
+  ) =>
+    outboundLinksCheck.run(
+      context({
+        pages: { status: "ok", snapshots: [page("noopener")] },
+        outbound: {
+          status: "ok",
+          links: links.map(([url, browser]) => ({
+            url,
+            sourceUrls: ["https://example.com/"],
+            browser,
+            bot: null,
+          })),
+        },
+      }),
+    );
+
+  it("keeps the not-confirmed-dead line when only redirects are reported", async () => {
+    const result = await outboundLinks([
+      ["https://example.org/", null],
+      [
+        "https://moved.example/",
+        { status: 301, finalUrl: "https://moved.example/" },
+      ],
+    ]);
+    const redirects = result.findings.find((f) =>
+      f.title.includes("redirected"),
+    );
+    expect(redirects?.detail).toContain(
+      "could not be reached from this machine (not confirmed dead): https://example.org/",
+    );
+  });
+
+  it("counts a no-answer link to a host with no domain as dead", async () => {
+    const result = await outboundLinks([["http://myhairstylist/", null]]);
+    expect(statusOf(result, "P5-13")).toBe("OPEN");
+    expect(result.findings[0]?.detail).toContain("http://myhairstylist/");
+  });
+
   it.each([
     ["platform block", { status: 403, finalUrl: "https://example.org/" }],
     ["other status", { status: 400, finalUrl: "https://example.org/" }],
