@@ -1,0 +1,427 @@
+# Field run — evolvedmechanical.com, B27 exit in-app run (WO-B27-090, 2026-11-28)
+
+- Audit `34633162-ff1e-434c-ab2d-4c3fca6e0c8f` (handbook run `hb-34633162…`), project `evolvedmechanical.com` (created by Check a site). Check a site, Whole site (up to 500 pages), full check on, no manual leave-outs. Build stamp `6f3f6247463d` (B27 run 110 code: WO-001…005, Default-project fix). Harness `--audit` poll PASS (findings db / list / page 60 / 60 / 60), LLM cost $0.40.
+- Before B27 (B26 round 3) no audit could be created: the start check got "connection closed" (`fork/reports/field-evolvedmechanical.com-2026-11-28.md`, kept). Now the start check passed and the run completed.
+- Mode: the run page shows no short-name note, so every page answered the app's full crawler name on this run (the start check's retest rule, ADR-039, stays in place). Platform: WordPress (Rank Math). Unaffiliated site: read only, robots.txt obeyed, normal crawl pacing, no contact, no form submits.
+- Scope decision: the app's census found the sitemap within the 500-page limit, so Check a site started at once with the whole site (no scope notice, by design). Site crawl 106 pages; the full check read 104 (2 fewer: redirect/duplicate URLs). Not capped; no unread sitemap pages.
+- Grade F 39 (uncapped 47.2; capped by open S1 findings F01–F04).
+
+URLs are paths on https://www.evolvedmechanical.com. A finding on more than half of the 104 read pages lists the read pages it does not cover ("all read pages except").
+
+## Findings (60)
+
+- S1 · P3-04 · Internal links use a non-canonical URL form · 3 URL(s)
+  - /ductwork/service/
+  - /heating/conversion/
+  - /heating/installation/
+- S1 · P3-04 · Paginated pages canonical to page 1 · 6 URL(s)
+  - /blog/page/2/
+  - /blog/page/3/
+  - /heating/medford/page/2/
+  - /heating/medford/page/3/
+  - /plumbing/everett/page/2/
+  - /plumbing/everett/page/3/
+- S1 · P3-10 · Unknown URLs do not return 404 (soft 404) · 1 URL(s)
+  - /handbook-probe-mx0aurvi-not-found
+- S1 · P2-01 · Core content is added by JavaScript (not in server HTML) · 1 URL(s)
+  - /about/reviews/
+- S2 · P8-02 · axe: Elements must meet minimum color contrast ratio thresholds · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S2 · P7-08 · Lab CLS above 0.1 · 2 URL(s)
+  - /about/careers/
+  - /savings/financing/
+- S2 · P8-04 · Skip link / accessible names / image alts need work · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S2 · P7-09 · Lab LCP above 2.5 s or CLS above 0.1 on 16 of 16 measured templates · 27 URL(s)
+  - /
+  - /about/careers/
+  - /about/faq/
+  - /about/reviews/
+  - /blog/
+  - /blog/aging-plumbing-pipes/
+  - /blog/plumbing-frozen-pipes/
+  - /category/blog/
+  - /contact-us/
+  - /cooling/
+  - /ductwork/service/
+  - /heating/
+  - /heating/conversion/
+  - /heating/medford/
+  - /heating/melrose-ma/
+  - /heating/stoneham-ma/
+  - /mini-splits/melrose-ma/
+  - /mini-splits/revere/
+  - /mini-splits/stoneham-ma/
+  - /plumbing/installation/
+  - /savings/financing/
+  - /savings/rebates/
+  - /savings/specials/
+  - /service-area/everett/
+  - /service-area/melrose/
+  - /service-area/revere/
+  - /sitemap/
+- S2 · P4-01 · Duplicate titles, descriptions or H1s · 2 URL(s)
+  - /blog/heating-repair-aftercare/
+  - /category/blog/
+- S2 · P4-07 · Hub titles are bare labels without a specific promise · 3 URL(s) · llm
+  - /blog/
+  - /category/blog/
+  - /savings/specials/
+- S2 · P4-03 · Indexable pages without a meta description · 2 URL(s)
+  - /category/blog/
+  - /sitemap/
+- S2 · P4-01 · Pages with a missing title or not exactly one H1 · 1 URL(s)
+  - /category/blog/
+- S2 · P4-02 · Titles or H1s do not state the page's offer or topic · 3 URL(s) · llm
+  - /about/faq/
+  - /heating/melrose-ma/
+  - /savings/
+- S2 · P6-04 · Article JSON-LD has date/isPartOf/name gaps · 30 URL(s)
+  - /blog/aging-plumbing-pipes/
+  - /blog/air-conditioning-for-apartments/
+  - /blog/air-conditioning-repair/
+  - /blog/air-conditioning-service/
+  - /blog/air-conditioning-upgrades/
+  - /blog/avoid-heating-repair/
+  - /blog/energy-efficient-water-heaters/
+  - /blog/heating-equipment-maintenance/
+  - /blog/heating-equipment-problems/
+  - /blog/heating-equipment-troubleshooting/
+  - /blog/heating-equipment-upgrades/
+  - /blog/heating-repair-aftercare/
+  - /blog/heating-repair-noisy-systems/
+  - /blog/how-often-should-air-conditioner-cycle/
+  - /blog/mini-splits-for-your-home/
+  - /blog/mini-splits-maintenance/
+  - /blog/multi-zone-mini-splits/
+  - /blog/plumbing-frozen-pipes/
+  - /blog/plumbing-upgrades-save-energy/
+  - /blog/reduce-water-heater-costs/
+  - /blog/reliable-plumbing-repairs/
+  - /blog/switching-between-heat-ac/
+  - /blog/tankless-water-heater-benefits/
+  - /blog/water-heater-heat-traps/
+  - /blog/welcome-to-the-new-evolved-mechanical-website/
+  - /cooling/installation/
+  - /heating/conversion/
+  - /mini-splits/
+  - /mini-splits/installation/
+  - /savings/membership/
+- S2 · P6-01 · Home WebSite node is incomplete · 1 URL(s)
+  - /
+- S2 · P6-06 · Index/detail templates lack ItemList / BreadcrumbList · 66 URL(s)
+  - all read pages except (38): /, /about-/, /about/community/, /blog/heating-equipment-troubleshooting/, /blog/how-often-should-air-conditioner-cycle/, /blog/mini-splits-maintenance/, /blog/page/2/, /blog/page/3/, /category/blog/, /contact-us, /contact-us/, /cooling/, /cooling/equipment/, /cooling/equipment/central-ac/, /cooling/service/, /ductwork/, /ductwork/installation/, /ductwork/service/, /free-estimate-quote/, /heating/conversion/, /heating/equipment/boilers/, /heating/equipment/furnaces/, /heating/equipment/heat-pumps/, /heating/medford/page/2/, /heating/medford/page/3/, /mini-splits/installation/, /plumbing/everett/page/2/, /plumbing/everett/page/3/, /plumbing/fixtures/drains/, /plumbing/installation/, /plumbing/leak-detection/, /plumbing/water-filtration/, /privacy-policy/, /refer-a-friend/, /request-a-service-visit/, /savings/membership/, /sitemap/, /thank-you/
+- S2 · P6-02 · JSON-LD has relative/insecure URLs or empty values · 32 URL(s)
+  - /about-/
+  - /about/
+  - /blog/aging-plumbing-pipes/
+  - /blog/air-conditioning-for-apartments/
+  - /blog/air-conditioning-repair/
+  - /blog/air-conditioning-service/
+  - /blog/air-conditioning-upgrades/
+  - /blog/avoid-heating-repair/
+  - /blog/energy-efficient-water-heaters/
+  - /blog/heating-equipment-maintenance/
+  - /blog/heating-equipment-problems/
+  - /blog/heating-equipment-troubleshooting/
+  - /blog/heating-equipment-upgrades/
+  - /blog/heating-repair-aftercare/
+  - /blog/heating-repair-noisy-systems/
+  - /blog/how-often-should-air-conditioner-cycle/
+  - /blog/mini-splits-for-your-home/
+  - /blog/mini-splits-maintenance/
+  - /blog/multi-zone-mini-splits/
+  - /blog/plumbing-frozen-pipes/
+  - /blog/plumbing-upgrades-save-energy/
+  - /blog/reduce-water-heater-costs/
+  - /blog/reliable-plumbing-repairs/
+  - /blog/switching-between-heat-ac/
+  - /blog/tankless-water-heater-benefits/
+  - /blog/water-heater-heat-traps/
+  - /blog/welcome-to-the-new-evolved-mechanical-website/
+  - /cooling/installation/
+  - /heating/conversion/
+  - /mini-splits/
+  - /mini-splits/installation/
+  - /savings/membership/
+- S2 · P6-10, P6-11 · No LocalBusiness node · 1 URL(s)
+  - /
+- S2 · P6-14 · Review / VideoObject markup has no visible counterpart · 5 URL(s)
+  - /cooling/installation/
+  - /heating/conversion/
+  - /mini-splits/
+  - /mini-splits/installation/
+  - /savings/membership/
+- S2 · P4-08 · Heading order / landmark structure broken · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S3 · P3-04 · Internal links point at a canonicalised duplicate · 1 URL(s)
+  - /heating/malden-ma/
+- S3 · P3-08 · Internal links point at redirected or retired URLs · 16 URL(s)
+  - /heating/malden-ma/
+  - /heating/medford/
+  - /heating/medford/page/2/
+  - /heating/medford/page/3/
+  - /heating/melrose-ma/
+  - /heating/saugus-ma/
+  - /heating/stoneham-ma/
+  - /mini-splits/malden-ma/
+  - /mini-splits/melrose-ma/
+  - /mini-splits/melrose/
+  - /mini-splits/revere/
+  - /mini-splits/saugus-ma/
+  - /mini-splits/stoneham-ma/
+  - /plumbing/everett/
+  - /plumbing/everett/page/2/
+  - /plumbing/everett/page/3/
+- S3 · P3-04 · Internal links use a non-canonical URL form (one permanent redirect) · 16 URL(s)
+  - /heating/malden-ma/
+  - /heating/medford/
+  - /heating/medford/page/2/
+  - /heating/medford/page/3/
+  - /heating/melrose-ma/
+  - /heating/saugus-ma/
+  - /heating/stoneham-ma/
+  - /mini-splits/malden-ma/
+  - /mini-splits/melrose-ma/
+  - /mini-splits/melrose/
+  - /mini-splits/revere/
+  - /mini-splits/saugus-ma/
+  - /mini-splits/stoneham-ma/
+  - /plumbing/everett/
+  - /plumbing/everett/page/2/
+  - /plumbing/everett/page/3/
+- S3 · P3-21 · Pagination pages are not 200 + self-canonical · 6 URL(s)
+  - /blog/page/2/
+  - /blog/page/3/
+  - /heating/medford/page/2/
+  - /heating/medford/page/3/
+  - /plumbing/everett/page/2/
+  - /plumbing/everett/page/3/
+- S3 · P7-07 · Cache policy: hashed assets not immutable / HTML not revalidated · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S3 · P7-05 · Render-blocking scripts or font CSS in <head> · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S3 · SUPP-03 · Same text block printed more than once on a page · 2 URL(s)
+  - /about/faq/
+  - /category/blog/
+- S3 · SUPP-10 · Video embed loads its player with the page · 6 URL(s)
+  - /
+  - /cooling/installation/
+  - /heating/conversion/
+  - /mini-splits/
+  - /mini-splits/installation/
+  - /savings/membership/
+- S3 · P2-09 · Raw vs rendered visible words differ by more than 20% · 5 URL(s)
+  - /about/reviews/
+  - /service-area/everett/
+  - /service-area/medford/
+  - /service-area/melrose/
+  - /service-area/revere/
+- S3 · P7-02 · Images without dimensions / hero not prioritised (103 pages, 37 template groups) · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S3 · P2-05 · Pages heavier than 5 MB · 1 URL(s)
+  - /heating/conversion/
+- S3 · SUPP-11 · Content video with no transcript or text summary as page text · 5 URL(s)
+  - /
+  - /cooling/installation/
+  - /heating/conversion/
+  - /mini-splits/
+  - /savings/membership/
+- S3 · SUPP-12 · Content video not eligible for Google video results · 6 URL(s)
+  - /
+  - /cooling/installation/
+  - /heating/conversion/
+  - /mini-splits/
+  - /mini-splits/installation/
+  - /savings/membership/
+- S3 · P3-12 · Sitemap URLs without an internal link (orphans) · 1 URL(s)
+  - /category/blog/
+- S3 · P4-10 · Article pages lack og:type=article or published/modified times · 12 URL(s)
+  - /blog/air-conditioning-upgrades/
+  - /blog/energy-efficient-water-heaters/
+  - /blog/heating-equipment-maintenance/
+  - /blog/heating-equipment-problems/
+  - /blog/heating-equipment-troubleshooting/
+  - /blog/heating-repair-aftercare/
+  - /blog/heating-repair-noisy-systems/
+  - /blog/mini-splits-maintenance/
+  - /blog/reduce-water-heater-costs/
+  - /blog/reliable-plumbing-repairs/
+  - /blog/tankless-water-heater-benefits/
+  - /blog/water-heater-heat-traps/
+- S3 · P4-09 · Pages missing og:description · 2 URL(s)
+  - /category/blog/
+  - /sitemap/
+- S3 · P4-09 · Share image dimensions are not 1200×630 · 42 URL(s)
+  - /blog/aging-plumbing-pipes/
+  - /blog/air-conditioning-for-apartments/
+  - /blog/air-conditioning-repair/
+  - /blog/air-conditioning-service/
+  - /blog/air-conditioning-upgrades/
+  - /blog/avoid-heating-repair/
+  - /blog/energy-efficient-water-heaters/
+  - /blog/heating-equipment-maintenance/
+  - /blog/heating-equipment-problems/
+  - /blog/heating-equipment-troubleshooting/
+  - /blog/heating-equipment-upgrades/
+  - /blog/heating-repair-aftercare/
+  - /blog/heating-repair-noisy-systems/
+  - /blog/how-often-should-air-conditioner-cycle/
+  - /blog/mini-splits-for-your-home/
+  - /blog/mini-splits-maintenance/
+  - /blog/multi-zone-mini-splits/
+  - /blog/plumbing-frozen-pipes/
+  - /blog/plumbing-upgrades-save-energy/
+  - /blog/reduce-water-heater-costs/
+  - /blog/reliable-plumbing-repairs/
+  - /blog/switching-between-heat-ac/
+  - /blog/tankless-water-heater-benefits/
+  - /blog/water-heater-heat-traps/
+  - /blog/welcome-to-the-new-evolved-mechanical-website/
+  - /heating/malden-ma/
+  - /heating/medford/
+  - /heating/medford/page/2/
+  - /heating/medford/page/3/
+  - /heating/melrose-ma/
+  - /heating/saugus-ma/
+  - /heating/stoneham-ma/
+  - /mini-splits/malden-ma/
+  - /mini-splits/melrose-ma/
+  - /mini-splits/melrose/
+  - /mini-splits/revere/
+  - /mini-splits/saugus-ma/
+  - /mini-splits/stoneham-ma/
+  - /plumbing/everett/
+  - /plumbing/everett/page/2/
+  - /plumbing/everett/page/3/
+  - /service-area/
+- S3 · P4-01 · Titles missing the brand suffix "Evolved Mechanical" · 2 URL(s)
+  - /blog/air-conditioning-for-apartments/
+  - /mini-splits/service/
+- S3 · P6-09 · Brand is not disambiguated in schema · 1 URL(s)
+  - /
+- S3 · P5-07 · Entity test fails or names are spelled more than one way · 1 URL(s) · llm
+  - /blog/heating-repair-aftercare/
+- S3 · P5-01 · Opening sentences do not name brand, subject and offer · 3 URL(s) · llm
+  - /blog/plumbing-frozen-pipes/
+  - /mini-splits/revere/
+  - /plumbing/installation/
+- S3 · P5-05 · FAQ questions are generic or repeated across pages · 3 URL(s) · llm
+  - /service-area/everett/
+  - /service-area/medford/
+  - /service-area/melrose/
+- S3 · P5-10 · No site-wide link to editorial / review standards · 1 URL(s)
+  - /
+- S3 · P5-02 · The same statistic has different values across the site · 2 URL(s) · llm
+  - /blog/heating-repair-aftercare/
+  - /service-area/melrose/
+- S3 · P5-04 · Unsupported superlatives, placeholders or unexplained acronyms · 6 URL(s) · llm
+  - /ductwork/service/
+  - /heating/conversion/
+  - /heating/equipment/boilers/
+  - /heating/equipment/furnaces/
+  - /heating/equipment/heat-pumps/
+  - /service-area/revere/
+- S3 · P5-15 · Detail pages lack a key-facts block or unique facts · 2 URL(s) · llm
+  - /about/team/
+  - /plumbing/fixtures/
+- S3 · P5-17 · About page people are not marked up or linked from authors · 31 URL(s)
+  - /about/faq/
+  - /blog/aging-plumbing-pipes/
+  - /blog/air-conditioning-for-apartments/
+  - /blog/air-conditioning-repair/
+  - /blog/air-conditioning-service/
+  - /blog/air-conditioning-upgrades/
+  - /blog/avoid-heating-repair/
+  - /blog/energy-efficient-water-heaters/
+  - /blog/heating-equipment-maintenance/
+  - /blog/heating-equipment-problems/
+  - /blog/heating-equipment-troubleshooting/
+  - /blog/heating-equipment-upgrades/
+  - /blog/heating-repair-aftercare/
+  - /blog/heating-repair-noisy-systems/
+  - /blog/how-often-should-air-conditioner-cycle/
+  - /blog/mini-splits-for-your-home/
+  - /blog/mini-splits-maintenance/
+  - /blog/multi-zone-mini-splits/
+  - /blog/plumbing-frozen-pipes/
+  - /blog/plumbing-upgrades-save-energy/
+  - /blog/reduce-water-heater-costs/
+  - /blog/reliable-plumbing-repairs/
+  - /blog/switching-between-heat-ac/
+  - /blog/tankless-water-heater-benefits/
+  - /blog/water-heater-heat-traps/
+  - /blog/welcome-to-the-new-evolved-mechanical-website/
+  - /cooling/installation/
+  - /heating/conversion/
+  - /mini-splits/
+  - /mini-splits/installation/
+  - /savings/membership/
+- S3 · P5-08 · NAP facts inconsistent or missing from server HTML · 1 URL(s)
+  - /
+- S4 · SUPP-01 · Generic anchor text ("Read more", "Click here") on internal links · 77 URL(s)
+  - all read pages except (27): /blog/aging-plumbing-pipes/, /blog/air-conditioning-for-apartments/, /blog/air-conditioning-repair/, /blog/air-conditioning-service/, /blog/air-conditioning-upgrades/, /blog/avoid-heating-repair/, /blog/energy-efficient-water-heaters/, /blog/heating-equipment-maintenance/, /blog/heating-equipment-problems/, /blog/heating-equipment-troubleshooting/, /blog/heating-equipment-upgrades/, /blog/heating-repair-aftercare/, /blog/heating-repair-noisy-systems/, /blog/how-often-should-air-conditioner-cycle/, /blog/mini-splits-for-your-home/, /blog/mini-splits-maintenance/, /blog/multi-zone-mini-splits/, /blog/plumbing-frozen-pipes/, /blog/plumbing-upgrades-save-energy/, /blog/reduce-water-heater-costs/, /blog/reliable-plumbing-repairs/, /blog/switching-between-heat-ac/, /blog/tankless-water-heater-benefits/, /blog/water-heater-heat-traps/, /blog/welcome-to-the-new-evolved-mechanical-website/, /contact-us, /sitemap/
+- S4 · SUPP-01 · Generic anchor text ("Website", "Click here") on external links · 1 URL(s)
+  - /savings/financing/
+- S4 · SUPP-01 · Links with no anchor text (no text, image alt or aria-label) · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S4 · P5-13 · Outbound links are dead · 2 URL(s)
+  - /blog/reduce-water-heater-costs/
+  - /category/blog/
+- S4 · P5-13 · Outbound links point at redirected URLs (info) · 1 URL(s)
+  - /savings/financing/
+- S4 · P7-04 · Analytics/pixels load before the page finishes loading · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S4 · P8-01, P8-05 · Security headers missing: Strict-Transport-Security, Content-Security-Policy, CSP frame-ancestors / X-Frame-Options, Referrer-Policy, Permissions-Policy · 103 URL(s)
+  - all read pages except (1): /contact-us
+- S4 · P3-12 · Paginated home copy: /page/2/ serves the homepage · 2 URL(s)
+  - /
+  - /page/2/
+- S4 · P3-12 · Sitemap URLs with only one internal link · 12 URL(s)
+  - /about/team/
+  - /heating/malden-ma/
+  - /heating/melrose-ma/
+  - /heating/saugus-ma/
+  - /heating/stoneham-ma/
+  - /mini-splits/malden-ma/
+  - /mini-splits/melrose-ma/
+  - /mini-splits/melrose/
+  - /mini-splits/revere/
+  - /mini-splits/saugus-ma/
+  - /mini-splits/stoneham-ma/
+  - /thank-you/
+- S4 · P4-01 · Titles over 70 characters · 2 URL(s)
+  - /blog/how-often-should-air-conditioner-cycle/
+  - /blog/switching-between-heat-ac/
+- S4 · SUPP-16 · FAQ answers that don't stand alone or are missing from raw HTML · 2 URL(s)
+  - /about/faq/
+  - /service-area/melrose/
+- S4 · SUPP-15 · Informational page without question headings or answer-first sections · 17 URL(s)
+  - /about/faq/
+  - /blog/
+  - /blog/aging-plumbing-pipes/
+  - /blog/air-conditioning-for-apartments/
+  - /blog/air-conditioning-repair/
+  - /blog/air-conditioning-upgrades/
+  - /blog/energy-efficient-water-heaters/
+  - /blog/heating-equipment-maintenance/
+  - /blog/heating-equipment-problems/
+  - /blog/heating-equipment-troubleshooting/
+  - /blog/mini-splits-for-your-home/
+  - /blog/page/2/
+  - /blog/page/3/
+  - /blog/reduce-water-heater-costs/
+  - /blog/reliable-plumbing-repairs/
+  - /blog/water-heater-heat-traps/
+  - /blog/welcome-to-the-new-evolved-mechanical-website/
+
+## BLOCKED / LIMITED (6)
+
+- P10-05 BLOCKED: gate "GA4 in use AND owner approves a Google Cloud project" = ? (gate "GA4 in use AND owner approves a Google Cloud project" needs owner/render evidence)
+- P3-07 BLOCKED: gate "site retires items" = ? (gate "site retires items" needs owner/render evidence)
+- P3-23 BLOCKED: gate "SP9" = ? (WebSite SearchAction in JSON-LD, no search URL linked)
+- P6-12 BLOCKED: gate "a Knowledge Panel exists for the brand" = ? (gate "a Knowledge Panel exists for the brand" needs owner/render evidence)
+- P8-08 BLOCKED: gate "forms collect health, financial, account or other sensitive data" = ? (gate "forms collect health, financial, account or other sensitive data" needs owner/render evidence)
+- P9-04 BLOCKED: Owner to record the AI-bot decisions: allowed GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-User, Claude-SearchBot, anthropic-ai, PerplexityBot, Perplexity-User, Googlebot, Google-Extended, Applebot, Applebot-Extended, CCBot, Bytespider, DuckAssistBot, MistralAI-User; robots.txt disallows —; server blocks while robots.txt allows —
+
+## Crawl errors (0)
