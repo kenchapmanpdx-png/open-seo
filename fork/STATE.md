@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: in-progress (not-started | in-progress | needs-ken | done)
-needs_ken: All batches done (B25 run 106 tag handbook-v3.14.0; B22 run 103 tag handbook-v3.11.0; B23 run 103 tag handbook-v3.12.0; B24 run 104 tag handbook-v3.13.0). BLOCKED-KEN left in fork/queue.md: WO-B22-006 fix-list ordering (needs your Google sign-in); WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); WO-B9-026 in-app perf half. Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Decisions for you: B25 revert phrases (fork/reports/B25.md § Decisions, incl. "any full page means not tested"); B24 "site refusal stays provisional" / "429 counts as a site refusal" (fork/reports/B24.md); B23 revert phrases (fork/reports/B23.md § Exit: "missing canonical stays S1", "named-group gap stays S1", "x-default required", "any year in headings", "429 counts as a block"); B22 "429 is not a sitemap error" (P3-12); B22 grade-spread / effect-map phrases (fork/reports/B22.md); B20 handbook wording (fork/reports/B20.md § Exit). Look C is live. Closed 2026-11-25: K1 Windows autostart installed (`install-autostart.ps1` printed `unchanged`; reboot test passed 2026-11-25); `wip/b16-run81`, `ken/rebase-v0.1.31`, `ken/rebase-v0.1.31-m1` deleted
+status: done (not-started | in-progress | needs-ken | done)
+needs_ken: All batches done (B26 run 108 tag handbook-v3.15.0; B25 run 106 tag handbook-v3.14.0; B22 run 103 tag handbook-v3.11.0; B23 run 103 tag handbook-v3.12.0; B24 run 104 tag handbook-v3.13.0). BLOCKED-KEN left in fork/queue.md: WO-B22-006 fix-list ordering (needs your Google sign-in); WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); WO-B9-026 in-app perf half. Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Decisions for you: B26 revert phrases (fork/reports/B26.md § Decisions, incl. "no answer is dead", "dotless host not dead"); B26 whyracingevents.com golden F07 / F18 need a new verdict (WO-002 removed false readings); round 3: evolvedmechanical.com refuses the app user-agent (fork/reports/field-evolvedmechanical.com-2026-11-28.md), drop or replace; B25 revert phrases (fork/reports/B25.md § Decisions, incl. "any full page means not tested"); B24 "site refusal stays provisional" / "429 counts as a site refusal" (fork/reports/B24.md); B23 revert phrases (fork/reports/B23.md § Exit: "missing canonical stays S1", "named-group gap stays S1", "x-default required", "any year in headings", "429 counts as a block"); B22 "429 is not a sitemap error" (P3-12); B22 grade-spread / effect-map phrases (fork/reports/B22.md); B20 handbook wording (fork/reports/B20.md § Exit). Look C is live. Closed 2026-11-25: K1 Windows autostart installed (`install-autostart.ps1` printed `unchanged`; reboot test passed 2026-11-25); `wip/b16-run81`, `ken/rebase-v0.1.31`, `ken/rebase-v0.1.31-m1` deleted
 current_batch: B26
 batch_file: fork/batches/B26-heavy-precision-fixes-2.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 108
-next_action: B26 exit done run 108 (tag handbook-v3.15.0). Next: WO-B26-091 round 3 app half — antiquecandleco.com audit 5cdbb86c (core site, /blogs/ left out, hit the 500-page cap) was running at run end: when done, `pnpm exec tsx fork/runs/b26/field-dump.ts 5cdbb86c-c9d8-463a-a94f-9fa83386d856` → fork/reports/field-antiquecandleco.com-<date>.md; evolvedmechanical.com (whole site, 114-URL sitemap ≤ 100 per section; preflight `fork/runs/b26/pre-em.txt`) failed to start ("no audit id" from `fork/runs/b25/check-site.mjs`, Default project) → retry from the Check a site page; then set WO-B22-004 done in fork/queue.md, B26 status done, STATE status done.
+next_action: none — B26 done run 108 (exit + WO-B26-091). Next scheduled work: monthly upstream sync M1 due 2026-12-26 (BLUEPRINT §9).
 contracts_version: 1.11.0 (B19 run 89: ADR-033 K3 abortUrls / mainWords / aborted robots, RenderData js.mainWords + js.robotsBlocked; 1.10.0 B17 run 84: ADR-032 PageSnapshot `redirectChain` + `doctype`, SUPP-21…26; 1.9.0 B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -36,34 +36,34 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                             | Model (SPLIT) | Status                               |
-| ----- | ------------------------------------------------ | ------------- | ------------------------------------ |
-| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done                                 |
-| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done                                 |
-| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done                                 |
-| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done                                 |
-| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done                                 |
-| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done                                 |
-| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done                                 |
-| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done                                 |
-| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done                                 |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done                                 |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done                                 |
-| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done                                 |
-| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done                                 |
-| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done                                 |
-| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done                                 |
-| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | done                                 |
-| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | done                                 |
-| B18   | fork/batches/B18-heavy-field-test-1.md           | HEAVY         | done                                 |
-| B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done                                 |
-| B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done                                 |
-| B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done                                 |
-| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done                                 |
-| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | done                                 |
-| B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | done                                 |
-| B25   | fork/batches/B25-heavy-precision-fixes.md        | HEAVY         | done                                 |
-| B26   | fork/batches/B26-heavy-precision-fixes-2.md      | HEAVY         | in-progress (exit done; WO-091 left) |
+| Batch | File                                             | Model (SPLIT) | Status |
+| ----- | ------------------------------------------------ | ------------- | ------ |
+| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done   |
+| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done   |
+| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done   |
+| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done   |
+| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done   |
+| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done   |
+| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done   |
+| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done   |
+| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done   |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done   |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done   |
+| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done   |
+| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done   |
+| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done   |
+| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done   |
+| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | done   |
+| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | done   |
+| B18   | fork/batches/B18-heavy-field-test-1.md           | HEAVY         | done   |
+| B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done   |
+| B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done   |
+| B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done   |
+| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done   |
+| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | done   |
+| B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | done   |
+| B25   | fork/batches/B25-heavy-precision-fixes.md        | HEAVY         | done   |
+| B26   | fork/batches/B26-heavy-precision-fixes-2.md      | HEAVY         | done   |
 
 ## Run log
 
