@@ -7,6 +7,17 @@ const audit = (pagesCrawled: number, maxPages: number) => ({
 });
 
 describe("capNotes", () => {
+  // WO-B27-001: the read mode is one info line at the top.
+  it("states that the site was read with the short app name", () => {
+    expect(
+      capNotes({ coverageCapped: false, coverageRead: 9 }, null, {
+        shortName: true,
+      }),
+    ).toEqual([
+      "This site refuses the app's full crawler name; pages were read with the short name OpenSEO-Handbook/1.0.",
+    ]);
+  });
+
   it("names the Handbook page limit when Handbook coverage was capped", () => {
     expect(
       capNotes({ coverageCapped: true, coverageRead: 80 }, audit(30, 500)),

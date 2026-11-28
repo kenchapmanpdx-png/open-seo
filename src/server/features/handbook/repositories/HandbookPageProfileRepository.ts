@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sum } from "drizzle-orm";
 import { db } from "@/db";
 import { handbookPageProfiles } from "@/db/handbook-tables";
 import { pageProfileSchema } from "@/server/features/handbook/contracts/page-profile";
@@ -70,4 +70,18 @@ function forProject(projectId: string, runId: string): ProfileCache {
   };
 }
 
-export const HandbookPageProfileRepository = { forProject };
+/** Map-stage spend of one run: the profiles it created (WO-B27-005). */
+async function runCostUsd(projectId: string, runId: string): Promise<number> {
+  const [row] = await db
+    .select({ usd: sum(handbookPageProfiles.costUsd).mapWith(Number) })
+    .from(handbookPageProfiles)
+    .where(
+      and(
+        eq(handbookPageProfiles.projectId, projectId),
+        eq(handbookPageProfiles.runId, runId),
+      ),
+    );
+  return row?.usd ?? 0;
+}
+
+export const HandbookPageProfileRepository = { forProject, runCostUsd };

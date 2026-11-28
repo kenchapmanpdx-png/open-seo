@@ -88,11 +88,12 @@ async function getRunDetail(projectId: string, runId: string) {
       ? await HandbookKv.getRerunNote(run.auditId)
       : null;
   const audit = run.auditId ? await getRunAudit(projectId, run.auditId) : null;
+  const report = await withSections(rows);
   return {
     run,
     rerun,
-    capNotes: capNotes(run, audit),
-    report: await withSections(rows),
+    capNotes: capNotes(run, audit, report.run.coverage),
+    report,
   };
 }
 

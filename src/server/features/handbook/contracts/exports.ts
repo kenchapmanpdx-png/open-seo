@@ -132,6 +132,8 @@ export const reportJsonSchema = z.object({
         capped: z.boolean(),
         /** ACCURACY #0: crawled URLs not read, classified. 1.9.0 */
         unread: unreadCoverageSchema.optional(),
+        /** WO-B27-001: read with the short app name. Additive; 1.11.0 kept (ADR-039) */
+        shortName: z.literal(true).optional(),
       })
       .optional(),
   }),

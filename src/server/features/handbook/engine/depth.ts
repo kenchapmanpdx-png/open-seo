@@ -191,6 +191,8 @@ export function depthLine(
     const byClass = Object.entries(unread.byClass).map(([c, n]) => `${c} ${n}`);
     parts.push(`not read ${unread.total} (${byClass.join(", ")})`);
   }
+  // WO-B27-001: exports state the mode next to the depth.
+  if (coverage?.shortName) parts.push("read with the short app name");
   return parts.join(" · ");
 }
 

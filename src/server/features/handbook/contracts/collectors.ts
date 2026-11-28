@@ -75,6 +75,8 @@ export type SafeFetchResult = {
   timingMs: number;
   /** Final hop only: request sent → response headers received, ms. 1.6.0 */
   ttfbMs?: number;
+  /** Sent with the short app name after the site refused the full one (WO-B27-001). Additive, not K3; 1.11.0 kept (ADR-039) */
+  shortName?: true;
 };
 
 export type SafeFetch = (
@@ -516,6 +518,8 @@ export type Coverage = {
   capped: boolean;
   /** URLs the crawl saw and the run did not read, classified (ACCURACY #0). 1.9.0 */
   unread?: UnreadCoverage;
+  /** The site refused the full app name; pages were read with the short one (WO-B27-001). Additive, not K3; 1.11.0 kept (ADR-039) */
+  shortName?: true;
 };
 
 export type CollectedData = {

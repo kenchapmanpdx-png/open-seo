@@ -251,6 +251,12 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
         log,
       })
     : null;
+  // WO-B27-005: map spend of earlier units (stored) + this unit's.
+  const priorMapUsd = await HandbookPageProfileRepository.runCostUsd(
+    input.projectId,
+    input.runId,
+  );
+  budget.setMapSpent(() => priorMapUsd + (mapper?.spentUsd() ?? 0));
   const options = await runOptions(input.projectId);
   const sidecar = sidecarConfigFromEnv(
     {
@@ -284,6 +290,7 @@ async function prepareStage(input: HandbookRunParams, startedAt: string) {
     projectId: input.projectId,
     fetch: createSafeFetch({
       allowedHosts: siblingHosts(new URL(input.origin).host),
+      shortNameRetry: true,
     }),
     fetchOffsite: createSafeFetch({
       allowedHosts: "any",

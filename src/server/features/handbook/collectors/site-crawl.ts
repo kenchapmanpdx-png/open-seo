@@ -9,7 +9,7 @@ import { unreadCoverage } from "@/server/features/handbook/engine/unread";
 import { emptyHead, emptyMarkup } from "./empty-page";
 import { readAhead } from "./limiter";
 import { keptHeaders } from "./kept-headers";
-import { decide } from "@/server/features/handbook/engine/robots";
+import { robotsAllowed } from "./crawl-robots";
 import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
 import { handbookExcluded } from "@/server/features/handbook/engine/exclude";
 import {
@@ -52,6 +52,8 @@ type PageExtra = {
   bytes: number;
   /** Block texts for the template boilerplate split (FULL-READ §3.11). */
   blocks: string[];
+  /** Answered only to the short app name (WO-B27-001). */
+  shortName: boolean;
 };
 
 const HTML_TYPE = /text\/html|application\/xhtml/i;
@@ -130,6 +132,7 @@ async function crawl(
   const attempted = new Set<string>();
   const snapshots: PageSnapshot[] = [];
   const failed: string[] = [];
+  let shortName = false; // WO-B27-001
   const discover = (raw: string, by: DiscoveredBy) => {
     const url = normalize(raw);
     if (!url || source.has(url)) return;
@@ -175,6 +178,7 @@ async function crawl(
         failed.push(url);
         continue;
       }
+      shortName ||= page.extra.shortName;
       const finalNorm = normalize(page.snapshot.finalUrl);
       let snapshot = page.snapshot;
       if (finalNorm && finalNorm !== url) {
@@ -208,6 +212,7 @@ async function crawl(
       capped: left.length > 0,
       // CLI view of ACCURACY #0: cap leftovers and failed fetches (status unknown).
       unread: unreadCoverage([...left, ...failed].map(nullStatus), snapshots),
+      ...(shortName ? { shortName: true as const } : {}),
     },
   };
 }
@@ -282,19 +287,6 @@ export async function crawlSecondPass(
 }
 
 const nullStatus = (url: string) => ({ url, status: null });
-
-/** Robots verdict for `OpenSEO-Handbook`; hosts without a robots.txt read allowed. */
-function robotsAllowed(collected: Partial<CollectedData>, url: string) {
-  const robots = collected.robots?.status === "ok" ? collected.robots : null;
-  const { host, pathname, search } = new URL(url);
-  const hostRobots = robots?.hosts.find((h) => h.host === host);
-  // WO-B23-003: path + query, as Google matches rules like `/*?s=`.
-  return (
-    !hostRobots ||
-    decide(host, hostRobots.groups, "OpenSEO-Handbook", pathname + search)
-      .allowed
-  );
-}
 
 /** Same-host page links of a rendered DOM that the raw HTML of `url` lacks. */
 export function renderOnlyLinks(
@@ -377,6 +369,7 @@ async function fetchPage(
       skeleton: facts?.skeleton ?? "",
       bytes: bytes.byteLength,
       blocks,
+      shortName: res.shortName === true,
     },
   };
 }

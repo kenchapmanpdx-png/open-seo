@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSafeFetch, SafeFetchBlockedError } from "./safe-fetch";
+import {
+  createSafeFetch,
+  HANDBOOK_SHORT_USER_AGENT,
+  HANDBOOK_USER_AGENT,
+  SafeFetchBlockedError,
+} from "./safe-fetch";
 
 const redirect = (location: string) =>
   new Response(null, { status: 301, headers: { location } });
@@ -83,5 +88,72 @@ describe("safeFetch", () => {
       headers: { range: "bytes=0-0" },
     });
     expect(res).toMatchObject({ status: 200, body: "" });
+  });
+});
+
+/** WO-B27-001: one short-name retest when the site refuses the full name. */
+const ua = (init: RequestInit) =>
+  new Headers(init.headers).get("user-agent") ?? "";
+const ok = () => new Response("ok", { status: 200 });
+
+describe("safeFetch short-name retest", () => {
+  function refusing(refuse: (userAgent: string) => Response | "drop") {
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      const out = refuse(ua(init));
+      if (out === "drop") throw new TypeError("fetch failed");
+      return out;
+    });
+    const safeFetch = createSafeFetch({
+      allowedHosts: ["example.com"],
+      fetchImpl,
+      checkHost: async () => {},
+      minIntervalMs: 0,
+      shortNameRetry: true,
+    });
+    return {
+      safeFetch,
+      agents: () => fetchImpl.mock.calls.map(([, i]) => ua(i)),
+    };
+  }
+  it("switches for the rest of the fetcher after one refused request", async () => {
+    const { safeFetch, agents } = refusing((agent) =>
+      agent === HANDBOOK_USER_AGENT ? "drop" : ok(),
+    );
+    expect(await safeFetch("https://example.com/")).toMatchObject({
+      status: 200,
+      shortName: true,
+    });
+    await safeFetch("https://example.com/a");
+    expect(agents()).toEqual([
+      HANDBOOK_USER_AGENT,
+      HANDBOOK_SHORT_USER_AGENT,
+      HANDBOOK_SHORT_USER_AGENT,
+    ]);
+  });
+
+  it("retests a 403 and keeps the 403 when the short name is refused too", async () => {
+    const { safeFetch, agents } = refusing(
+      () => new Response("no", { status: 403 }),
+    );
+    expect(await safeFetch("https://example.com/")).toMatchObject({
+      status: 403,
+    });
+    await safeFetch("https://example.com/a");
+    // Both names refused: no switch and no further retests.
+    expect(agents()).toEqual([
+      HANDBOOK_USER_AGENT,
+      HANDBOOK_SHORT_USER_AGENT,
+      HANDBOOK_USER_AGENT,
+    ]);
+  });
+
+  it("never retests a site that answers the full name, or a named bot", async () => {
+    const { safeFetch, agents } = refusing((agent) =>
+      agent === "Googlebot" ? new Response("no", { status: 403 }) : ok(),
+    );
+    const res = await safeFetch("https://example.com/");
+    await safeFetch("https://example.com/", { userAgent: "Googlebot" });
+    expect(res.shortName).toBeUndefined();
+    expect(agents()).toEqual([HANDBOOK_USER_AGENT, "Googlebot"]);
   });
 });

@@ -3,8 +3,10 @@ import type { CollectedData } from "@/server/features/handbook/contracts/collect
 /**
  * Run LLM budget (ADR-019, FULL-READ §5.6): auto = $0.50 + $0.01 × pages
  * read, cap $5; `HANDBOOK_LLM_BUDGET_USD` (a positive number) overrides.
- * The map stage gets 60 %, the judge the other 40 %; each counts its own
- * spend against its share only.
+ * The map stage gets 60 %. The judge gets the rest of the run budget once
+ * the map spend is known (`setMapSpent`, WO-B27-005: a 34-page site lost
+ * four judged items at $0.44 of $0.84 while the map share sat unspent);
+ * until then, the other 40 %. Map spend + judge spend never exceed the total.
  */
 
 const AUTO_BASE_USD = 0.5;
@@ -28,6 +30,8 @@ export type RunBudget = {
   totalUsd: () => number;
   mapUsd: () => number;
   judgeUsd: () => number;
+  /** What the map stage spent in this run so far; the judge may use the rest. */
+  setMapSpent: (spent: () => number) => void;
 };
 
 /** Budget resolved at call time, so it follows the page count the engine sets after the crawl. */
@@ -35,13 +39,18 @@ export function createRunBudget(raw: string | undefined): RunBudget {
   const override = envBudgetUsd(raw);
   let pages = 0;
   const totalUsd = () => override ?? autoBudgetUsd(pages);
+  const mapUsd = () => totalUsd() * MAP_SHARE;
+  let mapSpent = mapUsd;
   return {
     setPages: (n) => {
       pages = n;
     },
     totalUsd,
-    mapUsd: () => totalUsd() * MAP_SHARE,
-    judgeUsd: () => totalUsd() * (1 - MAP_SHARE),
+    mapUsd,
+    judgeUsd: () => totalUsd() - Math.min(mapSpent(), mapUsd()),
+    setMapSpent: (spent) => {
+      mapSpent = spent;
+    },
   };
 }
 

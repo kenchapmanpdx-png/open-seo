@@ -28,6 +28,12 @@ export type SafeFetchOptions = {
   minIntervalMs?: number;
   fetchImpl?: (url: string, init: RequestInit) => Promise<Response>;
   checkHost?: (host: string) => Promise<void>;
+  /**
+   * WO-B27-001: a default-name request the site refuses (connection dropped,
+   * 403, 406) is sent once more with `HANDBOOK_SHORT_USER_AGENT`; when that
+   * answers, every later default-name request of this fetcher uses it.
+   */
+  shortNameRetry?: boolean;
 };
 
 export class SafeFetchBlockedError extends Error {
@@ -46,6 +52,21 @@ const MAX_REDIRECTS = 10;
 
 export const HANDBOOK_USER_AGENT =
   "Mozilla/5.0 (compatible; OpenSEO-Handbook/1.0; +https://openseo.so)";
+
+/**
+ * WO-B27-001: the same name without the "Mozilla/5.0 (compatible; …)"
+ * wrapper. Some firewalls drop any client that claims "Mozilla" without a
+ * browser's handshake (evolvedmechanical.com, 2026-11-28); this form still
+ * names the app, so robots.txt rules for `OpenSEO-Handbook` keep applying.
+ */
+export const HANDBOOK_SHORT_USER_AGENT =
+  "OpenSEO-Handbook/1.0 (+https://openseo.so)";
+
+/** Answers that mean "not you" rather than "not this page". */
+const REFUSED_STATUS = new Set([403, 406]);
+const isTimeout = (error: unknown) =>
+  error instanceof Error &&
+  (error.name === "TimeoutError" || error.name === "AbortError");
 
 /** `example.com` → [`example.com`, `www.example.com`] (and the reverse). */
 export function siblingHosts(host: string): string[] {
@@ -75,6 +96,11 @@ export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
     });
   const hostChecks = new Map<string, Promise<void>>();
   const nextSlot = new Map<string, number>();
+  // WO-B27-001: set once the site answered the short name after refusing
+  // the default one; never set for a site that answers the default name.
+  let shortName = false;
+  // Both names refused once: no further retests (no retry bursts).
+  let retestSpent = false;
 
   const validate = async (url: string) => {
     if (!isCrawlableUrl(url)) throw new SafeFetchBlockedError(url, "policy");
@@ -101,6 +127,42 @@ export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
     if (slot > now) await new Promise((r) => setTimeout(r, slot - now));
   };
 
+  /** Default name; one short-name retest when the site refuses it (WO-B27-001). */
+  const sendDefault = async (
+    send: (userAgent: string) => Promise<Response>,
+  ): Promise<Response> => {
+    let first: Response;
+    try {
+      first = await send(HANDBOOK_USER_AGENT);
+    } catch (error) {
+      if (!options.shortNameRetry || retestSpent || isTimeout(error))
+        throw error;
+      const retest = await send(HANDBOOK_SHORT_USER_AGENT).catch(() => null);
+      if (!retest || retest.status >= 400) {
+        await retest?.body?.cancel();
+        retestSpent = true;
+        throw error;
+      }
+      shortName = true;
+      return retest;
+    }
+    if (
+      !options.shortNameRetry ||
+      retestSpent ||
+      !REFUSED_STATUS.has(first.status)
+    )
+      return first;
+    const retest = await send(HANDBOOK_SHORT_USER_AGENT).catch(() => null);
+    if (!retest || retest.status >= 400) {
+      await retest?.body?.cancel();
+      retestSpent = true;
+      return first;
+    }
+    await first.body?.cancel();
+    shortName = true;
+    return retest;
+  };
+
   return async (url, init = {}) => {
     const started = Date.now();
     const chain: { url: string; status: number }[] = [];
@@ -108,18 +170,26 @@ export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
     let current = url;
     for (;;) {
       const host = await validate(current);
-      await pace(host);
-      const sent = Date.now();
-      const response = await doFetch(current, {
-        method: init.method ?? "GET",
-        redirect: "manual",
-        headers: {
-          ...init.headers,
-          "user-agent": init.userAgent ?? HANDBOOK_USER_AGENT,
-          accept: "text/html,application/xhtml+xml,*/*;q=0.8",
-        },
-        signal: AbortSignal.timeout(timeoutMs),
-      });
+      let sent = Date.now();
+      const send = async (userAgent: string) => {
+        await pace(host);
+        sent = Date.now();
+        return doFetch(current, {
+          method: init.method ?? "GET",
+          redirect: "manual",
+          headers: {
+            ...init.headers,
+            "user-agent": userAgent,
+            accept: "text/html,application/xhtml+xml,*/*;q=0.8",
+          },
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+      };
+      const response = init.userAgent
+        ? await send(init.userAgent)
+        : shortName
+          ? await send(HANDBOOK_SHORT_USER_AGENT)
+          : await sendDefault(send);
       const ttfbMs = Date.now() - sent;
       const location = response.headers.get("location");
       const isRedirect = response.status >= 300 && response.status < 400;
@@ -134,6 +204,7 @@ export function createSafeFetch(options: SafeFetchOptions): SafeFetch {
         }
       }
       return finish(response, {
+        shortName: shortName && !init.userAgent,
         url,
         finalUrl: current,
         chain,
@@ -160,6 +231,7 @@ async function finish(
     ttfbMs: number;
     maxBytes: number;
     skipBody: boolean;
+    shortName: boolean;
   },
 ): Promise<SafeFetchResult> {
   const { url, finalUrl, chain, started, ttfbMs, maxBytes } = meta;
@@ -179,5 +251,6 @@ async function finish(
     redirectChain: chain,
     timingMs: Date.now() - started,
     ttfbMs,
+    ...(meta.shortName ? { shortName: true as const } : {}),
   };
 }

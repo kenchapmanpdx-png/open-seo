@@ -18,4 +18,14 @@ describe("createRunBudget", () => {
     expect(budget.totalUsd()).toBe(0.01);
     expect(createRunBudget("abc").totalUsd()).toBe(0.5);
   });
+
+  // WO-B27-005: wellnessforzebras.com, 34 pages, $0.84 budget, map $0.11.
+  it("lets the judge use what the map stage did not spend, never more than the total", () => {
+    const budget = createRunBudget(undefined);
+    budget.setPages(34);
+    budget.setMapSpent(() => 0.11);
+    expect(budget.judgeUsd()).toBeCloseTo(0.73);
+    budget.setMapSpent(() => 9);
+    expect(budget.judgeUsd()).toBeCloseTo(0.84 * 0.4);
+  });
 });
