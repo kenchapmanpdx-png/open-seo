@@ -2139,8 +2139,7 @@ URLs are paths on https://antiquecandleco.com. A finding on more than half of th
   - /products/antique69hhmv111026
   - /products/antique96ppb111026
   - /products/antique97ppb111026
-- S3 · P5-17 · No About page found · 1 URL(s)
-  -
+- ## S3 · P5-17 · No About page found · 1 URL(s)
 - S4 · P3-01 · Host/protocol variants reach the canonical origin in more than one hop · 1 URL(s)
   - http://www.antiquecandleco.com/
 - S4 · P3-14 · Utility pages are not linked · 1 URL(s)
