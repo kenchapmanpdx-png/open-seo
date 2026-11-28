@@ -38,6 +38,7 @@ async function contrastNodes(color: string) {
     const result = await runAxe(browser, {
       url: `http://127.0.0.1:${address.port}/`,
       viewport: "desktop",
+      scrollToEnd: true,
     });
     return (
       result.violations.find((v) => v.id === "color-contrast")?.nodes.length ??
