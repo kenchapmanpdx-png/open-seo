@@ -6,6 +6,7 @@ import type {
 } from "@/server/features/handbook/contracts/collectors";
 import { BOT_USER_AGENTS } from "@/server/features/handbook/contracts/collectors";
 import { siblingHosts } from "@/server/features/handbook/engine/safe-fetch";
+import { sleep } from "@/server/features/handbook/engine/transient-retry";
 import { BROWSER_UA, fetchOnce, hostPacer, pool, probeUrl } from "./probe";
 
 /**
@@ -15,9 +16,12 @@ import { BROWSER_UA, fetchOnce, hostPacer, pool, probeUrl } from "./probe";
  * policy, no site-host scope) with a browser user-agent: HEAD first, GET when
  * HEAD answers 405/501 or fails, one retry on a transient failure. Googlebot
  * is asked only when the browser gets no 2xx (bot-only blocks are recorded,
- * not findings). 4 workers; at most 1 request per second per host.
+ * not findings). 4 workers; at most 1 request per second per host. A link
+ * with no HTTP answer is probed once more ≥ 30 s later (WO-B26-006).
  */
 const MAX_LINKS = 500;
+/** Gap between the first probe and the late re-probe of a no-answer link. */
+const LATE_RETRY_MS = 30_000;
 const WORKERS = 4;
 const BOT: BotName = "Googlebot";
 const CONVERSION = /book|buy|register|ticket|donate|gift|order|shop|reserve/i;
@@ -67,7 +71,7 @@ export const outboundCollector: Collector<"outbound"> = {
 
     const pace = hostPacer();
     const fetcher = ctx.fetchOffsite;
-    const links = await pool(picked, WORKERS, async ([url, entry]) => {
+    const probe = async (url: string) => {
       const browser = plain(
         await probeUrl(ctx, fetcher, pace, url, BROWSER_UA),
       );
@@ -80,13 +84,23 @@ export const outboundCollector: Collector<"outbound"> = {
             "GET",
           );
       return {
-        url,
-        sourceUrls: entry.sources,
         browser,
         bot: bot
           ? { name: BOT, status: bot.status, finalUrl: bot.finalUrl }
           : null,
       };
+    };
+    const firstAt = new Map<string, number>();
+    const links = await pool(picked, WORKERS, async ([url, entry]) => {
+      firstAt.set(url, Date.now());
+      return { url, sourceUrls: entry.sources, ...(await probe(url)) };
+    });
+    // No HTTP answer: one more probe at the end of the phase, at least
+    // LATE_RETRY_MS after the first (WO-B26-006), not a burst (ADR-035).
+    const unanswered = links.filter((l) => !l.browser);
+    await pool(unanswered, WORKERS, async (link) => {
+      await sleep((firstAt.get(link.url) ?? 0) + LATE_RETRY_MS - Date.now());
+      Object.assign(link, await probe(link.url));
     });
     return { status: "ok", links };
   },

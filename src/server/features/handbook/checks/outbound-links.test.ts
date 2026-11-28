@@ -53,7 +53,6 @@ describe("botfetch.outbound-links", () => {
     );
 
   it.each([
-    ["no answer", null],
     ["404", { status: 404, finalUrl: "https://example.org/" }],
     ["410", { status: 410, finalUrl: "https://example.org/" }],
     // The probe already retried a 502 / 504 once (ADR-031 §1).
@@ -75,6 +74,14 @@ describe("botfetch.outbound-links", () => {
       ]);
     },
   );
+
+  it("lists a link with no answer as not confirmed dead, outside the finding (WO-B26-006)", async () => {
+    const result = await outbound(null);
+    expect(statusOf(result, "P5-13")).toBe("PASS");
+    expect(JSON.stringify(result)).toContain(
+      "could not be reached from this machine (not confirmed dead): https://example.org/",
+    );
+  });
 
   it.each([
     ["platform block", { status: 403, finalUrl: "https://example.org/" }],

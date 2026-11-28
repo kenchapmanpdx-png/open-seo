@@ -1,5 +1,5 @@
 import { sort } from "remeda";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type {
   CollectorContext,
   PageSnapshot,
@@ -9,9 +9,13 @@ import { snapshot } from "@/server/features/handbook/checks/check-test-fixtures"
 import { outboundCollector } from "./outbound";
 
 const calls: string[] = [];
+/** `https://down-<status>.test/` throws (no answer) until this time. */
+let downUntil = Infinity;
 /** `https://<status-for-HEAD>-<status-for-GET>.test/` answers by method. */
 const fetchOffsite: SafeFetch = async (url, init) => {
   const [head, get] = new URL(url).hostname.split(".")[0].split("-");
+  if (head === "down" && !(downUntil < Date.now()))
+    throw new Error("ETIMEDOUT");
   calls.push(
     `${init?.method} ${url} ${init?.userAgent?.includes("Googlebot") ? "bot" : "browser"}`,
   );
@@ -77,5 +81,21 @@ describe("outbound collector", () => {
       "HEAD https://404-404.test/ browser",
       "HEAD https://405-200.test/ browser",
     ]);
+  });
+
+  it("probes a no-answer link once more at least 30 s later", async () => {
+    vi.useFakeTimers();
+    try {
+      downUntil = Date.now() + 20_000;
+      const pending = collect([
+        snapshot("/", { links: ["https://down-200.test/"] }),
+      ]);
+      await vi.advanceTimersByTimeAsync(40_000);
+      const [link] = await pending;
+      expect(link.browser?.status).toBe(200);
+    } finally {
+      downUntil = Infinity;
+      vi.useRealTimers();
+    }
   });
 });

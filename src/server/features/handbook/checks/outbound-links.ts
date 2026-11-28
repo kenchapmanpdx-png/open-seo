@@ -4,8 +4,9 @@ import { createResult, normalizeUrl } from "./support";
 
 /**
  * BOTFETCH/CRAWL (handbook §12): outbound and third-party conversion links
- * are not dead (P5-13; ADR-031: no answer, 404, 410, 5xx other than 503 =
- * finding; redirects = one S4 "(info)" finding; bot or platform blocks
+ * are not dead (P5-13; ADR-031: 404, 410, 5xx other than 503 = finding; no
+ * HTTP answer after the late re-probe = "not confirmed dead", info only,
+ * WO-B26-006; redirects = one S4 "(info)" finding; bot or platform blocks
  * (incl. 503) and other statuses = info only); `target="_blank"` links carry noopener (noreferrer
  * implies it; noreferrer alone on internal links is by intent) (P4-12).
  */
@@ -28,9 +29,14 @@ const moved = (link: Link) =>
 /** A server error that survived the probe's retry; 503 is usually a bot wall. */
 const serverError = (status: number) => status >= 500 && !BLOCKED.has(status);
 
-/** Dead = no answer (DNS / connect / timeout), 404, 410 or 5xx (ADR-031). */
+/**
+ * Dead = an HTTP answer that says so: 404, 410 or 5xx (ADR-031). No answer
+ * at all (DNS, connect or timeout, twice, ≥ 30 s apart) is not proof from one
+ * machine (WO-B26-006): the probe cannot tell a name that does not exist
+ * from a timeout, so every no-answer is "not confirmed dead".
+ */
 function deadReason(link: Link): string | null {
-  if (!link.browser) return "no answer (DNS or connection failure)";
+  if (!link.browser) return null;
   const s = link.browser.status;
   if (DEAD.has(s) || serverError(s)) return `browser gets ${s}`;
   return null;
@@ -126,7 +132,17 @@ export const outboundLinksCheck: HandbookCheck = {
       const why = infoReason(l);
       return why ? [`${l.url} — ${why}`] : [];
     });
-    const infoNote = `info, not findings (bot or platform blocks, other statuses): ${info.length ? info.slice(0, 20).join("; ") : "none"}`;
+    const unreached = outbound.links
+      .filter((l) => !l.browser)
+      .map((l) => l.url);
+    const infoNote = [
+      `info, not findings (bot or platform blocks, other statuses): ${info.length ? info.slice(0, 20).join("; ") : "none"}`,
+      ...(unreached.length
+        ? [
+            `could not be reached from this machine (not confirmed dead): ${unreached.slice(0, 20).join("; ")}`,
+          ]
+        : []),
+    ].join("\n");
     const ref = (l: Link) => out.evidence("botFetch", l.url, status(l));
     // Redirecting links: a low-priority S4 "(info)" finding of their own, so
     // the golden audits' "points at redirects" entries stay caught (ADR-031).
@@ -161,7 +177,7 @@ export const outboundLinksCheck: HandbookCheck = {
               `${l.url} — ${why} (on ${l.sourceUrls.slice(0, 3).join(", ")})`,
           )
           .join("\n")}\n${infoNote}`,
-        fix: "Fix or remove dead outbound links (the target is gone or its domain no longer answers).",
+        fix: "Fix or remove dead outbound links (the target answers 404 / 410 or a server error).",
         fixability: "FIXABLE",
         effort: "S",
         urls: [...new Set(dead.flatMap(({ l }) => l.sourceUrls))],
