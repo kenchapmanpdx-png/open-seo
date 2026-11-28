@@ -64,5 +64,5 @@ Upstream `AGENTS.md` still applies in full. This file adds fork rules on top.
 
 ## Upstream sync
 
-- During the build: rebase at the start of every HEAVY batch (B3, B5, B7); skip when `git fetch upstream` shows no new commits. After B7: weekly LIGHT loop M1 (BLUEPRINT §9).
+- During the build: rebase at the start of every HEAVY batch (B3, B5, B7); skip when `git fetch upstream` shows no new commits. After B7: monthly LIGHT loop M1 (BLUEPRINT §9): only upstream releases public ≥ 14 days; security fixes immediately; next due 2026-12-26.
 - `git fetch upstream && git rebase upstream/main` on `ken/main`; resolve conflicts in favor of upstream outside fork paths; rerun session-end checks; refresh `fork/BASELINE.md` if upstream changed failures.

@@ -317,11 +317,11 @@ Source of truth for architecture, dependencies, model batching, schedule. `fork/
 
 ## 9. Steady state (after B7)
 
-| Loop                | Trigger                 | Model                    | Steps                                                                                                       |
-| ------------------- | ----------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| M1 Upstream rebase  | weekly                  | LIGHT                    | Rebase; checks; escalate core-path conflicts to next HEAVY run                                              |
-| M2 Handbook update  | new handbook version    | HEAVY → LIGHT (1 switch) | HEAVY: `handbook-sync` diff → interpret → contract/rule changes + WOs. LIGHT: implement WOs, BadGEO, golden |
-| M3 New golden audit | each manual field audit | HEAVY                    | Convert to `*.expected.yaml`; triage misses                                                                 |
+| Loop                | Trigger                                                                         | Model                    | Steps                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| M1 Upstream rebase  | monthly; releases public ≥ 14 days; security fixes immediately; next 2026-12-26 | LIGHT                    | Rebase; checks; escalate core-path conflicts to next HEAVY run                                              |
+| M2 Handbook update  | new handbook version                                                            | HEAVY → LIGHT (1 switch) | HEAVY: `handbook-sync` diff → interpret → contract/rule changes + WOs. LIGHT: implement WOs, BadGEO, golden |
+| M3 New golden audit | each manual field audit                                                         | HEAVY                    | Convert to `*.expected.yaml`; triage misses                                                                 |
 
 ## 10. Residual weaknesses
 

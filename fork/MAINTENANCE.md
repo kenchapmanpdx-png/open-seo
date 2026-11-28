@@ -6,18 +6,20 @@ Six loops keep the fork current (BLUEPRINT §9). Each loop is a runnable checkli
 
 Rules from `fork/FORK.md` still apply: never ask Ken, record decisions, never open `.env*`, log upstream edits in `fork/UPSTREAM-EDITS.md`. In SINGLE mode every loop runs on Opus 5.5. In SPLIT mode use the Model column; a loop that needs both models switches once, at the marked step.
 
-| Loop                | Trigger                                      | Model                    | Output                                                        |
-| ------------------- | -------------------------------------------- | ------------------------ | ------------------------------------------------------------- |
-| M1 Upstream rebase  | weekly                                       | LIGHT                    | `ken/main` on top of `upstream/main`, checks green            |
-| M2 Handbook update  | new handbook version                         | HEAVY → LIGHT (1 switch) | registry, checks, fixtures on the new version                 |
-| M3 New golden audit | each manual field audit                      | HEAVY                    | `fork/fixtures/expected/<site>.expected.yaml`, triage         |
-| M4 Guide refresh    | by 2027-05-20 or a new writing-guide version | HEAVY                    | excerpts, copy-quality thresholds, copy-rules pack re-checked |
-| M5 Ops review       | weekly                                       | LIGHT                    | ops status, watchdog and self-test reviewed; findings queued  |
-| M6 External export  | each new external audit export (Semrush …)   | HEAVY                    | importer misses both ways → backlog rows                      |
+| Loop                | Trigger                                        | Model                    | Output                                                        |
+| ------------------- | ---------------------------------------------- | ------------------------ | ------------------------------------------------------------- |
+| M1 Upstream rebase  | monthly (releases public ≥ 14 d; security now) | LIGHT                    | `ken/main` on top of `upstream/main`, checks green            |
+| M2 Handbook update  | new handbook version                           | HEAVY → LIGHT (1 switch) | registry, checks, fixtures on the new version                 |
+| M3 New golden audit | each manual field audit                        | HEAVY                    | `fork/fixtures/expected/<site>.expected.yaml`, triage         |
+| M4 Guide refresh    | by 2027-05-20 or a new writing-guide version   | HEAVY                    | excerpts, copy-quality thresholds, copy-rules pack re-checked |
+| M5 Ops review       | weekly                                         | LIGHT                    | ops status, watchdog and self-test reviewed; findings queued  |
+| M6 External export  | each new external audit export (Semrush …)     | HEAVY                    | importer misses both ways → backlog rows                      |
 
 Log every loop run as one row in the table at the end of this file.
 
-## M1 — Upstream rebase (weekly, LIGHT)
+## M1 — Upstream rebase (monthly, LIGHT)
+
+Policy (Ken 2026-11-27, WO-B26-000): run monthly; take only upstream releases that have been public for at least 14 days (rebase onto that release tag, not `upstream/main` head); apply upstream security fixes immediately. Next due 2026-12-26.
 
 1. `git status` is clean and on `ken/main`. Not clean → commit or stash the fork's own work first; never discard it.
 2. `git fetch upstream` then `git rev-list --count HEAD..upstream/main`. `0` → log "no upstream commits" and stop.
