@@ -15,6 +15,11 @@ import { context } from "@/server/features/handbook/checks/check-test-fixtures";
 import { pageBlocks } from "@/server/features/handbook/engine/boilerplate";
 import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
 import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
+import { parseBlock } from "@/server/features/handbook/collectors/jsonld-parse";
+import type { JsonLdData } from "@/server/features/handbook/contracts/collectors";
+
+/** JSON-LD per page, rebuilt from the same stored HTML (B26). */
+const jsonldPages: JsonLdData["pages"][number][] = [];
 
 const [ids, ...dirs] = process.argv.slice(2);
 if (!ids || dirs.length === 0) {
@@ -39,6 +44,12 @@ function loadPages(dir: string): PageSnapshot[] {
       "utf8",
     );
     const facts = extractHtmlFacts(html, url);
+    const parsed = facts.jsonLdBlocks.map((raw, i) => parseBlock(raw, i));
+    jsonldPages.push({
+      url,
+      blocks: parsed.map((p) => p.block),
+      nodes: parsed.flatMap((p) => p.nodes),
+    });
     return [
       {
         url,
@@ -62,12 +73,16 @@ function loadPages(dir: string): PageSnapshot[] {
 }
 
 for (const dir of dirs) {
+  jsonldPages.length = 0;
   const snapshots = loadPages(dir);
   console.log(`== ${dir} (${snapshots.length} pages)`);
   for (const check of checks) {
     // SP7=Y in the environment = a local business site (SP7 rules run).
     const ctx = {
-      ...context({ pages: { status: "ok", snapshots } }),
+      ...context({
+        pages: { status: "ok", snapshots },
+        jsonld: { status: "ok", pages: [...jsonldPages] },
+      }),
       siteProfile:
         process.env.SP7 === "Y"
           ? [
