@@ -2,13 +2,13 @@
 
 autonomy: AUTOPILOT (AUTOPILOT = unattended, BLUEPRINT §1.7; INTERACTIVE = Ken typed the command in a live session)
 mode: SINGLE (SINGLE = Opus 5.5 for every batch; SPLIT = fallback, BLUEPRINT §1.0)
-status: done (not-started | in-progress | needs-ken | done)
+status: not-started (not-started | in-progress | needs-ken | done)
 needs_ken: All batches done (B26 run 108 tag handbook-v3.15.0; B25 run 106 tag handbook-v3.14.0; B22 run 103 tag handbook-v3.11.0; B23 run 103 tag handbook-v3.12.0; B24 run 104 tag handbook-v3.13.0). BLOCKED-KEN left in fork/queue.md: WO-B22-006 fix-list ordering (needs your Google sign-in); WO-B6-012 AI traffic receiver + billable Vercel drain (add an ai_traffic_site row, run `fork/scripts/deploy-receiver.ts`); WO-B9-026 in-app perf half. Optional: K4 alert email (`RESEND_API_KEY` + `HEALTH_ALERT_EMAIL`); BING_WEBMASTER_API_KEY; BYOK OpenAI / Gemini / Perplexity keys; CRUX_API_KEY (P7-10); live MCP run with an OAuth client; salonvata Semrush pages XLSX (#9, S13). Decisions for you: B26 revert phrases (fork/reports/B26.md § Decisions, incl. "no answer is dead", "dotless host not dead"); B26 whyracingevents.com golden F07 / F18 need a new verdict (WO-002 removed false readings); round 3: evolvedmechanical.com refuses the app user-agent (fork/reports/field-evolvedmechanical.com-2026-11-28.md), drop or replace; B25 revert phrases (fork/reports/B25.md § Decisions, incl. "any full page means not tested"); B24 "site refusal stays provisional" / "429 counts as a site refusal" (fork/reports/B24.md); B23 revert phrases (fork/reports/B23.md § Exit: "missing canonical stays S1", "named-group gap stays S1", "x-default required", "any year in headings", "429 counts as a block"); B22 "429 is not a sitemap error" (P3-12); B22 grade-spread / effect-map phrases (fork/reports/B22.md); B20 handbook wording (fork/reports/B20.md § Exit). Look C is live. Closed 2026-11-25: K1 Windows autostart installed (`install-autostart.ps1` printed `unchanged`; reboot test passed 2026-11-25); `wip/b16-run81`, `ken/rebase-v0.1.31`, `ken/rebase-v0.1.31-m1` deleted
-current_batch: B26
-batch_file: fork/batches/B26-heavy-precision-fixes-2.md
+current_batch: B27
+batch_file: fork/batches/B27-heavy-run-reliability.md
 required_model: Opus 5.5 (SINGLE)
 current_run: 108
-next_action: none — B26 done run 108 (exit + WO-B26-091). Next scheduled work: monthly upstream sync M1 due 2026-12-26 (BLUEPRINT §9).
+next_action: Start B27 at WO-B27-001, then 002…005, exit WO-B27-090 (in-app runs of evolvedmechanical.com and antiquecandleco.com with app-chosen scope; tag handbook-v3.16.0). No M1 during B27.
 contracts_version: 1.11.0 (B19 run 89: ADR-033 K3 abortUrls / mainWords / aborted robots, RenderData js.mainWords + js.robotsBlocked; 1.10.0 B17 run 84: ADR-032 PageSnapshot `redirectChain` + `doctype`, SUPP-21…26; 1.9.0 B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -29,8 +29,8 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 3. Set `status: in-progress`. Open `batch_file`; resume at `next_action`.
 4. Missing credential or access (run `bash fork/scripts/preflight.sh`; never read `.env*`) → mark only the dependent WOs/steps `BLOCKED-KEN` and continue everything else.
 5. End of run scope or ~70% context: commit (every run must produce ≥1 commit; it is the autopilot progress signal), update this file (run log, next_action). AUTOPILOT → exit. INTERACTIVE → keep going (auto-compact handles context).
-6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch in table order (B15 → B17 → B16 → B18 → B19 → B20 → B21 → B22 → B23 → B24 → B25 → B26), skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
-7. Last batch in the sequence with a batch file (B26) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
+6. Batch exit gate met → write `fork/reports/{batch}.md`, set next batch below, commit + push. SINGLE → continue into the next batch in table order (B15 → B17 → B16 → B18 → B19 → B20 → B21 → B22 → B23 → B24 → B25 → B26 → B27), skipping any batch with status `hold`; none left → `status: done`, exit. SPLIT → `status: needs-ken`, `needs_ken: switch model to …`, exit.
+7. Last batch in the sequence with a batch file (B27) complete → `status: done`; `needs_ken:` lists every `BLOCKED-KEN` item left in `fork/queue.md`; commit + push.
 8. `status: needs-ken` only when no remaining work in the current or any later batch can proceed without Ken.
 9. Ken switches to SPLIT (weekly usage low) → follow SPLIT rules from the next run. Weekly limit fully reached → autopilot stops; resume later with the same command.
 
@@ -64,6 +64,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | done   |
 | B25   | fork/batches/B25-heavy-precision-fixes.md        | HEAVY         | done   |
 | B26   | fork/batches/B26-heavy-precision-fixes-2.md      | HEAVY         | done   |
+| B27   | fork/batches/B27-heavy-run-reliability.md        | HEAVY         | todo   |
 
 ## Run log
 
