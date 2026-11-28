@@ -1122,8 +1122,7 @@ URLs are paths on https://antiquecandleco.com. A finding on more than half of th
   - /collections/fragrance-collection
   - /collections/monthly-and-candle-of-the-month-test
   - /collections/sale-candles-for-aftersell
-- S3 · P5-17 · No About page found · 1 URL(s)
-  -
+- ## S3 · P5-17 · No About page found · 1 URL(s)
 - S4 · P3-01 · Host/protocol variants reach the canonical origin in more than one hop · 1 URL(s)
   - http://www.antiquecandleco.com/
 - S4 · SUPP-01 · Generic anchor text ("Read more", "Click here") on internal links · 283 URL(s)
