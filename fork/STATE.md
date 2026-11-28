@@ -7,8 +7,8 @@ needs_ken: All batches done (B25 run 106 tag handbook-v3.14.0; B22 run 103 tag h
 current_batch: B26
 batch_file: fork/batches/B26-heavy-precision-fixes-2.md
 required_model: Opus 5.5 (SINGLE)
-current_run: 107
-next_action: B26 WO-000…007 done (run 107; WO-005 closed TRUE, no change; WO-006 DNS split ESCALATED). Next: WO-B26-090 exit — BadGEO 0/0 + GoodGEO 0 + finding-contract gate on sidecar 1.3.1 (4778), re-derive the eight goldens and latest field runs (list changes per WO-001/002/003/006/007; WO-007 changes markup.text and link text at inline tags), in-app re-check of wellnessforzebras.com, grade-spread, finish fork/reports/B26.md (a draft exists), tag handbook-v3.15.0; then WO-B26-091 round 3 app half (closes WO-B22-004). Do not run the upstream sync (M1) during B26.
+current_run: 108
+next_action: B26 exit done run 108 (tag handbook-v3.15.0). Next: WO-B26-091 round 3 app half — antiquecandleco.com audit 5cdbb86c (core site, /blogs/ left out, hit the 500-page cap) was running at run end: when done, `pnpm exec tsx fork/runs/b26/field-dump.ts 5cdbb86c-c9d8-463a-a94f-9fa83386d856` → fork/reports/field-antiquecandleco.com-<date>.md; evolvedmechanical.com (whole site, 114-URL sitemap ≤ 100 per section; preflight `fork/runs/b26/pre-em.txt`) failed to start ("no audit id" from `fork/runs/b25/check-site.mjs`, Default project) → retry from the Check a site page; then set WO-B22-004 done in fork/queue.md, B26 status done, STATE status done.
 contracts_version: 1.11.0 (B19 run 89: ADR-033 K3 abortUrls / mainWords / aborted robots, RenderData js.mainWords + js.robotsBlocked; 1.10.0 B17 run 84: ADR-032 PageSnapshot `redirectChain` + `doctype`, SUPP-21…26; 1.9.0 B15 run 82: ADR-031 collectors `linkTargets` + `resources`, `LinkProbe`, SUPP-20; 1.8.0 B14 run 76: ADR-029 report categoryScores + finding categories; 1.7.0 B11 run 55: scaled content + copy quality additions, ADR-022…024; 1.6.0 B10 run 53: closed B9 escalations — SafeFetch ttfbMs + request headers, bot-fetch excerpt, noJs opacity count, PageMarkup.firstAnswerNosnippet, EVIDENCE_RETAIN_RUNS 2; no K3 change; 1.5.1 B8 R2 follow-up: additive B9 inputs, render-data split, no K3 change; 1.5.0 B8 R2: K2/K3 full-read additions, K14 PageProfile, K15 SiteFactMap, SUPP registry, report depth/coverage/escalations; 1.4.0 B5 R3: integration contracts K9–K13, ADR-013…017; B5 R3: integration contracts K9–K13, ADR-013…017; 1.3.0 B5 R1: loose K8 MCP outputs, `CheckContext.fetchOffsite`, render forms, axe sampleTexts, Lighthouse renderBlocking; 1.2.0 B3 R2; 1.1.0 B3 R1; 1.0.0 frozen at end of B1)
 extra_site: https://bluetreefunding.com (third golden from B8 R3)
 levers: L1=off L2=off (B1 R5 probe decides; SPLIT only)
@@ -36,34 +36,34 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 
 ## Batch sequence
 
-| Batch | File                                             | Model (SPLIT) | Status |
-| ----- | ------------------------------------------------ | ------------- | ------ |
-| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done   |
-| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done   |
-| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done   |
-| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done   |
-| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done   |
-| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done   |
-| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done   |
-| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done   |
-| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done   |
-| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done   |
-| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done   |
-| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done   |
-| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done   |
-| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done   |
-| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done   |
-| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | done   |
-| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | done   |
-| B18   | fork/batches/B18-heavy-field-test-1.md           | HEAVY         | done   |
-| B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done   |
-| B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done   |
-| B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done   |
-| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done   |
-| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | done   |
-| B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | done   |
-| B25   | fork/batches/B25-heavy-precision-fixes.md        | HEAVY         | done   |
-| B26   | fork/batches/B26-heavy-precision-fixes-2.md      | HEAVY         | todo   |
+| Batch | File                                             | Model (SPLIT) | Status                               |
+| ----- | ------------------------------------------------ | ------------- | ------------------------------------ |
+| B1    | fork/batches/B1-heavy-foundation.md              | HEAVY         | done                                 |
+| B2    | fork/batches/B2-light-deterministic.md           | LIGHT         | done                                 |
+| B3    | fork/batches/B3-heavy-judgment.md                | HEAVY         | done                                 |
+| B4    | fork/batches/B4-light-product-deploy.md          | LIGHT         | done                                 |
+| B5    | fork/batches/B5-heavy-v1-signoff.md              | HEAVY (Opus)  | done                                 |
+| B6    | fork/batches/B6-light-integrations.md            | LIGHT         | done                                 |
+| B7    | fork/batches/B7-heavy-v2.md                      | HEAVY         | done                                 |
+| B8    | fork/batches/B8-heavy-full-read-design.md        | HEAVY         | done                                 |
+| B9    | fork/batches/B9-light-full-read-build.md         | LIGHT         | done                                 |
+| B10   | fork/batches/B10-heavy-full-read-signoff.md      | HEAVY         | done                                 |
+| B11   | fork/batches/B11-heavy-scaled-content-copy.md    | HEAVY         | done                                 |
+| B12   | fork/batches/B12-light-rebase-reliability.md     | LIGHT         | done                                 |
+| B13   | fork/batches/B13-heavy-dependability.md          | HEAVY         | done                                 |
+| B14   | fork/batches/B14-heavy-novice-ui.md              | HEAVY         | done                                 |
+| B15   | fork/batches/B15-heavy-accuracy.md               | HEAVY         | done                                 |
+| B17   | fork/batches/B17-heavy-accuracy-2.md             | HEAVY         | done                                 |
+| B16   | fork/batches/B16-heavy-novice-cleanup-restyle.md | HEAVY         | done                                 |
+| B18   | fork/batches/B18-heavy-field-test-1.md           | HEAVY         | done                                 |
+| B19   | fork/batches/B19-heavy-field-tests-3-5.md        | HEAVY         | done                                 |
+| B20   | fork/batches/B20-heavy-cap-scope-speed.md        | HEAVY         | done                                 |
+| B21   | fork/batches/B21-heavy-round2-class-fixes.md     | HEAVY         | done                                 |
+| B22   | fork/batches/B22-heavy-relevance-convergence.md  | HEAVY         | done                                 |
+| B23   | fork/batches/B23-heavy-external-review-fixes.md  | HEAVY         | done                                 |
+| B24   | fork/batches/B24-heavy-site-refuses-helper.md    | HEAVY         | done                                 |
+| B25   | fork/batches/B25-heavy-precision-fixes.md        | HEAVY         | done                                 |
+| B26   | fork/batches/B26-heavy-precision-fixes-2.md      | HEAVY         | in-progress (exit done; WO-091 left) |
 
 ## Run log
 
@@ -176,6 +176,7 @@ Optional BLOCKED-KEN items (do not block B8–B11):
 | 105 | 2026-11-25 | Opus 5.5 (autopilot) | B25 WO-B25-001…010: red test at the public entry point → class fix → guards for all ten (noscript pixel; og:site_name brand; bare-brand 404 twin; /index.html → 404; About by one-segment path / home link; BentoBox; SUPP-03 per layout; P9-01 not-tested bots, nwpt S1 → S2; P5-08 tel: href formats + SP7 E.164; lazy data-src images, empty src no longer the page URL). Cases re-derived from stored raw HTML / bot-fetch rows of every latest in-app run (`fork/scripts/rederive.ts`). Session checks pass (2899 tests). Replay r105 started detached.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | exit: replay, in-app re-check, grade-spread, tag v3.14.0                                                                                                                            |
 | 106 | 2026-11-26 | Opus 5.5 (autopilot) | B25 exit. Replay r105: BadGEO missing 1 / unexpected 1 → exit fix: P9-01 "not tested" only for a lockout (last 5 compared fetches refused; BadGEO acme GPTBot refused on one URL stays refused), BadGEO lazy-hero expects SUPP-20 (WO-010 positive); BadGEO r106 0 / 0, GoodGEO 0. Goldens caught Δ 0, grades Δ 0, changes attributed (E.164 009, brand wording 002, rest lab variance). App build had failed on a scratch type error (already fixed) → restarted, build `f7e05f8ad06f`. In-app re-check og / l4p / bb / nwpt (`fork/runs/b25/check-site.mjs`): every fixed finding gone or narrowed; nwpt P9-01 S1 → S2, F 39 → F 37.9 uncapped. grade-spread: no letter change. Checks pass (2900 tests). Tag handbook-v3.14.0.                                                                                                                                                                                                                                                                                                                                                                                                 | M1 due 2026-11-28                                                                                                                                                                   |
 | 107 | 2026-11-27 | Opus 5.5 (autopilot) | B26 R1: WO-000 (M1 monthly, next 2026-12-26; reboot test passed). WO-001 text runs join at character refs / comments + shared `foldText` (P6-07, SUPP-16). WO-002 shared JSON-LD `textValue` (array alternateName; 5 helpers + schema-basics, entity-nodes, raw-copy). WO-003 Tailwind / Bootstrap screen-band hiding (SUPP-03; `engine/utility-hidden.ts`). WO-004 sidecar 1.3.1 axe waits for animations (cap 3 s; real-browser test). WO-005 closed TRUE, no change (stored 390×844 first-screen actions lack "Join Waitlist"). WO-006 P5-13 no answer = "not confirmed dead" + late re-probe ≥ 30 s; DNS split ESCALATED (LinkProbe has no NXDOMAIN field). WO-007 real cause: inline tags added a space (`Zebra<span>Thrive</span>`) → `engine/text-runs.ts` inline/box rule; entity-test v3 "Spelling:" needs two exact quotes. Re-derive on stored wellnessforzebras.com: SUPP-03 2 pages (TRUE), P6-07 / P6-01 closed, P6-09 open on sameAs 0 (TRUE). types 0 · lint 0 · tests 449/2910 · format clean. `rederive.ts` rebuilds JSON-LD. A second (interactive) session is drafting `fork/reports/B26.md`; left untouched. | WO-B26-090 exit: BadGEO/GoodGEO replay (4778 on sidecar 1.3.1), goldens re-derive Δ, in-app re-check wellnessforzebras.com, grade-spread, report, tag handbook-v3.15.0; then WO-091 |
+| 108 | 2026-11-28 | Opus 5.5 (autopilot) | B26 exit (WO-B26-090). Replay r107 (started run 107): BadGEO 0 / 0 (blocked 5), GoodGEO 0, contract 0; goldens caught Δ 0 except whyracingevents.com −2 (WO-002 removed two false readings, verified live: WebSite alternateName array, Organization sameAs), grades Δ 0. Exit fix P5-13: salonvata / spoiled lost their no-answer links entirely (not-confirmed line only printed inside the dead finding) → line kept on the redirect finding; a dotless host is dead (red → fix → guard; BadGEO r108 0 / 0, GoodGEO 0). In-app re-check wellnessforzebras.com (764b3a4f): 5 readings gone, 2 narrowed to their true half, P5-14 true; C 67.6 → B 72.2; 4 LLM items BLOCKED on budget (pre-existing). grade-spread: no letter change. Checks pass (2912 tests). Tag handbook-v3.15.0. WO-091 started: acc running, em failed to start.                                                                                                                                                                                                                                                                                          | WO-B26-091 finish                                                                                                                                                                   |
 
 ## Batch history
 
