@@ -26,7 +26,7 @@ import { maxRendersFromEnv } from "./classify";
  * so the HTTP layer is testable without a browser; `main()` wires the real
  * ones. Requests and responses are validated with the K3 Zod schemas.
  */
-export const SIDECAR_VERSION = "1.3.0";
+export const SIDECAR_VERSION = "1.3.1";
 const MAX_BODY = 64 * 1024;
 
 export type Engines = {
