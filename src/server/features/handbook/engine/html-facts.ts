@@ -1,5 +1,6 @@
 import { sort } from "remeda";
 import { Parser } from "htmlparser2";
+import { createTextRuns } from "./text-runs";
 import type {
   MarkupEmbed,
   MarkupVideo,
@@ -48,23 +49,6 @@ const LINE_BREAKS = new Set(
   ),
 );
 const REAL_LIST = new Set(["ul", "ol", "dl", "table"]);
-/**
- * Text-level (inline) tags: the browser prints the text either side of them
- * with no gap, so `Zebra<span>Thrive</span>` reads "ZebraThrive" and
- * `1<sup>st</sup>` "1st" (WO-B26-007). Every other tag is an element boundary
- * and adds a space. A utility class that makes one of these a box (Tailwind
- * `block`, Bootstrap `d-block`), or a flex / grid parent (which blockifies
- * its children), makes it a boundary too.
- */
-const INLINE = new Set(
-  "span abbr b bdi bdo cite code data dfn em i kbd mark q s samp small strong sub sup time u var font del ins wbr".split(
-    " ",
-  ),
-);
-const BOX_CLASS =
-  /^(?:[\w-]+:)?(?:block|flex|grid|table|list-item|flow-root)$|^d-(?:\w+-)?(?:block|flex|grid|table)$/;
-const FLEX_CLASS =
-  /^(?:[\w-]+:)?(?:inline-)?(?:flex|grid)$|^d-(?:\w+-)?(?:inline-)?(?:flex|grid)$/;
 const MIN_FAKE_LIST_LINES = 3;
 /** A `<p>` this long is the page's first answer block (SUPP-13). */
 const FIRST_ANSWER_MIN_WORDS = 15;
@@ -264,25 +248,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
     }
   }
 
-  /**
-   * One text run = the text between two tags. htmlparser2 emits a decoded
-   * character reference (`&#x27;`, `&amp;`) and the text either side of a
-   * comment (React's `a<!-- -->b`) as separate chunks; they join with no
-   * separator so `what&#x27;s` reads `what's`, not `what ' s` (WO-B26-001).
-   * Spaces are added only between runs, i.e. at element boundaries.
-   */
-  let textRun: string[] = [];
-  /** A block boundary passed since the last text run: the next run starts with a space. */
-  let gap = false;
-  /** Per open element (parallel to `stack`): boundary? flex/grid container? */
-  const boxes: { boundary: boolean; flex: boolean }[] = [];
-  function endText() {
-    if (textRun.length === 0) return;
-    const text = (gap ? " " : "") + textRun.join("");
-    textRun = [];
-    gap = false;
-    readText(text);
-  }
+  const runs = createTextRuns(readText);
   function readText(text: string) {
     if (jsonLdBuf) jsonLdBuf.push(text);
     if (titleBuf) titleBuf.push(text);
@@ -307,15 +273,8 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   const parser = new Parser(
     {
       onopentag(name, attrs) {
-        endText();
+        runs.open(name, attrs.class); // ends the text run before it
         if (LINE_BREAKS.has(name)) endLine();
-        const classes = (attrs.class ?? "").split(/\s+/);
-        const boundary =
-          !INLINE.has(name) ||
-          boxes.at(-1)?.flex === true ||
-          classes.some((c) => BOX_CLASS.test(c));
-        boxes.push({ boundary, flex: classes.some((c) => FLEX_CLASS.test(c)) });
-        gap ||= boundary;
         hidden.open(attrs, stack.push(name)); // push returns the new depth
         if (nosnippetAt === 0 && "data-nosnippet" in attrs)
           nosnippetAt = stack.length;
@@ -353,23 +312,19 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
         }
       },
       onprocessinginstruction(name, data) {
-        endText();
+        runs.end();
         if (name.toLowerCase() === "!doctype" && doctype === null)
           doctype = data;
       },
       ontext(text) {
-        textRun.push(text);
+        runs.push(text);
       },
       onclosetag(name) {
-        endText();
+        runs.end();
         if (LINE_BREAKS.has(name)) endLine();
         // htmlparser2 closes implied tags in order; pop to the matching one.
         const at = stack.lastIndexOf(name);
-        if (at >= 0) {
-          gap ||= boxes.slice(at).some((b) => b.boundary);
-          stack.length = at;
-          boxes.length = at;
-        }
+        if (at >= 0) stack.length = runs.close(at);
         if (nosnippetAt > stack.length) nosnippetAt = 0;
         hidden.close(stack.length);
         if (para && para.at > stack.length) {
@@ -413,7 +368,7 @@ export function extractHtmlFacts(html: string, baseUrl: string): HtmlFacts {
   );
   parser.write(html);
   parser.end();
-  endText();
+  runs.end();
   endLine();
   endRun();
   head.hreflang = hreflang;
