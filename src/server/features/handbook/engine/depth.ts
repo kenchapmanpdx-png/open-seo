@@ -1,3 +1,4 @@
+import { sort } from "remeda";
 import { z } from "zod";
 import type { Coverage } from "@/server/features/handbook/contracts/collectors";
 import {
@@ -6,6 +7,7 @@ import {
 } from "@/server/features/handbook/engine/pagination";
 import {
   handbookDepthSchema,
+  type CrawlScope,
   type HandbookDepth,
 } from "@/server/features/handbook/contracts/exports";
 
@@ -118,6 +120,44 @@ export function groupByPattern(urls: readonly string[]): Map<string, string[]> {
   return out;
 }
 
+/** First path section of a URL: `/pages/x` → `/pages/`, home → `/` (WO-B27-003/004). */
+export function sectionOf(url: string): string {
+  const first = new URL(url).pathname.split("/").filter(Boolean)[0];
+  return first ? `/${first}/` : "/";
+}
+
+/**
+ * WO-B27-004: sitemap URLs in read order, round-robin across first path
+ * sections so every section gets pages before any is exhausted. Section
+ * order = first appearance; order within a section is kept.
+ */
+export function roundRobinBySection(urls: readonly string[]): string[] {
+  const bySection = new Map<string, string[]>();
+  for (const url of urls) {
+    const key = sectionOf(url);
+    bySection.set(key, [...(bySection.get(key) ?? []), url]);
+  }
+  return stratifiedFill(bySection, urls.length);
+}
+
+/**
+ * WO-B27-004: a query-string URL whose clean path (`origin + pathname`) is a
+ * known page is a parameter variant of it. Returns its parameter pattern
+ * (sorted parameter names), or null when the URL is not a variant. Numbered
+ * pagination is never a variant (it lists other items).
+ */
+export function variantPattern(
+  url: string,
+  known: ReadonlySet<string>,
+): string | null {
+  const u = new URL(url);
+  if (!u.search || paginationParam(u) !== null) return null;
+  if (!known.has(`${u.origin}${u.pathname}`)) return null;
+  return sort([...new Set(u.searchParams.keys())], (a, b) =>
+    a.localeCompare(b),
+  ).join("&");
+}
+
 const SPACE_CAP = 20;
 const TEMPLATE_CAP_AFTER = 300;
 const TEMPLATE_CAP = 100;
@@ -194,6 +234,78 @@ export function depthLine(
   // WO-B27-001: exports state the mode next to the depth.
   if (coverage?.shortName) parts.push("read with the short app name");
   return parts.join(" · ");
+}
+
+/**
+ * WO-B27-003 / 004: the scope and limit lines, one derivation for the run
+ * page and the exports. A site read whole within the limit gets none.
+ */
+export function scopeLines(
+  scope: CrawlScope | undefined,
+  coverage: { read: number; capped: boolean },
+): string[] {
+  if (!scope) return [];
+  const { read, capped } = coverage;
+  const lines: string[] = [];
+  const unread = scope.sitemapUnread.reduce((n, g) => n + g.urls.length, 0);
+  if (scope.sitemapTotal === null) {
+    lines.push(
+      `No sitemap; scope was decided while crawling (page limit ${scope.limit}).`,
+    );
+  } else if (scope.leftOut.length > 0) {
+    const left = scope.leftOut.map((l) => `${l.section} (${l.count})`);
+    lines.push(
+      `Scope: ${scope.sitemapInScope} of ${scope.sitemapTotal} sitemap pages; left out ${left.join(", ")}; page limit ${scope.limit}.`,
+    );
+  }
+  const counted = read - scope.variants.sampled;
+  if (unread > 0 || capped) {
+    const which =
+      counted >= scope.limit ? `Page limit ${scope.limit}` : "Time limit";
+    const parts = [`${which} reached: ${read} pages read`];
+    if (unread > 0) {
+      const groups = scope.sitemapUnread.map(
+        (g) => `${g.section} ${g.urls.length}`,
+      );
+      parts.push(
+        `${unread} in-scope sitemap pages not read (${groups.join(", ")})`,
+      );
+    }
+    if (scope.notFollowed > 0)
+      parts.push(`${scope.notFollowed} discovered URLs not followed`);
+    if (scope.variants.skipped > 0)
+      parts.push(
+        `${scope.variants.skipped} parameter variants of known pages skipped (${scope.variants.sampled} read as samples, not counted)`,
+      );
+    lines.push(`${parts.join("; ")}.`);
+    if (scope.sitemapInScope > 0)
+      lines.push(
+        `Site-wide findings are based on ${scope.sitemapInScope - unread} of ${scope.sitemapInScope} in-scope sitemap pages.`,
+      );
+  }
+  return lines;
+}
+
+/**
+ * Exports: the depth line, then the scope lines (WO-B27-003 / 004). The
+ * review export passes its list bullet and also gets the unread sitemap
+ * URLs by section.
+ */
+export function depthLines(
+  depth: HandbookDepth | undefined,
+  coverage: Coverage | undefined,
+  reviewBullet?: string,
+): string[] {
+  const scope = coverage?.scope;
+  const lists = reviewBullet ? (scope?.sitemapUnread ?? []) : [];
+  const lines = [
+    depthLine(depth, coverage),
+    ...(coverage ? scopeLines(scope, coverage) : []),
+    ...lists.map(
+      (g) => `not read, ${g.section} (${g.urls.length}): ${g.urls.join(", ")}`,
+    ),
+  ];
+  return reviewBullet ? lines.map((l) => `${reviewBullet}${l}`) : lines;
 }
 
 const DYNAMIC_SEGMENT =

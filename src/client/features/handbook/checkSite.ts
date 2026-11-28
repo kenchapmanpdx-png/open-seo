@@ -30,6 +30,11 @@ export type CheckSiteDeps = {
   setProjectDomain: (projectId: string, domain: string) => Promise<unknown>;
   getSettings: (projectId: string) => Promise<Settings>;
   saveSettings: (projectId: string, settings: Settings) => Promise<unknown>;
+  /** WO-B27-003: the automatic scope for a page limit (sitemap census). */
+  previewScope: (
+    domain: string,
+    maxPages: number,
+  ) => Promise<{ excludePaths: string[] }>;
   startAudit: (payload: {
     projectId: string;
     startUrl: string;
@@ -40,7 +45,7 @@ export type CheckSiteDeps = {
 };
 
 /** Bare lowercase host without www, or null when the input is not a site. */
-function siteDomain(input: string): string | null {
+export function siteDomain(input: string): string | null {
   try {
     const host = normalizeDomain(input);
     return host.includes(".") ? host : null;
@@ -61,7 +66,11 @@ export async function checkSite(
     website: string;
     size: CheckSize;
     fullCheck: boolean;
-    /** Sections to leave out (B18 WO-B18-015), upstream exclude-path syntax. */
+    /**
+     * Sections to leave out (B18 WO-B18-015), upstream exclude-path syntax.
+     * Unset: Whole site takes the automatic core scope (WO-B27-003); Quick
+     * samples and leaves nothing out.
+     */
     excludePaths?: string[];
   },
   deps: CheckSiteDeps,
@@ -88,12 +97,18 @@ export async function checkSite(
       enabled: input.fullCheck,
     });
 
+  const maxPages = CHECK_SIZES[input.size].pages;
+  const excludePaths =
+    input.excludePaths ??
+    (input.size === "whole"
+      ? (await deps.previewScope(domain, maxPages)).excludePaths
+      : []);
   const { auditId } = await deps.startAudit({
     projectId,
     startUrl: `https://${domain}`,
-    maxPages: CHECK_SIZES[input.size].pages,
+    maxPages,
     renderJavaScript: false,
-    ...(input.excludePaths?.length ? { excludePaths: input.excludePaths } : {}),
+    ...(excludePaths.length ? { excludePaths } : {}),
   });
   if (isNew) await deps.setProjectDomain(projectId, domain);
   return { projectId, auditId };

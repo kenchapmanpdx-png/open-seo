@@ -110,6 +110,29 @@ export type UnreadCoverage = z.infer<typeof unreadCoverageSchema>;
 export type UnreadUrl = UnreadCoverage["rows"][number];
 export type UnreadClass = UnreadUrl["class"];
 
+const count = z.number().int().nonnegative();
+/**
+ * WO-B27-003 / 004 (ADR-040): the run's one page limit, the scope it read
+ * and what the limit left unread. Additive, report-only; 1.11.0 kept.
+ */
+export const crawlScopeSchema = z.object({
+  limit: z.number().int().positive(),
+  /** Sitemap URLs found; null = no sitemap (scope decided while crawling). */
+  sitemapTotal: count.nullable(),
+  sitemapInScope: count,
+  /** Sections left out, with their sitemap URL counts. */
+  leftOut: z.array(z.object({ section: z.string(), count })),
+  /** In-scope sitemap URLs not read, grouped by first path section. */
+  sitemapUnread: z.array(
+    z.object({ section: z.string(), urls: z.array(z.string()) }),
+  ),
+  /** Discovered non-sitemap URLs not followed (limit, crawl-space guard). */
+  notFollowed: count,
+  /** Parameter variants of known pages: one sample per pattern read, uncounted. */
+  variants: z.object({ sampled: count, skipped: count }),
+});
+export type CrawlScope = z.infer<typeof crawlScopeSchema>;
+
 export const reportJsonSchema = z.object({
   reportVersion: z.literal(REPORT_JSON_VERSION),
   contractsVersion: z.string(),
@@ -134,6 +157,8 @@ export const reportJsonSchema = z.object({
         unread: unreadCoverageSchema.optional(),
         /** WO-B27-001: read with the short app name. Additive; 1.11.0 kept (ADR-039) */
         shortName: z.literal(true).optional(),
+        /** WO-B27-003 / 004: page limit, scope and unread sitemap URLs. */
+        scope: crawlScopeSchema.optional(),
       })
       .optional(),
   }),

@@ -1,9 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { capNotes } from "./capNotes";
+import type { CrawlScope } from "@/server/features/handbook/contracts/exports";
 
 const audit = (pagesCrawled: number, maxPages: number) => ({
   pagesCrawled,
   config: JSON.stringify({ maxPages, lighthouseStrategy: "auto" }),
+});
+
+// WO-B27-003 / 004: a run that stored its scope quotes one limit.
+const scope = (over: Partial<CrawlScope> = {}): CrawlScope => ({
+  limit: 500,
+  sitemapTotal: 34,
+  sitemapInScope: 34,
+  leftOut: [],
+  sitemapUnread: [],
+  notFollowed: 0,
+  variants: { sampled: 0, skipped: 0 },
+  ...over,
 });
 
 describe("capNotes", () => {
@@ -55,5 +68,37 @@ describe("capNotes", () => {
     expect(capNotes({ coverageCapped: false, coverageRead: 40 }, null)).toEqual(
       [],
     );
+  });
+
+  it("a small site read whole gets no scope note", () => {
+    expect(
+      capNotes({ coverageCapped: false, coverageRead: 34 }, audit(34, 500), {
+        scope: scope(),
+      }),
+    ).toEqual([]);
+  });
+
+  it("a hit limit states the leave-outs, the unread sitemap pages and the basis", () => {
+    const notes = capNotes(
+      { coverageCapped: true, coverageRead: 501 },
+      audit(500, 500),
+      {
+        scope: scope({
+          sitemapTotal: 612,
+          sitemapInScope: 481,
+          leftOut: [{ section: "/blogs/", count: 131 }],
+          sitemapUnread: [
+            { section: "/pages/", urls: ["https://s.test/pages/a"] },
+          ],
+          notFollowed: 7,
+          variants: { sampled: 1, skipped: 56 },
+        }),
+      },
+    );
+    expect(notes).toEqual([
+      "Scope: 481 of 612 sitemap pages; left out /blogs/ (131); page limit 500.",
+      "Page limit 500 reached: 501 pages read; 1 in-scope sitemap pages not read (/pages/ 1); 7 discovered URLs not followed; 56 parameter variants of known pages skipped (1 read as samples, not counted).",
+      "Site-wide findings are based on 480 of 481 in-scope sitemap pages.",
+    ]);
   });
 });

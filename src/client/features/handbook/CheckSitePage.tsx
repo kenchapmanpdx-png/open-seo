@@ -31,6 +31,7 @@ import { createProject, updateProject } from "@/serverFunctions/projects";
 import { getAuditStatus, startAudit } from "@/serverFunctions/audit";
 import {
   getHandbookSettings,
+  previewHandbookScope,
   updateHandbookSettings,
   verifyHandbookWebsite,
 } from "@/server/features/handbook/functions";
@@ -38,6 +39,7 @@ import {
   CHECK_SIZE_KEYS,
   CHECK_SIZES,
   checkSite,
+  siteDomain,
   type CheckSize,
 } from "./checkSite";
 import { runButtonView } from "./forkHealthView";
@@ -86,10 +88,22 @@ function CheckForm({ projectId }: { projectId: string }) {
   const [size, setSize] = useState<CheckSize>("whole");
   const [fullCheck, setFullCheck] = useState(true);
   const [skip, setSkip] = useState("");
+  // WO-B27-003: the scope shown before a Whole site run that would leave
+  // sections out; the next press starts with the list as edited.
+  const [scope, setScope] = useState<ScopeView | null>(null);
   const site = website ?? current?.domain ?? "";
+  const scopeKey = `${site.trim().toLowerCase()}|${size}`;
+  const shownScope = scope?.key === scopeKey ? scope : null;
+  const verify = async (domain: string) => {
+    const result = await verifyHandbookWebsite({ data: { website: domain } });
+    if (!result.ok) throw new Error(result.reason);
+  };
 
   const run = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<{
+      projectId: string;
+      auditId: string;
+    } | null> => {
       // Re-read health: a database failure blocks the start (WO-B13-014).
       const health = await queryClient.fetchQuery({
         ...forkHealthQuery(),
@@ -102,6 +116,19 @@ function CheckForm({ projectId }: { projectId: string }) {
       );
       if (!excludePaths.success)
         throw new Error(excludePaths.error.issues[0]?.message);
+      if (size === "whole" && !shownScope && excludePaths.data.length === 0) {
+        const domain = siteDomain(site);
+        if (!domain) throw new Error("Enter a website like example.com.");
+        await verify(domain);
+        const decision = await previewHandbookScope({
+          data: { website: domain, maxPages: CHECK_SIZES.whole.pages },
+        });
+        if (decision.excludePaths.length > 0) {
+          setScope({ key: scopeKey, ...decision });
+          setSkip(decision.excludePaths.join("\n"));
+          return null;
+        }
+      }
       return checkSite(
         {
           currentProject: { id: projectId, domain: current?.domain ?? null },
@@ -111,12 +138,9 @@ function CheckForm({ projectId }: { projectId: string }) {
           excludePaths: excludePaths.data,
         },
         {
-          verifyWebsite: async (domain) => {
-            const result = await verifyHandbookWebsite({
-              data: { website: domain },
-            });
-            if (!result.ok) throw new Error(result.reason);
-          },
+          verifyWebsite: verify,
+          previewScope: (domain, maxPages) =>
+            previewHandbookScope({ data: { website: domain, maxPages } }),
           listProjects: () => getProjects(queryClient),
           createProject: (name) => createProject({ data: { name } }),
           setProjectDomain: (pid, domain) =>
@@ -132,6 +156,7 @@ function CheckForm({ projectId }: { projectId: string }) {
       );
     },
     onSuccess: async (result) => {
+      if (!result) return;
       await queryClient.invalidateQueries({ queryKey: ["projects"] });
       await queryClient.invalidateQueries({
         queryKey: ["handbook", result.projectId],
@@ -200,6 +225,7 @@ function CheckForm({ projectId }: { projectId: string }) {
             full check skip them.
           </FieldDescription>
         </Field>
+        {shownScope ? <ScopeNotice scope={shownScope} /> : null}
         <Field orientation="horizontal" className="w-auto">
           <Checkbox
             id={`${id}-full`}
@@ -220,7 +246,7 @@ function CheckForm({ projectId }: { projectId: string }) {
             }
             onClick={() => run.mutate()}
           >
-            {run.isPending ? "Starting…" : "Check"}
+            {run.isPending ? "Starting…" : shownScope ? "Start check" : "Check"}
           </Button>
           {view.disabledReason ? (
             <p className="text-sm text-destructive">{view.disabledReason}</p>
@@ -242,6 +268,23 @@ function CheckForm({ projectId }: { projectId: string }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+type ScopeView = Awaited<ReturnType<typeof previewHandbookScope>> & {
+  key: string;
+};
+
+/** WO-B27-003 step 4: pages in scope, sections left out, the limit. */
+function ScopeNotice({ scope }: { scope: ScopeView }) {
+  const left = scope.leftOut.map((s) => `${s.section} (${s.count})`);
+  return (
+    <p className="rounded-md border p-3 text-sm">
+      The sitemap lists {scope.census.total} pages; the page limit is{" "}
+      {scope.limit}. Automatic core scope: leave out {left.join(", ")}, so{" "}
+      {scope.inScope} pages are in scope. Edit the sections above, or press
+      Start check.
+    </p>
   );
 }
 

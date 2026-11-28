@@ -25,7 +25,7 @@ export const COLLECTOR_KEYS = [
 export type CollectorKey = (typeof COLLECTOR_KEYS)[number];
 
 import type { AxeData, LighthouseData, RenderData } from "./render-data";
-import type { UnreadCoverage } from "./exports";
+import type { CrawlScope, UnreadCoverage } from "./exports";
 
 export type Unavailable = { status: "unavailable"; reason: string };
 export type Collected<T> = ({ status: "ok" } & T) | Unavailable;
@@ -520,6 +520,8 @@ export type Coverage = {
   unread?: UnreadCoverage;
   /** The site refused the full app name; pages were read with the short one (WO-B27-001). Additive, not K3; 1.11.0 kept (ADR-039) */
   shortName?: true;
+  /** Page limit, scope and unread sitemap URLs (WO-B27-003 / 004). Additive, not K3; 1.11.0 kept (ADR-040) */
+  scope?: CrawlScope;
 };
 
 export type CollectedData = {

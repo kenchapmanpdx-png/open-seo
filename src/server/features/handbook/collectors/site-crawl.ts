@@ -1,23 +1,18 @@
-import { sort } from "remeda";
-import { sha256Hex } from "@/server/lib/audit/ids";
-import { pageBlocks, templateBoilerplate } from "../engine/boilerplate";
-import { extractHtmlFacts } from "@/server/features/handbook/engine/html-facts";
-import { mainTextFacts } from "@/server/features/handbook/engine/minhash";
-import { scanAiAddressed } from "@/server/features/handbook/engine/ai-addressed";
+import { clusterTemplates } from "./crawl-templates";
+import { fetchPage, normalize, type PageExtra } from "./crawl-fetch";
 import { parseBlock } from "./jsonld-parse";
 import { unreadCoverage } from "@/server/features/handbook/engine/unread";
-import { emptyHead, emptyMarkup } from "./empty-page";
 import { readAhead } from "./limiter";
-import { keptHeaders } from "./kept-headers";
 import { robotsAllowed } from "./crawl-robots";
-import { crawlFetch } from "@/server/features/handbook/engine/interstitial";
 import { handbookExcluded } from "@/server/features/handbook/engine/exclude";
 import {
   groupByPattern,
   infiniteSpaceGuard,
-  pathPatterns,
+  roundRobinBySection,
   stratifiedFill,
+  variantPattern,
 } from "@/server/features/handbook/engine/depth";
+import { bySection, Variants } from "./crawl-variants";
 import type {
   CollectedData,
   Coverage,
@@ -26,7 +21,6 @@ import type {
   DiscoveredBy,
   JsonLdData,
   PageSnapshot,
-  TemplatesData,
 } from "@/server/features/handbook/contracts/collectors";
 
 /**
@@ -45,18 +39,6 @@ export type CrawlOptions = {
   /** Sections the user left out (audit `excludePaths`, WO-B18-015): never read. */
   excludePaths?: readonly string[];
 };
-
-type PageExtra = {
-  jsonLdBlocks: string[];
-  skeleton: string;
-  bytes: number;
-  /** Block texts for the template boilerplate split (FULL-READ §3.11). */
-  blocks: string[];
-  /** Answered only to the short app name (WO-B27-001). */
-  shortName: boolean;
-};
-
-const HTML_TYPE = /text\/html|application\/xhtml/i;
 
 export function createCrawlCollectors(options: CrawlOptions) {
   const extras = new Map<string, PageExtra>();
@@ -125,28 +107,63 @@ async function crawl(
   extras: Map<string, PageExtra>,
 ): Promise<{ snapshots: PageSnapshot[]; coverage: Coverage }> {
   const home = new URL("/", ctx.origin).href;
-  // Discovery order is kept; the infinite-space guard and the stratified
-  // fill pick from it in BFS waves (ADR-018).
-  const discovered: string[] = [];
   const source = new Map<string, DiscoveredBy>();
   const attempted = new Set<string>();
   const snapshots: PageSnapshot[] = [];
   const failed: string[] = [];
   let shortName = false; // WO-B27-001
+  // WO-B27-004: in-scope sitemap URLs are read first, round-robin across
+  // sections, and the crawl-space guard never drops them. Other URLs keep
+  // discovery order; the guard and the stratified fill pick from them
+  // (ADR-018).
+  const sitemapUrls: string[] = [];
+  const discovered: string[] = [];
+  const known = new Set<string>();
+  const leftOut = new Map<string, number>();
+  const variants = new Variants();
+  let counted = 0;
   const discover = (raw: string, by: DiscoveredBy) => {
     const url = normalize(raw);
     if (!url || source.has(url)) return;
     source.set(url, by);
-    if (handbookExcluded(options.excludePaths ?? [], url)) return;
-    if (robotsAllowed(collected, url)) discovered.push(url);
+    const excluded = handbookExcluded(options.excludePaths ?? [], url);
+    if (excluded) {
+      if (by === "sitemap")
+        leftOut.set(excluded, (leftOut.get(excluded) ?? 0) + 1);
+      return;
+    }
+    if (!robotsAllowed(collected, url)) return;
+    if (by !== "sitemap" && variants.take(url, known)) return;
+    known.add(url);
+    (by === "sitemap" ? sitemapUrls : discovered).push(url);
   };
-  const pending = () =>
-    infiniteSpaceGuard(discovered).filter((u) => !attempted.has(u));
 
-  for (const url of [home, ...(options.seedUrls ?? [])]) discover(url, "seed");
-  if (collected.sitemap?.status === "ok") {
-    for (const u of collected.sitemap.urls) discover(u.loc, "sitemap");
-  }
+  discover(home, "seed");
+  const sitemapOk =
+    collected.sitemap?.status === "ok" ? collected.sitemap : null;
+  for (const u of sitemapOk?.urls ?? []) discover(u.loc, "sitemap");
+  for (const url of options.seedUrls ?? []) discover(url, "seed");
+  const sitemapOrder = roundRobinBySection(sitemapUrls);
+  const inSitemap = new Set(sitemapUrls);
+  // Home first, then the sitemap, then everything else.
+  const pending = () => [
+    ...(attempted.has(home) || !known.has(home) ? [] : [home]),
+    ...sitemapOrder.filter((u) => u !== home && !attempted.has(u)),
+    ...infiniteSpaceGuard(discovered).filter(
+      (u) => u !== home && !attempted.has(u),
+    ),
+  ];
+  /** Sitemap URLs first; over the room, the rest by stratified fill. */
+  const pick = (next: string[], room: number) => {
+    if (next.length <= room) return next;
+    const first = next.filter((u) => u === home || inSitemap.has(u));
+    const fromSitemap = first.slice(0, room);
+    const others = next.filter((u) => u !== home && !inSitemap.has(u));
+    const rest = room - fromSitemap.length;
+    return rest > 0
+      ? [...fromSitemap, ...stratifiedFill(groupByPattern(others), rest)]
+      : fromSitemap;
+  };
 
   const deadline = options.maxMinutes
     ? Date.now() + options.maxMinutes * 60_000
@@ -157,21 +174,23 @@ async function crawl(
     inFlight = 1;
   };
   for (;;) {
-    const room = options.maxPages - snapshots.length;
-    const next = pending();
-    if (room <= 0 || next.length === 0 || outOfTime()) break;
-    const wave =
-      next.length > room ? stratifiedFill(groupByPattern(next), room) : next;
+    const room = options.maxPages - counted;
+    const samples = variants.pending(attempted);
+    const next = room > 0 ? pending() : [];
+    if ((next.length === 0 && samples.length === 0) || outOfTime()) break;
+    // Variant samples (WO-B27-004) are read but not counted.
+    const wave = [...samples, ...pick(next, room)];
     // WO-B20-005: CRAWL_CONCURRENCY fetches in flight (safeFetch keeps its
     // per-host spacing); results handled in wave order as before.
     // A 429 from the site: one page at a time for the rest of the crawl.
     const take = readAhead(
       wave,
-      () => Math.min(inFlight, options.maxPages - snapshots.length),
+      () => Math.min(inFlight, Math.max(1, options.maxPages - counted)),
       (url) => fetchPage(ctx, url, source.get(url) ?? "raw", throttled),
     );
     for (const [index, url] of wave.entries()) {
-      if (snapshots.length >= options.maxPages || outOfTime()) break;
+      const sample = variants.isSample(url);
+      if ((!sample && counted >= options.maxPages) || outOfTime()) break;
       attempted.add(url);
       const page = await take(index);
       if (!page) {
@@ -186,6 +205,7 @@ async function crawl(
         // finalUrl` (P3-08). No rawKey/links/extras, so templates and
         // JSON-LD skip it; page-fact checks filter finalUrl = url.
         snapshots.push({ ...snapshot, rawKey: null, links: [], images: [] });
+        if (!sample) counted += 1;
         if (attempted.has(finalNorm)) continue;
         // First sight of the target (field test 6: /blogs/x → /blog/%20x,
         // linked nowhere else): the page itself is read under its final
@@ -194,6 +214,7 @@ async function crawl(
       }
       if (finalNorm) attempted.add(finalNorm);
       snapshots.push(snapshot);
+      if (!sample) counted += 1;
       if (snapshots.length % 10 === 0) ctx.progress?.(snapshots.length);
       extras.set(snapshot.url, page.extra);
       if (options.followLinks && page.snapshot.status === 200) {
@@ -204,6 +225,9 @@ async function crawl(
   const left = pending();
   if (outOfTime() && left.length > 0)
     ctx.log("handbook.crawl.timeCap", { read: snapshots.length });
+  const sitemapTotal = sitemapOk?.urls.length
+    ? new Set(sitemapOk.urls.map((u) => u.loc)).size
+    : null;
   return {
     snapshots,
     coverage: {
@@ -213,6 +237,15 @@ async function crawl(
       // CLI view of ACCURACY #0: cap leftovers and failed fetches (status unknown).
       unread: unreadCoverage([...left, ...failed].map(nullStatus), snapshots),
       ...(shortName ? { shortName: true as const } : {}),
+      scope: {
+        limit: options.maxPages,
+        sitemapTotal,
+        sitemapInScope: sitemapUrls.length,
+        leftOut: [...leftOut].map(([section, count]) => ({ section, count })),
+        sitemapUnread: bySection(sitemapOrder.filter((u) => !attempted.has(u))),
+        notFollowed: discovered.filter((u) => !attempted.has(u)).length,
+        variants: variants.counts(),
+      },
     },
   };
 }
@@ -238,19 +271,46 @@ export async function crawlSecondPass(
   const seen = new Set(
     prior.flatMap((s) => [normalize(s.url), normalize(s.finalUrl)]),
   );
+  // WO-B27-004: variants are judged against every page the run knows (read
+  // pages and sitemap URLs), and a pattern sampled in the first pass is not
+  // sampled again.
+  const known = new Set<string>();
+  for (const url of seen) if (url) known.add(url);
+  if (collected.sitemap?.status === "ok")
+    for (const u of collected.sitemap.urls) {
+      const url = normalize(u.loc);
+      if (url) known.add(url);
+    }
+  const variants = new Variants(
+    [...known].flatMap((url) => {
+      const pattern = variantPattern(url, known);
+      return pattern === null ? [] : [pattern];
+    }),
+  );
   const queue: string[] = [];
   for (const link of links) {
     const url = normalize(link);
     if (!url || seen.has(url) || !robotsAllowed(collected, url)) continue;
     seen.add(url);
+    if (variants.take(url, known)) continue;
     queue.push(url);
   }
   const guarded = infiniteSpaceGuard(queue);
-  const room = Math.max(0, maxPages - prior.length);
-  const wave =
-    guarded.length > room
+  const before = pages?.coverage ?? {
+    discovered: prior.length,
+    read: prior.length,
+    capped: false,
+  };
+  const scope = before.scope;
+  const counted = prior.length - (scope?.variants.sampled ?? 0);
+  const room = Math.max(0, maxPages - counted);
+  const samples = variants.pending(new Set());
+  const wave = [
+    ...samples,
+    ...(guarded.length > room
       ? stratifiedFill(groupByPattern(guarded), room)
-      : guarded;
+      : guarded),
+  ];
   const snapshots: PageSnapshot[] = [];
   const jsonld: JsonLdData["pages"][number][] = [];
   for (const url of wave) {
@@ -264,24 +324,39 @@ export async function crawlSecondPass(
       nodes: parsed.flatMap((p) => p.nodes),
     });
   }
-  const before = pages?.coverage ?? {
-    discovered: prior.length,
-    read: prior.length,
-    capped: false,
-  };
-  const unread = guarded.length - snapshots.length;
+  const readNow = new Set(snapshots.map((s) => s.url));
+  const unread = guarded.filter((u) => !readNow.has(u)).length;
+  const { skipped } = variants.counts();
   return {
     snapshots,
     jsonld,
     coverage: {
       ...before,
-      discovered: before.discovered + guarded.length,
+      discovered: before.discovered + guarded.length + samples.length,
       read: before.read + snapshots.length,
       capped: before.capped || unread > 0,
       unread: unreadCoverage(
         [...(before.unread?.rows ?? []), ...guarded.map(nullStatus)],
         snapshots,
       ),
+      ...(scope
+        ? {
+            scope: {
+              ...scope,
+              notFollowed: scope.notFollowed + unread,
+              sitemapUnread: scope.sitemapUnread
+                .map((g) => ({
+                  ...g,
+                  urls: g.urls.filter((u) => !readNow.has(u)),
+                }))
+                .filter((g) => g.urls.length > 0),
+              variants: {
+                sampled: scope.variants.sampled + samples.length,
+                skipped: scope.variants.skipped + skipped,
+              },
+            },
+          }
+        : {}),
     },
   };
 }
@@ -316,133 +391,5 @@ function sameHostLinks(snapshot: PageSnapshot): string[] {
   return snapshot.links.flatMap((link) => {
     const target = normalize(link.href);
     return target && new URL(target).host === host ? [target] : [];
-  });
-}
-
-async function fetchPage(
-  ctx: CollectorContext,
-  url: string,
-  discoveredBy: DiscoveredBy,
-  onThrottled?: () => void,
-): Promise<{ snapshot: PageSnapshot; extra: PageExtra } | null> {
-  const res = await crawlFetch(ctx, url, onThrottled);
-  if (!res) return null;
-  const header = (name: string) =>
-    res.headers.find(([k]) => k === name)?.[1] ?? null;
-  const contentType = header("content-type");
-  const isHtml = contentType ? HTML_TYPE.test(contentType) : true;
-  const facts = isHtml ? extractHtmlFacts(res.body, res.finalUrl) : null;
-  // Main words, MinHash and in-page repeated blocks (FULL-READ §3.5).
-  const blocks = isHtml ? pageBlocks(res.body) : [];
-  const main = isHtml ? mainTextFacts(res.body, blocks) : null;
-  const bytes = new TextEncoder().encode(res.body);
-  const rawKey = isHtml
-    ? await ctx.storeBody("rawHtml", res.finalUrl, bytes, "text/html")
-    : null;
-  return {
-    snapshot: {
-      url,
-      finalUrl: res.finalUrl,
-      status: res.status,
-      contentType,
-      rawKey,
-      wordsRaw: facts?.words ?? 0,
-      bytesRaw: bytes.byteLength,
-      head: facts?.head ?? emptyHead(),
-      h1: facts?.h1 ?? [],
-      links: facts?.links ?? [],
-      images: facts?.images ?? [],
-      xRobotsTag: header("x-robots-tag"),
-      markup: facts?.markup ?? emptyMarkup(),
-      headers: keptHeaders(res.headers),
-      ttfbMs: res.ttfbMs ?? null,
-      discoveredBy,
-      ...main,
-      ...(isHtml ? { aiAddressed: scanAiAddressed(res.body) } : {}),
-      ...(res.redirectChain.length > 0
-        ? { redirectChain: res.redirectChain }
-        : {}),
-      ...(facts ? { doctype: facts.doctype } : {}),
-    },
-    extra: {
-      jsonLdBlocks: facts?.jsonLdBlocks ?? [],
-      skeleton: facts?.skeleton ?? "",
-      bytes: bytes.byteLength,
-      blocks,
-      shortName: res.shortName === true,
-    },
-  };
-}
-
-function normalize(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    u.hash = "";
-    const asset =
-      /\.(?:jpe?g|png|gif|webp|avif|svg|pdf|zip|mp4|mp3|css|js|ico|xml|txt)$/i;
-    return asset.test(u.pathname) ? null : u.href;
-  } catch {
-    return null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Template clustering (ADR-006)
-// ---------------------------------------------------------------------------
-
-async function clusterTemplates(
-  snapshots: readonly PageSnapshot[],
-  extras: Map<string, PageExtra>,
-): Promise<TemplatesData["templates"][number][]> {
-  const html = snapshots.filter((s) => s.rawKey && s.status === 200);
-  const patterns = pathPatterns(html.map((s) => s.url));
-  const groups = new Map<
-    string,
-    { pattern: string; hash: string; urls: string[] }
-  >();
-  for (const snap of html) {
-    const pattern = patterns.get(snap.url) ?? "/";
-    const hash = (await sha256Hex(extras.get(snap.url)?.skeleton ?? "")).slice(
-      0,
-      8,
-    );
-    const key = `${pattern}:${hash}`;
-    const group = groups.get(key) ?? { pattern, hash, urls: [] };
-    group.urls.push(snap.url);
-    groups.set(key, group);
-  }
-  return [...groups.entries()].map(([key, g]) => ({
-    key,
-    urlPattern: g.pattern,
-    skeletonHash: g.hash,
-    urls: g.urls,
-    samples: pickSamples(g.urls, (u) => extras.get(u)?.bytes ?? 0),
-    boilerplate: templateBoilerplate(
-      g.urls.map((u) => extras.get(u)?.blocks ?? []),
-    ),
-  }));
-}
-
-function pickSamples(urls: readonly string[], size: (url: string) => number) {
-  const first = sort(
-    urls,
-    (a, b) => a.length - b.length || a.localeCompare(b),
-  )[0];
-  const bySize = sort(urls, (a, b) => size(a) - size(b));
-  const median = bySize[Math.floor((bySize.length - 1) / 2)];
-  const largest = bySize[bySize.length - 1];
-  const picks: { url: string; reason: "first" | "median" | "largest" }[] = [];
-  for (const [url, reason] of [
-    [first, "first"],
-    [median, "median"],
-    [largest, "largest"],
-  ] as const) {
-    if (url && !picks.some((p) => p.url === url)) picks.push({ url, reason });
-  }
-  const ranks = [1, 2, 3] as const;
-  return picks.flatMap((p, i) => {
-    const rank = ranks[i];
-    return rank ? [{ ...p, rank }] : [];
   });
 }

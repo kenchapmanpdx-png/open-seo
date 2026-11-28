@@ -13,6 +13,10 @@ import { AppError } from "@/server/lib/errors";
 import { domainField } from "@/types/schemas/domain";
 import { verifyWebsite } from "@/server/features/handbook/services/verifyWebsite";
 import {
+  decideScope,
+  sitemapCensus,
+} from "@/server/features/handbook/services/scopePreflight";
+import {
   handbookModeSchema,
   siteTierSchema,
 } from "@/server/features/handbook/contracts/status";
@@ -149,3 +153,19 @@ export const verifyHandbookWebsite = createServerFn({ method: "POST" })
   .middleware(requireAuthenticatedContext)
   .validator(z.object({ website: domainField }))
   .handler(async ({ data }) => verifyWebsite(data.website));
+
+/**
+ * "Check a site" step 0b (WO-B27-003): sitemap census and the automatic
+ * scope for the chosen page limit, shown before the run starts.
+ */
+export const previewHandbookScope = createServerFn({ method: "POST" })
+  .middleware(requireAuthenticatedContext)
+  .validator(
+    z.object({
+      website: domainField,
+      maxPages: z.number().int().positive().max(1000),
+    }),
+  )
+  .handler(async ({ data }) =>
+    decideScope(await sitemapCensus(data.website), data.maxPages),
+  );

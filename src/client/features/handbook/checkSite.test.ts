@@ -16,6 +16,7 @@ const deps = {
   setProjectDomain: vi.fn<CheckSiteDeps["setProjectDomain"]>(),
   getSettings: vi.fn<CheckSiteDeps["getSettings"]>(),
   saveSettings: vi.fn<CheckSiteDeps["saveSettings"]>(),
+  previewScope: vi.fn<CheckSiteDeps["previewScope"]>(),
   startAudit: vi.fn<CheckSiteDeps["startAudit"]>(),
 };
 
@@ -28,6 +29,7 @@ beforeEach(() => {
   deps.getSettings.mockResolvedValue(settings);
   deps.startAudit.mockResolvedValue({ auditId: "a1" });
   deps.setProjectDomain.mockResolvedValue(undefined);
+  deps.previewScope.mockResolvedValue({ excludePaths: [] });
 });
 
 describe("checkSite", () => {
@@ -147,5 +149,21 @@ describe("checkSite", () => {
     ).rejects.toThrow("no DNS record");
     expect(deps.createProject).not.toHaveBeenCalled();
     expect(deps.startAudit).not.toHaveBeenCalled();
+  });
+
+  // WO-B27-003: a caller that chose no scope gets the automatic one.
+  it("takes the automatic core scope when no sections were chosen", async () => {
+    deps.previewScope.mockResolvedValue({ excludePaths: ["/blogs/"] });
+    await checkSite(
+      {
+        currentProject: current,
+        website: "acme.com",
+        size: "whole",
+        fullCheck: true,
+      },
+      deps,
+    );
+    expect(deps.previewScope).toHaveBeenCalledWith("acme.com", 500);
+    expect(deps.startAudit.mock.calls[0][0].excludePaths).toEqual(["/blogs/"]);
   });
 });

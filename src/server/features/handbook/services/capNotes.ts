@@ -3,6 +3,8 @@
 // Handbook reads pages on its own and stops at its own limit; the linked
 // site audit has a separate `maxPages`. Each note says which limit applied.
 import { parseAuditConfig } from "@/server/lib/audit/types";
+import { scopeLines } from "@/server/features/handbook/engine/depth";
+import type { CrawlScope } from "@/server/features/handbook/contracts/exports";
 
 type CapRun = { coverageCapped: boolean; coverageRead: number | null };
 type CapAudit = { pagesCrawled: number; config: string } | null;
@@ -14,12 +16,18 @@ export function capNotes(
   run: CapRun,
   audit: CapAudit,
   /** The run report's coverage, when it is loaded (run page). */
-  coverage?: { shortName?: true },
+  coverage?: { shortName?: true; scope?: CrawlScope },
 ): string[] {
   const read = run.coverageRead ?? 0;
   const notes: string[] = [];
   // WO-B27-001: one info line, no severity, no score effect.
   if (coverage?.shortName) notes.push(SHORT_NAME_NOTE);
+  // WO-B27-003 / 004: runs that stored their scope quote its one limit.
+  if (coverage?.scope)
+    return [
+      ...notes,
+      ...scopeLines(coverage.scope, { read, capped: run.coverageCapped }),
+    ];
   if (run.coverageCapped) {
     notes.push(
       `Handbook stopped at its page or time limit: ${read} pages read; results are incomplete.`,
