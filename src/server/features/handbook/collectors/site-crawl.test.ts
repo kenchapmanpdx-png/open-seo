@@ -153,6 +153,31 @@ describe("crawl time budget", () => {
     expect(fetched).toEqual([`${ORIGIN}/`, `${ORIGIN}/services`]);
   });
 
+  // WO-B27-090: a left-out /pages/ (Shopify) hid /pages/about-us → false P5-17.
+  it("still reads the About and Contact pages inside a left-out section", async () => {
+    fetched.length = 0;
+    const sitemap: CollectedData["sitemap"] = {
+      status: "ok",
+      sources: [],
+      urls: ["/pages/about-us", "/pages/faq", "/pages/contact"].map((p) => ({
+        loc: ORIGIN + p,
+        lastmod: null,
+        source: "fixture",
+      })),
+    };
+    const { pages } = createCrawlCollectors({
+      followLinks: false,
+      maxPages: 100,
+      excludePaths: ["/pages/"],
+    });
+    await pages.collect(ctx, { sitemap });
+    expect(fetched).toEqual([
+      `${ORIGIN}/`,
+      `${ORIGIN}/pages/about-us`,
+      `${ORIGIN}/pages/contact`,
+    ]);
+  });
+
   // WO-B23-003: `Disallow: /*?s=` must match the query string, as Google does.
   it("skips URLs a robots.txt query rule disallows", async () => {
     fetched.length = 0;

@@ -1,3 +1,4 @@
+import { isIdentityPage } from "@/server/features/handbook/engine/exclude";
 import { sort } from "remeda";
 import {
   createSafeFetch,
@@ -66,7 +67,11 @@ export async function sitemapCensus(host: string): Promise<SitemapCensus> {
   const counts = new Map<string, number>();
   let withQuery = 0;
   for (const url of urls) {
-    counts.set(sectionOf(url), (counts.get(sectionOf(url)) ?? 0) + 1);
+    // About / Contact are never left out (WO-B27-090): they count with home.
+    const section = isIdentityPage(new URL(url).pathname)
+      ? "/"
+      : sectionOf(url);
+    counts.set(section, (counts.get(section) ?? 0) + 1);
     if (new URL(url).search) withQuery += 1;
   }
   return {
