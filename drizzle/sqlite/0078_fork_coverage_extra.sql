@@ -1,0 +1,1 @@
+ALTER TABLE `handbook_run` ADD `coverage_extra` text;

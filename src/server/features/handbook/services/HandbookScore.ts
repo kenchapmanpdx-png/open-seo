@@ -1,6 +1,8 @@
 import { REGISTRY } from "@/server/features/handbook/registry";
 import { getReportRows } from "@/server/features/handbook/repositories/HandbookReportRepository";
+import { z } from "zod";
 import {
+  crawlScopeSchema,
   REPORT_JSON_VERSION,
   reportJsonSchema,
   type ReportJson,
@@ -22,6 +24,21 @@ import { HandbookGradeRepository } from "@/server/features/handbook/repositories
  * service and the backfill script can import it without a cycle or the
  * Reports / Agency services.
  */
+/** WO-B27-090 (ADR-040): stored shortName / scope; unreadable JSON is dropped, not fatal. */
+const coverageExtraSchema = z.object({
+  shortName: z.literal(true).optional(),
+  scope: crawlScopeSchema.optional(),
+});
+function coverageExtra(json: string | null) {
+  if (!json) return {};
+  try {
+    const parsed = coverageExtraSchema.safeParse(JSON.parse(json));
+    return parsed.success ? parsed.data : {};
+  } catch {
+    return {};
+  }
+}
+
 export type ReportRows = NonNullable<Awaited<ReturnType<typeof getReportRows>>>;
 
 /** K6 score of the run's report.json, or null when the run is not in `projectId`. */
@@ -98,6 +115,7 @@ export function buildReport(rows: ReportRows): ReportJson {
               ...(rows.crawled.length
                 ? { unread: unreadCoverage(rows.crawled, rows.read) }
                 : {}),
+              ...coverageExtra(run.coverageExtra),
             },
           }
         : {}),

@@ -107,6 +107,7 @@ async function finishRun(input: {
             coverageDiscovered: input.coverage.discovered,
             coverageRead: input.coverage.read,
             coverageCapped: input.coverage.capped,
+            coverageExtra: coverageExtraJson(input.coverage),
           }
         : {}),
       finishedAt: new Date().toISOString(),
@@ -120,6 +121,13 @@ async function finishRun(input: {
         inArray(handbookRuns.status, LIVE_RUN_STATUSES),
       ),
     );
+}
+
+/** WO-B27-090 (ADR-040): the report-only coverage extras, or null when none. */
+function coverageExtraJson(coverage: Coverage): string | null {
+  const { shortName, scope } = coverage;
+  if (!shortName && !scope) return null;
+  return JSON.stringify({ shortName, scope });
 }
 
 const LIVE_RUN_STATUSES: RunStatus[] = ["queued", "running"];

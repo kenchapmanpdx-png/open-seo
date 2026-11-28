@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { scoreRun } from "./HandbookScore";
 import { z } from "zod";
+import { crawlScopeSchema } from "@/server/features/handbook/contracts/exports";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { getOpenRouterAccess } from "@/server/lib/openrouter";
@@ -403,6 +404,9 @@ const runSummarySchema = z.object({
       discovered: z.number(),
       read: z.number(),
       capped: z.boolean(),
+      // WO-B27-090: kept so the report rebuild can quote them (ADR-040).
+      shortName: z.literal(true).optional(),
+      scope: crawlScopeSchema.optional(),
     })
     .nullable(),
   rowsSaved: z.number().optional(),

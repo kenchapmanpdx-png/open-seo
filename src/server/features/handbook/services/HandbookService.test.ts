@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ReportService } from "@/server/features/reports/services/ReportService";
 import { HandbookService } from "./HandbookService";
+import { HandbookRepository } from "@/server/features/handbook/repositories/HandbookRepository";
 
 const { testDb } = await vi.hoisted(async () => {
   const { createAiVisibilityTestDb } =
@@ -93,6 +94,40 @@ describe("HandbookService.publishToReports", () => {
         skill: "handbook-audit",
         createdByUserId: "user",
       }),
+    );
+  });
+});
+
+// WO-B27-090: the run page rebuilds coverage from the run row; the scope and
+// short-name extras must survive the round trip (in-app reports lost them).
+describe("HandbookService.getRunDetail coverage extras", () => {
+  it("quotes the stored scope and short-name note on the run page", async () => {
+    await HandbookRepository.finishRun({
+      projectId: "project",
+      runId: "run",
+      status: "completed",
+      coverage: {
+        discovered: 600,
+        read: 300,
+        capped: true,
+        shortName: true,
+        scope: {
+          limit: 300,
+          sitemapTotal: 612,
+          sitemapInScope: 481,
+          leftOut: [{ section: "/blogs/", count: 131 }],
+          sitemapUnread: [],
+          notFollowed: 0,
+          variants: { sampled: 0, skipped: 0 },
+        },
+      },
+    });
+    const detail = await HandbookService.getRunDetail("project", "run");
+    expect(detail?.capNotes).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("short name"),
+        expect.stringContaining("Scope: 481 of 612 sitemap pages"),
+      ]),
     );
   });
 });

@@ -71,6 +71,8 @@ export const handbookRuns = pgTable(
     coverageDiscovered: integer("coverage_discovered"),
     coverageRead: integer("coverage_read"),
     coverageCapped: boolean("coverage_capped").notNull().default(false),
+    // WO-B27-090 (ADR-040): report-only coverage extras (shortName, scope) as JSON.
+    coverageExtra: text("coverage_extra"),
     startedAt: text("started_at").notNull().default(now),
     finishedAt: text("finished_at"),
   },

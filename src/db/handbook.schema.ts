@@ -75,6 +75,8 @@ export const handbookRuns = sqliteTable(
     coverageCapped: integer("coverage_capped", { mode: "boolean" })
       .notNull()
       .default(false),
+    // WO-B27-090 (ADR-040): report-only coverage extras (shortName, scope) as JSON.
+    coverageExtra: text("coverage_extra"),
     startedAt: text("started_at").notNull().default(now),
     finishedAt: text("finished_at"),
   },
