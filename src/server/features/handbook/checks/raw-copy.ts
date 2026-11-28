@@ -3,7 +3,7 @@ import type {
   JsonLdNode,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl, pathOf } from "./support";
+import { createResult, normalizeUrl, pathOf, textValue } from "./support";
 
 /**
  * CRAWL (handbook §14, §7, §25): server HTML carries no loading/empty/error
@@ -34,12 +34,12 @@ function addressOf(nodes: readonly JsonLdNode[]): string | null {
   for (const n of nodes) {
     const address = n.properties.address;
     if (address && typeof address === "object" && "streetAddress" in address) {
-      const street = address.streetAddress;
-      if (typeof street === "string" && street.trim()) return street.trim();
+      const street = textValue(address.streetAddress);
+      if (street) return street;
     }
     if (n.types.includes("PostalAddress")) {
-      const street = n.properties.streetAddress;
-      if (typeof street === "string" && street.trim()) return street.trim();
+      const street = textValue(n.properties.streetAddress);
+      if (street) return street;
     }
   }
   return null;

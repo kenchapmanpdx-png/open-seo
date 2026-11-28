@@ -161,3 +161,14 @@ export function missingRobotsHosts(hosts: readonly RobotsHost[]): RobotsHost[] {
     ? missing
     : [];
 }
+
+/**
+ * A JSON-LD text value: a non-empty string, or the first non-empty string of
+ * an array (schema.org lets any property repeat, e.g. two `alternateName`s;
+ * WO-B26-002). Objects are not text.
+ */
+export function textValue(value: unknown): string | null {
+  for (const v of Array.isArray(value) ? value : [value])
+    if (typeof v === "string" && v.trim()) return v.trim();
+  return null;
+}

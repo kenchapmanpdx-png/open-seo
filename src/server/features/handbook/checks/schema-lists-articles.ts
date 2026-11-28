@@ -4,7 +4,13 @@ import type {
   JsonLdNode,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl, pathOf, parseUrl } from "./support";
+import {
+  createResult,
+  normalizeUrl,
+  pathOf,
+  parseUrl,
+  textValue,
+} from "./support";
 
 /**
  * SCHEMA (handbook §24): index pages of detail templates carry an ItemList
@@ -21,12 +27,10 @@ type Page = JsonLdData["pages"][number];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
-const str = (value: unknown) =>
-  typeof value === "string" && value.trim() ? value.trim() : null;
 const list = (value: unknown): unknown[] =>
   Array.isArray(value) ? value : value === undefined ? [] : [value];
 const idOf = (value: unknown) =>
-  isRecord(value) ? str(value["@id"]) : str(value);
+  isRecord(value) ? textValue(value["@id"]) : textValue(value);
 
 const isArticle = (n: JsonLdNode) =>
   n.types.some((t) => t.endsWith("Article") || t === "BlogPosting");
@@ -154,7 +158,7 @@ export const schemaListsArticlesCheck: HandbookCheck = {
     );
     const named = new Set(
       all
-        .filter(({ node }) => node.id && str(node.properties.name))
+        .filter(({ node }) => node.id && textValue(node.properties.name))
         .map(({ node }) => node.id),
     );
     const siteIds = new Set(
@@ -171,7 +175,7 @@ export const schemaListsArticlesCheck: HandbookCheck = {
       const p = node.properties;
       const why: string[] = [];
       for (const k of ["datePublished", "dateModified"]) {
-        const v = str(p[k]);
+        const v = textValue(p[k]);
         if (!v) why.push(`${k} missing`);
         else if (v.includes("T") && !TIME_OFFSET.test(v))
           why.push(`${k} "${v}" has a time without offset`);
@@ -183,8 +187,8 @@ export const schemaListsArticlesCheck: HandbookCheck = {
       for (const k of ["author", "publisher"])
         for (const v of list(p[k])) {
           const ok = isRecord(v)
-            ? !!str(v.name) || named.has(str(v["@id"]))
-            : !!str(v);
+            ? !!textValue(v.name) || named.has(textValue(v["@id"]))
+            : !!textValue(v);
           if (!ok) why.push(`${k} item has no name`);
         }
       return why.length > 0 ? [{ page, why }] : [];

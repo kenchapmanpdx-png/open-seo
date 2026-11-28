@@ -1,6 +1,6 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { JsonLdNode } from "@/server/features/handbook/contracts/collectors";
-import { createResult } from "./support";
+import { createResult, textValue } from "./support";
 
 /**
  * Entity rule (B17 §9 #7, T10; handbook §24, P6-03 deterministic part): one
@@ -24,8 +24,7 @@ const DISTINCT_REFS = [
   "funder",
 ];
 
-const nameOf = (n: JsonLdNode) =>
-  typeof n.properties.name === "string" ? n.properties.name.trim() : null;
+const nameOf = (n: JsonLdNode) => textValue(n.properties.name);
 const label = (n: JsonLdNode) =>
   `${n.types.join("/")} "${nameOf(n) ?? "?"}"${n.id ? ` (${n.id})` : " (no @id)"}`;
 

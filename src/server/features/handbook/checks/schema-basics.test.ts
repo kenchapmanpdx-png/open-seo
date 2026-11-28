@@ -49,4 +49,12 @@ describe("schema.basics", () => {
     expect(statusOf(result, "P6-01")).toBe("OPEN");
     expect(statusOf(await run(site), "P6-01")).toBe("PASS");
   });
+
+  it("accepts alternateName given as an array (P6-01)", async () => {
+    const alt = async (alternateName: unknown) =>
+      statusOf(await run({ ...site, alternateName }), "P6-01");
+    expect(await alt(["Example Co", "example.com"])).toBe("PASS");
+    for (const empty of [[], [""], "", [{ name: "Ex" }]])
+      expect(await alt(empty)).toBe("OPEN");
+  });
 });

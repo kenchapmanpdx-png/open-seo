@@ -3,7 +3,7 @@ import type {
   JsonLdData,
   JsonLdNode,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult } from "./support";
+import { createResult, textValue } from "./support";
 
 /**
  * SCHEMA (handbook §24, gate SP7): a LocalBusiness-family node exists with
@@ -56,19 +56,17 @@ type Located = { page: Page; node: JsonLdNode };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
-const str = (value: unknown) =>
-  typeof value === "string" && value.trim() ? value.trim() : null;
 const idOf = (value: unknown) =>
-  isRecord(value) ? str(value["@id"]) : str(value);
+  isRecord(value) ? textValue(value["@id"]) : textValue(value);
 
 const isLocal = (n: JsonLdNode) => n.types.some((t) => LOCAL_TYPES.has(t));
 
 function addressKey(node: JsonLdNode): string | null {
   const a = node.properties.address;
-  if (!isRecord(a)) return str(a);
+  if (!isRecord(a)) return textValue(a);
   return (
     [a.streetAddress, a.addressLocality, a.postalCode]
-      .map(str)
+      .map(textValue)
       .filter(Boolean)
       .join(", ")
       .toLowerCase() || null
@@ -79,9 +77,11 @@ function businessProblems(node: JsonLdNode): string[] {
   const p = node.properties;
   const a = isRecord(p.address) ? p.address : {};
   const problems: string[] = [];
-  if (!str(p.name)) problems.push("name missing");
-  const street = str(a.streetAddress);
-  const area = (str(a.addressLocality) || str(a.addressRegion)) && p.areaServed;
+  if (!textValue(p.name)) problems.push("name missing");
+  const street = textValue(a.streetAddress);
+  const area =
+    (textValue(a.addressLocality) || textValue(a.addressRegion)) &&
+    p.areaServed;
   if (!street && !area)
     problems.push("address missing (or locality/region + areaServed)");
   for (const k of ["aggregateRating", "review"])

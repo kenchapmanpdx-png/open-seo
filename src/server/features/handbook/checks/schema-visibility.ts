@@ -6,7 +6,7 @@ import type {
 } from "@/server/features/handbook/contracts/collectors";
 import { isOrganizationType } from "./schema-localbusiness";
 import { foldText } from "../engine/text-fold";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, textValue } from "./support";
 
 /**
  * SCHEMA (handbook §24, §25, §36), deterministic parts: FAQ Q&A visible in
@@ -25,8 +25,6 @@ type TextOf = (page: Page) => string;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
-const str = (value: unknown) =>
-  typeof value === "string" && value.trim() ? value.trim() : null;
 const list = (value: unknown): unknown[] =>
   Array.isArray(value) ? value : value === undefined ? [] : [value];
 const first = (value: unknown): unknown => list(value)[0];
@@ -62,15 +60,15 @@ function scanFaq(pages: readonly Page[], textOf: TextOf): Scan {
     const text = textOf(page);
     const questions = deep(page, "Question");
     for (const q of questions) {
-      const name = str(q.name) ?? "";
+      const name = textValue(q.name) ?? "";
       const a = first(q.acceptedAnswer);
-      const answer = isRecord(a) ? str(a.text) : null;
+      const answer = isRecord(a) ? textValue(a.text) : null;
       if (!name || !visible(name, text))
         hits.push({ page, why: `question not visible: "${name}"` });
       else if (!answer || !visible(answer.replace(/<[^>]+>/g, " "), text))
         hits.push({ page, why: `answer not visible for "${name}"` });
     }
-    const names = questions.map((q) => norm(str(q.name) ?? ""));
+    const names = questions.map((q) => norm(textValue(q.name) ?? ""));
     names.sort((a, b) => a.localeCompare(b));
     const key = names.join("|");
     if (key) sets.set(key, [...(sets.get(key) ?? []), page]);
@@ -96,15 +94,18 @@ function scanReviews(
     seen.push(page);
     const text = textOf(page);
     for (const r of reviews) {
-      const body = str(r.reviewBody);
+      const body = textValue(r.reviewBody);
       if (!body || !visible(body, text))
         hits.push({ page, why: "review body not visible" });
     }
     for (const v of videos) {
-      const name = str(v.name);
+      const name = textValue(v.name);
       if (!name || !visible(name, text))
         hits.push({ page, why: `video title not visible: "${name}"` });
-      if (!(str(v.contentUrl) || str(v.embedUrl)) || embeds(page) === 0)
+      if (
+        !(textValue(v.contentUrl) || textValue(v.embedUrl)) ||
+        embeds(page) === 0
+      )
         hits.push({
           page,
           why: "VideoObject without contentUrl/embedUrl + an <iframe>/<video> on the page",
@@ -173,12 +174,12 @@ function scanBrand(pages: readonly Page[]): Scan & { sameAs: number } {
       )
       .map((node) => ({ page, node })),
   );
-  const alt = brands.some((b) => str(b.node.properties.alternateName));
+  const alt = brands.some((b) => textValue(b.node.properties.alternateName));
   const sameAs = Math.max(
     0,
     ...brands
       .filter((b) => b.node.types.some(isOrganizationType))
-      .map((b) => list(b.node.properties.sameAs).filter(str).length),
+      .map((b) => list(b.node.properties.sameAs).filter(textValue).length),
   );
   const why = [
     !alt && "no alternateName on Organization/WebSite",

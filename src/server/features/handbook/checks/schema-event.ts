@@ -3,7 +3,7 @@ import type {
   JsonLdNode,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl } from "./support";
+import { createResult, normalizeUrl, textValue } from "./support";
 
 /**
  * SCHEMA (handbook §24): Event nodes carry venue name + street address, a
@@ -22,8 +22,6 @@ const TIMED = /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
-const str = (value: unknown) =>
-  typeof value === "string" && value.trim() ? value.trim() : null;
 const first = (value: unknown): unknown =>
   Array.isArray(value) ? (value[0] as unknown) : value;
 const has = (value: unknown) =>
@@ -42,12 +40,13 @@ function inspect(node: JsonLdNode, text: string): Record<string, string[]> {
   const address = isRecord(place.address) ? place.address : {};
   const offers = first(p.offers);
   const offer = isRecord(offers) ? offers : null;
-  const start = str(p.startDate) ?? "";
+  const start = textValue(p.startDate) ?? "";
   const p206: string[] = [];
   const p605: string[] = [];
 
-  if (!str(place.name)) p206.push("location.name");
-  if (!str(address.streetAddress)) p206.push("location.address.streetAddress");
+  if (!textValue(place.name)) p206.push("location.name");
+  if (!textValue(address.streetAddress))
+    p206.push("location.address.streetAddress");
   const timeShown = TIME.test(text);
   if (!start) p206.push("startDate");
   else if (timeShown && !TIMED.test(start))
@@ -55,7 +54,7 @@ function inspect(node: JsonLdNode, text: string): Record<string, string[]> {
   if (PRICE.test(text) && !has(offer?.price)) p206.push("offers.price");
 
   for (const k of ["addressLocality", "postalCode", "addressCountry"])
-    if (!str(address[k])) p605.push(`location.address.${k}`);
+    if (!textValue(address[k])) p605.push(`location.address.${k}`);
   if (!isRecord(place.geo)) p605.push("location.geo");
   for (const k of ["image", "organizer", "eventStatus"])
     if (!has(p[k])) p605.push(k);
@@ -69,9 +68,9 @@ function inspect(node: JsonLdNode, text: string): Record<string, string[]> {
       p605.push("offers.validFrom without a presale");
   }
   const organizer = first(p.organizer);
-  const organizerName = isRecord(organizer) ? str(organizer.name) : null;
+  const organizerName = isRecord(organizer) ? textValue(organizer.name) : null;
   const performers = (Array.isArray(p.performer) ? p.performer : [p.performer])
-    .map((x) => (isRecord(x) ? str(x.name) : str(x)))
+    .map((x) => (isRecord(x) ? textValue(x.name) : textValue(x)))
     .filter((x): x is string => !!x);
   if (
     performers.some(

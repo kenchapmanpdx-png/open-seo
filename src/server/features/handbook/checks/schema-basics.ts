@@ -1,6 +1,12 @@
 import type { HandbookCheck } from "@/server/features/handbook/contracts/check";
 import type { JsonLdData } from "@/server/features/handbook/contracts/collectors";
-import { createResult, originUrl, pathOf, parseUrl } from "./support";
+import {
+  createResult,
+  originUrl,
+  pathOf,
+  parseUrl,
+  textValue,
+} from "./support";
 
 /**
  * SCHEMA (handbook §24): the home page graph has a WebSite node with name,
@@ -95,10 +101,9 @@ export const schemaBasicsCheck: HandbookCheck = {
     // P6-01
     const home = jsonld.pages.find((p) => pathOf(p.url) === "/");
     const site = home?.nodes.find((n) => n.types.includes("WebSite"));
-    const missing = ["name", "url", "alternateName"].filter((k) => {
-      const v = site?.properties[k];
-      return typeof v !== "string" || !v.trim();
-    });
+    const missing = ["name", "url", "alternateName"].filter(
+      (k) => !textValue(site?.properties[k]),
+    );
     if (!home) {
       out.na("P6-01", "home page JSON-LD not collected");
     } else if (!site || missing.length > 0) {

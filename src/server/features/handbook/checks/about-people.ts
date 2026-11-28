@@ -3,7 +3,7 @@ import type {
   JsonLdData,
   PageSnapshot,
 } from "@/server/features/handbook/contracts/collectors";
-import { createResult, normalizeUrl, pathOf } from "./support";
+import { createResult, normalizeUrl, pathOf, textValue } from "./support";
 
 /**
  * CRAWL/SCHEMA (handbook §7, §33): the About page names people with roles in
@@ -23,9 +23,6 @@ type JsonLdPage = JsonLdData["pages"][number];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
-
-const str = (value: unknown) =>
-  typeof value === "string" && value.trim() ? value.trim() : null;
 
 const live = (s: PageSnapshot) =>
   s.status === 200 && normalizeUrl(s.finalUrl) === normalizeUrl(s.url);
@@ -68,12 +65,12 @@ function collectPeople(value: unknown, out: Person[]) {
   if (!isRecord(value)) return;
   const type = value["@type"];
   const types = Array.isArray(type) ? type : [type];
-  const name = str(value.name);
+  const name = textValue(value.name);
   if (types.includes("Person") && name) {
     out.push({
-      id: str(value["@id"]),
+      id: textValue(value["@id"]),
       name,
-      jobTitle: str(value.jobTitle),
+      jobTitle: textValue(value.jobTitle),
     });
   }
   for (const [k, v] of Object.entries(value)) {
@@ -102,8 +99,10 @@ function authorRefs(pages: readonly JsonLdPage[]) {
         const list = Array.isArray(author) ? author : author ? [author] : [];
         return list.map((a) => ({
           url: page.url,
-          id: isRecord(a) ? str(a["@id"]) : null,
-          label: isRecord(a) ? (str(a.name) ?? str(a["@id"])) : String(a),
+          id: isRecord(a) ? textValue(a["@id"]) : null,
+          label: isRecord(a)
+            ? (textValue(a.name) ?? textValue(a["@id"]))
+            : String(a),
         }));
       }),
   );

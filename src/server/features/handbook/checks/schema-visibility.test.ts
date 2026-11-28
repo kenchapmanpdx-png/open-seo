@@ -94,7 +94,7 @@ describe("schema.visibility", () => {
       types: ["Dentist"],
       properties: {
         name: "Spark Dental",
-        alternateName: "Spark",
+        alternateName: ["Spark", "spark.test"],
         sameAs: ["https://www.yelp.com/biz/x", "https://www.facebook.com/x"],
       },
     };
